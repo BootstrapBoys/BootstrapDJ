@@ -166,62 +166,11 @@ npm start
 
 Generate an invite link for your bot and invite it to your server using the Discord Developer Portal or using permissions calculator: <https://discordapi.com/permissions.html>
 
-## 🚀 Installation using Docker Compose
-
-This section assumes you have Docker and Docker Compose installed and running correctly.
-
-Download the [docker-compose.yml file](https://raw.githubusercontent.com/zebz213/BootstrapDJ/main/docker-compose.yml) in a seperate folder like BootstrapDJ.
-
-Edit docker-compose.yml and make sure to set the following variables:
-
-your .env file should look like this or you can use the [.env.example](https://raw.githubusercontent.com/zebz213/BootstrapDJ/main/.env.example) file
-
-```yaml
-TOKEN="." # Your bot token and remember, don't show everyone your bot token
-PREFIX="!" # Your prefix
-OWNER_IDS=["859640640640640640","859640640640640640"] # Your discord id, you can add multiple ids
-GUILD_ID="859640640640640640" # Your server ID (if you want to use it for a single server)
-PRODUCTION="true" # "true" for production
-
-```
-
-For more information how to fill all the variables go to this page.
-You do not need to edit anything like the LAVA_LINK_URL, LAVA_LINK_AUTH, LAVA_LINK_NAME, LAVA_LINK_SECURE, DATABASE_URL, and the ports unless you know what you're doing.
-
-After saving your changes you can open a terminal and go to the same location as the docker-compose.yml file. Then run the following:
-
-```bash
-docker-compose up -d
-```
-
-The above command will start all your services and your bot should be up and running!
-
-To update, you only have to type the following:
-
-```bash
-docker-compose up --force-recreate --build -d
-image prune -f
-```
-
-You can automate this by using [Watchtower](https://github.com/containrrr/watchtower). The following should be sufficient:
-
-```bash
-docker run --detach \
-    --name watchtower \
-    --volume /var/run/docker.sock:/var/run/docker.sock \
-    --restart on-failure \
-    containrrr/watchtower --cleanup
-```
-
-Do note that the bot will restart itself to update to the latest!
-
 ## 🔗 Useful Links
 
 -   ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white) [Node.js](https://nodejs.org/en/download/)
 -   ![Discord.js](https://img.shields.io/badge/Discord.js-7289DA?style=for-the-badge&logo=discord&logoColor=white) [Discord.js](https://discord.js.org/#/)
 -   ![Lavalink](https://img.shields.io/badge/Lavalink-7289DA?style=for-the-badge&logo=discord&logoColor=white) [Lavalink](https://github.com/lavalink-devs/Lavalink)
--   ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) [Docker](https://www.docker.com/)
--   ![Docker-Compose](https://img.shields.io/badge/Docker--Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white) [Docker-Compose](https://docs.docker.com/compose/)
 
 ## 📝 Tutorial
 
@@ -237,16 +186,11 @@ Thank you for your interest in contributing to BootstrapDJ! Here are some guidel
 4. Write and run tests for your code.
 5. Submit a pull request with your changes.
 
-Your contribution will be reviewed by the project maintainers, and any necessary feedback or changes will be discussed with you. We appreciate your help in making Lavamusic better!
+Your contribution will be reviewed by the project maintainers, and any necessary feedback or changes will be discussed with you. We appreciate your help in making BootstrapDJ better!
 
 ## 🔐 License
 
 Distributed under the GPL-3.0 license. See ![LICENSE](https://img.shields.io/github/license/zebz213/BootstrapDJ?style=social) for more information.
-
-## ☕ Donate
-
-Do you like this project? Support it by donating
-
 
 ## 👥 Contributors
 
