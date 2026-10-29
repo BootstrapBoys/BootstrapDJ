@@ -13,7 +13,6 @@ export default {
         yellow: 0xffff00,
         main: 0x2f3136,
     },
-    keepAlive: process.env.KEEP_ALIVE ? parseBoolean(process.env.KEEP_ALIVE) : false, // for https://replit.com keep alive bot 24/7
     autoNode: process.env.AUTO_NODE ? parseBoolean(process.env.AUTO_NODE) : true, // auto node for lavamusic bot it is gave from lavainfo-api "https://lavainfo-api.freedback-dip.workers.dev"
     searchEngine: process.env.SEARCH_ENGINE || SearchEngine.YouTube, // search engine for music
     maxPlaylistSize: process.env.MAX_PLAYLIST_SIZE ? parseInt(process.env.MAX_PLAYLIST_SIZE) : 100, // max playlist size
