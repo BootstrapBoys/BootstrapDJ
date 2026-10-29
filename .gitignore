@@ -1,37 +1,27 @@
-
-# Keep environment variables out of version control
+# Environment variables (never commit)
 .env
 
-# Ignore all files in the .vscode folder
+# Editor
 /.vscode
 
-# Ignore the build folder
+# Build output
 /dist
 
-# Ignore all files in the node_modules folder
+# Dependencies
 /node_modules
 
-# Ignore target folder
-
-/target
-
-
-/yarn.lock
-
+# Caches
+/.eslintcache
 /.next
 
-/node_modules
-
+# Non-npm lockfiles
+/yarn.lock
+/yarn-error.log
 /pnpm-lock.yaml
 
-/yarn-error.log
-
-/yarn.lock
-
-/.eslintcache
-
-/package-lock.json
-
+# Generated Lavalink runtime config (copy example.application.yml)
 /Lavalink/application.yml
-
 /Lavalink/plugins
+
+# Misc
+/target

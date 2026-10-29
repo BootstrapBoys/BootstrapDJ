@@ -7,6 +7,7 @@
     "scripts": {
         "start": "npm run build && node dist/index.js",
         "prisma:generate": "npx prisma generate",
+        "postinstall": "prisma generate",
         "build": "tsc --project tsconfig.json",
         "clean": "rm -rf dist",
         "lint": "eslint . --cache --ext .js,.jsx,.ts,.tsx",
@@ -44,7 +45,6 @@
         "eslint-plugin-unicorn": "^52.0.0",
         "prettier": "^3.2.5",
         "prisma": "^5.12.1",
-        "ts-node": "^10.9.2",
         "typescript": "^5.4.3"
     },
     "dependencies": {
