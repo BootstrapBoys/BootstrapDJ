@@ -1,6 +1,7 @@
 import {
     AutocompleteInteraction,
     ChannelType,
+    ChatInputCommandInteraction,
     Collection,
     CommandInteraction,
     GuildMember,
@@ -17,7 +18,7 @@ export default class InteractionCreate extends Event {
             name: 'interactionCreate',
         });
     }
-    public async run(interaction: CommandInteraction | AutocompleteInteraction): Promise<any> {
+    public async run(interaction: ChatInputCommandInteraction | AutocompleteInteraction): Promise<any> {
         if (
             interaction instanceof CommandInteraction &&
             interaction.type === InteractionType.ApplicationCommand

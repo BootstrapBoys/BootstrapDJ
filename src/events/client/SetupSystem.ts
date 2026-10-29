@@ -55,7 +55,7 @@ export default class SetupSystem extends Event {
                 this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes)
             );
         }
-        await setupStart(this.client, message.content, player, message);
+        await setupStart(this.client, message.content, player, message as Message<true>);
         if (message) await message.delete().catch(() => {});
     }
 }

@@ -9,6 +9,7 @@ import {
     GuildTextBasedChannel,
     Message,
     PartialDMChannel,
+    PartialGroupDMChannel,
     TextChannel,
     User,
 } from 'discord.js';
@@ -17,14 +18,19 @@ import { Lavamusic } from './index.js';
 
 export default class Context {
     public ctx: CommandInteraction | Message;
-    public interaction: CommandInteraction | null;
+    public interaction: ChatInputCommandInteraction | null;
     public message: Message | null;
     public id: string;
     public channelId: string;
     public client: Lavamusic;
     public author: User | null;
-    public channel: PartialDMChannel | GuildTextBasedChannel | TextChannel | DMChannel | null =
-        null;
+    public channel:
+        | PartialDMChannel
+        | PartialGroupDMChannel
+        | GuildTextBasedChannel
+        | TextChannel
+        | DMChannel
+        | null = null;
     public guild: Guild | null;
     public createdAt: Date;
     public createdTimestamp: number;

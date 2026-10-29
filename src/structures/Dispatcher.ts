@@ -69,16 +69,16 @@ export default class Dispatcher {
 
         this.player
             .on('start', () =>
-                this.client.shoukaku.emit('trackStart', this.player, this.current, this)
+                this.client.shoukaku.emitPlayerEvent('trackStart', this.player, this.current, this)
             )
             .on('end', () => {
                 if (!this.queue.length)
-                    this.client.shoukaku.emit('queueEnd', this.player, this.current, this);
-                this.client.shoukaku.emit('trackEnd', this.player, this.current, this);
+                    this.client.shoukaku.emitPlayerEvent('queueEnd', this.player, this.current, this);
+                this.client.shoukaku.emitPlayerEvent('trackEnd', this.player, this.current, this);
             })
-            .on('stuck', () => this.client.shoukaku.emit('trackStuck', this.player, this.current))
+            .on('stuck', () => this.client.shoukaku.emitPlayerEvent('trackStuck', this.player, this.current))
             .on('closed', (...arr) => {
-                this.client.shoukaku.emit('socketClosed', this.player, ...arr);
+                this.client.shoukaku.emitPlayerEvent('socketClosed', this.player, ...arr);
             });
     }
 
@@ -94,7 +94,7 @@ export default class Dispatcher {
         }
         this.current = this.queue.length !== 0 ? this.queue.shift() : this.queue[0];
         if (!this.current) return;
-        this.player.playTrack({ track: this.current?.encoded });
+        this.player.playTrack({ track: { encoded: this.current?.encoded } });
         if (this.current) {
             this.history.push(this.current);
             if (this.history.length > 100) {
@@ -129,7 +129,7 @@ export default class Dispatcher {
         this.client.shoukaku.leaveVoiceChannel(this.guildId);
         this.client.queue.delete(this.guildId);
         if (this.stopped) return;
-        this.client.shoukaku.emit('playerDestroy', this.player);
+        this.client.shoukaku.emitPlayerEvent('playerDestroy', this.player);
     }
     public setShuffle(): void {
         if (!this.player) return;

@@ -29,7 +29,7 @@ async function setupStart(
     client: Lavamusic,
     query: string,
     player: Dispatcher,
-    message: Message
+    message: Message<true>
 ): Promise<void> {
     let m: Message;
     const embed = client.embed();

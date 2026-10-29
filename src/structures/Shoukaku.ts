@@ -21,19 +21,28 @@ export default class ShoukakuClient extends Shoukaku {
         });
         this.client = client;
         this.on('ready', (name, reconnected) => {
-            this.client.shoukaku.emit(reconnected ? 'nodeReconnect' : 'nodeConnect', name);
+            this.client.shoukaku.emitPlayerEvent(reconnected ? 'nodeReconnect' : 'nodeConnect', name);
         });
 
-        this.on('error', (name, error) => this.client.shoukaku.emit('nodeError', name, error));
+        this.on('error', (name, error) => this.client.shoukaku.emitPlayerEvent('nodeError', name, error));
 
         this.on('close', (name, code, reason) =>
-            this.client.shoukaku.emit('nodeDestroy', name, code, reason)
+            this.client.shoukaku.emitPlayerEvent('nodeDestroy', name, code, reason)
         );
         this.on('disconnect', (name, count) => {
-            this.client.shoukaku.emit('nodeDisconnect', name, count);
+            this.client.shoukaku.emitPlayerEvent('nodeDisconnect', name, count);
         });
 
-        this.on('debug', (name, reason) => this.client.shoukaku.emit('nodeRaw', name, reason));
+        this.on('debug', (name, reason) => this.client.shoukaku.emitPlayerEvent('nodeRaw', name, reason));
+    }
+
+    /**
+     * Shoukaku's event map is a closed type, so the bot's own player lifecycle
+     * events (trackStart, queueEnd, playerCreate, nodeConnect...) are emitted
+     * through this wrapper instead of casting at every call site.
+     */
+    public emitPlayerEvent(event: string, ...args: unknown[]): boolean {
+        return (this.emit as (eventName: string, ...rest: unknown[]) => boolean)(event, ...args);
     }
 }
 
