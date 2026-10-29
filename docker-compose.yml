@@ -1,0 +1,47 @@
+services:
+    lavalink:
+        container_name: lavamusic-lavalink
+        image: ghcr.io/lavalink-devs/lavalink
+        restart: on-failure
+        environment:
+            SERVER_PORT: 2333
+            SERVER_ADDRESS: 0.0.0.0
+        volumes:
+            # mount application.yml from the same directory or use environment variables
+            - ./Lavalink/application.yml:/opt/Lavalink/application.yml
+            # persist plugins between restarts, make sure to set the correct permissions (user: 322, group: 322)
+            - ./Lavalink/plugins/:/opt/Lavalink/plugins/
+        #expose:
+        # lavalink exposes port 2333 to connect to for other containers (this is for documentation purposes only)
+        #- 2333
+        #ports:
+        # you only need this if you want to make your lavalink accessible from outside of containers
+        #- "2333:2333"
+        healthcheck:
+            test: 'curl -H "Authorization: youshallnotpass" -s http://localhost:2333/version'
+            interval: 10s
+            timeout: 10s
+            retries: 5
+            start_period: 10s
+
+    lavamusic:
+        container_name: lavamusic
+        image: ghcr.io/zebz213/bootstrapdj:main
+        environment:
+            # Your lavalink url
+            - LAVALINK_URL=lavalink:2333
+            # Your lavalink password
+            - LAVALINK_AUTH=youshallnotpass
+            # Your lavalink name
+            - LAVALINK_NAME=Bootstrap Node
+            # Your lavalink secure (true or false)
+            - LAVALINK_SECURE=false
+
+        volumes:
+            # mount .env from the same directory or use environment variables
+            - .env:/opt/lavamusic/.env
+            - ./database:/opt/lavamusic/database
+        restart: on-failure
+        depends_on:
+            lavalink:
+                condition: service_healthy

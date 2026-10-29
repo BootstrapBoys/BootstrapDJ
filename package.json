@@ -1,0 +1,68 @@
+{
+    "name": "bootstrapdj",
+    "version": "4.1.0",
+    "description": "BootstrapDJ is a music bot for Discord, written in TypeScript using Discord.js, Shoukaku (Lavalink) and Prisma.",
+    "main": "dist/index.js",
+    "type": "module",
+    "scripts": {
+        "start": "npm run build && node dist/index.js",
+        "prisma:generate": "npx prisma generate",
+        "build": "tsc --project tsconfig.json",
+        "clean": "rm -rf dist",
+        "lint": "eslint . --cache --ext .js,.jsx,.ts,.tsx",
+        "lint:fix": "eslint . --fix --cache --ext .js,.jsx,.ts,.tsx",
+        "format": "prettier --check .",
+        "format:fix": "prettier --write ."
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/zebz213/BootstrapDJ.git"
+    },
+    "keywords": [
+        "discord",
+        "music",
+        "bot",
+        "lavalink",
+        "shoukaku",
+        "lavamusic",
+        "typescript",
+        "prisma"
+    ],
+    "author": "Zebz213",
+    "license": "GPL-3.0",
+    "bugs": {
+        "url": "https://github.com/zebz213/BootstrapDJ/issues"
+    },
+    "homepage": "https://github.com/zebz213/BootstrapDJ#readme",
+    "devDependencies": {
+        "@types/node": "^20.12.7",
+        "@types/signale": "^1.4.7",
+        "@typescript-eslint/eslint-plugin": "^7.6.0",
+        "@typescript-eslint/parser": "^7.6.0",
+        "eslint": "^8.56.0",
+        "eslint-plugin-import": "^2.29.1",
+        "eslint-plugin-unicorn": "^52.0.0",
+        "prettier": "^3.2.5",
+        "prisma": "^5.12.1",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.4.3"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.12.1",
+        "discord.js": "^14.14.1",
+        "dotenv": "^16.4.5",
+        "shoukaku": "^4.0.1",
+        "signale": "^1.4.0",
+        "tslib": "^2.6.2",
+        "undici": "^6.13.0"
+    },
+    "signale": {
+        "displayScope": true,
+        "displayBadge": true,
+        "displayDate": true,
+        "displayFilename": true,
+        "displayLabel": true,
+        "displayTimestamp": true,
+        "underlineLabel": true
+    }
+}
