@@ -132,16 +132,12 @@ export default class SetupButtons extends Event {
                             `There is no music to skip.`,
                             this.client.color.main
                         );
+                    // Do NOT edit the mock here: skip() ends the track and the
+                    // TrackStart event renders the next one. This handler's
+                    // embed was built from the track being skipped, so editing
+                    // it would overwrite the new render with the old track.
                     player.skip();
                     await buttonReply(interaction, `Skipped the music.`, this.client.color.main);
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `Skipped by ${interaction.member.displayName}`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
                     break;
                 case 'STOP_BUT':
                     player.stop();
@@ -200,20 +196,14 @@ export default class SetupButtons extends Event {
                             `There is no previous track.`,
                             this.client.color.main
                         );
-                    player.previousTrack();
+                    // Same race as skip: previousTrack() restarts playback and
+                    // TrackStart renders the mock; a stale edit here would win.
                     await buttonReply(
                         interaction,
                         `Playing the previous track.`,
                         this.client.color.main
                     );
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `Playing the previous track by ${interaction.member.displayName}`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
+                    player.previousTrack();
                     break;
                 case 'REWIND_BUT': {
                     const time = player.player.position - 10000;
