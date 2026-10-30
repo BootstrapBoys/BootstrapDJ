@@ -45,10 +45,29 @@ export default class Play extends Command {
         const query = args.join(' ');
         let player = client.queue.get(ctx.guild.id);
         const vc = ctx.member as any;
+        if (!client.queue.hasNode)
+            return await ctx.sendMessage({
+                embeds: [
+                    this.client
+                        .embed()
+                        .setColor(this.client.color.red)
+                        .setDescription(
+                            'No Lavalink node is available right now. Please try again in a moment.'
+                        ),
+                ],
+            });
         if (!player) player = await client.queue.create(ctx.guild, vc.voice.channel, ctx.channel);
 
         const res = await this.client.queue.search(query);
         const embed = this.client.embed();
+        if (!res)
+            return await ctx.sendMessage({
+                embeds: [
+                    embed
+                        .setColor(this.client.color.red)
+                        .setDescription('There was an error while searching. Please try again.'),
+                ],
+            });
         switch (res.loadType) {
             case LoadType.ERROR:
                 await ctx.sendMessage({

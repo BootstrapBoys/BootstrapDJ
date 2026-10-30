@@ -21,6 +21,15 @@ export class Queue extends Map {
         return super.clear();
     }
 
+    public get node(): Node | undefined {
+        return this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes);
+    }
+
+    /** False while every Lavalink node is disconnected or reconnecting. */
+    public get hasNode(): boolean {
+        return Boolean(this.node);
+    }
+
     public async create(
         guild: Guild,
         voice: any,
@@ -32,8 +41,8 @@ export class Queue extends Map {
         if (!channel) throw new Error('No text channel was provided');
         if (!guild) throw new Error('No guild was provided');
         if (!dispatcher) {
-            const node =
-                givenNode || this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes);
+            const node = givenNode ?? this.node;
+            if (!node) throw new Error('No Lavalink node is available right now');
             const player = await this.client.shoukaku.joinVoiceChannel({
                 guildId: guild.id,
                 channelId: voice.id,
@@ -57,18 +66,17 @@ export class Queue extends Map {
         }
     }
 
-    public async search(query: string): Promise<LavalinkResponse | undefined> {
-        const node = this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes);
+    public async search(query: string): Promise<LavalinkResponse | null> {
+        const node = this.node;
+        if (!node) return null;
         const regex = /^https?:\/\//;
-        let result: LavalinkResponse | undefined;
         try {
-            result = await node.rest.resolve(
+            return await node.rest.resolve(
                 regex.test(query) ? query : `${this.client.config.searchEngine}:${query}`
             );
-        } catch (err) {
+        } catch {
             return null;
         }
-        return result;
     }
 }
 

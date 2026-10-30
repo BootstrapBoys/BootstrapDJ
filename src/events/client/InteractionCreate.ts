@@ -201,15 +201,18 @@ export default class InteractionCreate extends Event {
         } else if (interaction.type == InteractionType.ApplicationCommandAutocomplete) {
             if ((interaction.commandName == 'play') || (interaction.commandName == 'playnext')) {
                 const song = interaction.options.getString('song');
+                if (!song) return;
                 const res = await this.client.queue.search(song);
+                if (!res) return await interaction.respond([]).catch(() => {});
                 let songs = [];
                 switch (res.loadType) {
                     case LoadType.SEARCH:
                         if (!res.data.length) return;
                         res.data.slice(0, 10).forEach(x => {
                             songs.push({
-                                name: `${x.info.title} by ${x.info.author}`,
-                                value: x.info.uri,
+                                // Discord caps choice name and value at 100 characters.
+                                name: `${x.info.title} by ${x.info.author}`.slice(0, 100),
+                                value: `${x.info.uri}`.slice(0, 100),
                             });
                         });
                         break;
