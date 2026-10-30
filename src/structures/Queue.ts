@@ -68,13 +68,23 @@ export class Queue extends Map {
 
     public async search(query: string): Promise<LavalinkResponse | null> {
         const node = this.node;
-        if (!node) return null;
+        if (!node) {
+            this.client.logger.warn('Search attempted with no connected Lavalink node');
+            return null;
+        }
         const regex = /^https?:\/\//;
         try {
-            return await node.rest.resolve(
+            const result = await node.rest.resolve(
                 regex.test(query) ? query : `${this.client.config.searchEngine}:${query}`
             );
-        } catch {
+            if (!result) this.client.logger.warn(`Lavalink returned no response for ${query}`);
+            return result ?? null;
+        } catch (err) {
+            this.client.logger.error(
+                `Lavalink search failed on ${node.name} for ${query}: ${
+                    err instanceof Error ? err.message : String(err)
+                }`
+            );
             return null;
         }
     }

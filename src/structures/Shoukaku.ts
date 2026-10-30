@@ -19,7 +19,7 @@ export default class ShoukakuClient extends Shoukaku {
             resume: false,
             reconnectInterval: 30,
             reconnectTries: 2,
-            restTimeout: 10000,
+            restTimeout: 30000,
             userAgent: `Bootstrap DJ (@zebz213)`, // don't change this
             nodeResolver: nodes =>
                 [...nodes.values()]
