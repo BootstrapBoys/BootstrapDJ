@@ -83,7 +83,7 @@ export default class Search extends Command {
                     ],
                 });
             case LoadType.TRACK: {
-                player.queue.push(player.buildTrack(res.data, ctx.author));
+                player.enqueue(player.buildTrack(res.data, ctx.author));
                 await player.isPlaying();
                 return await ctx.sendMessage({
                     embeds: [
@@ -95,7 +95,7 @@ export default class Search extends Command {
             }
             case LoadType.PLAYLIST: {
                 for (const track of res.data.tracks)
-                    player.queue.push(player.buildTrack(track, ctx.author));
+                    player.enqueue(player.buildTrack(track, ctx.author));
                 await player.isPlaying();
                 return await ctx.sendMessage({
                     embeds: [
@@ -149,7 +149,7 @@ export default class Search extends Command {
             await int.deferUpdate();
             if (!picked) return;
             const song = player.buildTrack(picked, ctx.author);
-            player.queue.push(song);
+            player.enqueue(song);
             await player.isPlaying();
             await msg
                 .edit({

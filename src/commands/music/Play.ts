@@ -109,7 +109,7 @@ export default class Play extends Command {
                                 ),
                         ],
                     });
-                player.queue.push(track);
+                player.enqueue(track);
                 await player.isPlaying();
                 await ctx.sendMessage({
                     embeds: [
@@ -145,7 +145,7 @@ export default class Play extends Command {
                                     ),
                             ],
                         });
-                    player.queue.push(pl);
+                    player.enqueue(pl);
                 }
                 await player.isPlaying();
                 await ctx.sendMessage({
@@ -169,7 +169,7 @@ export default class Play extends Command {
                                 ),
                         ],
                     });
-                player.queue.push(track1);
+                player.enqueue(track1);
                 await player.isPlaying();
                 await ctx.sendMessage({
                     embeds: [

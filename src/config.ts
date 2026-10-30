@@ -22,6 +22,7 @@ export default {
     maxQueueSize: process.env.MAX_QUEUE_SIZE ? parseInt(process.env.MAX_QUEUE_SIZE) : 100, // max queue size
     deleteAfter: process.env.COMMAND_DELETE_AFTER ? parseInt(process.env.COMMAND_DELETE_AFTER) : 10, // seconds before a command reply is deleted (0 disables)
     setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
+    autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // search term autoplay uses when nothing has played yet
     owners: process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : [], // bot owners
     clientId: process.env.CLIENT_ID, // bot client id
     guildId: process.env.GUILD_ID, // guild id

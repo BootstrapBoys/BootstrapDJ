@@ -32,15 +32,24 @@ export default class Autoplay extends Command {
         const player = client.queue.get(ctx.guild.id);
         const embed = this.client.embed();
 
-        const autoplay = player.autoplay;
-        if (!autoplay) {
-            embed.setDescription(`Autoplay has been enabled`).setColor(client.color.main);
-            player.setAutoplay(true);
-        } else {
-            embed.setDescription(`Autoplay has been disabled`).setColor(client.color.main);
-            player.setAutoplay(false);
+        if (player.autoplay) {
+            await player.setAutoplay(false);
+            return await ctx.sendMessage({
+                embeds: [
+                    embed
+                        .setColor(client.color.main)
+                        .setDescription('Autoplay disabled and queued bot picks removed.'),
+                ],
+            });
         }
-        ctx.sendMessage({ embeds: [embed] });
+
+        const first = await player.setAutoplay(true);
+        const description = first
+            ? `Autoplay enabled — starting from **${first.info.title}** by ${first.info.author}.`
+            : 'Autoplay enabled — I will pick tracks when the queue runs out.';
+        return await ctx.sendMessage({
+            embeds: [embed.setColor(client.color.main).setDescription(description)],
+        });
     }
 }
 

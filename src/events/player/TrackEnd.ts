@@ -17,7 +17,9 @@ export default class TrackEnd extends Event {
         if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
         if (dispatcher.loop === 'queue') dispatcher.queue.push(track);
         await dispatcher.play();
-        if (dispatcher.autoplay) {
+        // Top up only when no user-requested tracks remain; bot picks are a
+        // filler tier, so one queued pick is enough of a lookahead.
+        if (dispatcher.autoplay && dispatcher.queue.length === 0) {
             await dispatcher.Autoplay(track);
         }
         if (m && m.deletable) await m.delete().catch(() => {});

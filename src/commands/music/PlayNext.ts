@@ -80,7 +80,7 @@ export default class PlayNext extends Command {
                                 ),
                         ],
                     });
-                player.queue.splice(0, 0, track);
+                player.enqueueNext(track);
                 await player.isPlaying();
                 ctx.sendMessage({
                     embeds: [
@@ -116,7 +116,7 @@ export default class PlayNext extends Command {
                                     ),
                             ],
                         });
-                    player.queue.splice(0, 0, pl);
+                    player.enqueueNext(pl);
                 }
                 await player.isPlaying();
                 ctx.sendMessage({
@@ -142,7 +142,7 @@ export default class PlayNext extends Command {
                                 ),
                         ],
                     });
-                player.queue.splice(0, 0, track1);
+                player.enqueueNext(track1);
                 await player.isPlaying();
                 ctx.sendMessage({
                     embeds: [

@@ -147,6 +147,7 @@ MAX_PLAYLIST_SIZE= "100" # Max playlist size
 MAX_QUEUE_SIZE= "100" # Max queue size
 COMMAND_DELETE_AFTER= "10" # Seconds before a command reply is deleted (0 disables)
 SETUP_CLEANUP_INTERVAL= "30" # Seconds between song-request channel sweeps (0 disables)
+AUTOPLAY_SEED= "top hits" # Search term autoplay starts from when nothing has played yet
 BOT_STATUS= "online" # Your bot status
 BOT_ACTIVITY= "Wavemusic" # Your bot activity
 LAVALINK_URL="localhost:2333" # Your lavalink url

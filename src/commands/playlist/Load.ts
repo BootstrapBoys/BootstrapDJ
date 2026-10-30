@@ -83,7 +83,7 @@ export default class Load extends Command {
                     skipped++;
                     continue;
                 }
-                player.queue.push(player.buildTrack(entry, ctx.author as any));
+                player.enqueue(player.buildTrack(entry, ctx.author as any));
                 loaded++;
             }
         }

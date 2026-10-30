@@ -94,7 +94,7 @@ async function setupStart(
                             .then(msg => scheduleExpire(client, msg));
                         return;
                     }
-                    player.queue.push(track);
+                    player.enqueue(track);
                     await player.isPlaying();
                     await message.channel
                         .send({
@@ -141,7 +141,7 @@ async function setupStart(
                                 .then(msg => scheduleExpire(client, msg));
                             return;
                         }
-                        player.queue.push(pl);
+                        player.enqueue(pl);
                     }
                     await player.isPlaying();
                     await message.channel
@@ -174,7 +174,7 @@ async function setupStart(
                             .then(msg => scheduleExpire(client, msg));
                         return;
                     }
-                    player.queue.push(track2);
+                    player.enqueue(track2);
                     await player.isPlaying();
                     await message.channel
                         .send({
