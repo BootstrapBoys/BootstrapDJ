@@ -215,9 +215,6 @@ export default class InteractionCreate extends Event {
                         }`.slice(0, 100),
                         value: playlist.name.slice(0, 100),
                     }));
-                this.client.logger.info(
-                    `[autocomplete] user=${interaction.user.id} field=${focused.name} q="${query}" playlists=${playlists.length} choices=${choices.length}`
-                );
                 try {
                     await interaction.respond(choices);
                 } catch (error) {
