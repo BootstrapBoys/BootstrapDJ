@@ -1,7 +1,7 @@
-import { Session } from '@prisma/client';
 import { ChannelType, User } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
+import { Session } from '../generated/prisma/client.js';
 import { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
 import { Lavamusic } from '../structures/index.js';
 
