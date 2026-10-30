@@ -1,4 +1,4 @@
-import { ApplicationCommandOption, PermissionResolvable } from 'discord.js';
+import { ApplicationCommandOption, PermissionsString } from 'discord.js';
 
 import Lavamusic from './Lavamusic.js';
 
@@ -9,7 +9,7 @@ export default class Command {
     public description: {
         content: string | null;
         usage: string | null;
-        examples: string[] | null;
+        examples: string[];
     };
     public descriptionLocalizations: any;
     public aliases: string[];
@@ -23,8 +23,8 @@ export default class Command {
     };
     public permissions: {
         dev: boolean;
-        client: string[] | PermissionResolvable;
-        user: string[] | PermissionResolvable;
+        client: PermissionsString[];
+        user: PermissionsString[];
     };
     public slashCommand: boolean;
     public options: ApplicationCommandOption[];
@@ -88,8 +88,8 @@ interface CommandOptions {
     };
     permissions?: {
         dev: boolean;
-        client: string[] | PermissionResolvable;
-        user: string[] | PermissionResolvable;
+        client: PermissionsString[];
+        user: PermissionsString[];
     };
     slashCommand?: boolean;
     options?: ApplicationCommandOption[];

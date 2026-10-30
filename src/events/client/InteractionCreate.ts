@@ -233,18 +233,19 @@ export default class InteractionCreate extends Event {
                     }
                 }
             }
-            if (!this.client.cooldown.has(commandName)) {
-                this.client.cooldown.set(commandName, new Collection());
+            let timestamps = this.client.cooldown.get(commandName);
+            if (!timestamps) {
+                timestamps = new Collection<string, number>();
+                this.client.cooldown.set(commandName, timestamps);
             }
             const now = Date.now();
-            const timestamps = this.client.cooldown.get(commandName);
 
             const cooldownAmount = Math.floor(command.cooldown || 5) * 1000;
             if (!timestamps.has(interaction.user.id)) {
                 timestamps.set(interaction.user.id, now);
                 setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
             } else {
-                const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
+                const expirationTime = (timestamps.get(interaction.user.id) ?? now) + cooldownAmount;
                 const timeLeft = (expirationTime - now) / 1000;
                 if (now < expirationTime && timeLeft > 0.9) {
                     return await interaction.reply({

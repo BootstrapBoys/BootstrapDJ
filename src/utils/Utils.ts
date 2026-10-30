@@ -6,6 +6,7 @@ import {
     ButtonStyle,
     CommandInteraction,
     Message,
+    MessageComponentInteraction,
     TextChannel,
 } from 'discord.js';
 
@@ -185,7 +186,7 @@ export class Utils {
             filter,
             time: 60000,
         });
-        collector.on('collect', async interaction => {
+        collector.on('collect', async (interaction: MessageComponentInteraction) => {
             if (interaction.user.id === author.id) {
                 await interaction.deferUpdate();
                 if (interaction.customId === 'fast') {

@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Queue, ShoukakuClient } from './index.js';
+import { Command, Queue, ShoukakuClient } from './index.js';
 import Logger from './Logger.js';
 import config from '../config.js';
 import ServerData from '../database/server.js';
@@ -26,15 +26,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
 export default class Lavamusic extends Client {
-    public commands: Collection<string, any> = new Collection();
-    public aliases: Collection<string, any> = new Collection();
+    public commands: Collection<string, Command> = new Collection();
+    public aliases: Collection<string, string> = new Collection();
     public db = new ServerData();
-    public cooldown: Collection<string, any> = new Collection();
+    public cooldown: Collection<string, Collection<string, number>> = new Collection();
     public config = config;
     public logger: Logger = new Logger();
     public readonly color = config.color;
     private body: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
-    public shoukaku: ShoukakuClient;
+    public shoukaku!: ShoukakuClient;
     public utils = Utils;
     public queue = new Queue(this);
     public constructor(options: ClientOptions) {
@@ -56,21 +56,17 @@ export default class Lavamusic extends Client {
         this.logger.info(`Successfully loaded events!`);
         await loadPlugins(this);
         await this.login(token);
-        this.on(
-            Events.InteractionCreate,
-            async (interaction: Interaction<'cached'>): Promise<void> => {
-                if (interaction.isButton()) {
-                    const setup = await this.db.getSetup(interaction.guildId);
-                    if (
-                        setup &&
-                        interaction.channelId === setup.textId &&
-                        (interaction as any).message.id === setup.messageId
-                    ) {
-                        this.emit('setupButtons', interaction);
-                    }
-                }
+        this.on(Events.InteractionCreate, async (interaction: Interaction): Promise<void> => {
+            if (!interaction.isButton() || !interaction.guildId) return;
+            const setup = await this.db.getSetup(interaction.guildId);
+            if (
+                setup &&
+                interaction.channelId === setup.textId &&
+                interaction.message?.id === setup.messageId
+            ) {
+                this.emit('setupButtons', interaction);
             }
-        );
+        });
     }
 
     private async loadCommands(): Promise<void> {

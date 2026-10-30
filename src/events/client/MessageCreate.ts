@@ -172,18 +172,19 @@ export default class MessageCreate extends Event {
             }
         }
 
-        if (!this.client.cooldown.has(cmd)) {
-            this.client.cooldown.set(cmd, new Collection());
+        let timestamps = this.client.cooldown.get(cmd);
+        if (!timestamps) {
+            timestamps = new Collection<string, number>();
+            this.client.cooldown.set(cmd, timestamps);
         }
         const now = Date.now();
-        const timestamps = this.client.cooldown.get(cmd);
 
         const cooldownAmount = Math.floor(command.cooldown || 5) * 1000;
         if (!timestamps.has(message.author.id)) {
             timestamps.set(message.author.id, now);
             setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
         } else {
-            const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
+            const expirationTime = (timestamps.get(message.author.id) ?? now) + cooldownAmount;
             const timeLeft = (expirationTime - now) / 1000;
             if (now < expirationTime && timeLeft > 0.9) {
                 return await replySafe({

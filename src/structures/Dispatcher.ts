@@ -109,7 +109,6 @@ export default class Dispatcher {
     public previous: Song | null;
     public current: Song | null;
     public loop: 'off' | 'repeat' | 'queue';
-    public requester: User;
     public repeat: number;
     public node: Node;
     public paused: boolean;

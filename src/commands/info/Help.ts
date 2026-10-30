@@ -43,9 +43,9 @@ export default class Help extends Command {
         const guild = await client.db.get(guildId);
         const prefix = guild ? guild.prefix : client.config.prefix;
         const commands = this.client.commands.filter(cmd => cmd.category !== 'dev');
-        const categories = commands
-            .map(cmd => cmd.category)
-            .filter((value, index, self) => self.indexOf(value) === index);
+        const categories = [
+            ...new Set(commands.map(cmd => cmd.category).filter((value): value is string => value !== null)),
+        ];
 
         if (!args[0]) {
             const fildes: { name: string; value: string; inline: boolean }[] = [];

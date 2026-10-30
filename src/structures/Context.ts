@@ -35,7 +35,7 @@ export default class Context {
     public createdAt: Date;
     public createdTimestamp: number;
     public member: GuildMemberResolvable | GuildMember | APIInteractionGuildMember | null;
-    public args: any[];
+    public args: any[] = [];
     public msg: any;
     private deleteTimer: NodeJS.Timeout | null = null;
     constructor(ctx: ChatInputCommandInteraction | Message, args: any[]) {

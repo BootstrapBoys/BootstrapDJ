@@ -10,7 +10,7 @@ function neb(embed: EmbedBuilder, player: Dispatcher, client: Lavamusic): EmbedB
     
     if (!player || !player.current || !player.current.info) return embed;
 
-    let iconUrl = client.config.icons[player.current.info.sourceName];
+    let iconUrl: string | undefined = client.config.icons[player.current.info.sourceName];
     if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
 
     let icon = player.current ? player.current.info.artworkUrl : client.config.links.img;
@@ -217,7 +217,7 @@ async function trackStart(
         );
     }
     if (m) {
-        let iconUrl = client.config.icons[current.info.sourceName];
+        let iconUrl: string | undefined = client.config.icons[current.info.sourceName];
         if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
         const embed = client
             .embed()
@@ -241,7 +241,7 @@ async function trackStart(
             })
             .catch(error => client.logger.error(`[setup] mock message edit failed: ${error}`));
     } else {
-        let iconUrl = client.config.icons[current.info.sourceName];
+        let iconUrl: string | undefined = client.config.icons[current.info.sourceName];
         if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
         const embed = client
             .embed()
@@ -289,7 +289,7 @@ async function updateSetup(client: Lavamusic, guild: any): Promise<void> {
     if (m) {
         const player = client.queue.get(guild.id);
         if (player && player.current) {
-            let iconUrl = client.config.icons[player.current.info.sourceName];
+            let iconUrl: string | undefined = client.config.icons[player.current.info.sourceName];
             if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
             const embed = client
                 .embed()

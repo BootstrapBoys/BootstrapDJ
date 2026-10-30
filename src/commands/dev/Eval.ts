@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageComponentInteraction } from 'discord.js';
 import { fetch } from 'undici';
 
 import { Command, Context, Lavamusic } from '../../structures/index.js';
@@ -77,13 +77,13 @@ export default class Eval extends Command {
                     content: `\`\`\`js\n${evaled}\n\`\`\``,
                     components: [row],
                 });
-                const filter = (i): boolean =>
+                const filter = (i: MessageComponentInteraction): boolean =>
                     i.customId === 'eval-delete' && i.user.id === author.id;
                 const collector = msg.createMessageComponentCollector({
                     time: 60000,
                     filter: filter,
                 });
-                collector.on('collect', async i => {
+                collector.on('collect', async (i: MessageComponentInteraction) => {
                     await i.deferUpdate();
                     await msg.delete();
                 });

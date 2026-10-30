@@ -26,7 +26,7 @@ export default {
     autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // search term autoplay uses when nothing has played yet
     sessionRestoreAge: process.env.SESSION_RESTORE_AGE ? parseInt(process.env.SESSION_RESTORE_AGE) : 21600, // seconds a saved queue stays restorable (0 disables)
     sessionEmptyWait: process.env.SESSION_EMPTY_WAIT ? parseInt(process.env.SESSION_EMPTY_WAIT) : 30, // seconds to wait for a listener before discarding the queue (0 = no wait)
-    owners: process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : [], // bot owners
+    owners: (process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : []) as string[], // bot owners
     clientId: process.env.CLIENT_ID ?? '', // bot client id
     guildId: process.env.GUILD_ID ?? '', // guild id
     logChannelId: process.env.LOG_CHANNEL_ID || '', // log channel id
@@ -39,7 +39,7 @@ export default {
         soundcloud: 'https://i.imgur.com/MVnJ7mj.png',
         applemusic: 'https://i.imgur.com/Wi0oyYm.png',
         deezer: 'https://i.imgur.com/xyZ43FG.png',
-    }, // music icons
+    } as Record<string, string>, // music icons
     production: process.env.PRODUCTION ? parseBoolean(process.env.PRODUCTION) : true,
     lavalink: [
         {

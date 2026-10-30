@@ -58,7 +58,7 @@ export default class SetupButtons extends Event {
         const icon = player
             ? player.current.info.artworkUrl
             : this.client.user?.displayAvatarURL({ extension: 'png' });
-        let iconUrl = this.client.config.icons[player.current.info.sourceName];
+        let iconUrl: string | undefined = this.client.config.icons[player.current.info.sourceName];
         if (!iconUrl) iconUrl = this.client.user?.displayAvatarURL({ extension: 'png' });
 
         const embed = this.client
