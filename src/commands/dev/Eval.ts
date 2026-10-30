@@ -1,5 +1,10 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageComponentInteraction } from 'discord.js';
-import { fetch } from 'undici';
+import {
+    ActionRowBuilder,
+    AttachmentBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    MessageComponentInteraction,
+} from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
@@ -32,7 +37,7 @@ export default class Eval extends Command {
         });
     }
 
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
         const code = args.join(' ').trim();
@@ -59,18 +64,14 @@ export default class Eval extends Command {
             if (typeof evaled !== 'string') evaled = (await import('node:util')).inspect(evaled);
 
             if (evaled.length > 2000) {
-                const response = await fetch('https://hasteb.in/post', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain',
-                    },
-                    body: evaled,
-                });
-
-                const json = (await response.json()) as { key: string };
-                evaled = `https://hasteb.in/${json.key}`;
+                // hasteb.in stopped responding; attach the output instead of
+                // depending on a third-party paste service.
                 return await ctx.sendMessage({
-                    content: evaled,
+                    files: [
+                        new AttachmentBuilder(Buffer.from(evaled, 'utf8'), {
+                            name: 'eval-output.txt',
+                        }),
+                    ],
                 });
             } else {
                 const msg = await ctx.sendMessage({

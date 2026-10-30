@@ -18,6 +18,14 @@ const antiCrash: BotPlugin = {
 
         const handleExit = async (): Promise<void> => {
             if (client) {
+                // Positions are written on a 10s timer; flush them so a restart
+                // resumes exactly where playback stopped instead of up to 10s back.
+                client.logger.star('Saving playback state...');
+                await Promise.all(
+                    [...client.queue.values()].map(dispatcher =>
+                        dispatcher.persist().catch(() => {})
+                    )
+                );
                 client.logger.star('Disconnecting from Discord...');
                 await client.destroy();
                 client.logger.success('Successfully disconnected from Discord!');

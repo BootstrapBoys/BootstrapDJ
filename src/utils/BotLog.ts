@@ -7,8 +7,8 @@ export default class BotLog {
         if (!client) return;
         if (!client.channels.cache) return;
         if (!client.config.logChannelId) return;
-        const channel = client.channels.cache.get(client.config.logChannelId) as TextChannel;
-        if (!channel) return;
+        const channel = client.channels.cache.get(client.config.logChannelId);
+        if (!(channel instanceof TextChannel) || !channel.isSendable()) return;
         let color: string | number | readonly [red: number, green: number, blue: number];
         switch (type) {
             case 'error':
