@@ -48,6 +48,14 @@ export default class SetupSystem extends Event {
         }
         let player = this.client.queue.get(message.guildId);
         if (!player) {
+            if (!this.client.queue.hasNode) {
+                await oops(
+                    channel,
+                    'No Lavalink node is available right now. Please try again in a moment.'
+                );
+                if (message) await message.delete().catch(() => {});
+                return;
+            }
             player = await this.client.queue.create(
                 message.guild,
                 message.member.voice.channel,

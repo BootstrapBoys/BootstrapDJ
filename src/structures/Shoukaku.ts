@@ -3,6 +3,14 @@ import { Connectors, NodeOption, Shoukaku } from 'shoukaku';
 
 import { Lavamusic } from './index.js';
 
+/**
+ * Shoukaku 4.x State: CONNECTING = 0, CONNECTED = 1, DISCONNECTING = 2,
+ * DISCONNECTED = 3. The enum is exported as a type only, so it cannot be read
+ * at runtime; the previous filter on `2` selected DISCONNECTING nodes and made
+ * every lookup report "no node available" while the node was healthy.
+ */
+const NODE_CONNECTED = 1;
+
 export default class ShoukakuClient extends Shoukaku {
     public client: Lavamusic;
     constructor(client: Lavamusic, nodes: NodeOption[]) {
@@ -15,7 +23,7 @@ export default class ShoukakuClient extends Shoukaku {
             userAgent: `Bootstrap DJ (@zebz213)`, // don't change this
             nodeResolver: nodes =>
                 [...nodes.values()]
-                    .filter(node => node.state === 2)
+                    .filter(node => Number(node.state) === NODE_CONNECTED)
                     .sort((a, b) => a.penalties - b.penalties)
                     .shift(),
         });
