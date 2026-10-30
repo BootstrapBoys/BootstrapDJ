@@ -12,8 +12,8 @@
         "pretest": "npm run build",
         "test": "node --test tests/*.test.mjs",
         "clean": "rm -rf dist",
-        "lint": "eslint . --cache --ext .js,.jsx,.ts,.tsx",
-        "lint:fix": "eslint . --fix --cache --ext .js,.jsx,.ts,.tsx",
+        "lint": "eslint . --cache",
+        "lint:fix": "eslint . --fix --cache",
         "format": "prettier --check .",
         "format:fix": "prettier --write ."
     },
@@ -38,16 +38,17 @@
     },
     "homepage": "https://github.com/zebz213/BootstrapDJ#readme",
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@types/node": "~26.6.6",
         "@types/signale": "^1.4.7",
-        "@typescript-eslint/eslint-plugin": "~7.18.0",
-        "@typescript-eslint/parser": "~7.18.0",
-        "eslint": "~8.57.1",
-        "eslint-plugin-import": "~2.32.0",
-        "eslint-plugin-unicorn": "^52.0.0",
+        "eslint": "^10.13.0",
+        "eslint-import-resolver-node": "^0.4.0",
+        "eslint-plugin-import-x": "^4.17.1",
+        "eslint-plugin-unicorn": "^79.0.0",
         "prettier": "^3.9.10",
         "prisma": "^7.10.1",
-        "typescript": "~5.9.3"
+        "typescript": "~5.9.3",
+        "typescript-eslint": "^8.72.1"
     },
     "dependencies": {
         "@prisma/adapter-better-sqlite3": "^7.10.1",

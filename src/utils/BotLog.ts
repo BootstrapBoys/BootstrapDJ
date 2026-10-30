@@ -29,8 +29,6 @@ export default class BotLog {
         }
         const embed = client.embed().setColor(color).setDescription(message).setTimestamp();
 
-        channel.send({ embeds: [embed] }).catch(() => {
-            null;
-        });
+        channel.send({ embeds: [embed] }).catch(() => {});
     }
 }

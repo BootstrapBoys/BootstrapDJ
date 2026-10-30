@@ -52,7 +52,7 @@ export default class SetupButtons extends Event {
         let message;
         try {
             message = await interaction.channel.messages.fetch(data.messageId, { cache: true });
-        } catch (e) {
+        } catch {
             /* empty */
         }
         const icon = player

@@ -60,7 +60,7 @@ export default class Grab extends Command {
             return await ctx.sendMessage({
                 embeds: [embed.setDescription(`**I sent you a DM.**`).setColor(client.color.green)],
             });
-        } catch (e) {
+        } catch {
             return await ctx.sendMessage({
                 embeds: [
                     embed

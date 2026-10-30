@@ -102,9 +102,8 @@ export class Utils {
     public static async paginate(ctx: Context, embed: any[]): Promise<void> {
         if (embed.length < 2) {
             if (ctx.isInteraction) {
-                ctx.deferred
-                    ? ctx.interaction!.followUp({ embeds: embed })
-                    : ctx.interaction!.reply({ embeds: embed });
+                if (ctx.deferred) await ctx.interaction!.followUp({ embeds: embed });
+                else await ctx.interaction!.reply({ embeds: embed });
                 return;
             } else {
                 (ctx.channel as TextChannel).send({ embeds: embed });

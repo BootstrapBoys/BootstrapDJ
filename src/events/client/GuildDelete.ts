@@ -12,7 +12,7 @@ export default class GuildDelete extends Event {
         let owner: GuildMember | undefined;
         try {
             owner = guild.members.cache.get(guild?.ownerId);
-        } catch (e) {
+        } catch {
             owner = await guild.fetchOwner();
         }
         if (!owner) {

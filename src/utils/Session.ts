@@ -1,9 +1,9 @@
 import { Session } from '@prisma/client';
-import { ChannelType, TextChannel, User } from 'discord.js';
+import { ChannelType, User } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
-import { Dispatcher, Lavamusic } from '../structures/index.js';
+import { Lavamusic } from '../structures/index.js';
 
 /** True when at least one human is connected; bots do not count as listeners. */
 export function hasListeners(
@@ -137,9 +137,10 @@ async function restoreSession(client: Lavamusic, session: Session, botUser: User
         const dispatcher = await client.queue.create(
             guild,
             voiceChannel,
-            textChannel as TextChannel
+            textChannel
         );
-        dispatcher.loop = (session.loop as Dispatcher['loop']) ?? 'off';
+        dispatcher.loop =
+            session.loop === 'repeat' || session.loop === 'queue' ? session.loop : 'off';
         dispatcher.autoplay = session.autoplay;
 
         const queued = JSON.parse(session.queue) as SavedTrack[];

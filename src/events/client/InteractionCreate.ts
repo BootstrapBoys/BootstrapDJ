@@ -31,7 +31,7 @@ export default class InteractionCreate extends Event {
             await this.client.db.get(interaction.guildId); // get or create guild data
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
-            const ctx = new Context(interaction as any, interaction.options.data as any);
+            const ctx = new Context(interaction, [...interaction.options.data]);
             ctx.setArgs(interaction.options.data as any);
             const channel = interaction.channel;
             if (!channel || channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true)

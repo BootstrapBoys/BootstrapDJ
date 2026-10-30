@@ -35,7 +35,7 @@ export default class GuildLeave extends Command {
         try {
             await guild.leave();
             ctx.sendMessage(`Left guild ${guild.name}`);
-        } catch (e) {
+        } catch {
             ctx.sendMessage(`Failed to leave guild ${guild.name}`);
         }
     }

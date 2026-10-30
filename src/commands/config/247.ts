@@ -40,7 +40,7 @@ export default class _247 extends Command {
         if (!data) {
             client.db.set_247(guild.id, channel.id, vc.voice.channel.id);
             if (!player)
-                player = await client.queue.create(
+                await client.queue.create(
                     guild,
                     vc.voice.channel,
                     channel,
