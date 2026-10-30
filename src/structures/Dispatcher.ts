@@ -274,13 +274,19 @@ export default class Dispatcher {
         return this.history.slice(-15).some(played => this.trackKey(played) === key);
     }
 
-    /** Choose from candidates, skipping recent tracks and demoting the artist
-     * that just played so consecutive picks do not chain one name. */
+    /** Choose from candidates, skipping recent tracks and demoting the artists
+     * heard in the last few tracks, so a thin mix (a niche artist's radio can
+     * be mostly that artist) still drifts instead of looping one name. */
     private chooseFrom(tracks: Track[]): Song | null {
         const usable = tracks.filter(track => track?.encoded && !this.isRecent(track));
         if (!usable.length) return null;
-        const lastAuthor = this.history[this.history.length - 1]?.info?.author;
-        const varied = usable.filter(track => track.info?.author !== lastAuthor);
+        const avoid = new Set(
+            this.history
+                .slice(-3)
+                .map(track => track.info?.author)
+                .filter((author): author is string => Boolean(author))
+        );
+        const varied = usable.filter(track => !avoid.has(track.info?.author));
         const pool = varied.length ? varied : usable;
         return this.buildTrack(pool[Math.floor(Math.random() * pool.length)], this.client.user);
     }
