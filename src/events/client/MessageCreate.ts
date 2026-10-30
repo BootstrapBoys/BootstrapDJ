@@ -17,6 +17,15 @@ export default class MessageCreate extends Event {
         const botId = this.client.user?.id;
         if (!me || !member || !botId) return;
 
+        // Handler replies (permissions, cooldown, missing args) are sent straight
+        // to the channel, so Context never arms them. Give them the same lifetime
+        // as command output instead of leaving them behind.
+        const replySafe = async (content: any): Promise<Message> => {
+            const sent = await message.reply(content);
+            this.client.utils.scheduleDelete(this.client, sent);
+            return sent;
+        };
+
         const setup = await this.client.db.getSetup(message.guildId);
         if (setup && setup.textId) {
             if (setup.textId === message.channelId) {
@@ -28,7 +37,7 @@ export default class MessageCreate extends Event {
 
         const mention = new RegExp(`^<@!?${botId}>( |)$`);
         if (message.content.match(mention)) {
-            await message.reply({
+            await replySafe({
                 content: `Hey, my prefix for this server is \`${guild.prefix}\` Want more info? then do \`${guild.prefix}help\`\nStay Safe, Stay Awesome!`,
             });
             return;
@@ -60,21 +69,21 @@ export default class MessageCreate extends Event {
                 .catch(() => { });
 
         if (!me.permissions.has(PermissionFlagsBits.EmbedLinks))
-            return await message.reply({
+            return await replySafe({
                 content: 'I don\'t have **`EmbedLinks`** permission.',
             });
 
         if (command.permissions) {
             if (command.permissions.client) {
                 if (!me.permissions.has(command.permissions.client))
-                    return await message.reply({
+                    return await replySafe({
                         content: 'I don\'t have enough permissions to execute this command.',
                     });
             }
 
             if (command.permissions.user) {
                 if (!member.permissions.has(command.permissions.user))
-                    return await message.reply({
+                    return await replySafe({
                         content: 'You don\'t have enough permissions to use this command.',
                     });
             }
@@ -88,17 +97,17 @@ export default class MessageCreate extends Event {
         if (command.player) {
             if (command.player.voice) {
                 if (!member.voice.channel)
-                    return await message.reply({
+                    return await replySafe({
                         content: `You must be connected to a voice channel to use this \`${command.name}\` command.`,
                     });
 
                 if (!me.permissions.has(PermissionFlagsBits.Connect))
-                    return await message.reply({
+                    return await replySafe({
                         content: `I don't have \`CONNECT\` permissions to execute this \`${command.name}\` command.`,
                     });
 
                 if (!me.permissions.has(PermissionFlagsBits.Speak))
-                    return await message.reply({
+                    return await replySafe({
                         content: `I don't have \`SPEAK\` permissions to execute this \`${command.name}\` command.`,
                     });
 
@@ -106,28 +115,21 @@ export default class MessageCreate extends Event {
                     member.voice.channel.type === ChannelType.GuildStageVoice &&
                     !me.permissions.has(PermissionFlagsBits.RequestToSpeak)
                 )
-                    return await message.reply({
+                    return await replySafe({
                         content: `I don't have \`REQUEST TO SPEAK\` permission to execute this \`${command.name}\` command.`,
                     });
 
                 if (me.voice.channel) {
                     if (me.voice.channelId !== member.voice.channelId)
-                        return await message.reply({
+                        return await replySafe({
                             content: `You are not connected to <#${me.voice.channel.id}> to use this \`${command.name}\` command.`,
                         });
                 }
             }
             if (command.player.active) {
-                if (!this.client.queue.get(message.guildId))
-                    return await message.reply({
-                        content: 'Nothing is playing right now.',
-                    });
-                if (!this.client.queue.get(message.guildId).queue)
-                    return await message.reply({
-                        content: 'Nothing is playing right now.',
-                    });
-                if (!this.client.queue.get(message.guildId).current)
-                    return await message.reply({
+                const player = this.client.queue.get(message.guildId);
+                if (!player || !player.current)
+                    return await replySafe({
                         content: 'Nothing is playing right now.',
                     });
             }
@@ -136,7 +138,7 @@ export default class MessageCreate extends Event {
                 if (dj && dj.mode) {
                     const djRole = await this.client.db.getRoles(message.guildId);
                     if (!djRole)
-                        return await message.reply({
+                        return await replySafe({
                             content: 'DJ role is not set.',
                         });
                     const findDJRole = member.roles.cache.find((x: any) =>
@@ -144,11 +146,9 @@ export default class MessageCreate extends Event {
                     );
                     if (!findDJRole) {
                         if (!member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-                            return await message
-                                .reply({
-                                    content: 'You need to have the DJ role to use this command.',
-                                })
-                                .then(msg => setTimeout(() => msg.delete(), 5000));
+                            return await replySafe({
+                                content: 'You need to have the DJ role to use this command.',
+                            });
                         }
                     }
                 }
@@ -168,7 +168,7 @@ export default class MessageCreate extends Event {
                         }`
                     )
                     .setFooter({ text: 'Syntax: [] = optional, <> = required' });
-                return await message.reply({ embeds: [embed] });
+                return await replySafe({ embeds: [embed] });
             }
         }
 
@@ -186,7 +186,7 @@ export default class MessageCreate extends Event {
             const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
             const timeLeft = (expirationTime - now) / 1000;
             if (now < expirationTime && timeLeft > 0.9) {
-                return await message.reply({
+                return await replySafe({
                     content: `Please wait ${timeLeft.toFixed(
                         1
                     )} more second(s) before reusing the \`${cmd}\` command.`,
@@ -196,15 +196,17 @@ export default class MessageCreate extends Event {
             setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
         }
         if (args.includes('@everyone') || args.includes('@here'))
-            return await message.reply({
+            return await replySafe({
                 content: 'You can\'t use this command with everyone or here.',
             });
 
         try {
-            return command.run(this.client, ctx, ctx.args);
+            // `return command.run(...)` without await lets async rejections skip
+            // this catch and surface as unhandled rejections instead.
+            return await command.run(this.client, ctx, ctx.args);
         } catch (error) {
             this.client.logger.error(error);
-            await message.reply({ content: `An error occurred: \`${error}\`` });
+            await replySafe({ content: `An error occurred: \`${error}\`` });
             return;
         }
     }
