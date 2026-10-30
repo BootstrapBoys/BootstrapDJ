@@ -90,21 +90,38 @@ export default class Add extends Command {
                     },
                 ],
             });
-        let trackStrings;
-        let count;
-        if (res.loadType === LoadType.PLAYLIST) {
-            trackStrings = res.data.tracks.map(track => track);
-            count = res.data.tracks.length;
-        } else {
-            trackStrings = [res.data[0]];
-            count = 1;
-        }
-        client.db.addSong(ctx.author.id, playlist, trackStrings);
 
-        ctx.sendMessage({
+        // Normalise every load type to an array of tracks; res.data is a single
+        // track for TRACK, an array for SEARCH, and { tracks } for PLAYLIST.
+        let tracks: any[] = [];
+        if (res.loadType === LoadType.PLAYLIST) tracks = res.data.tracks;
+        else if (res.loadType === LoadType.TRACK) tracks = [res.data];
+        else if (res.loadType === LoadType.SEARCH && res.data.length) tracks = [res.data[0]];
+
+        if (!tracks.length)
+            return await ctx.sendMessage({
+                embeds: [
+                    {
+                        description: 'No songs found',
+                        color: client.color.red,
+                    },
+                ],
+            });
+
+        let added = 0;
+        let duplicates = 0;
+        for (const track of tracks) {
+            const created = await client.db.addSong(ctx.author.id, playlist, track);
+            if (created) added++;
+            else duplicates++;
+        }
+
+        await ctx.sendMessage({
             embeds: [
                 {
-                    description: `Added ${count} to ${playlistData.name}`,
+                    description: `Added ${added} to ${playlistData.name}${
+                        duplicates ? ` (${duplicates} already in the playlist)` : ''
+                    }`,
                     color: client.color.green,
                 },
             ],

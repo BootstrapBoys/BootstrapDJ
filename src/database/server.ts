@@ -233,19 +233,31 @@ export default class ServerData {
         });
     }
 
-    public async addSong(userId: string, name: string, song: string): Promise<void> {
-        const playlist = await this.getPLaylist(userId, name);
-        if (playlist) {
-            await this.prisma.song.create({
-                data: {
-                    track: JSON.stringify(song),
+    public async addSong(userId: string, name: string, track: unknown): Promise<boolean> {
+        let playlist = await this.getPLaylist(userId, name);
+        if (!playlist) {
+            await this.createPlaylist(userId, name);
+            playlist = await this.getPLaylist(userId, name);
+        }
+        // One row per track. Previously callers passed arrays, so a whole
+        // playlist landed in a single row and re-adding hit the unique index.
+        const payload = JSON.stringify(track);
+        const existing = await this.prisma.song.findUnique({
+            where: {
+                track_playlistId: {
+                    track: payload,
                     playlistId: playlist.id,
                 },
-            });
-        } else {
-            await this.createPlaylist(userId, name);
-            await this.addSong(userId, name, song);
-        }
+            },
+        });
+        if (existing) return false;
+        await this.prisma.song.create({
+            data: {
+                track: payload,
+                playlistId: playlist.id,
+            },
+        });
+        return true;
     }
 
     public async removeSong(userId: string, name: string, song: string): Promise<void> {

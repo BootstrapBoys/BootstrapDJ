@@ -60,30 +60,43 @@ export default class Load extends Command {
                     },
                 ],
             });
-        songs.map(async (s) => {
-            for await (const song of JSON.parse(s.track)) {
-                const vc = ctx.member as any;
-                if (!player)
-                    player = await client.queue.create(
-                        ctx.guild,
-                        vc.voice.channel,
-                        ctx.channel,
-                        client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
-                    );
+        if (!player) {
+            const vc = ctx.member as any;
+            player = await client.queue.create(ctx.guild, vc.voice.channel, ctx.channel);
+        }
 
-                const track = player.buildTrack(song, ctx.author as any);
-                player.queue.push(track);
-                player.isPlaying();
+        let loaded = 0;
+        let skipped = 0;
+        for (const row of songs) {
+            let parsed: any;
+            try {
+                parsed = JSON.parse(row.track);
+            } catch {
+                skipped++;
+                continue;
             }
+            // Rows written before the per-track fix hold an array in one row.
+            const tracks: any[] = Array.isArray(parsed) ? parsed : [parsed];
+            for (const entry of tracks) {
+                if (player.queue.length >= client.config.maxQueueSize) {
+                    skipped++;
+                    continue;
+                }
+                player.queue.push(player.buildTrack(entry, ctx.author as any));
+                loaded++;
+            }
+        }
 
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: `Loaded \`${playlistData.name}\` with \`${JSON.parse(s.track).length}\` songs`,
-                        color: client.color.main,
-                    },
-                ],
-            });
+        await player.isPlaying();
+        await ctx.sendMessage({
+            embeds: [
+                {
+                    description: `Loaded \`${playlistData.name}\` with \`${loaded}\` songs${
+                        skipped ? ` (${skipped} skipped)` : ''
+                    }`,
+                    color: client.color.main,
+                },
+            ],
         });
     }
 }
