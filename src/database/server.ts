@@ -26,8 +26,10 @@ export default class ServerData {
     private guildCache = new Map<string, Guild>();
     private setupCache = new Map<string, Setup | null>();
 
-    constructor() {
-        this.prisma = new PrismaClient();
+    constructor(prisma?: PrismaClient) {
+        // Injectable so tests can point at a throwaway SQLite file instead of
+        // the tracked prisma/lavamusic.db.
+        this.prisma = prisma ?? new PrismaClient();
     }
 
     public async get(guildId: string): Promise<Guild | null> {
