@@ -35,7 +35,7 @@ export default class Ready extends Event {
             // per process, after a node is usable.
             if (!channelsPurged) {
                 if (await waitForNode(this.client, 20_000)) await restoreSessions(this.client);
-                else this.client.logger.error('[session] no node available; skipping restore');
+                else this.client.logger.error('[session] no node available after waiting; skipping restore');
             }
         } catch (error) {
             this.client.logger.error(`[setup] startup cleanup failed: ${error}`);

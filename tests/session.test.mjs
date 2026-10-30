@@ -8,7 +8,7 @@ import { PrismaClient } from '../dist/generated/prisma/client.js';
 
 import ServerData from '../dist/database/server.js';
 import { fromSaved, toSaved } from '../dist/structures/Dispatcher.js';
-import { hasListeners, isRestorable, waitForListeners } from '../dist/utils/Session.js';
+import { hasListeners, isRestorable, waitForListeners, waitForNode } from '../dist/utils/Session.js';
 import { fakeUser, makeSong } from './helpers.mjs';
 
 const dbPath = path.join(os.tmpdir(), `bootstrapdj-session-${process.pid}-${Date.now()}.db`);
@@ -137,4 +137,28 @@ test('waitForListeners gives up when the window is zero or nobody arrives', asyn
 
     assert.equal(await waitForListeners(channel, 0, 10), false);
     assert.equal(await waitForListeners(channel, 1, 50), false);
+});
+
+test('waitForNode resolves on the node ready event before its deadline', async () => {
+    const { EventEmitter } = await import('node:events');
+    const shoukaku = new EventEmitter();
+    let ready = false;
+    const client = { queue: { get hasNode() { return ready; } }, shoukaku };
+
+    const started = Date.now();
+    const pending = waitForNode(client, 5000);
+    setTimeout(() => {
+        ready = true;
+        shoukaku.emit('ready', 'node', false);
+    }, 60);
+
+    assert.equal(await pending, true);
+    assert.ok(Date.now() - started < 2000, 'must not sit out the whole deadline');
+});
+
+test('waitForNode gives up when no node ever connects', async () => {
+    const { EventEmitter } = await import('node:events');
+    const client = { queue: { get hasNode() { return false; } }, shoukaku: new EventEmitter() };
+
+    assert.equal(await waitForNode(client, 120), false);
 });

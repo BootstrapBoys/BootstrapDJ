@@ -22,13 +22,29 @@ export function isRestorable(updatedAt: Date, maxAgeSeconds: number, now: number
 }
 
 /** `ready` fires before Lavalink nodes connect; restoring needs a node. */
-export async function waitForNode(client: Lavamusic, timeoutMs: number = 20_000): Promise<boolean> {
-    const started = Date.now();
-    while (Date.now() - started < timeoutMs) {
-        if (client.queue.hasNode) return true;
-        await new Promise<void>((resolve: () => void) => setTimeout(resolve, 500));
-    }
-    return client.queue.hasNode;
+export async function waitForNode(client: Lavamusic, timeoutMs: number = 120_000): Promise<boolean> {
+    if (client.queue.hasNode) return true;
+
+    // A slow Lavalink start used to cost the saved queue: the old 20s poll gave
+    // up and restore was skipped for the rest of the process. Wait for the
+    // node's ready event instead, falling back to polling and a long deadline.
+    return await new Promise<boolean>((resolve: (value: boolean) => void) => {
+        let settled = false;
+        const finish = (available: boolean): void => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(deadline);
+            clearInterval(poll);
+            client.shoukaku.off('ready', onReady);
+            resolve(available);
+        };
+        const onReady = (): void => finish(true);
+        const poll = setInterval(() => {
+            if (client.queue.hasNode) finish(true);
+        }, 500);
+        const deadline = setTimeout(() => finish(client.queue.hasNode), timeoutMs);
+        client.shoukaku.once('ready', onReady);
+    });
 }
 
 /**
