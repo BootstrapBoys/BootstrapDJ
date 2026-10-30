@@ -29,9 +29,10 @@ function neb(embed: EmbedBuilder, player: Dispatcher, client: Lavamusic): EmbedB
 function scheduleExpire(client: Lavamusic, message: Message): void {
     const seconds = client.config.deleteAfter;
     if (!seconds || seconds <= 0) return;
-    setTimeout(() => {
+    const timer = setTimeout(() => {
         message.delete().catch(() => {});
     }, seconds * 1000);
+    (timer as unknown as { unref?: () => void }).unref?.();
 }
 
 async function setupStart(
@@ -364,7 +365,11 @@ async function oops(channel: TextChannel, args: string): Promise<void> {
             embeds: [embed1],
         });
 
-        setTimeout(async () => await m.delete().catch(() => { }), 12000);
+        const timer = setTimeout(
+            async () => await m.delete().catch(() => {}),
+            12000
+        );
+        (timer as unknown as { unref?: () => void }).unref?.();
     } catch (e) {
         return console.error(e);
     }

@@ -140,7 +140,11 @@ export default class Dispatcher {
         this.autoplay = false;
         this.seed = null;
         this.nowPlayingMessage = null;
-        this.persistTimer = setInterval(() => void this.persist(), 10_000);
+        this.persistTimer = setInterval(() => {
+            // A paused player's position cannot change and pause() already wrote
+            // the state, so the periodic write would only duplicate the row.
+            if (!this.paused) void this.persist();
+        }, 10_000);
         (this.persistTimer as unknown as { unref?: () => void }).unref?.();
 
         this.player

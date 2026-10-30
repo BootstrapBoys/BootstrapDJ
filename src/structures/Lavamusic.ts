@@ -54,7 +54,7 @@ export default class Lavamusic extends Client {
         this.logger.info(`Successfully loaded commands!`);
         await this.loadEvents();
         this.logger.info(`Successfully loaded events!`);
-        loadPlugins(this);
+        await loadPlugins(this);
         await this.login(token);
         this.on(
             Events.InteractionCreate,

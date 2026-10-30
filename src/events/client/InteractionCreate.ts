@@ -13,9 +13,15 @@ import { Context, Event, Lavamusic } from '../../structures/index.js';
 
 export default class InteractionCreate extends Event {
     private static readonly PLAYLIST_CACHE_MS = 5000;
+    private static readonly SEARCH_CACHE_MS = 15000;
+    private static readonly SEARCH_CACHE_MAX = 150;
     private playlistCache = new Map<
         string,
         { at: number; playlists: Array<{ name: string; songs: number }> }
+    >();
+    private searchCache = new Map<
+        string,
+        { at: number; choices: Array<{ name: string; value: string }> }
     >();
 
     constructor(client: Lavamusic, file: string) {
@@ -49,6 +55,42 @@ export default class InteractionCreate extends Event {
             }
         }
         return entries;
+    }
+
+    /**
+     * Track suggestions for /play and /playnext. Each keystroke used to trigger a
+     * full Lavalink search; identical prefixes inside the TTL reuse one result.
+     */
+    private async searchChoices(query: string): Promise<Array<{ name: string; value: string }>> {
+        const key = query.trim().toLowerCase();
+        if (!key) return [];
+
+        const now = Date.now();
+        const cached = this.searchCache.get(key);
+        if (cached && now - cached.at < InteractionCreate.SEARCH_CACHE_MS) return cached.choices;
+
+        const res = await this.client.queue.search(query);
+        let choices: Array<{ name: string; value: string }> = [];
+        if (res && res.loadType === LoadType.SEARCH && res.data.length) {
+            choices = res.data.slice(0, 10).map(track => ({
+                // Discord caps choice name and value at 100 characters.
+                name: `${track.info.title} by ${track.info.author}`.slice(0, 100),
+                value: `${track.info.uri}`.slice(0, 100),
+            }));
+        }
+
+        this.searchCache.set(key, { at: now, choices });
+        if (this.searchCache.size > InteractionCreate.SEARCH_CACHE_MAX) {
+            for (const [id, entry] of this.searchCache) {
+                if (now - entry.at >= InteractionCreate.SEARCH_CACHE_MS) this.searchCache.delete(id);
+            }
+            // Still oversized (all entries fresh): drop oldest insertions.
+            for (const id of this.searchCache.keys()) {
+                if (this.searchCache.size <= InteractionCreate.SEARCH_CACHE_MAX) break;
+                this.searchCache.delete(id);
+            }
+        }
+        return choices;
     }
 
     public async run(interaction: ChatInputCommandInteraction | AutocompleteInteraction): Promise<any> {
@@ -260,25 +302,9 @@ export default class InteractionCreate extends Event {
             if (interaction.commandName == 'play' || interaction.commandName == 'playnext') {
                 const song = interaction.options.getString('song');
                 if (!song) return await interaction.respond([]).catch(() => {});
-                const res = await this.client.queue.search(song);
-                if (!res) return await interaction.respond([]).catch(() => {});
-                const songs: Array<{ name: string; value: string }> = [];
-                switch (res.loadType) {
-                    case LoadType.SEARCH:
-                        if (!res.data.length) return await interaction.respond([]).catch(() => {});
-                        res.data.slice(0, 10).forEach(x => {
-                            songs.push({
-                                // Discord caps choice name and value at 100 characters.
-                                name: `${x.info.title} by ${x.info.author}`.slice(0, 100),
-                                value: `${x.info.uri}`.slice(0, 100),
-                            });
-                        });
-                        break;
-                    default:
-                        break;
-                }
-
-                return await interaction.respond(songs).catch(() => {});
+                return await interaction
+                    .respond(await this.searchChoices(song))
+                    .catch(error => this.client.logger.error(`[autocomplete] respond failed: ${error}`));
             }
 
             // Always answer, otherwise Discord leaves the field "loading".
