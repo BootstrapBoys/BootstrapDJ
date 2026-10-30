@@ -235,7 +235,9 @@ async function trackStart(
     try {
         m = await channel.messages.fetch({ message: msgId, cache: true });
     } catch (error) {
-        client.logger.error(error);
+        client.logger.error(
+            `[setup] could not fetch mock message ${msgId} in channel ${channel.id}: ${error}`
+        );
     }
     if (m) {
         let iconUrl = client.config.icons[player.current.info.sourceName];
@@ -260,7 +262,7 @@ async function trackStart(
                     return b;
                 }),
             })
-            .catch(() => { });
+            .catch(error => client.logger.error(`[setup] mock message edit failed: ${error}`));
     } else {
         let iconUrl = client.config.icons[player.current.info.sourceName];
         if (!iconUrl) iconUrl = client.user.displayAvatarURL({ extension: 'png' });
@@ -285,7 +287,11 @@ async function trackStart(
                 }),
             })
             .then(msg => {
-                client.db.setSetup(msg.guild.id, msg.id, msg.channel.id);
+                client.logger.warn(
+                    `[setup] mock message ${msgId} was not fetchable in ${channel.id}; posted a new one ${msg.id}`
+                );
+                // setSetup(guildId, textId, messageId) — channel first, then message.
+                client.db.setSetup(msg.guild.id, msg.channel.id, msg.id);
             })
             .catch(() => { });
     }

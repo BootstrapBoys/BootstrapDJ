@@ -87,10 +87,18 @@ export default class TrackStart extends Event {
             )
             .setTimestamp();
         let setup = await this.client.db.getSetup(guild.id);
+        this.client.logger.debug(
+            `[setup] trackStart guild=${guild.id} dispatcherChannel=${dispatcher.channelId} setupText=${setup?.textId ?? 'none'} setupMsg=${setup?.messageId ?? 'none'}`
+        );
         if (setup && setup.textId) {
             const textChannel = guild.channels.cache.get(setup.textId) as TextChannel;
             const id = setup.messageId;
-            if (!textChannel) return;
+            if (!textChannel) {
+                this.client.logger.warn(
+                    `[setup] channel ${setup.textId} not found in cache — mock player not updated`
+                );
+                return;
+            }
             if (channel && textChannel && channel.id === textChannel.id) {
                 await trackStart(id, textChannel, dispatcher, track, this.client);
             } else {
