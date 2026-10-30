@@ -25,6 +25,15 @@ function neb(embed: EmbedBuilder, player: Dispatcher, client: Lavamusic): EmbedB
         .setColor(client.color.main);
 }
 
+/** Delete a message after COMMAND_DELETE_AFTER seconds (0 keeps it). */
+function scheduleExpire(client: Lavamusic, message: Message): void {
+    const seconds = client.config.deleteAfter;
+    if (!seconds || seconds <= 0) return;
+    setTimeout(() => {
+        message.delete().catch(() => {});
+    }, seconds * 1000);
+}
+
 async function setupStart(
     client: Lavamusic,
     query: string,
@@ -55,11 +64,7 @@ async function setupStart(
                                     .setDescription('There was an error while searching.'),
                             ],
                         })
-                        .then(msg => {
-                            setTimeout(() => {
-                                msg.delete();
-                            }, 5000);
-                        });
+                        .then(msg => scheduleExpire(client, msg));
                     break;
                 case LoadType.EMPTY:
                     await message.channel
@@ -70,11 +75,7 @@ async function setupStart(
                                     .setDescription('There were no results found.'),
                             ],
                         })
-                        .then(msg => {
-                            setTimeout(() => {
-                                msg.delete();
-                            }, 5000);
-                        });
+                        .then(msg => scheduleExpire(client, msg));
                     break;
                 case LoadType.TRACK:
                     const track = player.buildTrack(res.data, message.author);
@@ -90,11 +91,7 @@ async function setupStart(
                                         ),
                                 ],
                             })
-                            .then(msg => {
-                                setTimeout(() => {
-                                    msg.delete();
-                                }, 5000);
-                            });
+                            .then(msg => scheduleExpire(client, msg));
                         return;
                     }
                     player.queue.push(track);
@@ -109,11 +106,7 @@ async function setupStart(
                                     ),
                             ],
                         })
-                        .then(msg => {
-                            setTimeout(() => {
-                                msg.delete();
-                            }, 5000);
-                        });
+                        .then(msg => scheduleExpire(client, msg));
                     neb(n, player, client);
                     if (m) await m.edit({ embeds: [n] }).catch(() => { });
                     break;
@@ -129,11 +122,7 @@ async function setupStart(
                                         ),
                                 ],
                             })
-                            .then(msg => {
-                                setTimeout(() => {
-                                    msg.delete();
-                                }, 5000);
-                            });
+                            .then(msg => scheduleExpire(client, msg));
                         return;
                     }
                     for (const track of res.data.tracks) {
@@ -149,11 +138,7 @@ async function setupStart(
                                             ),
                                     ],
                                 })
-                                .then(msg => {
-                                    setTimeout(() => {
-                                        msg.delete();
-                                    }, 5000);
-                                });
+                                .then(msg => scheduleExpire(client, msg));
                             return;
                         }
                         player.queue.push(pl);
@@ -169,11 +154,7 @@ async function setupStart(
                                     ),
                             ],
                         })
-                        .then(msg => {
-                            setTimeout(() => {
-                                msg.delete();
-                            }, 5000);
-                        });
+                        .then(msg => scheduleExpire(client, msg));
                     neb(n, player, client);
                     if (m) await m.edit({ embeds: [n] }).catch(() => { });
                     break;
@@ -190,11 +171,7 @@ async function setupStart(
                                         ),
                                 ],
                             })
-                            .then(msg => {
-                                setTimeout(() => {
-                                    msg.delete();
-                                }, 5000);
-                            });
+                            .then(msg => scheduleExpire(client, msg));
                         return;
                     }
                     player.queue.push(track2);
@@ -209,11 +186,7 @@ async function setupStart(
                                     ),
                             ],
                         })
-                        .then(msg => {
-                            setTimeout(() => {
-                                msg.delete();
-                            }, 5000);
-                        });
+                        .then(msg => scheduleExpire(client, msg));
                     neb(n, player, client);
                     if (m) await m.edit({ embeds: [n] }).catch(() => { });
                     break;
@@ -472,7 +445,7 @@ export function startSetupJanitor(client: Lavamusic, guildId: string): void {
                 message =>
                     message.id !== setup.messageId &&
                     !message.pinned &&
-                    Date.now() - message.createdTimestamp > 5000
+                    Date.now() - message.createdTimestamp > Math.max(5000, (client.config.deleteAfter || 0) * 1000)
             );
             if (!stale.size) return;
             const recent = stale.filter(
