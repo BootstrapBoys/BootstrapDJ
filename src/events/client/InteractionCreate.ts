@@ -215,7 +215,15 @@ export default class InteractionCreate extends Event {
                         }`.slice(0, 100),
                         value: playlist.name.slice(0, 100),
                     }));
-                return await interaction.respond(choices).catch(() => {});
+                this.client.logger.info(
+                    `[autocomplete] user=${interaction.user.id} field=${focused.name} q="${query}" playlists=${playlists.length} choices=${choices.length}`
+                );
+                try {
+                    await interaction.respond(choices);
+                } catch (error) {
+                    this.client.logger.error(`[autocomplete] respond failed: ${error}`);
+                }
+                return;
             }
 
             if (interaction.commandName == 'play' || interaction.commandName == 'playnext') {
