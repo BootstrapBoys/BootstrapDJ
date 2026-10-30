@@ -25,3 +25,6 @@
 
 # Misc
 /target
+
+# Host-specific pm2 launcher (edited per machine)
+DJBoot.sh
