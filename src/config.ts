@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
 
 import { SearchEngine } from './types.js';
-dotenv.config();
+// quiet: dotenv >=17 prints an 'injected env' banner on every boot.
+dotenv.config({ quiet: true });
 
 export default {
     token: process.env.TOKEN ?? '',
