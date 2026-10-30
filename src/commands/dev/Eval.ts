@@ -35,7 +35,16 @@ export default class Eval extends Command {
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
         const author = ctx.author;
         if (!author) return;
-        const code = args.join(' ');
+        const code = args.join(' ').trim();
+        // Logged because an empty argument list silently evaluated to
+        // `undefined`, which looks like a broken command.
+        client.logger.info(
+            `[eval] user=${author.id} args=${args.length} length=${code.length}`
+        );
+        if (!code)
+            return await ctx.sendMessage({
+                content: 'Usage: `!eval <javascript>` — the code argument arrived empty.',
+            });
         try {
             let evaled = eval(code);
 
