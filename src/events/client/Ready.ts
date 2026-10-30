@@ -1,11 +1,11 @@
 import config from '../../config.js';
-import { Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Event } from '../../structures/index.js';
 import { restoreSessions, waitForNode } from '../../utils/Session.js';
 import { resetSetupChannel, startSetupJanitor } from '../../utils/SetupSystem.js';
 
 let channelsPurged = false;
 export default class Ready extends Event {
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'ready',
         });

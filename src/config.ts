@@ -14,7 +14,7 @@ export default {
         yellow: 0xffff00,
         main: 0x2f3136,
     },
-    autoNode: process.env.AUTO_NODE ? parseBoolean(process.env.AUTO_NODE) : true, // auto node for lavamusic bot it is gave from lavainfo-api "https://lavainfo-api.freedback-dip.workers.dev"
+    autoNode: process.env.AUTO_NODE ? parseBoolean(process.env.AUTO_NODE) : true, // auto node: node details are fetched from lavainfo-api (https://lavainfo-api.freedback-dip.workers.dev)
     searchEngine: process.env.SEARCH_ENGINE || SearchEngine.YouTube, // search engine for music
     maxPlaylistSize: process.env.MAX_PLAYLIST_SIZE ? parseInt(process.env.MAX_PLAYLIST_SIZE) : 100, // max playlist size
     botStatus: (process.env.BOT_STATUS || 'online') as 'online' | 'idle' | 'dnd' | 'invisible', // online, idle, dnd, invisible

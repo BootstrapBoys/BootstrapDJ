@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Autoplay extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'autoplay',
             description: {
@@ -39,7 +39,7 @@ export default class Autoplay extends Command {
             ],
         });
     }
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const seed = args.join(' ').trim();
         const guild = ctx.guild;
         if (!guild) return;

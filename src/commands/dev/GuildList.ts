@@ -1,9 +1,9 @@
 import { EmbedBuilder } from 'discord.js';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class GuildList extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'guildlist',
             description: {
@@ -31,7 +31,7 @@ export default class GuildList extends Command {
         });
     }
 
-    public async run(client: Lavamusic, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
         const guilds = this.client.guilds.cache.map(g => `${g.name} (${g.id})`);
 
         const chunks = client.utils.chunk(guilds, 10);

@@ -1,7 +1,7 @@
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Grab extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'grab',
             description: {
@@ -28,7 +28,7 @@ export default class Grab extends Command {
             options: [],
         });
     }
-    public async run(client: Lavamusic, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
         const embed = client.embed().setColor(client.color.main);
         const guild = ctx.guild;
         const author = ctx.author;

@@ -1,10 +1,10 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageComponentInteraction } from 'discord.js';
 import { fetch } from 'undici';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Eval extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'eval',
             description: {
@@ -32,7 +32,7 @@ export default class Eval extends Command {
         });
     }
 
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const author = ctx.author;
         if (!author) return;
         const code = args.join(' ').trim();

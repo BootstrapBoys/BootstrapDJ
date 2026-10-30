@@ -9,7 +9,7 @@ import {
 } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
-import { Context, Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Context, Event } from '../../structures/index.js';
 
 export default class InteractionCreate extends Event {
     private static readonly PLAYLIST_CACHE_MS = 5000;
@@ -24,7 +24,7 @@ export default class InteractionCreate extends Event {
         { at: number; choices: Array<{ name: string; value: string }> }
     >();
 
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'interactionCreate',
         });

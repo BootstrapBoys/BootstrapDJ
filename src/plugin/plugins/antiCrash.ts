@@ -1,11 +1,11 @@
-import { Lavamusic } from '../../structures/index.js';
+import { BootstrapClient } from '../../structures/index.js';
 import { BotPlugin } from '../index.js';
 
 const antiCrash: BotPlugin = {
     name: 'AntiCrash Plugin',
     version: '1.0.0',
     author: 'Zebz213',
-    initialize: (client: Lavamusic) => {
+    initialize: (client: BootstrapClient) => {
         process.on('unhandledRejection', (reason, promise) => {
             client.logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
         });

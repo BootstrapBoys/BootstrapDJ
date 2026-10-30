@@ -1,9 +1,9 @@
 import { ChannelType, Collection, Message, PermissionFlagsBits } from 'discord.js';
 
-import { Context, Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Context, Event } from '../../structures/index.js';
 
 export default class MessageCreate extends Event {
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'messageCreate',
         });

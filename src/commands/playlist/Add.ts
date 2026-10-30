@@ -1,10 +1,10 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Add extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'add',
             description: {
@@ -45,7 +45,7 @@ export default class Add extends Command {
             ],
         });
     }
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const author = ctx.author;
         if (!author) return;
         const playlist = args[0];

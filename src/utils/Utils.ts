@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 
 import config from '../config.js';
-import { Context, Lavamusic } from '../structures/index.js';
+import { BootstrapClient, Context } from '../structures/index.js';
 
 export class Utils {
     public static formatTime(ms: number): string {
@@ -30,7 +30,7 @@ export class Utils {
         }
     }
 
-    public static updateStatus(client: Lavamusic, guildId?: string): void {
+    public static updateStatus(client: BootstrapClient, guildId?: string): void {
         if (client.user) {
             if (guildId === config.guildId) {
                 const player = client.queue.get(config.guildId);
@@ -104,7 +104,7 @@ export class Utils {
      * Delete a message whose components kept it exempt from auto-delete, once
      * its collector has ended. Honours COMMAND_DELETE_AFTER (0 keeps it).
      */
-    public static scheduleDelete(client: Lavamusic, message: Message, seconds?: number): void {
+    public static scheduleDelete(client: BootstrapClient, message: Message, seconds?: number): void {
         const timeout = seconds ?? config.deleteAfter;
         if (!timeout || timeout <= 0) return;
         const timer = setTimeout(() => {

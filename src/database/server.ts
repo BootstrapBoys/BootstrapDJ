@@ -34,7 +34,7 @@ function trackKey(track: unknown): string | null {
 
 /** Prisma 7 requires a driver adapter; the path is relative to the cwd. */
 function createPrismaClient(): PrismaClient {
-    const url = process.env.DATABASE_URL || 'file:./prisma/lavamusic.db';
+    const url = process.env.DATABASE_URL || 'file:./prisma/bootstrapdj.db';
     return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
 }
 
@@ -47,7 +47,7 @@ export default class ServerData {
 
     constructor(prisma?: PrismaClient) {
         // Injectable so tests can pass a client wired to a throwaway SQLite
-        // file instead of the tracked prisma/lavamusic.db.
+        // file instead of the tracked database file.
         this.prisma = prisma ?? createPrismaClient();
     }
 

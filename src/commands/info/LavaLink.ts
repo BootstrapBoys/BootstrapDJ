@@ -1,7 +1,7 @@
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class LavaLink extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'lavalink',
             description: {
@@ -27,7 +27,7 @@ export default class LavaLink extends Command {
             slashCommand: true,
         });
     }
-    public async run(client: Lavamusic, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
         const clientUser = client.user;
         if (!clientUser) return;
         const embed = this.client.embed();

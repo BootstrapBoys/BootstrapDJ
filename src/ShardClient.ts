@@ -1,7 +1,7 @@
 import { ClientOptions, GatewayIntentBits } from 'discord.js';
 
 import config from './config.js';
-import Lavamusic from './structures/Lavamusic.js';
+import BootstrapClient from './structures/BootstrapClient.js';
 
 const {
     GuildMembers,
@@ -26,7 +26,7 @@ const clientOptions: ClientOptions = {
     },
 };
 
-const client = new Lavamusic(clientOptions);
+const client = new BootstrapClient(clientOptions);
 
 client.start(config.token);
 

@@ -2,7 +2,7 @@
 import { Message, User } from 'discord.js';
 import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
 
-import { Lavamusic } from './index.js';
+import { BootstrapClient } from './index.js';
 
 /** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
@@ -98,7 +98,7 @@ export function fromSaved(saved: SavedTrack, user: User): Song {
 }
 
 export default class Dispatcher {
-    private client: Lavamusic;
+    private client: BootstrapClient;
     public guildId: string;
     public channelId: string;
     /** Voice channel this dispatcher is bound to; needed for session restore. */
@@ -602,7 +602,7 @@ export default class Dispatcher {
 }
 
 export interface DispatcherOptions {
-    client: Lavamusic;
+    client: BootstrapClient;
     guildId: string;
     channelId: string;
     voiceId?: string;

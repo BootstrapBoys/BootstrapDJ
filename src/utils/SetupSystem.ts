@@ -4,9 +4,9 @@ import { LoadType } from 'shoukaku';
 
 import { getButtons } from './Buttons.js';
 import { Song } from '../structures/Dispatcher.js';
-import { Dispatcher, Lavamusic } from '../structures/index.js';
+import { BootstrapClient, Dispatcher } from '../structures/index.js';
 
-function neb(embed: EmbedBuilder, player: Dispatcher, client: Lavamusic): EmbedBuilder {
+function neb(embed: EmbedBuilder, player: Dispatcher, client: BootstrapClient): EmbedBuilder {
     
     if (!player || !player.current || !player.current.info) return embed;
 
@@ -26,7 +26,7 @@ function neb(embed: EmbedBuilder, player: Dispatcher, client: Lavamusic): EmbedB
 }
 
 /** Delete a message after COMMAND_DELETE_AFTER seconds (0 keeps it). */
-function scheduleExpire(client: Lavamusic, message: Message): void {
+function scheduleExpire(client: BootstrapClient, message: Message): void {
     const seconds = client.config.deleteAfter;
     if (!seconds || seconds <= 0) return;
     const timer = setTimeout(() => {
@@ -36,7 +36,7 @@ function scheduleExpire(client: Lavamusic, message: Message): void {
 }
 
 async function setupStart(
-    client: Lavamusic,
+    client: BootstrapClient,
     query: string,
     player: Dispatcher,
     message: Message<true>
@@ -203,7 +203,7 @@ async function trackStart(
     channel: TextChannel,
     player: Dispatcher,
     track: Song,
-    client: Lavamusic
+    client: BootstrapClient
 ): Promise<void> {
     const current = player.current;
     if (!current) return;
@@ -274,7 +274,7 @@ async function trackStart(
     }
 }
 
-async function updateSetup(client: Lavamusic, guild: any): Promise<void> {
+async function updateSetup(client: BootstrapClient, guild: any): Promise<void> {
     let setup = await client.db.getSetup(guild.id);
     let m: Message | undefined;
     if (setup && setup.textId) {
@@ -381,7 +381,7 @@ const setupJanitors = new Map<string, ReturnType<typeof setInterval>>();
  * Runs once per boot so the channel never accumulates history across restarts.
  */
 export async function resetSetupChannel(
-    client: Lavamusic,
+    client: BootstrapClient,
     setup: { guildId: string; textId: string }
 ): Promise<void> {
     const guild = client.guilds.cache.get(setup.guildId);
@@ -435,7 +435,7 @@ export async function resetSetupChannel(
  * Periodically delete everything in the song-request channel except the mock
  * player, so the channel stays a control surface instead of a chat log.
  */
-export function startSetupJanitor(client: Lavamusic, guildId: string): void {
+export function startSetupJanitor(client: BootstrapClient, guildId: string): void {
     const seconds = client.config.setupCleanupInterval;
     if (!seconds || seconds <= 0) return;
     const existing = setupJanitors.get(guildId);

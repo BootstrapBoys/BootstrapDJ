@@ -25,7 +25,7 @@ import { Utils } from '../utils/Utils.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
-export default class Lavamusic extends Client {
+export default class BootstrapClient extends Client {
     public commands: Collection<string, Command> = new Collection();
     public aliases: Collection<string, string> = new Collection();
     public db = new ServerData();

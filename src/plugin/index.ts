@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Lavamusic } from '../structures/index.js';
+import { BootstrapClient } from '../structures/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export default async function loadPlugins(client: Lavamusic): Promise<void> {
+export default async function loadPlugins(client: BootstrapClient): Promise<void> {
     const pluginsFolder = path.join(__dirname, './plugins');
     const pluginFiles = fs.readdirSync(pluginsFolder).filter(file => file.endsWith('.js'));
 
@@ -26,8 +26,8 @@ export interface BotPlugin {
     version: string;
     author: string;
     description?: string;
-    initialize: (client: Lavamusic) => void;
-    shutdown?: (client: Lavamusic) => void;
+    initialize: (client: BootstrapClient) => void;
+    shutdown?: (client: BootstrapClient) => void;
 }
 /**
  * Project: BootstrapDJ

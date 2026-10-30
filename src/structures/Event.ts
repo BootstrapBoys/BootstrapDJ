@@ -1,12 +1,12 @@
-import Lavamusic from './Lavamusic.js';
+import BootstrapClient from './BootstrapClient.js';
 
 export default class Event {
-    public client: Lavamusic;
+    public client: BootstrapClient;
     public one: boolean;
     public file: string;
     public name: string;
     public fileName: string;
-    constructor(client: Lavamusic, file: string, options: EventOptions) {
+    constructor(client: BootstrapClient, file: string, options: EventOptions) {
         this.client = client;
         this.file = file;
         this.name = options.name;

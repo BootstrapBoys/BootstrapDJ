@@ -1,10 +1,10 @@
 import { Player } from 'shoukaku';
 
 import { Song } from '../../structures/Dispatcher.js';
-import { Dispatcher, Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
 
 export default class QueueEnd extends Event {
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'queueEnd',
         });

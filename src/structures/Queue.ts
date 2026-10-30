@@ -1,10 +1,10 @@
 import { Channel, Guild } from 'discord.js';
 import { LavalinkResponse, Node } from 'shoukaku';
 
-import { Dispatcher, Lavamusic } from './index.js';
+import { BootstrapClient, Dispatcher } from './index.js';
 export class Queue extends Map {
-    public client: Lavamusic;
-    constructor(client: Lavamusic) {
+    public client: BootstrapClient;
+    constructor(client: BootstrapClient) {
         super();
         this.client = client;
     }

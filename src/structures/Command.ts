@@ -1,9 +1,9 @@
 import { ApplicationCommandOption, PermissionsString } from 'discord.js';
 
-import Lavamusic from './Lavamusic.js';
+import BootstrapClient from './BootstrapClient.js';
 
 export default class Command {
-    public client: Lavamusic;
+    public client: BootstrapClient;
     public name: string;
     public nameLocalizations: any;
     public description: {
@@ -29,7 +29,7 @@ export default class Command {
     public slashCommand: boolean;
     public options: ApplicationCommandOption[];
     public category: string | null;
-    constructor(client: Lavamusic, options: CommandOptions) {
+    constructor(client: BootstrapClient, options: CommandOptions) {
         this.client = client;
         this.name = options.name;
         this.nameLocalizations = options.nameLocalizations;
@@ -63,7 +63,7 @@ export default class Command {
         this.options = options.options || [];
         this.category = options.category || 'general';
     }
-    public async run(_client: Lavamusic, _message: any, _args: string[]): Promise<any> {
+    public async run(_client: BootstrapClient, _message: any, _args: string[]): Promise<any> {
         return await Promise.resolve();
     }
 }

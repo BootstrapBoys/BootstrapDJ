@@ -1,13 +1,13 @@
 import { Message } from 'discord.js';
 
-import { Lavamusic } from '../../structures/index.js';
+import { BootstrapClient } from '../../structures/index.js';
 import { BotPlugin } from '../index.js';
 
 const advicePlugin: BotPlugin = {
     name: 'Advice Plugin',
     version: '1.0.0',
     author: 'Zebz213',
-    initialize: (client: Lavamusic) => {
+    initialize: (client: BootstrapClient) => {
         const adviceList = [
             'Take a break and relax for a bit.',
             'Don\'t be afraid to ask for help.',

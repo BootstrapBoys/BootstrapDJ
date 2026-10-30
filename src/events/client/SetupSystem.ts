@@ -1,10 +1,10 @@
 import { Message, PermissionsBitField, TextChannel } from 'discord.js';
 
-import { Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Event } from '../../structures/index.js';
 import { oops, setupStart } from '../../utils/SetupSystem.js';
 
 export default class SetupSystem extends Event {
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'setupSystem',
         });

@@ -1,9 +1,9 @@
 import { EmbedBuilder } from 'discord.js';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Queue extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'queue',
             description: {
@@ -30,7 +30,7 @@ export default class Queue extends Command {
             options: [],
         });
     }
-    public async run(client: Lavamusic, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
         const guild = ctx.guild;
         if (!guild) return;
         const player = client.queue.get(guild.id);

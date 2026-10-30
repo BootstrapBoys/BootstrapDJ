@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Load extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'load',
             description: {
@@ -38,7 +38,7 @@ export default class Load extends Command {
             ],
         });
     }
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const guild = ctx.guild;
         const author = ctx.author;
         if (!guild || !author) return;

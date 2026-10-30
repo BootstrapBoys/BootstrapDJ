@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Event } from '../../structures/index.js';
 
 export default class NodeRaw extends Event {
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'nodeRaw',
         });

@@ -1,7 +1,7 @@
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Ping extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'ping',
             description: {
@@ -28,7 +28,7 @@ export default class Ping extends Command {
             options: [],
         });
     }
-    public async run(client: Lavamusic, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
         const author = ctx.author;
         const clientUser = client.user;
         if (!author || !clientUser) return;

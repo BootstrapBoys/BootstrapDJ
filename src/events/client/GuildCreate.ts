@@ -1,9 +1,9 @@
 import { EmbedBuilder, Guild, GuildMember, TextChannel } from 'discord.js';
 
-import { Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Event } from '../../structures/index.js';
 
 export default class GuildCreate extends Event {
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'guildCreate',
         });

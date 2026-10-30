@@ -1,7 +1,7 @@
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Help extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'help',
             description: {
@@ -35,7 +35,7 @@ export default class Help extends Command {
             ],
         });
     }
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const embed = client.embed();
         const guildId = ctx.guild?.id;
         const clientUser = client.user;

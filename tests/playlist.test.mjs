@@ -8,7 +8,7 @@ import { PrismaClient } from '../dist/generated/prisma/client.js';
 
 import ServerData from '../dist/database/server.js';
 
-// Never touch prisma/lavamusic.db (it is tracked in git): a throwaway file is
+// Never touch prisma/bootstrapdj.db (live data): a throwaway file is
 // given the two tables these tests exercise.
 const dbPath = path.join(os.tmpdir(), `bootstrapdj-test-${process.pid}-${Date.now()}.db`);
 const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: `file:${dbPath}` }) });

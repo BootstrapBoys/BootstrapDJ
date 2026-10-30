@@ -17,7 +17,7 @@ try {
 } catch (err) {
     logger.error('[CLIENT] An error has occurred :', err);
 }
-const manager = new ShardingManager('./dist/LavaClient.js', {
+const manager = new ShardingManager('./dist/ShardClient.js', {
     respawn: true,
     token: config.token,
     totalShards: 'auto',

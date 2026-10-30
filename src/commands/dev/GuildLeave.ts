@@ -1,7 +1,7 @@
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class GuildLeave extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'guildleave',
             description: {
@@ -29,7 +29,7 @@ export default class GuildLeave extends Command {
         });
     }
 
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const guild = this.client.guilds.cache.get(args[0]);
         if (!guild) return await ctx.sendMessage('Guild not found');
         try {

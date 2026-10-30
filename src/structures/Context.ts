@@ -15,7 +15,7 @@ import {
     VoiceBasedChannel,
 } from 'discord.js';
 
-import { Lavamusic } from './index.js';
+import { BootstrapClient } from './index.js';
 
 export default class Context {
     public ctx: CommandInteraction | Message;
@@ -23,7 +23,7 @@ export default class Context {
     public message: Message | null;
     public id: string;
     public channelId: string;
-    public client: Lavamusic;
+    public client: BootstrapClient;
     public author: User | null;
     public channel:
         | PartialDMChannel
@@ -46,7 +46,7 @@ export default class Context {
         this.channel = this.ctx.channel;
         this.id = ctx.id;
         this.channelId = ctx.channelId;
-        this.client = ctx.client as Lavamusic;
+        this.client = ctx.client as BootstrapClient;
         this.author = ctx instanceof Message ? ctx.author : ctx.user;
         this.channel = ctx.channel;
         this.guild = ctx.guild;

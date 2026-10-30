@@ -1,9 +1,9 @@
 import { LoadType } from 'shoukaku';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class Play extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'play',
             description: {
@@ -41,7 +41,7 @@ export default class Play extends Command {
             ],
         });
     }
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const query = args.join(' ');
         const guild = ctx.guild;
         const author = ctx.author;

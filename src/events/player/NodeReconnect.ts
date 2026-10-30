@@ -1,8 +1,8 @@
-import { Event, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
 
 export default class NodeReconnect extends Event {
-    constructor(client: Lavamusic, file: string) {
+    constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'nodeReconnect',
         });

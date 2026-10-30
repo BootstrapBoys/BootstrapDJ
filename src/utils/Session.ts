@@ -3,7 +3,7 @@ import { LoadType } from 'shoukaku';
 
 import { Session } from '../generated/prisma/client.js';
 import { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
-import { Lavamusic } from '../structures/index.js';
+import { BootstrapClient } from '../structures/index.js';
 
 /** True when at least one human is connected; bots do not count as listeners. */
 export function hasListeners(
@@ -22,7 +22,7 @@ export function isRestorable(updatedAt: Date, maxAgeSeconds: number, now: number
 }
 
 /** `ready` fires before Lavalink nodes connect; restoring needs a node. */
-export async function waitForNode(client: Lavamusic, timeoutMs: number = 120_000): Promise<boolean> {
+export async function waitForNode(client: BootstrapClient, timeoutMs: number = 120_000): Promise<boolean> {
     if (client.queue.hasNode) return true;
 
     // A slow Lavalink start used to cost the saved queue: the old 20s poll gave
@@ -51,7 +51,7 @@ export async function waitForNode(client: Lavamusic, timeoutMs: number = 120_000
  * Re-resolve a saved track so its encoded payload is fresh for this process.
  * Stored tokens can expire — LavaSrc stamps a per-search token into `encoded`.
  */
-async function resolveSaved(client: Lavamusic, saved: SavedTrack): Promise<Song | null> {
+async function resolveSaved(client: BootstrapClient, saved: SavedTrack): Promise<Song | null> {
     const node = client.queue.node;
     const botUser = client.user;
     if (!node || !botUser) return null;
@@ -96,7 +96,7 @@ export async function waitForListeners(
  * voice channel, restore volume/loop/autoplay, resume the current track at its
  * saved position and re-queue the rest. Unresolvable sessions are dropped.
  */
-export async function restoreSessions(client: Lavamusic): Promise<void> {
+export async function restoreSessions(client: BootstrapClient): Promise<void> {
     const sessions = await client.db.getSessions();
     if (!sessions.length) return;
     const botUser = client.user;
@@ -107,7 +107,7 @@ export async function restoreSessions(client: Lavamusic): Promise<void> {
     await Promise.all(sessions.map(session => restoreSession(client, session, botUser)));
 }
 
-async function restoreSession(client: Lavamusic, session: Session, botUser: User): Promise<void> {
+async function restoreSession(client: BootstrapClient, session: Session, botUser: User): Promise<void> {
     const guildId = session.guildId;
     const drop = async (reason: string): Promise<void> => {
         await client.db.deleteSession(guildId);

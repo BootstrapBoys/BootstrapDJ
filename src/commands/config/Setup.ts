@@ -5,11 +5,11 @@ import {
     PermissionFlagsBits,
 } from 'discord.js';
 
-import { Command, Context, Lavamusic } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
 import { getButtons } from '../../utils/Buttons.js';
 
 export default class Setup extends Command {
-    constructor(client: Lavamusic) {
+    constructor(client: BootstrapClient) {
         super(client, {
             name: 'setup',
             description: {
@@ -52,7 +52,7 @@ export default class Setup extends Command {
             ],
         });
     }
-    public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
         const guild = ctx.guild;
         const clientUser = client.user;
         if (!guild || !clientUser) return;

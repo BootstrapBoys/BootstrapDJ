@@ -1,9 +1,9 @@
 import { TextChannel } from 'discord.js';
 
-import { Lavamusic } from '../structures/index.js';
+import { BootstrapClient } from '../structures/index.js';
 
 export default class BotLog {
-    public static send(client: Lavamusic, message: string, type: string): void {
+    public static send(client: BootstrapClient, message: string, type: string): void {
         if (!client) return;
         if (!client.channels.cache) return;
         if (!client.config.logChannelId) return;

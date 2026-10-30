@@ -1,6 +1,6 @@
 import { Connectors, NodeOption, Shoukaku } from 'shoukaku';
 
-import { Lavamusic } from './index.js';
+import { BootstrapClient } from './index.js';
 
 /**
  * Shoukaku 4.x State: CONNECTING = 0, CONNECTED = 1, DISCONNECTING = 2,
@@ -11,8 +11,8 @@ import { Lavamusic } from './index.js';
 const NODE_CONNECTED = 1;
 
 export default class ShoukakuClient extends Shoukaku {
-    public client: Lavamusic;
-    constructor(client: Lavamusic, nodes: NodeOption[]) {
+    public client: BootstrapClient;
+    constructor(client: BootstrapClient, nodes: NodeOption[]) {
         super(new Connectors.DiscordJS(client), nodes, {
             moveOnDisconnect: false,
             resume: false,
