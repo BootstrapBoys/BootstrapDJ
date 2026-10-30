@@ -233,6 +233,16 @@ export default class ServerData {
         });
     }
 
+    public async getPlaylists(
+        userId: string
+    ): Promise<(Playlist & { _count: { songs: number } })[]> {
+        return await this.prisma.playlist.findMany({
+            where: { userId },
+            orderBy: { name: 'asc' },
+            include: { _count: { select: { songs: true } } },
+        });
+    }
+
     public async createPlaylist(userId: string, name: string): Promise<void> {
         await this.prisma.playlist.create({
             data: {

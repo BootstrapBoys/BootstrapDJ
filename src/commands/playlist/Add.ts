@@ -34,6 +34,7 @@ export default class Add extends Command {
                     description: 'The playlist you want to add',
                     type: ApplicationCommandOptionType.String,
                     required: true,
+                    autocomplete: true,
                 },
                 {
                     name: 'song',

@@ -33,6 +33,7 @@ export default class Load extends Command {
                     description: 'The playlist you want to load',
                     type: ApplicationCommandOptionType.String,
                     required: true,
+                    autocomplete: true,
                 },
             ],
         });

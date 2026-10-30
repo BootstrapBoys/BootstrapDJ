@@ -33,6 +33,7 @@ export default class Delete extends Command {
                     description: 'The playlist you want to delete',
                     type: ApplicationCommandOptionType.String,
                     required: true,
+                    autocomplete: true,
                 },
             ],
         });

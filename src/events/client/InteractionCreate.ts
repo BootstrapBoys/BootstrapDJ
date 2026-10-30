@@ -199,15 +199,34 @@ export default class InteractionCreate extends Event {
                 await interaction.reply({ content: `An error occurred: \`${error}\`` });
             }
         } else if (interaction.type == InteractionType.ApplicationCommandAutocomplete) {
-            if ((interaction.commandName == 'play') || (interaction.commandName == 'playnext')) {
+            const focused = interaction.options.getFocused(true);
+
+            // Playlist name suggestions for /add, /load and /delete.
+            if (focused.name === 'playlist') {
+                const query = String(focused.value ?? '').toLowerCase();
+                const playlists = await this.client.db.getPlaylists(interaction.user.id);
+                const choices = playlists
+                    .filter(playlist => playlist.name.toLowerCase().includes(query))
+                    .slice(0, 25)
+                    .map(playlist => ({
+                        // Discord caps both fields at 100 characters.
+                        name: `${playlist.name} — ${playlist._count.songs} song${
+                            playlist._count.songs === 1 ? '' : 's'
+                        }`.slice(0, 100),
+                        value: playlist.name.slice(0, 100),
+                    }));
+                return await interaction.respond(choices).catch(() => {});
+            }
+
+            if (interaction.commandName == 'play' || interaction.commandName == 'playnext') {
                 const song = interaction.options.getString('song');
-                if (!song) return;
+                if (!song) return await interaction.respond([]).catch(() => {});
                 const res = await this.client.queue.search(song);
                 if (!res) return await interaction.respond([]).catch(() => {});
                 let songs = [];
                 switch (res.loadType) {
                     case LoadType.SEARCH:
-                        if (!res.data.length) return;
+                        if (!res.data.length) return await interaction.respond([]).catch(() => {});
                         res.data.slice(0, 10).forEach(x => {
                             songs.push({
                                 // Discord caps choice name and value at 100 characters.
@@ -220,8 +239,11 @@ export default class InteractionCreate extends Event {
                         break;
                 }
 
-                return await interaction.respond(songs).catch(() => { });
+                return await interaction.respond(songs).catch(() => {});
             }
+
+            // Always answer, otherwise Discord leaves the field "loading".
+            return await interaction.respond([]).catch(() => {});
         }
     }
 }
