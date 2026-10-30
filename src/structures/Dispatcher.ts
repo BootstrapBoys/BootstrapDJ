@@ -8,6 +8,13 @@ import { Lavamusic } from './index.js';
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
 const YOUTUBE_SEARCH = 'ytmsearch';
 
+/** Deezer's public API needs no key and is the only related-artist source
+ * available here. A niche artist's YouTube mix is often just that artist. */
+const DEEZER_API = 'https://api.deezer.com';
+
+type DeezerTrackRef = { id?: number; artist?: { id?: number } };
+type DeezerList = { data?: Array<{ id?: number; name?: string }> };
+
 export class Song implements Track {
     encoded: string;
     info: {
@@ -338,15 +345,73 @@ export default class Dispatcher {
     }
 
     private async pickForSeed(seed: Song): Promise<Song | null> {
-        const fromMix = this.chooseFrom(await this.relatedTracks(seed));
-        if (fromMix) return fromMix;
-        // No mix available: prefer a YouTube artist search so the next seed is
-        // a YouTube track (mixes need a video id), then the configured engine.
-        const fromYoutube = this.chooseFrom(
-            await this.resolveTracks(`${YOUTUBE_SEARCH}:${seed.info.author}`)
-        );
-        if (fromYoutube) return fromYoutube;
+        const mix = await this.relatedTracks(seed);
+        // Trust the mix only when it leaves the seed artist's orbit: YouTube
+        // builds "Parker Jack radio" out of Parker Jack tracks alone.
+        const seedArtist = seed.info.author?.toLowerCase() ?? '';
+        const hasOtherArtist = mix.some(track => {
+            const author = track.info?.author?.toLowerCase() ?? '';
+            return Boolean(author) && !author.includes(seedArtist) && !seedArtist.includes(author);
+        });
+        if (hasOtherArtist) {
+            const fromMix = this.chooseFrom(mix);
+            if (fromMix) return fromMix;
+        }
+
+        // Same-artist radio: hop to a related artist instead.
+        const related = this.shuffle(await this.relatedArtistNames(seed)).slice(0, 3);
+        for (const name of related) {
+            const pick = await this.pickFromQuery(name);
+            if (pick) return pick;
+        }
+
+        // Nothing related available: more from the same artist, never a stop.
         return await this.pickFromQuery(seed.info.author);
+    }
+
+    private async fetchJson<T>(url: string): Promise<T | null> {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        try {
+            const response = await fetch(url, { signal: controller.signal });
+            return response.ok ? ((await response.json()) as T) : null;
+        } catch {
+            return null;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    /** Deezer track id for any seed: direct, by ISRC, or by artist+title. */
+    private async deezerTrackId(song: Song): Promise<string | null> {
+        if (song.info.sourceName === 'deezer' && /^\d+$/.test(song.info.identifier)) {
+            return song.info.identifier;
+        }
+        if (song.info.isrc) {
+            const byIsrc = await this.fetchJson<DeezerTrackRef>(
+                `${DEEZER_API}/track/isrc:${song.info.isrc}`
+            );
+            if (byIsrc?.id) return String(byIsrc.id);
+        }
+        const query = encodeURIComponent(`artist:"${song.info.author}" track:"${song.info.title}"`);
+        const found = await this.fetchJson<DeezerList>(`${DEEZER_API}/search?q=${query}&limit=1`);
+        const id = found?.data?.[0]?.id;
+        return id ? String(id) : null;
+    }
+
+    /** Artists Deezer considers similar to the seed's artist. */
+    private async relatedArtistNames(song: Song): Promise<string[]> {
+        const trackId = await this.deezerTrackId(song);
+        if (!trackId) return [];
+        const track = await this.fetchJson<DeezerTrackRef>(`${DEEZER_API}/track/${trackId}`);
+        const artistId = track?.artist?.id;
+        if (!artistId) return [];
+        const related = await this.fetchJson<DeezerList>(
+            `${DEEZER_API}/artist/${artistId}/related?limit=10`
+        );
+        return (related?.data ?? [])
+            .map(artist => artist?.name)
+            .filter((name): name is string => Boolean(name));
     }
 
     /** Seed pool, newest intent first: the track that just ended, the last
