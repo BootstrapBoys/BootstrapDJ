@@ -3,6 +3,22 @@ import { Botchannel, Dj, Guild, Playlist, PrismaClient, Role, Setup, Song, Stay,
 
 import config from '../config.js';
 
+/**
+ * Stable identity for a Lavalink track. `encoded` cannot be used: the Deezer
+ * source embeds a per-search token in it, so two searches for the same track
+ * produce different strings. The canonical URI is stable; identifier+source is
+ * the fallback for entries without one.
+ */
+function trackKey(track: unknown): string | null {
+    const info = (track as { info?: { uri?: string; identifier?: string; sourceName?: string } })
+        ?.info;
+    if (!info) return null;
+    if (info.uri) return info.uri;
+    if (info.identifier && info.sourceName) return `${info.sourceName}:${info.identifier}`;
+    const encoded = (track as { encoded?: string })?.encoded;
+    return encoded ?? null;
+}
+
 export default class ServerData {
     private prisma: PrismaClient;
 
@@ -239,11 +255,9 @@ export default class ServerData {
             await this.createPlaylist(userId, name);
             playlist = await this.getPLaylist(userId, name);
         }
-        // Compare on `encoded`: the stable Lavalink track id. Comparing the whole
-        // JSON let the same track in twice, because fields like artworkUrl differ
-        // between identical searches.
-        const encoded = (track as { encoded?: string } | null)?.encoded;
-        if (encoded) {
+        // Compare on the canonical track identity; see trackKey().
+        const key = trackKey(track);
+        if (key) {
             const rows = await this.prisma.song.findMany({
                 where: { playlistId: playlist.id },
                 select: { track: true },
@@ -252,7 +266,7 @@ export default class ServerData {
                 try {
                     const parsed = JSON.parse(row.track);
                     const entries = Array.isArray(parsed) ? parsed : [parsed];
-                    return entries.some(entry => entry?.encoded === encoded);
+                    return entries.some(entry => trackKey(entry) === key);
                 } catch {
                     return false;
                 }
