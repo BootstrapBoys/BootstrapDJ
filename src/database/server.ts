@@ -193,6 +193,10 @@ export default class ServerData {
         });
     }
 
+    public async getSetups(): Promise<Setup[]> {
+        return await this.prisma.setup.findMany();
+    }
+
     public async setSetup(guildId: string, textId: string, messageId: string): Promise<void> {
         await this.prisma.setup.upsert({
             where: {

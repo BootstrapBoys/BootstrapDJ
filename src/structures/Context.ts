@@ -65,14 +65,35 @@ export default class Context {
             this.args = args;
         }
     }
-    public async sendMessage(content: any): Promise<Message> {
+    public async sendMessage(content: any, deleteAfter?: number): Promise<Message> {
+        const timeout = deleteAfter ?? this.client.config.deleteAfter;
         if (this.isInteraction) {
             this.msg = this.interaction.reply(content);
+            this.scheduleDelete(content, timeout);
             return this.msg;
         } else {
             this.msg = await (this.message.channel as TextChannel).send(content);
+            this.scheduleDelete(content, timeout);
             return this.msg;
         }
+    }
+
+    /**
+     * Delete a reply after `seconds` so command output doesn't linger.
+     * Messages carrying components are left alone: those are pickers and
+     * paginators that must outlive the reply.
+     */
+    private scheduleDelete(content: any, seconds: number): void {
+        if (!seconds || seconds <= 0) return;
+        if (content?.components?.length) return;
+        if (content?.ephemeral) return;
+        const timer = setTimeout(() => {
+            const removal = this.isInteraction
+                ? this.interaction.deleteReply()
+                : Promise.resolve(this.msg).then((msg: Message) => msg?.delete?.());
+            Promise.resolve(removal).catch(() => {});
+        }, seconds * 1000);
+        (timer as unknown as { unref?: () => void }).unref?.();
     }
     public async editMessage(content: any): Promise<Message> {
         if (this.isInteraction) {

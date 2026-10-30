@@ -393,6 +393,102 @@ async function oops(channel: TextChannel, args: string): Promise<void> {
         return console.error(e);
     }
 }
+const setupJanitors = new Map<string, ReturnType<typeof setInterval>>();
+
+/**
+ * Empty the song-request channel and post a fresh "nothing playing" mock.
+ * Runs once per boot so the channel never accumulates history across restarts.
+ */
+export async function resetSetupChannel(
+    client: Lavamusic,
+    setup: { guildId: string; textId: string }
+): Promise<void> {
+    const guild = client.guilds.cache.get(setup.guildId);
+    const channel = guild?.channels.cache.get(setup.textId) as TextChannel | undefined;
+    if (!guild || !channel) return;
+
+    let removed = 0;
+    try {
+        // bulkDelete refuses messages older than 14 days and caps at 100 a call.
+        for (let pass = 0; pass < 10; pass++) {
+            const messages = await channel.messages.fetch({ limit: 100 });
+            if (!messages.size) break;
+            const recent = messages.filter(
+                message => Date.now() - message.createdTimestamp < 14 * 24 * 60 * 60 * 1000
+            );
+            if (!recent.size) break;
+            const deleted = await channel.bulkDelete(recent, true);
+            removed += deleted.size;
+            if (messages.size < 100) break;
+        }
+    } catch (error) {
+        client.logger.error(`[setup] purge of ${channel.id} failed: ${error}`);
+    }
+
+    try {
+        const embed = client
+            .embed()
+            .setColor(client.color.main)
+            .setAuthor({
+                name: client.user.username,
+                iconURL: client.user.displayAvatarURL({ extension: 'png' }),
+            })
+            .setDescription('Nothing playing right now')
+            .setImage(client.config.links.img);
+        const message = await channel.send({
+            embeds: [embed],
+            components: getButtons().map(row => {
+                row.components.forEach(component => component.setDisabled(true));
+                return row;
+            }),
+        });
+        await client.db.setSetup(guild.id, channel.id, message.id);
+    } catch (error) {
+        client.logger.error(`[setup] could not post a fresh mock in ${channel.id}: ${error}`);
+    }
+
+    client.logger.info(`[setup] ${channel.name}: purged ${removed} messages`);
+}
+
+/**
+ * Periodically delete everything in the song-request channel except the mock
+ * player, so the channel stays a control surface instead of a chat log.
+ */
+export function startSetupJanitor(client: Lavamusic, guildId: string): void {
+    const seconds = client.config.setupCleanupInterval;
+    if (!seconds || seconds <= 0) return;
+    const existing = setupJanitors.get(guildId);
+    if (existing) clearInterval(existing);
+
+    const timer = setInterval(async () => {
+        try {
+            const setup = await client.db.getSetup(guildId);
+            if (!setup) return;
+            const guild = client.guilds.cache.get(guildId);
+            const channel = guild?.channels.cache.get(setup.textId) as TextChannel | undefined;
+            if (!channel) return;
+            const messages = await channel.messages.fetch({ limit: 50 });
+            const stale = messages.filter(
+                message =>
+                    message.id !== setup.messageId &&
+                    !message.pinned &&
+                    Date.now() - message.createdTimestamp > 5000
+            );
+            if (!stale.size) return;
+            const recent = stale.filter(
+                message => Date.now() - message.createdTimestamp < 14 * 24 * 60 * 60 * 1000
+            );
+            if (recent.size) await channel.bulkDelete(recent, true).catch(() => {});
+            for (const message of stale.filter(m => !recent.has(m.id)).values())
+                await message.delete().catch(() => {});
+        } catch (error) {
+            client.logger.error(`[setup] janitor failed for ${guildId}: ${error}`);
+        }
+    }, seconds * 1000);
+    (timer as unknown as { unref?: () => void }).unref?.();
+    setupJanitors.set(guildId, timer);
+}
+
 export { setupStart, trackStart, buttonReply, updateSetup, oops };
 
 /**

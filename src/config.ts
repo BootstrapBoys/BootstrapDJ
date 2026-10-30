@@ -20,6 +20,8 @@ export default {
     botActivity: process.env.BOT_ACTIVITY || 'BootstrapDJ', // set the bot activity
     botActivityType: process.env.BOT_ACTIVITY_TYPE ? parseInt(process.env.BOT_ACTIVITY_TYPE) : 2, // 0 = PLAYING, 1 = STREAMING, 2 = LISTENING, 3 = WATCHING
     maxQueueSize: process.env.MAX_QUEUE_SIZE ? parseInt(process.env.MAX_QUEUE_SIZE) : 100, // max queue size
+    deleteAfter: process.env.COMMAND_DELETE_AFTER ? parseInt(process.env.COMMAND_DELETE_AFTER) : 10, // seconds before a command reply is deleted (0 disables)
+    setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
     owners: process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : [], // bot owners
     clientId: process.env.CLIENT_ID, // bot client id
     guildId: process.env.GUILD_ID, // guild id
