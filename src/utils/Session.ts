@@ -4,6 +4,16 @@ import { LoadType } from 'shoukaku';
 import { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
 import { Dispatcher, Lavamusic } from '../structures/index.js';
 
+/** True when at least one human is connected; bots do not count as listeners. */
+export function hasListeners(
+    members: Iterable<{ user?: { bot?: boolean } | null } | null>
+): boolean {
+    for (const member of members) {
+        if (member && !member.user?.bot) return true;
+    }
+    return false;
+}
+
 /** Is a stored session still worth restoring? `<= 0` disables restore entirely. */
 export function isRestorable(updatedAt: Date, maxAgeSeconds: number, now: number = Date.now()): boolean {
     if (maxAgeSeconds <= 0) return false;
@@ -68,11 +78,27 @@ export async function restoreSessions(client: Lavamusic): Promise<void> {
         const guild = client.guilds.cache.get(session.guildId);
         const textChannel = guild?.channels.cache.get(session.textId);
         const voiceChannel = guild?.channels.cache.get(session.voiceId);
-        const isVoiceChannel =
-            voiceChannel?.type === ChannelType.GuildVoice ||
-            voiceChannel?.type === ChannelType.GuildStageVoice;
-        if (!guild || !textChannel || !voiceChannel || !isVoiceChannel) {
+        if (!guild || !textChannel || !voiceChannel) {
             await client.db.deleteSession(session.guildId);
+            continue;
+        }
+        if (
+            voiceChannel.type !== ChannelType.GuildVoice &&
+            voiceChannel.type !== ChannelType.GuildStageVoice
+        ) {
+            await client.db.deleteSession(session.guildId);
+            continue;
+        }
+
+        // Restoring into an empty channel would play to nobody: the bot's own
+        // join does not trigger the "everyone left" sweep. 24/7 is the explicit
+        // exception — it exists to keep the channel occupied.
+        const stay = await client.db.get_247(session.guildId);
+        if (!stay && !hasListeners(voiceChannel.members.values())) {
+            await client.db.deleteSession(session.guildId);
+            client.logger.info(
+                `[session] ${guild.name}: voice channel is empty, saved queue cleared`
+            );
             continue;
         }
 

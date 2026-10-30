@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/client';
 
 import ServerData from '../dist/database/server.js';
 import { fromSaved, toSaved } from '../dist/structures/Dispatcher.js';
-import { isRestorable } from '../dist/utils/Session.js';
+import { hasListeners, isRestorable } from '../dist/utils/Session.js';
 import { fakeUser, makeSong } from './helpers.mjs';
 
 const dbPath = path.join(os.tmpdir(), `bootstrapdj-session-${process.pid}-${Date.now()}.db`);
@@ -97,4 +97,14 @@ test('deleteSession removes the row and tolerates a missing one', async () => {
     assert.equal((await db.getSessions()).length, 0);
 
     await db.deleteSession('g1');
+});
+
+test('hasListeners counts humans only', () => {
+    assert.equal(hasListeners([]), false, 'empty channel');
+    assert.equal(hasListeners([{ user: { bot: true } }]), false, 'bots only');
+    assert.equal(
+        hasListeners([{ user: { bot: true } }, { user: { bot: false } }]),
+        true,
+        'one human is enough'
+    );
 });
