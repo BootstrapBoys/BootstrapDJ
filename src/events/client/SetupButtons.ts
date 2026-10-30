@@ -165,15 +165,11 @@ export default class SetupButtons extends Event {
                     });
                     break;
                 case 'LOOP_BUT': {
-                    const random = ['off', 'queue', 'repeat'];
-                    const loop = random[Math.floor(Math.random() * random.length)];
-                    if (player.loop === loop)
-                        return await buttonReply(
-                            interaction,
-                            `Loop is already ${player.loop}.`,
-                            this.client.color.main
-                        );
-                    player.setLoop(loop);
+                    // Cycle off → queue → repeat; the previous implementation
+                    // picked a random mode, so the button often did nothing.
+                    const order = ['off', 'queue', 'repeat'] as const;
+                    const next = order[(order.indexOf(player.loop) + 1) % order.length];
+                    player.setLoop(next);
                     await buttonReply(
                         interaction,
                         `Loop set to ${player.loop}.`,
