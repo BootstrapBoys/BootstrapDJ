@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/client';
 
 import ServerData from '../dist/database/server.js';
 import { fromSaved, toSaved } from '../dist/structures/Dispatcher.js';
-import { hasListeners, isRestorable } from '../dist/utils/Session.js';
+import { hasListeners, isRestorable, waitForListeners } from '../dist/utils/Session.js';
 import { fakeUser, makeSong } from './helpers.mjs';
 
 const dbPath = path.join(os.tmpdir(), `bootstrapdj-session-${process.pid}-${Date.now()}.db`);
@@ -107,4 +107,33 @@ test('hasListeners counts humans only', () => {
         true,
         'one human is enough'
     );
+});
+
+test('waitForListeners returns immediately when someone is already there', async () => {
+    const channel = { members: { values: () => [{ user: { bot: false } }].values() } };
+
+    assert.equal(await waitForListeners(channel, 30, 10), true);
+});
+
+test('waitForListeners catches someone joining inside the window', async () => {
+    let calls = 0;
+    const channel = {
+        members: {
+            values: () => {
+                calls++;
+                return (calls > 1 ? [{ user: { bot: false } }] : []).values();
+            },
+        },
+    };
+
+    const started = Date.now();
+    assert.equal(await waitForListeners(channel, 5, 10), true);
+    assert.ok(Date.now() - started < 2000, 'must not sit out the whole window');
+});
+
+test('waitForListeners gives up when the window is zero or nobody arrives', async () => {
+    const channel = { members: { values: () => [].values() } };
+
+    assert.equal(await waitForListeners(channel, 0, 10), false);
+    assert.equal(await waitForListeners(channel, 1, 50), false);
 });

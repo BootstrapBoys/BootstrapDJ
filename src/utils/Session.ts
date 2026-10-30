@@ -1,4 +1,5 @@
-import { ChannelType, TextChannel } from 'discord.js';
+import { Session } from '@prisma/client';
+import { ChannelType, TextChannel, User } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
@@ -56,6 +57,24 @@ async function resolveSaved(client: Lavamusic, saved: SavedTrack): Promise<Song 
     }
 }
 
+/** Poll a channel until a human is present, or the window expires. */
+export async function waitForListeners(
+    channel: {
+        members: { values(): IterableIterator<{ user?: { bot?: boolean } | null } | null> };
+    },
+    seconds: number,
+    intervalMs: number = 1000
+): Promise<boolean> {
+    if (hasListeners(channel.members.values())) return true;
+    if (seconds <= 0) return false;
+    const deadline = Date.now() + seconds * 1000;
+    while (Date.now() < deadline) {
+        await new Promise<void>((resolve: () => void) => setTimeout(resolve, intervalMs));
+        if (hasListeners(channel.members.values())) return true;
+    }
+    return false;
+}
+
 /**
  * Rebuild players for sessions left behind by a crash or restart: rejoin the
  * voice channel, restore volume/loop/autoplay, resume the current track at its
@@ -64,87 +83,98 @@ async function resolveSaved(client: Lavamusic, saved: SavedTrack): Promise<Song 
 export async function restoreSessions(client: Lavamusic): Promise<void> {
     const sessions = await client.db.getSessions();
     if (!sessions.length) return;
-
-    const maxAge = client.config.sessionRestoreAge;
     const botUser = client.user;
     if (!botUser) return;
 
-    for (const session of sessions) {
-        if (!isRestorable(session.updatedAt, maxAge)) {
-            await client.db.deleteSession(session.guildId);
-            continue;
-        }
+    // Per guild, in parallel: one guild waiting on an empty channel must not
+    // hold up the others.
+    await Promise.all(sessions.map(session => restoreSession(client, session, botUser)));
+}
 
-        const guild = client.guilds.cache.get(session.guildId);
-        const textChannel = guild?.channels.cache.get(session.textId);
-        const voiceChannel = guild?.channels.cache.get(session.voiceId);
-        if (!guild || !textChannel || !voiceChannel) {
-            await client.db.deleteSession(session.guildId);
-            continue;
-        }
-        if (
-            voiceChannel.type !== ChannelType.GuildVoice &&
-            voiceChannel.type !== ChannelType.GuildStageVoice
-        ) {
-            await client.db.deleteSession(session.guildId);
-            continue;
-        }
+async function restoreSession(client: Lavamusic, session: Session, botUser: User): Promise<void> {
+    const guildId = session.guildId;
+    const drop = async (reason: string): Promise<void> => {
+        await client.db.deleteSession(guildId);
+        client.logger.info(`[session] ${reason}`);
+    };
 
-        // Restoring into an empty channel would play to nobody: the bot's own
-        // join does not trigger the "everyone left" sweep. 24/7 is the explicit
-        // exception — it exists to keep the channel occupied.
-        const stay = await client.db.get_247(session.guildId);
-        if (!stay && !hasListeners(voiceChannel.members.values())) {
-            await client.db.deleteSession(session.guildId);
+    if (!isRestorable(session.updatedAt, client.config.sessionRestoreAge)) {
+        return await drop(`guild ${guildId}: saved queue is older than the restore window`);
+    }
+
+    const guild = client.guilds.cache.get(guildId);
+    const textChannel = guild?.channels.cache.get(session.textId);
+    const voiceChannel = guild?.channels.cache.get(session.voiceId);
+    if (!guild || !textChannel || !voiceChannel) {
+        return await drop(`guild ${guildId}: channel no longer exists`);
+    }
+    if (
+        voiceChannel.type !== ChannelType.GuildVoice &&
+        voiceChannel.type !== ChannelType.GuildStageVoice
+    ) {
+        return await drop(`guild ${guildId}: saved channel is not a voice channel`);
+    }
+
+    // Restoring into an empty channel would play to nobody: the bot's own join
+    // does not trigger the "everyone left" sweep. Wait a short window for
+    // someone to arrive before discarding the queue. 24/7 skips the wait.
+    const stay = await client.db.get_247(guildId);
+    if (!stay && !hasListeners(voiceChannel.members.values())) {
+        const window = client.config.sessionEmptyWait;
+        if (window > 0) {
             client.logger.info(
-                `[session] ${guild.name}: voice channel is empty, saved queue cleared`
+                `[session] ${guild.name}: channel empty, waiting up to ${window}s for a listener`
             );
-            continue;
         }
-
-        try {
-            const dispatcher = await client.queue.create(
-                guild,
-                voiceChannel,
-                textChannel as TextChannel
+        if (!(await waitForListeners(voiceChannel, window))) {
+            return await drop(
+                `${guild.name}: voice channel stayed empty, saved queue cleared`
             );
-            dispatcher.loop = (session.loop as Dispatcher['loop']) ?? 'off';
-            dispatcher.autoplay = session.autoplay;
+        }
+    }
 
-            const queued = JSON.parse(session.queue) as SavedTrack[];
-            for (const saved of queued) dispatcher.queue.push(fromSaved(saved, botUser));
+    try {
+        const dispatcher = await client.queue.create(
+            guild,
+            voiceChannel,
+            textChannel as TextChannel
+        );
+        dispatcher.loop = (session.loop as Dispatcher['loop']) ?? 'off';
+        dispatcher.autoplay = session.autoplay;
 
-            const savedCurrent = session.current
-                ? (JSON.parse(session.current) as SavedTrack & { position: number })
-                : null;
+        const queued = JSON.parse(session.queue) as SavedTrack[];
+        for (const saved of queued) dispatcher.queue.push(fromSaved(saved, botUser));
 
-            if (!savedCurrent) {
-                await dispatcher.play();
-                client.logger.info(
-                    `[session] restored ${queued.length} queued track(s) in ${guild.name}`
-                );
-                continue;
-            }
+        const savedCurrent = session.current
+            ? (JSON.parse(session.current) as SavedTrack & { position: number })
+            : null;
 
-            const track =
-                (await resolveSaved(client, savedCurrent)) ?? fromSaved(savedCurrent, botUser);
-            dispatcher.current = track;
-            dispatcher.history.push(track);
-            await dispatcher.player.setGlobalVolume(session.volume);
-            await dispatcher.player.playTrack({
-                track: { encoded: track.encoded },
-                position: savedCurrent.position,
-                volume: session.volume,
-                paused: session.paused,
-            });
-            dispatcher.paused = session.paused;
+        if (!savedCurrent) {
+            await dispatcher.play();
             client.logger.info(
-                `[session] resumed "${track.info.title}" at ${Math.round(
-                    savedCurrent.position / 1000
-                )}s with ${queued.length} queued in ${guild.name}`
+                `[session] restored ${queued.length} queued track(s) in ${guild.name}`
             );
-        } catch (error) {
-            client.logger.error(`[session] restore failed for ${session.guildId}: ${error}`);
+            return;
         }
+
+        const track =
+            (await resolveSaved(client, savedCurrent)) ?? fromSaved(savedCurrent, botUser);
+        dispatcher.current = track;
+        dispatcher.history.push(track);
+        await dispatcher.player.setGlobalVolume(session.volume);
+        await dispatcher.player.playTrack({
+            track: { encoded: track.encoded },
+            position: savedCurrent.position,
+            volume: session.volume,
+            paused: session.paused,
+        });
+        dispatcher.paused = session.paused;
+        client.logger.info(
+            `[session] resumed "${track.info.title}" at ${Math.round(
+                savedCurrent.position / 1000
+            )}s with ${queued.length} queued in ${guild.name}`
+        );
+    } catch (error) {
+        client.logger.error(`[session] restore failed for ${guildId}: ${error}`);
     }
 }
