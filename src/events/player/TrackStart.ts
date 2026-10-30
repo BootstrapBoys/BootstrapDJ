@@ -24,6 +24,8 @@ export default class TrackStart extends Event {
         });
     }
     public async run(player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
+        // Top up the lookahead before any early return below can skip it.
+        void dispatcher.ensureLookahead().catch(() => {});
         const guild = this.client.guilds.cache.get(player.guildId);
         if (!guild) return;
         const channel = guild.channels.cache.get(dispatcher.channelId) as TextChannel;

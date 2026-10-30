@@ -52,6 +52,7 @@ export default class Dispatcher {
     public autoplay: boolean;
     /** Last track a user asked for; autoplay seeds from it. */
     public seed: Song | null;
+    private toppingUp = false;
     public nowPlayingMessage: Message | null;
     public history: Song[] = [];
 
@@ -209,6 +210,7 @@ export default class Dispatcher {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.push(song);
         this.seed = song;
+        void this.ensureLookahead().catch(() => {});
     }
 
     /** Same contract as enqueue(), but jumps the queue (used by /playnext). */
@@ -216,6 +218,23 @@ export default class Dispatcher {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.unshift(song);
         this.seed = song;
+        void this.ensureLookahead().catch(() => {});
+    }
+
+    /**
+     * Keep exactly one bot pick queued ahead while autoplay is on, so /skip
+     * always has somewhere to go. User requests keep precedence: nothing is
+     * added while any track is already queued (a user track outranks the bot,
+     * and an existing bot pick already satisfies the lookahead).
+     */
+    public async ensureLookahead(): Promise<Song | null> {
+        if (!this.autoplay || this.toppingUp || this.queue.length) return null;
+        this.toppingUp = true;
+        try {
+            return await this.Autoplay(this.current ?? undefined);
+        } finally {
+            this.toppingUp = false;
+        }
     }
 
     /** Drop every bot-queued track. Returns how many were removed. */
@@ -328,10 +347,10 @@ export default class Dispatcher {
             this.purgeAutoplay();
             return null;
         }
-        // Only seed immediately when there is nothing to play; otherwise the
-        // track end handler tops the queue up.
-        if (this.current || this.queue.length) return null;
-        return await this.Autoplay();
+        // Nothing to play at all: seed the first track. Otherwise just make
+        // sure one pick is waiting behind whatever is queued.
+        if (!this.current && !this.queue.length) return await this.Autoplay();
+        return await this.ensureLookahead();
     }
 }
 

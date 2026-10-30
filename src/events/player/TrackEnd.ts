@@ -17,10 +17,10 @@ export default class TrackEnd extends Event {
         if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
         if (dispatcher.loop === 'queue') dispatcher.queue.push(track);
         await dispatcher.play();
-        // Top up only when no user-requested tracks remain; bot picks are a
-        // filler tier, so one queued pick is enough of a lookahead.
-        if (dispatcher.autoplay && dispatcher.queue.length === 0) {
-            await dispatcher.Autoplay(track);
+        // Keep one bot pick waiting so /skip always has a target. The
+        // ensureLookahead lock makes this safe alongside the TrackStart call.
+        if (dispatcher.autoplay) {
+            await dispatcher.ensureLookahead();
         }
         if (m && m.deletable) await m.delete().catch(() => {});
         if (!dispatcher.current) {
