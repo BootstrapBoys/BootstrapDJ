@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/typedef */
 import { Message, User } from 'discord.js';
-import { Node, Player, Track } from 'shoukaku';
+import { Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
 
 import { Lavamusic } from './index.js';
 
@@ -71,12 +71,27 @@ export default class Dispatcher {
             .on('start', () =>
                 this.client.shoukaku.emitPlayerEvent('trackStart', this.player, this.current, this)
             )
-            .on('end', () => {
+            .on('end', (data: TrackEndEvent) => {
+                // FINISHED is the normal path; LOAD_FAILED/CLEANUP/STOPPED/REPLACED mean
+                // Lavalink dropped the track, which used to be completely silent.
+                if (data?.reason && String(data.reason) !== 'FINISHED')
+                    this.client.logger.warn(
+                        `Track ended with reason ${data.reason}: ${
+                            this.current?.info?.title ?? 'unknown'
+                        }`
+                    );
                 if (!this.queue.length)
                     this.client.shoukaku.emitPlayerEvent('queueEnd', this.player, this.current, this);
                 this.client.shoukaku.emitPlayerEvent('trackEnd', this.player, this.current, this);
             })
             .on('stuck', () => this.client.shoukaku.emitPlayerEvent('trackStuck', this.player, this.current))
+            .on('exception', (data: TrackExceptionEvent) => {
+                this.client.logger.error(
+                    `Track exception (${data?.exception?.severity ?? 'unknown'}): ${
+                        data?.exception?.message ?? 'no message'
+                    }${data?.exception?.cause ? ` — ${data.exception.cause}` : ''}`
+                );
+            })
             .on('closed', (...arr) => {
                 this.client.shoukaku.emitPlayerEvent('socketClosed', this.player, ...arr);
             });

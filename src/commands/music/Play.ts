@@ -69,15 +69,25 @@ export default class Play extends Command {
                 ],
             });
         switch (res.loadType) {
-            case LoadType.ERROR:
+            case LoadType.ERROR: {
+                const exception = res.data as {
+                    message?: string;
+                    severity?: string;
+                    cause?: string;
+                };
+                const detail = exception?.cause || exception?.message || 'unknown';
+                this.client.logger.error(`Lavalink load error for ${query}: ${detail}`);
                 await ctx.sendMessage({
                     embeds: [
                         embed
                             .setColor(this.client.color.red)
-                            .setDescription('There was an error while searching.'),
+                            .setDescription(
+                                `There was an error while searching.\n\`${detail.slice(0, 200)}\``
+                            ),
                     ],
                 });
                 break;
+            }
             case LoadType.EMPTY:
                 await ctx.sendMessage({
                     embeds: [
