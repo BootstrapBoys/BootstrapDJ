@@ -35,4 +35,4 @@ src/generated/
 .boot-state
 
 # Local SQLite database (live data, never in git)
-prisma/lavamusic.db
+prisma/*.db
