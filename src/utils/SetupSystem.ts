@@ -11,7 +11,7 @@ function neb(embed: EmbedBuilder, player: Dispatcher, client: Lavamusic): EmbedB
     if (!player || !player.current || !player.current.info) return embed;
 
     let iconUrl = client.config.icons[player.current.info.sourceName];
-    if (!iconUrl) iconUrl = client.user.displayAvatarURL({ extension: 'png' });
+    if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
 
     let icon = player.current ? player.current.info.artworkUrl : client.config.links.img;
     return embed
@@ -21,7 +21,7 @@ function neb(embed: EmbedBuilder, player: Dispatcher, client: Lavamusic): EmbedB
             } • \`[${client.utils.formatTime(player.current.info.length)}]\` - Requested by ${player.current.info.requester
             }`
         )
-        .setImage(icon)
+        .setImage(icon ?? null)
         .setColor(client.color.main);
 }
 
@@ -40,7 +40,7 @@ async function setupStart(
     player: Dispatcher,
     message: Message<true>
 ): Promise<void> {
-    let m: Message;
+    let m: Message | undefined;
     const embed = client.embed();
     let n = client.embed().setColor(client.color.main);
 
@@ -54,6 +54,7 @@ async function setupStart(
     if (m) {
         try {
             let res = await client.queue.search(query);
+            if (!res) return;
             switch (res.loadType) {
                 case LoadType.ERROR:
                     await message.channel
@@ -203,8 +204,10 @@ async function trackStart(
     track: Song,
     client: Lavamusic
 ): Promise<void> {
-    let icon = player.current ? player.current.info.artworkUrl : client.config.links.img;
-    let m: Message;
+    const current = player.current;
+    if (!current) return;
+    const icon = current.info.artworkUrl ?? client.config.links.img;
+    let m: Message | undefined;
     try {
         m = await channel.messages.fetch({ message: msgId, cache: true });
     } catch (error) {
@@ -213,8 +216,8 @@ async function trackStart(
         );
     }
     if (m) {
-        let iconUrl = client.config.icons[player.current.info.sourceName];
-        if (!iconUrl) iconUrl = client.user.displayAvatarURL({ extension: 'png' });
+        let iconUrl = client.config.icons[current.info.sourceName];
+        if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
         const embed = client
             .embed()
             .setAuthor({ name: `Now Playing`, iconURL: iconUrl })
@@ -224,21 +227,21 @@ async function trackStart(
                     track.info.length
                 )}]\` - Requested by ${track.info.requester}`
             )
-            .setImage(icon);
+            .setImage(icon ?? null);
         await m
             .edit({
                 embeds: [embed],
                 components: getButtons().map(b => {
                     b.components.forEach(c => {
-                        c.setDisabled(player && player.current ? false : true);
+                        c.setDisabled(!player.current);
                     });
                     return b;
                 }),
             })
             .catch(error => client.logger.error(`[setup] mock message edit failed: ${error}`));
     } else {
-        let iconUrl = client.config.icons[player.current.info.sourceName];
-        if (!iconUrl) iconUrl = client.user.displayAvatarURL({ extension: 'png' });
+        let iconUrl = client.config.icons[current.info.sourceName];
+        if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
         const embed = client
             .embed()
             .setColor(client.color.main)
@@ -248,13 +251,13 @@ async function trackStart(
                     track.info.length
                 )}]\` - Requested by ${track.info.requester}`
             )
-            .setImage(icon);
+            .setImage(icon ?? null);
         await channel
             .send({
                 embeds: [embed],
                 components: getButtons().map(b => {
                     b.components.forEach(c => {
-                        c.setDisabled(player && player.current ? false : true);
+                        c.setDisabled(!player.current);
                     });
                     return b;
                 }),
@@ -272,7 +275,7 @@ async function trackStart(
 
 async function updateSetup(client: Lavamusic, guild: any): Promise<void> {
     let setup = await client.db.getSetup(guild.id);
-    let m: Message;
+    let m: Message | undefined;
     if (setup && setup.textId) {
         const textChannel = guild.channels.cache.get(setup.textId) as TextChannel;
         if (!textChannel) return;
@@ -286,7 +289,7 @@ async function updateSetup(client: Lavamusic, guild: any): Promise<void> {
         const player = client.queue.get(guild.id);
         if (player && player.current) {
             let iconUrl = client.config.icons[player.current.info.sourceName];
-            if (!iconUrl) iconUrl = client.user.displayAvatarURL({ extension: 'png' });
+            if (!iconUrl) iconUrl = client.user?.displayAvatarURL({ extension: 'png' });
             const embed = client
                 .embed()
                 .setAuthor({ name: `Now Playing`, iconURL: iconUrl })
@@ -297,7 +300,7 @@ async function updateSetup(client: Lavamusic, guild: any): Promise<void> {
                         player.current.info.length
                     )}]\` - Requested by ${player.current.info.requester}`
                 )
-                .setImage(player.current.info.artworkUrl);
+                .setImage(player.current.info.artworkUrl ?? null);
             await m
                 .edit({
                     embeds: [embed],
@@ -314,8 +317,8 @@ async function updateSetup(client: Lavamusic, guild: any): Promise<void> {
                 .embed()
                 .setColor(client.color.main)
                 .setAuthor({
-                    name: client.user.username,
-                    iconURL: client.user.displayAvatarURL({ extension: 'png' }),
+                    name: client.user?.username ?? 'BootstrapDJ',
+                    iconURL: client.user?.displayAvatarURL({ extension: 'png' }),
                 })
                 .setDescription(`Nothing playing right now`)
                 .setImage(client.config.links.img);
@@ -336,7 +339,7 @@ async function updateSetup(client: Lavamusic, guild: any): Promise<void> {
 
 async function buttonReply(int: any, args: string, color: ColorResolvable): Promise<void> {
     const embed = new EmbedBuilder();
-    let m: Message;
+    let m: Message | undefined;
     if (int.replied) {
         m = await int
             .editReply({ embeds: [embed.setColor(color).setDescription(args)] })
@@ -348,7 +351,7 @@ async function buttonReply(int: any, args: string, color: ColorResolvable): Prom
     }
     setTimeout(async () => {
         if (int && !int.ephemeral) {
-            await m.delete().catch(() => { });
+            await m?.delete().catch(() => { });
         }
     }, 2000);
 }
@@ -403,8 +406,8 @@ export async function resetSetupChannel(
             .embed()
             .setColor(client.color.main)
             .setAuthor({
-                name: client.user.username,
-                iconURL: client.user.displayAvatarURL({ extension: 'png' }),
+                name: client.user?.username ?? 'BootstrapDJ',
+                iconURL: client.user?.displayAvatarURL({ extension: 'png' }),
             })
             .setDescription('Nothing playing right now')
             .setImage(client.config.links.img);

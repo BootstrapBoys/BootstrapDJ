@@ -46,6 +46,8 @@ export default class Add extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        const author = ctx.author;
+        if (!author) return;
         const playlist = args[0];
         const song = args[1];
 
@@ -69,7 +71,7 @@ export default class Add extends Command {
                 ],
             });
 
-        const playlistData = await client.db.getPLaylist(ctx.author.id, playlist);
+        const playlistData = await client.db.getPLaylist(author.id, playlist);
 
         if (!playlistData)
             return await ctx.sendMessage({
@@ -112,7 +114,7 @@ export default class Add extends Command {
         let added = 0;
         let duplicates = 0;
         for (const track of tracks) {
-            const created = await client.db.addSong(ctx.author.id, playlist, track);
+            const created = await client.db.addSong(author.id, playlist, track);
             if (created) added++;
             else duplicates++;
         }

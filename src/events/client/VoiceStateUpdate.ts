@@ -10,51 +10,53 @@ export default class VoiceStateUpdate extends Event {
     }
     public async run(oldState: any, newState: any): Promise<void> {
         const guildId = newState.guild.id;
-        if (!guildId) return;
+        const botId = this.client.user?.id;
+        const me = newState.guild.members.me;
+        if (!guildId || !botId || !me) return;
         const player = this.client.queue.get(guildId);
         if (!player) return;
         if (
-            newState.guild.members.cache.get(this.client.user.id) &&
-            !newState.guild.members.cache.get(this.client.user.id).voice.channelId
+            newState.guild.members.cache.get(botId) &&
+            !newState.guild.members.cache.get(botId).voice.channelId
         ) {
             if (player) {
                 return player.destroy();
             }
         }
         if (
-            newState.id === this.client.user.id &&
+            newState.id === botId &&
             newState.channelId &&
             newState.channel.type == ChannelType.GuildStageVoice &&
-            newState.guild.members.me.voice.suppress
+            me.voice.suppress
         ) {
             if (
-                newState.guild.members.me.permissions.has(['Connect', 'Speak']) ||
-                newState.channel.permissionsFor(newState.guild.members.me).has('MuteMembers')
+                me.permissions.has(['Connect', 'Speak']) ||
+                newState.channel.permissionsFor(me).has('MuteMembers')
             ) {
-                await newState.guild.members.me.voice.setSuppressed(false).catch(() => { });
+                await me.voice.setSuppressed(false).catch(() => { });
             }
         }
-        if (newState.id == this.client.user.id) return;
+        if (newState.id == botId) return;
         const vc = newState.guild.channels.cache.get(
-            player.node.manager.connections.get(newState.guild.id).channelId
+            player.node.manager.connections.get(newState.guild.id)?.channelId
         );
         if (
-            newState.id === this.client.user.id &&
+            newState.id === botId &&
             !newState.serverDeaf &&
             vc &&
-            vc.permissionsFor(newState.guild.member.me).has('DeafenMembers')
+            vc.permissionsFor(me).has('DeafenMembers')
         )
             await newState.setDeaf(true);
-        if (newState.id === this.client.user.id && newState.serverMute && !player.paused)
+        if (newState.id === botId && newState.serverMute && !player.paused)
             player.pause();
-        if (newState.id === this.client.user.id && !newState.serverMute && player.paused)
+        if (newState.id === botId && !newState.serverMute && player.paused)
             player.pause();
 
         let voiceChannel = newState.guild.channels.cache.get(
-            player.node.manager.connections.get(newState.guild.id).channelId
+            player.node.manager.connections.get(newState.guild.id)?.channelId
         );
 
-        if (newState.id === this.client.user.id && newState.channelId === null) return;
+        if (newState.id === botId && newState.channelId === null) return;
 
         if (!voiceChannel) return;
         if (voiceChannel.members.filter((x: any) => !x.user.bot).size <= 0) {
@@ -63,7 +65,7 @@ export default class VoiceStateUpdate extends Event {
                 setTimeout(async () => {
                     const vc = player.node.manager.connections.get(newState.guild.id);
                     if (vc && !vc.channelId) return;
-                    const playerVoiceChannel = newState.guild.channels.cache.get(vc.channelId);
+                    const playerVoiceChannel = newState.guild.channels.cache.get(vc?.channelId ?? '');
                     if (
                         player &&
                         playerVoiceChannel &&
@@ -79,7 +81,7 @@ export default class VoiceStateUpdate extends Event {
                 setTimeout(async () => {
                     const vc = player.node.manager.connections.get(newState.guild.id);
                     if (vc && !vc.channelId) return;
-                    const playerVoiceChannel = newState.guild.channels.cache.get(vc.channelId);
+                    const playerVoiceChannel = newState.guild.channels.cache.get(vc?.channelId ?? '');
                     if (
                         player &&
                         playerVoiceChannel &&

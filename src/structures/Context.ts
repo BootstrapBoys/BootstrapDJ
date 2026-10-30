@@ -55,6 +55,19 @@ export default class Context {
         this.setArgs(args);
     }
 
+
+    /** Typed accessors: the constructor sets exactly one of the two, and
+     * `isInteraction` reflects that, so these cannot disagree in practice. */
+    private get cmd(): ChatInputCommandInteraction {
+        if (!this.interaction) throw new Error('Context is not tied to an interaction');
+        return this.interaction;
+    }
+
+    private get messageChannel(): TextChannel {
+        if (!this.message) throw new Error('Context is not tied to a message');
+        return this.message.channel as TextChannel;
+    }
+
     public get isInteraction(): boolean {
         return this.ctx instanceof ChatInputCommandInteraction;
     }
@@ -68,11 +81,11 @@ export default class Context {
     }
     public async sendMessage(content: any, deleteAfter?: number): Promise<Message> {
         if (this.isInteraction) {
-            this.msg = this.interaction.reply(content);
+            this.msg = this.cmd.reply(content);
             this.armDelete(content, 'reply', deleteAfter);
             return this.msg;
         } else {
-            this.msg = await (this.message.channel as TextChannel).send(content);
+            this.msg = await this.messageChannel.send(content);
             this.armDelete(content, 'message', deleteAfter);
             return this.msg;
         }
@@ -96,7 +109,7 @@ export default class Context {
         const timer = setTimeout(() => {
             const removal =
                 target === 'reply'
-                    ? this.interaction.deleteReply()
+                    ? this.cmd.deleteReply()
                     : Promise.resolve(this.msg).then((msg: Message) => msg?.delete?.());
             Promise.resolve(removal).catch(() => {});
         }, timeout * 1000);
@@ -106,7 +119,7 @@ export default class Context {
     public async editMessage(content: any): Promise<Message> {
         if (this.isInteraction) {
             if (this.msg) {
-                this.msg = await this.interaction.editReply(content);
+                this.msg = await this.cmd.editReply(content);
                 this.armDelete(content, 'reply');
             }
             return this.msg;
@@ -120,27 +133,27 @@ export default class Context {
     }
     public async sendDeferMessage(content: any): Promise<Message> {
         if (this.isInteraction) {
-            this.msg = await this.interaction.deferReply({ fetchReply: true });
+            this.msg = await this.cmd.deferReply({ fetchReply: true });
             this.armDelete(content, 'reply');
             return this.msg;
         } else {
-            this.msg = await (this.message.channel as TextChannel).send(content);
+            this.msg = await this.messageChannel.send(content);
             this.armDelete(content, 'message');
             return this.msg;
         }
     }
     public async sendFollowUp(content: any): Promise<void> {
         if (this.isInteraction) {
-            this.msg = await this.interaction.followUp(content);
+            this.msg = await this.cmd.followUp(content);
             this.armDelete(content, 'message');
         } else {
-            this.msg = await (this.message.channel as TextChannel).send(content);
+            this.msg = await this.messageChannel.send(content);
             this.armDelete(content, 'message');
         }
     }
     public get deferred(): boolean | Promise<any> {
         if (this.isInteraction) {
-            return this.interaction.deferred;
+            return this.cmd.deferred;
         }
 
         if (this.msg) return true;

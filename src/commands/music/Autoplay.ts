@@ -41,8 +41,10 @@ export default class Autoplay extends Command {
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
         const seed = args.join(' ').trim();
+        const guild = ctx.guild;
+        if (!guild) return;
         const vc = ctx.member as any;
-        let player = client.queue.get(ctx.guild.id);
+        let player = client.queue.get(guild.id);
         const embed = this.client.embed();
 
         if (!client.queue.hasNode)
@@ -68,7 +70,7 @@ export default class Autoplay extends Command {
             });
         }
 
-        if (!player) player = await client.queue.create(ctx.guild, vc.voice.channel, ctx.channel);
+        if (!player) player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
 
         if (seed) {
             const picked = await player.seedFrom(seed);

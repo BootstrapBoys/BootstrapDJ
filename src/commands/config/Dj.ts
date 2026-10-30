@@ -68,33 +68,41 @@ export default class Dj extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        const guild = ctx.guild;
+        if (!guild) return;
         let subCommand: string;
         let role: any;
         if (ctx.isInteraction) {
-            subCommand = ctx.interaction.options.data[0].name;
+            const interaction = ctx.interaction;
+            if (!interaction) return;
+            const sub = interaction.options.data[0];
+            if (!sub) return;
+            subCommand = sub.name;
             if (subCommand === 'add' || subCommand === 'remove') {
-                role = ctx.interaction.options.data[0].options[0].role;
+                role = sub.options?.[0]?.role;
             }
         } else {
+            const message = ctx.message;
+            if (!message) return;
             subCommand = args[0];
-            role = ctx.message.mentions.roles.first() || ctx.guild.roles.cache.get(args[1]);
+            role = message.mentions.roles.first() || guild.roles.cache.get(args[1]);
         }
         const embed = client.embed().setColor(client.color.main);
-        let dj = await client.db.getDj(ctx.guild.id);
+        let dj = await client.db.getDj(guild.id);
         if (subCommand === 'add') {
             if (!role)
                 return await ctx.sendMessage({
                     embeds: [embed.setDescription('Please provide a role to add')],
                 });
             const isExRole = await client.db
-                .getRoles(ctx.guild.id)
+                .getRoles(guild.id)
                 .then((r) => r.find((re) => re.roleId === role.id));
             if (isExRole)
                 return await ctx.sendMessage({
                     embeds: [embed.setDescription(`The dj role <@&${role.id}> is already added`)],
                 });
-            client.db.addRole(ctx.guild.id, role.id);
-            client.db.setDj(ctx.guild.id, true);
+            client.db.addRole(guild.id, role.id);
+            client.db.setDj(guild.id, true);
             return await ctx.sendMessage({
                 embeds: [embed.setDescription(`The dj role <@&${role.id}> has been added`)],
             });
@@ -104,13 +112,13 @@ export default class Dj extends Command {
                     embeds: [embed.setDescription('Please provide a role to remove')],
                 });
             const isExRole = await client.db
-                .getRoles(ctx.guild.id)
+                .getRoles(guild.id)
                 .then((r) => r.find((re) => re.roleId === role.id));
             if (!isExRole)
                 return await ctx.sendMessage({
                     embeds: [embed.setDescription(`The dj role <@&${role.id}> is not added`)],
                 });
-            client.db.removeRole(ctx.guild.id, role.id);
+            client.db.removeRole(guild.id, role.id);
             return await ctx.sendMessage({
                 embeds: [embed.setDescription(`The dj role <@&${role.id}> has been removed`)],
             });
@@ -119,7 +127,7 @@ export default class Dj extends Command {
                 return await ctx.sendMessage({
                     embeds: [embed.setDescription('There are no dj roles to clear')],
                 });
-            client.db.clearRoles(ctx.guild.id);
+            client.db.clearRoles(guild.id);
             return await ctx.sendMessage({
                 embeds: [embed.setDescription(`All dj roles have been removed`)],
             });
@@ -128,9 +136,9 @@ export default class Dj extends Command {
                 return await ctx.sendMessage({
                     embeds: [embed.setDescription('There are no dj roles to toggle')],
                 });
-            const data = await client.db.getDj(ctx.guild.id);
+            const data = await client.db.getDj(guild.id);
             if (data) {
-                client.db.setDj(ctx.guild.id, !data.mode);
+                client.db.setDj(guild.id, !data.mode);
                 return await ctx.sendMessage({
                     embeds: [
                         embed.setDescription(

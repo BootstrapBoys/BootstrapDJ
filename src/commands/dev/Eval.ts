@@ -33,6 +33,8 @@ export default class Eval extends Command {
     }
 
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        const author = ctx.author;
+        if (!author) return;
         const code = args.join(' ');
         try {
             let evaled = eval(code);
@@ -67,7 +69,7 @@ export default class Eval extends Command {
                     components: [row],
                 });
                 const filter = (i): boolean =>
-                    i.customId === 'eval-delete' && i.user.id === ctx.author.id;
+                    i.customId === 'eval-delete' && i.user.id === author.id;
                 const collector = msg.createMessageComponentCollector({
                     time: 60000,
                     filter: filter,

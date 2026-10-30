@@ -38,6 +38,7 @@ export default class Speed extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        if (!ctx.guild) return await ctx.sendMessage({ content: 'This command only works in a server.' });
         const player = client.queue.get(ctx.guild.id);
         const speed = Number(args[0]);
 

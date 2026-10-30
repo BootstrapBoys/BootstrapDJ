@@ -4,8 +4,8 @@ import { SearchEngine } from './types.js';
 dotenv.config();
 
 export default {
-    token: process.env.TOKEN,
-    prefix: process.env.PREFIX,
+    token: process.env.TOKEN ?? '',
+    prefix: process.env.PREFIX || '!',
     color: {
         red: 0xff0000,
         green: 0x00ff00,
@@ -24,8 +24,8 @@ export default {
     setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
     autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // search term autoplay uses when nothing has played yet
     owners: process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : [], // bot owners
-    clientId: process.env.CLIENT_ID, // bot client id
-    guildId: process.env.GUILD_ID, // guild id
+    clientId: process.env.CLIENT_ID ?? '', // bot client id
+    guildId: process.env.GUILD_ID ?? '', // guild id
     logChannelId: process.env.LOG_CHANNEL_ID || '', // log channel id
     links: {
         img: process.env.IMG_LINK || 'https://i.imgur.com/ud3EWNh.jpg',
@@ -40,9 +40,9 @@ export default {
     production: process.env.PRODUCTION ? parseBoolean(process.env.PRODUCTION) : true,
     lavalink: [
         {
-            url: process.env.LAVALINK_URL,
-            auth: process.env.LAVALINK_AUTH,
-            name: process.env.LAVALINK_NAME,
+            url: process.env.LAVALINK_URL ?? '',
+            auth: process.env.LAVALINK_AUTH ?? '',
+            name: process.env.LAVALINK_NAME || 'Bootstrap Node',
             secure: process.env.LAVALINK_SECURE ? parseBoolean(process.env.LAVALINK_SECURE) : false,
         },
     ], // lavalink nodes

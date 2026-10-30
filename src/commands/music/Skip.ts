@@ -29,7 +29,9 @@ export default class Skip extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
-        const player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
         const embed = this.client.embed();
         if (player.queue.length === 0)
             return await ctx.sendMessage({
@@ -43,13 +45,20 @@ export default class Skip extends Command {
         if (!ctx.isInteraction) {
             ctx.message?.react('👍');
         } else {
+            const current = player.current;
+            if (!current)
+                return await ctx.sendMessage({
+                    embeds: [
+                        embed
+                            .setColor(this.client.color.red)
+                            .setDescription(`Nothing playing right now`),
+                    ],
+                });
             return await ctx.sendMessage({
                 embeds: [
                     embed
                         .setColor(this.client.color.main)
-                        .setDescription(
-                            `Skipped [${player.current.info.title}](${player.current.info.uri})`
-                        ),
+                        .setDescription(`Skipped [${current.info.title}](${current.info.uri})`),
                 ],
             });
         }

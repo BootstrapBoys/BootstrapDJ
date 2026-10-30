@@ -29,7 +29,9 @@ export default class Pause extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
-        const player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
         const embed = this.client.embed();
         if (!player.paused) {
             player.pause();

@@ -1,3 +1,5 @@
+import { EmbedBuilder } from 'discord.js';
+
 import { Command, Context, Lavamusic } from '../../structures/index.js';
 
 export default class GuildList extends Command {
@@ -34,7 +36,7 @@ export default class GuildList extends Command {
 
         let chunks = client.utils.chunk(guilds, 10) as any;
         if (chunks.length === 0) chunks = 1;
-        const pages = [];
+        const pages: EmbedBuilder[] = [];
         for (let i = 0; i < chunks.length; i++) {
             const embed = this.client
                 .embed()

@@ -52,7 +52,7 @@ export class Utils {
     }
 
     public static chunk(array: any[], size: number): any[] {
-        const chunked_arr = [];
+        const chunked_arr: any[][] = [];
         let index = 0;
         while (index < array.length) {
             chunked_arr.push(array.slice(index, size + index));
@@ -103,8 +103,8 @@ export class Utils {
         if (embed.length < 2) {
             if (ctx.isInteraction) {
                 ctx.deferred
-                    ? ctx.interaction.followUp({ embeds: embed })
-                    : ctx.interaction.reply({ embeds: embed });
+                    ? ctx.interaction!.followUp({ embeds: embed })
+                    : ctx.interaction!.reply({ embeds: embed });
                 return;
             } else {
                 (ctx.channel as TextChannel).send({ embeds: embed });
@@ -147,11 +147,11 @@ export class Utils {
         let msg: any;
         if (ctx.isInteraction) {
             msg = ctx.deferred
-                ? await ctx.interaction.followUp({
+                ? await ctx.interaction!.followUp({
                       ...msgOptions,
                       fetchReply: true as boolean,
                   })
-                : await ctx.interaction.reply({
+                : await ctx.interaction!.reply({
                       ...msgOptions,
                       fetchReply: true,
                   });

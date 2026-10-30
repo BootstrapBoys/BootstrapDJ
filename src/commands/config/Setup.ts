@@ -53,16 +53,21 @@ export default class Setup extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        const guild = ctx.guild;
+        const clientUser = client.user;
+        if (!guild || !clientUser) return;
         let subCommand: string;
         if (ctx.isInteraction) {
-            subCommand = ctx.interaction.options.data[0].name;
+            const interaction = ctx.interaction;
+            if (!interaction) return;
+            subCommand = interaction.options.data[0].name;
         } else {
             subCommand = args[0];
         }
         const embed = client.embed().setColor(client.color.main);
         switch (subCommand) {
             case 'create': {
-                const data = await client.db.getSetup(ctx.guild.id);
+                const data = await client.db.getSetup(guild.id);
 
                 if (data && data.textId && data.messageId)
                     return await ctx.sendMessage({
@@ -73,14 +78,14 @@ export default class Setup extends Command {
                             },
                         ],
                     });
-                const textChannel = await ctx.guild.channels.create({
-                    name: `${this.client.user.username}-song-requests`,
+                const textChannel = await guild.channels.create({
+                    name: `${clientUser.username}-song-requests`,
                     type: ChannelType.GuildText,
                     topic: 'Song requests for the music bot',
                     permissionOverwrites: [
                         {
                             type: OverwriteType.Member,
-                            id: this.client.user.id,
+                            id: clientUser.id,
                             allow: [
                                 PermissionFlagsBits.ViewChannel,
                                 PermissionFlagsBits.SendMessages,
@@ -90,7 +95,7 @@ export default class Setup extends Command {
                         },
                         {
                             type: OverwriteType.Role,
-                            id: ctx.guild.roles.everyone.id,
+                            id: guild.roles.everyone.id,
                             allow: [
                                 PermissionFlagsBits.ViewChannel,
                                 PermissionFlagsBits.SendMessages,
@@ -99,7 +104,7 @@ export default class Setup extends Command {
                         },
                     ],
                 });
-                const player = this.client.queue.get(ctx.guild.id);
+                const player = this.client.queue.get(guild.id);
                 const image = this.client.config.links.img;
                 const desc =
                     player && player.queue && player.current
@@ -113,7 +118,7 @@ export default class Setup extends Command {
                         components: getButtons(),
                     })
                     .then(async msg => {
-                        client.db.setSetup(ctx.guild.id, textChannel.id, msg.id);
+                        client.db.setSetup(guild.id, textChannel.id, msg.id);
                     });
                 const embed2 = client.embed().setColor(client.color.main);
                 await ctx.sendMessage({
@@ -126,7 +131,7 @@ export default class Setup extends Command {
                 break;
             }
             case 'delete': {
-                const data2 = await client.db.getSetup(ctx.guild.id);
+                const data2 = await client.db.getSetup(guild.id);
                 if (!data2)
                     return await ctx.sendMessage({
                         embeds: [
@@ -136,11 +141,10 @@ export default class Setup extends Command {
                             },
                         ],
                     });
-                client.db.deleteSetup(ctx.guild.id);
-                await ctx.guild.channels.cache
-                    .get(data2.textId)
-                    .delete()
-                    .catch(() => {
+                client.db.deleteSetup(guild.id);
+                const channel = guild.channels.cache.get(data2.textId);
+                if (channel)
+                    await channel.delete().catch(() => {
                         null;
                     });
                 await ctx.sendMessage({
@@ -155,7 +159,7 @@ export default class Setup extends Command {
             }
 
             case 'info': {
-                const data3 = await client.db.getSetup(ctx.guild.id);
+                const data3 = await client.db.getSetup(guild.id);
                 if (!data3)
                     return await ctx.sendMessage({
                         embeds: [
@@ -165,7 +169,16 @@ export default class Setup extends Command {
                             },
                         ],
                     });
-                const channel = ctx.guild.channels.cache.get(data3.textId);
+                const channel = guild.channels.cache.get(data3.textId);
+                if (!channel)
+                    return await ctx.sendMessage({
+                        embeds: [
+                            {
+                                description: 'The song request channel doesn\'t exist',
+                                color: client.color.red,
+                            },
+                        ],
+                    });
                 embed
                     .setDescription(`The song request channel is <#${channel.id}>`)
                     .setColor(client.color.main);

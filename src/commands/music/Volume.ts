@@ -36,7 +36,9 @@ export default class Volume extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
-        const player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
         const embed = this.client.embed();
         const number = Number(args[0]);
         if (isNaN(number))

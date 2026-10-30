@@ -25,7 +25,7 @@ const manager = new ShardingManager('./dist/LavaClient.js', {
 });
 
 manager
-    .spawn({ amount: manager.totalShards, delay: null, timeout: -1 })
+    .spawn({ amount: manager.totalShards, delay: undefined, timeout: -1 })
     .then(shards => {
         logger.start(`[CLIENT] ${shards.size} shard(s) spawned.`);
     })

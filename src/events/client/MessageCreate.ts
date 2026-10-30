@@ -10,15 +10,23 @@ export default class MessageCreate extends Event {
     }
     public async run(message: Message): Promise<any> {
         if (message.author.bot) return;
+        // Narrows to Message<true>: guild, member and guildId are then non-null.
+        if (!message.inGuild()) return;
+        const me = message.guild.members.me;
+        const member = message.member;
+        const botId = this.client.user?.id;
+        if (!me || !member || !botId) return;
+
         const setup = await this.client.db.getSetup(message.guildId);
         if (setup && setup.textId) {
             if (setup.textId === message.channelId) {
                 return this.client.emit('setupSystem', message);
             }
         }
-        let guild = await this.client.db.get(message.guildId);
+        const guild = await this.client.db.get(message.guildId);
+        if (!guild) return;
 
-        const mention = new RegExp(`^<@!?${this.client.user.id}>( |)$`);
+        const mention = new RegExp(`^<@!?${botId}>( |)$`);
         if (message.content.match(mention)) {
             await message.reply({
                 content: `Hey, my prefix for this server is \`${guild.prefix}\` Want more info? then do \`${guild.prefix}help\`\nStay Safe, Stay Awesome!`,
@@ -26,15 +34,15 @@ export default class MessageCreate extends Event {
             return;
         }
         const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const prefixRegex = new RegExp(
-            `^(<@!?${this.client.user.id}>|${escapeRegex(guild.prefix)})\\s*`
-        );
-        if (!prefixRegex.test(message.content)) return;
-        const [matchedPrefix] = message.content.match(prefixRegex);
+        const prefixRegex = new RegExp(`^(<@!?${botId}>|${escapeRegex(guild.prefix)})\\s*`);
+        const match = message.content.match(prefixRegex);
+        if (!match) return;
+        const [matchedPrefix] = match;
 
         const args = message.content.slice(matchedPrefix.length).trim().split(/ +/g);
 
-        const cmd = args.shift().toLowerCase();
+        const cmd = args.shift()?.toLowerCase();
+        if (!cmd) return;
         const command =
             this.client.commands.get(cmd) ||
             this.client.commands.get(this.client.aliases.get(cmd) as string);
@@ -42,39 +50,30 @@ export default class MessageCreate extends Event {
         const ctx = new Context(message, args);
         ctx.setArgs(args);
 
-        let dm = message.author.dmChannel;
-        if (typeof dm === 'undefined') dm = await message.author.createDM();
+        if (message.channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true) return;
 
-        if (
-            !message.inGuild() ||
-            !message.channel
-                .permissionsFor(message.guild.members.me)
-                .has(PermissionFlagsBits.ViewChannel)
-        )
-            return;
-
-        if (!message.guild.members.me.permissions.has(PermissionFlagsBits.SendMessages))
+        if (!me.permissions.has(PermissionFlagsBits.SendMessages))
             return await message.author
                 .send({
                     content: `I don't have **\`SendMessage\`** permission in \`${message.guild.name}\`\nchannel: <#${message.channelId}>`,
                 })
                 .catch(() => { });
 
-        if (!message.guild.members.me.permissions.has(PermissionFlagsBits.EmbedLinks))
+        if (!me.permissions.has(PermissionFlagsBits.EmbedLinks))
             return await message.reply({
                 content: 'I don\'t have **`EmbedLinks`** permission.',
             });
 
         if (command.permissions) {
             if (command.permissions.client) {
-                if (!message.guild.members.me.permissions.has(command.permissions.client))
+                if (!me.permissions.has(command.permissions.client))
                     return await message.reply({
                         content: 'I don\'t have enough permissions to execute this command.',
                     });
             }
 
             if (command.permissions.user) {
-                if (!message.member.permissions.has(command.permissions.user))
+                if (!member.permissions.has(command.permissions.user))
                     return await message.reply({
                         content: 'You don\'t have enough permissions to use this command.',
                     });
@@ -88,33 +87,33 @@ export default class MessageCreate extends Event {
         }
         if (command.player) {
             if (command.player.voice) {
-                if (!message.member.voice.channel)
+                if (!member.voice.channel)
                     return await message.reply({
                         content: `You must be connected to a voice channel to use this \`${command.name}\` command.`,
                     });
 
-                if (!message.guild.members.me.permissions.has(PermissionFlagsBits.Connect))
+                if (!me.permissions.has(PermissionFlagsBits.Connect))
                     return await message.reply({
                         content: `I don't have \`CONNECT\` permissions to execute this \`${command.name}\` command.`,
                     });
 
-                if (!message.guild.members.me.permissions.has(PermissionFlagsBits.Speak))
+                if (!me.permissions.has(PermissionFlagsBits.Speak))
                     return await message.reply({
                         content: `I don't have \`SPEAK\` permissions to execute this \`${command.name}\` command.`,
                     });
 
                 if (
-                    message.member.voice.channel.type === ChannelType.GuildStageVoice &&
-                    !message.guild.members.me.permissions.has(PermissionFlagsBits.RequestToSpeak)
+                    member.voice.channel.type === ChannelType.GuildStageVoice &&
+                    !me.permissions.has(PermissionFlagsBits.RequestToSpeak)
                 )
                     return await message.reply({
                         content: `I don't have \`REQUEST TO SPEAK\` permission to execute this \`${command.name}\` command.`,
                     });
 
-                if (message.guild.members.me.voice.channel) {
-                    if (message.guild.members.me.voice.channelId !== message.member.voice.channelId)
+                if (me.voice.channel) {
+                    if (me.voice.channelId !== member.voice.channelId)
                         return await message.reply({
-                            content: `You are not connected to <#${message.guild.members.me.voice.channel.id}> to use this \`${command.name}\` command.`,
+                            content: `You are not connected to <#${me.voice.channel.id}> to use this \`${command.name}\` command.`,
                         });
                 }
             }
@@ -140,11 +139,11 @@ export default class MessageCreate extends Event {
                         return await message.reply({
                             content: 'DJ role is not set.',
                         });
-                    const findDJRole = message.member.roles.cache.find((x: any) =>
+                    const findDJRole = member.roles.cache.find((x: any) =>
                         djRole.map((y: any) => y.roleId).includes(x.id)
                     );
                     if (!findDJRole) {
-                        if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+                        if (!member.permissions.has(PermissionFlagsBits.ManageGuild)) {
                             return await message
                                 .reply({
                                     content: 'You need to have the DJ role to use this command.',

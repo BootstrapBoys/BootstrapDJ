@@ -1,3 +1,5 @@
+import { EmbedBuilder } from 'discord.js';
+
 import { Command, Context, Lavamusic } from '../../structures/index.js';
 
 export default class Queue extends Command {
@@ -29,24 +31,37 @@ export default class Queue extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
-        const player = client.queue.get(ctx.guild.id);
-        if (player.queue.length === 0)
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
+        const current = player.current;
+        if (player.queue.length === 0) {
+            if (!current)
+                return await ctx.sendMessage({
+                    embeds: [
+                        this.client
+                            .embed()
+                            .setColor(this.client.color.red)
+                            .setDescription(`Nothing playing right now`),
+                    ],
+                });
             return await ctx.sendMessage({
                 embeds: [
                     this.client
                         .embed()
                         .setColor(this.client.color.main)
                         .setDescription(
-                            `Now playing: [${player.current.info.title}](${
-                                player.current.info.uri
-                            }) - Request By: ${player.current?.info.requester} - Duration: ${
-                                player.current.info.isStream
+                            `Now playing: [${current.info.title}](${
+                                current.info.uri
+                            }) - Request By: ${current.info.requester} - Duration: ${
+                                current.info.isStream
                                     ? 'LIVE'
-                                    : this.client.utils.formatTime(player.current.info.length)
+                                    : this.client.utils.formatTime(current.info.length)
                             }`
                         ),
                 ],
             });
+        }
         const queue = player.queue.map(
             (track, index) =>
                 `${index + 1}. [${track.info.title}](${track.info.uri}) - Request By: ${
@@ -57,12 +72,12 @@ export default class Queue extends Command {
         );
         let chunks = client.utils.chunk(queue, 10) as any;
         if (chunks.length === 0) chunks = 1;
-        const pages = [];
+        const pages: EmbedBuilder[] = [];
         for (let i = 0; i < chunks.length; i++) {
             const embed = this.client
                 .embed()
                 .setColor(this.client.color.main)
-                .setAuthor({ name: 'Queue', iconURL: ctx.guild.iconURL({}) })
+                .setAuthor({ name: 'Queue', iconURL: guild.iconURL({}) ?? undefined })
                 .setDescription(chunks[i].join('\n'))
                 .setFooter({ text: `Page ${i + 1} of ${chunks.length}` });
             pages.push(embed);

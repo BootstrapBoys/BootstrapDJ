@@ -26,7 +26,7 @@ export default class GuildDelete extends Event {
             .setColor(this.client.config.color.red)
             .setAuthor({
                 name: guild.name || 'Unknown Guild',
-                iconURL: guild.iconURL({ extension: 'jpeg' }),
+                iconURL: guild.iconURL({ extension: 'jpeg' }) ?? undefined,
             })
 
             .setDescription(`**${guild.name}** has been removed from my guilds!`)

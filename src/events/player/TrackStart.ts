@@ -68,15 +68,15 @@ export default class TrackStart extends Event {
                 name: 'Now Playing',
                 iconURL:
                     this.client.config.icons[track.info.sourceName] ??
-                    this.client.user.displayAvatarURL({ extension: 'png' }),
+                    this.client.user?.displayAvatarURL({ extension: 'png' }),
             })
             .setColor(this.client.color.main)
             .setDescription(`**[${track.info.title}](${track.info.uri})**`)
             .setFooter({
-                text: `Requested by ${track.info.requester.tag}`,
-                iconURL: track.info.requester.avatarURL({}),
+                text: `Requested by ${track.info.requester.tag ?? 'unknown'}`,
+                iconURL: track.info.requester.avatarURL({}) ?? undefined,
             })
-            .setThumbnail(track.info.artworkUrl)
+            .setThumbnail(track.info.artworkUrl ?? null)
             .addFields(
                 {
                     name: 'Duration',
@@ -115,13 +115,13 @@ export default class TrackStart extends Event {
             const collector = message.createMessageComponentCollector({
                 filter: async b => {
                     if (
-                        b.guild.members.me.voice.channel &&
-                        b.guild.members.me.voice.channelId === b.member.voice.channelId
+                        b.guild.members.me?.voice.channel &&
+                        b.guild.members.me?.voice.channelId === b.member.voice.channelId
                     )
                         return true;
                     else {
                         b.reply({
-                            content: `You are not connected to <#${b.guild.members.me.voice?.channelId ?? 'None'
+                            content: `You are not connected to <#${b.guild.members.me?.voice?.channelId ?? 'None'
                                 }> to use this buttons.`,
                             ephemeral: true,
                         });
@@ -153,7 +153,7 @@ export default class TrackStart extends Event {
                                 embeds: [
                                     embed.setFooter({
                                         text: `Previous by ${interaction.user.tag}`,
-                                        iconURL: interaction.user.avatarURL({}),
+                                        iconURL: interaction.user.avatarURL({}) ?? undefined,
                                     }),
                                 ],
                                 components: [buttonBuilder()],
@@ -167,7 +167,7 @@ export default class TrackStart extends Event {
                                     embed.setFooter({
                                         text: `${player.paused ? 'Paused' : 'Resumed'} by ${interaction.user.tag
                                             }`,
-                                        iconURL: interaction.user.avatarURL({}),
+                                        iconURL: interaction.user.avatarURL({}) ?? undefined,
                                     }),
                                 ],
                                 components: [buttonBuilder()],
@@ -180,7 +180,7 @@ export default class TrackStart extends Event {
                                 embeds: [
                                     embed.setFooter({
                                         text: `Stopped by ${interaction.user.tag}`,
-                                        iconURL: interaction.user.avatarURL({}),
+                                        iconURL: interaction.user.avatarURL({}) ?? undefined,
                                     }),
                                 ],
                                 components: [],
@@ -200,7 +200,7 @@ export default class TrackStart extends Event {
                                 embeds: [
                                     embed.setFooter({
                                         text: `Skipped by ${interaction.user.tag}`,
-                                        iconURL: interaction.user.avatarURL({}),
+                                        iconURL: interaction.user.avatarURL({}) ?? undefined,
                                     }),
                                 ],
                                 components: [],
@@ -215,7 +215,7 @@ export default class TrackStart extends Event {
                                         embeds: [
                                             embed.setFooter({
                                                 text: `Looping by ${interaction.user.tag}`,
-                                                iconURL: interaction.user.avatarURL({}),
+                                                iconURL: interaction.user.avatarURL({}) ?? undefined,
                                             }),
                                         ],
                                         components: [buttonBuilder()],
@@ -228,7 +228,7 @@ export default class TrackStart extends Event {
                                         embeds: [
                                             embed.setFooter({
                                                 text: `Looping Queue by ${interaction.user.tag}`,
-                                                iconURL: interaction.user.avatarURL({}),
+                                                iconURL: interaction.user.avatarURL({}) ?? undefined,
                                             }),
                                         ],
                                         components: [buttonBuilder()],
@@ -241,7 +241,7 @@ export default class TrackStart extends Event {
                                         embeds: [
                                             embed.setFooter({
                                                 text: `Looping Off by ${interaction.user.tag}`,
-                                                iconURL: interaction.user.avatarURL({}),
+                                                iconURL: interaction.user.avatarURL({}) ?? undefined,
                                             }),
                                         ],
                                         components: [buttonBuilder()],

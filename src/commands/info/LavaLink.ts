@@ -28,10 +28,12 @@ export default class LavaLink extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
+        const clientUser = client.user;
+        if (!clientUser) return;
         const embed = this.client.embed();
         embed.setTitle('Lavalink Stats');
         embed.setColor(this.client.color.main);
-        embed.setThumbnail(this.client.user.avatarURL({}));
+        embed.setThumbnail(clientUser.avatarURL({}));
         embed.setTimestamp();
         client.shoukaku.nodes.forEach(node => {
             if (!node.stats) {

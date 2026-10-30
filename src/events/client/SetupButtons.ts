@@ -18,8 +18,8 @@ export default class SetupButtons extends Event {
                 this.client.color.red
             );
         if (
-            interaction.guild.members.cache.get(this.client.user.id).voice.channel &&
-            interaction.guild.members.cache.get(this.client.user.id).voice.channelId !==
+            interaction.guild.members.cache.get(this.client.user?.id ?? '').voice.channel &&
+            interaction.guild.members.cache.get(this.client.user?.id ?? '').voice.channelId !==
             interaction.member.voice.channelId
         )
             return await buttonReply(
@@ -47,6 +47,7 @@ export default class SetupButtons extends Event {
                 this.client.color.red
             );
         const data = await this.client.db.getSetup(interaction.guildId);
+        if (!data) return await buttonReply(interaction, 'The song-request channel is not set up.', this.client.color.red);
         const { title, uri, length } = player.current.info;
         let message;
         try {
@@ -56,9 +57,9 @@ export default class SetupButtons extends Event {
         }
         const icon = player
             ? player.current.info.artworkUrl
-            : this.client.user.displayAvatarURL({ extension: 'png' });
+            : this.client.user?.displayAvatarURL({ extension: 'png' });
         let iconUrl = this.client.config.icons[player.current.info.sourceName];
-        if (!iconUrl) iconUrl = this.client.user.displayAvatarURL({ extension: 'png' });
+        if (!iconUrl) iconUrl = this.client.user?.displayAvatarURL({ extension: 'png' });
 
         const embed = this.client
             .embed()
@@ -67,7 +68,7 @@ export default class SetupButtons extends Event {
                 `[${title}](${uri}) - ${player.current.info.isStream ? 'LIVE' : this.client.utils.formatTime(length)
                 } - Requested by ${player.current.info.requester}`
             )
-            .setImage(icon);
+            .setImage(icon ?? null);
         if (!interaction.isButton()) return;
         if (!(await checkDj(this.client, interaction))) {
             await buttonReply(
@@ -152,8 +153,8 @@ export default class SetupButtons extends Event {
                                 .setDescription(`Nothing playing right now`)
                                 .setImage(this.client.config.links.img)
                                 .setAuthor({
-                                    name: this.client.user.username,
-                                    iconURL: this.client.user.displayAvatarURL({
+                                    name: this.client.user?.username ?? 'BootstrapDJ',
+                                    iconURL: this.client.user?.displayAvatarURL({
                                         extension: 'png',
                                     }),
                                 }),

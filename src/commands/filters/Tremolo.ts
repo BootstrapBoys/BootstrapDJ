@@ -29,6 +29,7 @@ export default class Tremolo extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
+        if (!ctx.guild) return await ctx.sendMessage({ content: 'This command only works in a server.' });
         const player = client.queue.get(ctx.guild.id);
 
         if (player.filters.includes('tremolo')) {

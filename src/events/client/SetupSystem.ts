@@ -10,42 +10,44 @@ export default class SetupSystem extends Event {
         });
     }
     public async run(message: Message): Promise<void> {
-        let channel = message.channel as any;
-
+        if (!message.inGuild()) return;
+        const channel = message.channel as any;
         if (!(channel instanceof TextChannel)) return;
-        if (!message.member.voice.channel) {
+
+        const member = message.member;
+        const me = message.guild.members.me;
+        const botUser = this.client.user;
+        if (!member || !me || !botUser) return;
+
+        const voiceChannel = member.voice.channel;
+        if (!voiceChannel) {
             await oops(channel, `You are not connected to a voice channel to queue songs.`);
-            if (message) await message.delete().catch(() => {});
+            await message.delete().catch(() => {});
             return;
         }
 
         if (
-            !message.member.voice.channel
-                .permissionsFor(this.client.user)
-                .has(PermissionsBitField.resolve(['Connect', 'Speak']))
+            !voiceChannel
+                .permissionsFor(botUser)
+                ?.has(PermissionsBitField.resolve(['Connect', 'Speak']))
         ) {
             await oops(
                 channel,
-                `I don't have enough permission to connect/speak in <#${message.member.voice.channel.id}>`
+                `I don't have enough permission to connect/speak in <#${voiceChannel.id}>`
             );
-            if (message) await message.delete().catch(() => {});
+            await message.delete().catch(() => {});
             return;
         }
 
-        if (
-            message.guild.members.cache.get(this.client.user.id).voice.channel &&
-            message.guild.members.cache.get(this.client.user.id).voice.channelId !==
-                message.member.voice.channelId
-        ) {
+        if (me.voice.channel && me.voice.channelId !== member.voice.channelId) {
             await oops(
                 channel,
-                `You are not connected to <#${
-                    message.guild.members.cache.get(this.client.user.id).voice.channelId
-                }> to queue songs`
+                `You are not connected to <#${me.voice.channelId}> to queue songs`
             );
-            if (message) await message.delete().catch(() => {});
+            await message.delete().catch(() => {});
             return;
         }
+
         let player = this.client.queue.get(message.guildId);
         if (!player) {
             if (!this.client.queue.hasNode) {
@@ -53,18 +55,18 @@ export default class SetupSystem extends Event {
                     channel,
                     'No Lavalink node is available right now. Please try again in a moment.'
                 );
-                if (message) await message.delete().catch(() => {});
+                await message.delete().catch(() => {});
                 return;
             }
             player = await this.client.queue.create(
                 message.guild,
-                message.member.voice.channel,
-                message.channel,
+                voiceChannel,
+                channel,
                 this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes)
             );
         }
-        await setupStart(this.client, message.content, player, message as Message<true>);
-        if (message) await message.delete().catch(() => {});
+        await setupStart(this.client, message.content, player, message);
+        await message.delete().catch(() => {});
     }
 }
 

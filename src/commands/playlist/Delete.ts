@@ -39,9 +39,11 @@ export default class Delete extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        const author = ctx.author;
+        if (!author) return;
         const playlist = args.join(' ').trim();
 
-        const playlistExists = await client.db.getPLaylist(ctx.author.id, playlist);
+        const playlistExists = await client.db.getPLaylist(author.id, playlist);
         if (!playlistExists)
             return await ctx.sendMessage({
                 embeds: [
@@ -52,8 +54,8 @@ export default class Delete extends Command {
                 ],
             });
 
-        const songs = await client.db.getSong(ctx.author.id, playlist);
-        const deleted = await client.db.deletePlaylist(ctx.author.id, playlist);
+        const songs = await client.db.getSong(author.id, playlist);
+        const deleted = await client.db.deletePlaylist(author.id, playlist);
         if (!deleted)
             return await ctx.sendMessage({
                 embeds: [

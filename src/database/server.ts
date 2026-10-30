@@ -108,7 +108,7 @@ export default class ServerData {
         });
     }
 
-    public async get_247(guildId?: string): Promise<Stay | Stay[]> {
+    public async get_247(guildId?: string): Promise<Stay | Stay[] | null> {
         if (guildId) {
             return await this.prisma.stay.findUnique({
                 where: {
@@ -288,6 +288,7 @@ export default class ServerData {
             await this.createPlaylist(userId, name);
             playlist = await this.getPLaylist(userId, name);
         }
+        if (!playlist) throw new Error(`Could not resolve playlist ${name} for ${userId}`);
         // Compare on the canonical track identity; see trackKey().
         const key = trackKey(track);
         if (key) {

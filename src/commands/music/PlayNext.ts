@@ -43,12 +43,23 @@ export default class PlayNext extends Command {
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
         const query = args.join(' ');
-        let player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        const author = ctx.author;
+        if (!guild || !author) return;
+        let player = client.queue.get(guild.id);
         const vc = ctx.member as any;
-        if (!player) player = await client.queue.create(ctx.guild, vc.voice.channel, ctx.channel);
+        if (!player) player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
 
         const res = await this.client.queue.search(query);
         const embed = this.client.embed();
+        if (!res)
+            return await ctx.sendMessage({
+                embeds: [
+                    embed
+                        .setColor(this.client.color.red)
+                        .setDescription('There was an error while searching. Please try again.'),
+                ],
+            });
         switch (res.loadType) {
             case LoadType.ERROR:
                 ctx.sendMessage({
@@ -69,7 +80,7 @@ export default class PlayNext extends Command {
                 });
                 break;
             case LoadType.TRACK: {
-                const track = player.buildTrack(res.data, ctx.author);
+                const track = player.buildTrack(res.data, author);
                 if (player.queue.length > client.config.maxQueueSize)
                     return await ctx.sendMessage({
                         embeds: [
@@ -105,7 +116,7 @@ export default class PlayNext extends Command {
                         ],
                     });
                 for (const track of res.data.tracks) {
-                    const pl = player.buildTrack(track, ctx.author);
+                    const pl = player.buildTrack(track, author);
                     if (player.queue.length > client.config.maxQueueSize)
                         return await ctx.sendMessage({
                             embeds: [
@@ -131,7 +142,7 @@ export default class PlayNext extends Command {
                 break;
             }
             case LoadType.SEARCH: {
-                const track1 = player.buildTrack(res.data[0], ctx.author);
+                const track1 = player.buildTrack(res.data[0], author);
                 if (player.queue.length > client.config.maxQueueSize)
                     return await ctx.sendMessage({
                         embeds: [

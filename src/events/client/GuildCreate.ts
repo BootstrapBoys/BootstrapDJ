@@ -24,9 +24,9 @@ export default class GuildCreate extends Event {
         }
         const embed = new EmbedBuilder()
             .setColor(this.client.config.color.green)
-            .setAuthor({ name: guild.name, iconURL: guild.iconURL({ extension: 'jpeg' }) })
+            .setAuthor({ name: guild.name, iconURL: guild.iconURL({ extension: 'jpeg' }) ?? undefined })
             .setDescription(`**${guild.name}** has been added to my guilds!`)
-            .setThumbnail(guild.iconURL({ extension: 'jpeg' }))
+            .setThumbnail(guild.iconURL({ extension: 'jpeg' }) ?? null)
             .addFields(
                 { name: 'Owner', value: owner.user.tag, inline: true },
                 { name: 'Members', value: guild.memberCount.toString(), inline: true },

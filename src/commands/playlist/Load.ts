@@ -39,9 +39,12 @@ export default class Load extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
-        let player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        const author = ctx.author;
+        if (!guild || !author) return;
+        let player = client.queue.get(guild.id);
         const playlist = args.join(' ').trim();
-        const playlistData = await client.db.getPLaylist(ctx.author.id, playlist);
+        const playlistData = await client.db.getPLaylist(author.id, playlist);
         if (!playlistData)
             return await ctx.sendMessage({
                 embeds: [
@@ -51,7 +54,7 @@ export default class Load extends Command {
                     },
                 ],
             });
-        const songs = await client.db.getSong(ctx.author.id, playlist);
+        const songs = await client.db.getSong(author.id, playlist);
         if (!songs.length)
             return await ctx.sendMessage({
                 embeds: [
@@ -63,7 +66,7 @@ export default class Load extends Command {
             });
         if (!player) {
             const vc = ctx.member as any;
-            player = await client.queue.create(ctx.guild, vc.voice.channel, ctx.channel);
+            player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
         }
 
         let loaded = 0;

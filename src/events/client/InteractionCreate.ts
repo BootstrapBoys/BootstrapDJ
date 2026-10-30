@@ -4,7 +4,6 @@ import {
     ChatInputCommandInteraction,
     Collection,
     CommandInteraction,
-    GuildMember,
     InteractionType,
     PermissionFlagsBits,
 } from 'discord.js';
@@ -24,35 +23,36 @@ export default class InteractionCreate extends Event {
             interaction.type === InteractionType.ApplicationCommand
         ) {
             const { commandName } = interaction;
+            // Cached narrowing: guild, member and channel are non-null from here.
+            if (!interaction.inCachedGuild()) return;
+            const me = interaction.guild.members.me;
+            const member = interaction.member;
+            if (!me || !member) return;
             await this.client.db.get(interaction.guildId); // get or create guild data
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
             const ctx = new Context(interaction as any, interaction.options.data as any);
             ctx.setArgs(interaction.options.data as any);
-            if (
-                !interaction.inGuild() ||
-                !interaction.channel
-                    .permissionsFor(interaction.guild.members.me)
-                    .has(PermissionFlagsBits.ViewChannel)
-            )
+            const channel = interaction.channel;
+            if (!channel || channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true)
                 return;
 
-            if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.SendMessages)) {
-                return await (interaction.member as GuildMember)
+            if (!me.permissions.has(PermissionFlagsBits.SendMessages)) {
+                return await member
                     .send({
                         content: `I don't have **\`SendMessage\`** permission in \`${interaction.guild.name}\`\nchannel: <#${interaction.channelId}>`,
                     })
                     .catch(() => { });
             }
 
-            if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.EmbedLinks))
+            if (!me.permissions.has(PermissionFlagsBits.EmbedLinks))
                 return await interaction.reply({
                     content: 'I don\'t have **`EmbedLinks`** permission.',
                 });
 
             if (command.permissions) {
                 if (command.permissions.client) {
-                    if (!interaction.guild.members.me.permissions.has(command.permissions.client))
+                    if (!me.permissions.has(command.permissions.client))
                         return await interaction.reply({
                             content: 'I don\'t have enough permissions to execute this command.',
                         });
@@ -60,7 +60,7 @@ export default class InteractionCreate extends Event {
 
                 if (command.permissions.user) {
                     if (
-                        !(interaction.member as GuildMember).permissions.has(
+                        !member.permissions.has(
                             command.permissions.user
                         )
                     ) {
@@ -82,38 +82,38 @@ export default class InteractionCreate extends Event {
             }
             if (command.player) {
                 if (command.player.voice) {
-                    if (!(interaction.member as GuildMember).voice.channel)
+                    if (!member.voice.channel)
                         return await interaction.reply({
                             content: `You must be connected to a voice channel to use this \`${command.name}\` command.`,
                         });
 
-                    if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.Connect))
+                    if (!me.permissions.has(PermissionFlagsBits.Connect))
                         return await interaction.reply({
                             content: `I don't have \`CONNECT\` permissions to execute this \`${command.name}\` command.`,
                         });
 
-                    if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.Speak))
+                    if (!me.permissions.has(PermissionFlagsBits.Speak))
                         return await interaction.reply({
                             content: `I don't have \`SPEAK\` permissions to execute this \`${command.name}\` command.`,
                         });
 
                     if (
-                        (interaction.member as GuildMember).voice.channel.type ===
+                        member.voice.channel.type ===
                         ChannelType.GuildStageVoice &&
-                        !interaction.guild.members.me.permissions.has(
+                        !me.permissions.has(
                             PermissionFlagsBits.RequestToSpeak
                         )
                     )
                         return await interaction.reply({
                             content: `I don't have \`REQUEST TO SPEAK\` permission to execute this \`${command.name}\` command.`,
                         });
-                    if (interaction.guild.members.me.voice.channel) {
+                    if (me.voice.channel) {
                         if (
-                            interaction.guild.members.me.voice.channelId !==
-                            (interaction.member as GuildMember).voice.channelId
+                            me.voice.channelId !==
+                            member.voice.channelId
                         )
                             return await interaction.reply({
-                                content: `You are not connected to <#${interaction.guild.members.me.voice.channel.id}> to use this \`${command.name}\` command.`,
+                                content: `You are not connected to <#${me.voice.channel.id}> to use this \`${command.name}\` command.`,
                             });
                     }
                 }
@@ -139,12 +139,12 @@ export default class InteractionCreate extends Event {
                             return await interaction.reply({
                                 content: 'DJ role is not set.',
                             });
-                        const findDJRole = (interaction.member as GuildMember).roles.cache.find(
+                        const findDJRole = member.roles.cache.find(
                             (x: any) => djRole.map((y: any) => y.roleId).includes(x.id)
                         );
                         if (!findDJRole) {
                             if (
-                                !(interaction.member as GuildMember).permissions.has(
+                                !member.permissions.has(
                                     PermissionFlagsBits.ManageGuild
                                 )
                             ) {
@@ -228,7 +228,7 @@ export default class InteractionCreate extends Event {
                 if (!song) return await interaction.respond([]).catch(() => {});
                 const res = await this.client.queue.search(song);
                 if (!res) return await interaction.respond([]).catch(() => {});
-                let songs = [];
+                const songs: Array<{ name: string; value: string }> = [];
                 switch (res.loadType) {
                     case LoadType.SEARCH:
                         if (!res.data.length) return await interaction.respond([]).catch(() => {});

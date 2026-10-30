@@ -128,7 +128,7 @@ export default class Dispatcher {
         if (!this.exists || (!this.queue.length && !this.current)) {
             return;
         }
-        this.current = this.queue.length !== 0 ? this.queue.shift() : this.queue[0];
+        this.current = (this.queue.length !== 0 ? this.queue.shift() : this.queue[0]) ?? null;
         if (!this.current) return;
         this.player.playTrack({ track: { encoded: this.current?.encoded } });
         if (this.current) {
@@ -288,6 +288,8 @@ export default class Dispatcher {
      * heard in the last few tracks, so a thin mix (a niche artist's radio can
      * be mostly that artist) still drifts instead of looping one name. */
     private chooseFrom(tracks: Track[]): Song | null {
+        const botUser = this.client.user;
+        if (!botUser) return null;
         const usable = tracks.filter(track => track?.encoded && !this.isRecent(track));
         if (!usable.length) return null;
         const avoid = new Set(
@@ -298,7 +300,7 @@ export default class Dispatcher {
         );
         const varied = usable.filter(track => !avoid.has(track.info?.author));
         const pool = varied.length ? varied : usable;
-        return this.buildTrack(pool[Math.floor(Math.random() * pool.length)], this.client.user);
+        return this.buildTrack(pool[Math.floor(Math.random() * pool.length)], botUser);
     }
 
     /** Search a free-text query and pick one result. */
@@ -311,7 +313,7 @@ export default class Dispatcher {
     /** Resolve an identifier to a plain track list ([] on any failure). */
     private async resolveTracks(identifier: string): Promise<Track[]> {
         const resolve = await this.node?.rest.resolve(identifier).catch(() => null);
-        return Array.isArray(resolve?.data) ? (resolve.data as Track[]) : [];
+        return Array.isArray(resolve?.data) ? resolve.data : [];
     }
 
     /** YouTube id for a track. The lookup deliberately uses a YouTube prefix
@@ -328,7 +330,7 @@ export default class Dispatcher {
             .catch(() => null);
         const data = resolve?.data;
         if (!Array.isArray(data)) return null;
-        const match = (data as Track[]).find(
+        const match = data.find(
             track => track.info?.sourceName === 'youtube' && looksLikeId(track.info?.identifier)
         );
         return match?.info?.identifier ?? null;

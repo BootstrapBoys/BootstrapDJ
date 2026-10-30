@@ -37,14 +37,18 @@ export default class Help extends Command {
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
         const embed = client.embed();
-        const guild = await client.db.get(ctx.guild.id);
+        const guildId = ctx.guild?.id;
+        const clientUser = client.user;
+        if (!guildId || !clientUser) return;
+        const guild = await client.db.get(guildId);
+        const prefix = guild ? guild.prefix : client.config.prefix;
         const commands = this.client.commands.filter(cmd => cmd.category !== 'dev');
         const categories = commands
             .map(cmd => cmd.category)
             .filter((value, index, self) => self.indexOf(value) === index);
 
         if (!args[0]) {
-            const fildes = [];
+            const fildes: { name: string; value: string; inline: boolean }[] = [];
             categories.forEach(category => {
                 fildes.push({
                     name: category,
@@ -59,10 +63,10 @@ export default class Help extends Command {
                 .setColor(this.client.color.main)
                 .setTitle('Help Menu')
                 .setDescription(
-                    `Hey there! I'm ${this.client.user.username}, a music bot made with [BootstrapDJ](https://github.com/zebz213/BootstrapDJ) and Discord. You can use \`${guild.prefix}help <command>\` to get more info on a command.`
+                    `Hey there! I'm ${clientUser.username}, a music bot made with [BootstrapDJ](https://github.com/zebz213/BootstrapDJ) and Discord. You can use \`${prefix}help <command>\` to get more info on a command.`
                 )
                 .setFooter({
-                    text: `Use ${guild.prefix}help <command> for more info on a command`,
+                    text: `Use ${prefix}help <command> for more info on a command`,
                 });
             fildes.forEach(field => helpEmbed.addFields(field));
             ctx.sendMessage({ embeds: [helpEmbed] });
@@ -82,8 +86,8 @@ export default class Help extends Command {
                 .setColor(this.client.color.main)
                 .setTitle(`Help Menu - ${command.name}`).setDescription(`**Description:** ${command.description.content
                     }
-**Usage:** ${guild.prefix}${command.description.usage}
-**Examples:** ${command.description.examples.map(example => `${guild.prefix}${example}`).join(', ')}
+**Usage:** ${prefix}${command.description.usage}
+**Examples:** ${command.description.examples.map(example => `${prefix}${example}`).join(', ')}
 **Aliases:** ${command.aliases.map(alias => `\`${alias}\``).join(', ')}
 **Category:** ${command.category}
 **Cooldown:** ${command.cooldown} seconds

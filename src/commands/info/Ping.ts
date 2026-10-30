@@ -29,11 +29,14 @@ export default class Ping extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
+        const author = ctx.author;
+        const clientUser = client.user;
+        if (!author || !clientUser) return;
         const msg = await ctx.sendDeferMessage('Pinging...');
 
         const embed = client
             .embed()
-            .setAuthor({ name: 'Pong', iconURL: this.client.user.displayAvatarURL() })
+            .setAuthor({ name: 'Pong', iconURL: clientUser.displayAvatarURL() })
             .setColor(this.client.color.main)
             .addFields([
                 {
@@ -50,8 +53,8 @@ export default class Ping extends Command {
                 },
             ])
             .setFooter({
-                text: `Requested by ${ctx.author.tag}`,
-                iconURL: ctx.author.avatarURL({}),
+                text: `Requested by ${author.tag}`,
+                iconURL: author.avatarURL({}) ?? undefined,
             })
             .setTimestamp();
         return await ctx.editMessage({ content: '', embeds: [embed] });

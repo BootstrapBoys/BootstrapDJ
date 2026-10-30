@@ -30,7 +30,9 @@ export default class Loop extends Command {
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
         const embed = client.embed().setColor(client.color.main);
-        const player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
 
         switch (player.loop) {
             case 'off':

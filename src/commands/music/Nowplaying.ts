@@ -29,9 +29,20 @@ export default class Nowplaying extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
-        const player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
 
         const track = player.current;
+        if (!track)
+            return await ctx.sendMessage({
+                embeds: [
+                    this.client
+                        .embed()
+                        .setColor(this.client.color.red)
+                        .setDescription(`Nothing playing right now`),
+                ],
+            });
         const position = player.player.position;
         const duration = track.info.length;
         const bar = track.info.isStream
@@ -40,8 +51,8 @@ export default class Nowplaying extends Command {
         const embed1 = this.client
             .embed()
             .setColor(this.client.color.main)
-            .setAuthor({ name: 'Now Playing', iconURL: ctx.guild.iconURL({}) })
-            .setThumbnail(track.info.artworkUrl)
+            .setAuthor({ name: 'Now Playing', iconURL: guild.iconURL({}) ?? undefined })
+            .setThumbnail(track.info.artworkUrl ?? null)
             .setDescription(
                 `[${track.info.title}](${track.info.uri}) - Request By: ${track.info.requester}\n\n\`${bar}\``
             )

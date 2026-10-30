@@ -41,6 +41,9 @@ export default class Search extends Command {
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
         const embed = client.embed().setColor(client.color.main);
         const query = args.join(' ');
+        const guild = ctx.guild;
+        const author = ctx.author;
+        if (!guild || !author) return;
 
         if (!client.queue.hasNode)
             return await ctx.sendMessage({
@@ -53,10 +56,10 @@ export default class Search extends Command {
                 ],
             });
 
-        let player = client.queue.get(ctx.guild.id);
+        let player = client.queue.get(guild.id);
         if (!player) {
             const vc = ctx.member as any;
-            player = await client.queue.create(ctx.guild, vc.voice.channel, ctx.channel);
+            player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
         }
 
         const res = await this.client.queue.search(query);
@@ -83,7 +86,7 @@ export default class Search extends Command {
                     ],
                 });
             case LoadType.TRACK: {
-                player.enqueue(player.buildTrack(res.data, ctx.author));
+                player.enqueue(player.buildTrack(res.data, author));
                 await player.isPlaying();
                 return await ctx.sendMessage({
                     embeds: [
@@ -95,7 +98,7 @@ export default class Search extends Command {
             }
             case LoadType.PLAYLIST: {
                 for (const track of res.data.tracks)
-                    player.enqueue(player.buildTrack(track, ctx.author));
+                    player.enqueue(player.buildTrack(track, author));
                 await player.isPlaying();
                 return await ctx.sendMessage({
                     embeds: [
@@ -138,7 +141,7 @@ export default class Search extends Command {
         });
 
         const collector = msg.createMessageComponentCollector({
-            filter: (int: any) => int.user.id === ctx.author.id,
+            filter: (int: any) => int.user.id === author.id,
             max: 1,
             time: 60000,
         });
@@ -148,7 +151,7 @@ export default class Search extends Command {
             const picked = tracks[index];
             await int.deferUpdate();
             if (!picked) return;
-            const song = player.buildTrack(picked, ctx.author);
+            const song = player.buildTrack(picked, author);
             player.enqueue(song);
             await player.isPlaying();
             await msg

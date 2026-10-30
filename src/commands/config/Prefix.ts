@@ -48,14 +48,18 @@ export default class Prefix extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        const guildId = ctx.guild?.id;
+        if (!guildId) return;
         const embed = client.embed().setColor(client.color.main);
-        let guild = await client.db.get(ctx.guild.id);
+        let guild = await client.db.get(guildId);
 
         let subCommand: string;
-        let pre: string;
+        let pre: string | undefined;
         if (ctx.isInteraction) {
-            subCommand = ctx.interaction.options.data[0].name;
-            pre = ctx.interaction.options.data[0].options[0]?.value.toString();
+            const interaction = ctx.interaction;
+            if (!interaction) return;
+            subCommand = interaction.options.data[0].name;
+            pre = interaction.options.data[0].options?.[0]?.value?.toString();
         } else {
             subCommand = args[0];
             pre = args[1];
@@ -77,14 +81,14 @@ export default class Prefix extends Command {
                     });
 
                 if (!guild) {
-                    client.db.setPrefix(ctx.guild.id, pre);
+                    client.db.setPrefix(guildId, pre);
                     return await ctx.sendMessage({
                         embeds: [
                             embed.setDescription(`The prefix for this server is now \`${pre}\``),
                         ],
                     });
                 } else {
-                    client.db.setPrefix(ctx.guild.id, pre);
+                    client.db.setPrefix(guildId, pre);
                     return await ctx.sendMessage({
                         embeds: [
                             embed.setDescription(`The prefix for this server is now \`${pre}\``),
@@ -100,7 +104,7 @@ export default class Prefix extends Command {
                             ),
                         ],
                     });
-                client.db.setPrefix(ctx.guild.id, client.config.prefix);
+                client.db.setPrefix(guildId, client.config.prefix);
                 return await ctx.sendMessage({
                     embeds: [
                         embed.setDescription(

@@ -29,18 +29,21 @@ export default class _247 extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
+        const guild = ctx.guild;
+        const channel = ctx.channel;
+        if (!guild || !channel) return;
         const embed = client.embed();
-        let player = client.shoukaku.players.get(ctx.guild.id) as any;
+        let player = client.shoukaku.players.get(guild.id) as any;
 
-        const data = await client.db.get_247(ctx.guild.id);
+        const data = await client.db.get_247(guild.id);
         const vc = ctx.member as any;
         if (!data) {
-            client.db.set_247(ctx.guild.id, ctx.channel.id, vc.voice.channel.id);
+            client.db.set_247(guild.id, channel.id, vc.voice.channel.id);
             if (!player)
                 player = await client.queue.create(
-                    ctx.guild,
+                    guild,
                     vc.voice.channel,
-                    ctx.channel,
+                    channel,
                     client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
                 );
             return await ctx.sendMessage({
@@ -51,7 +54,7 @@ export default class _247 extends Command {
                 ],
             });
         } else {
-            client.db.delete_247(ctx.guild.id);
+            client.db.delete_247(guild.id);
             return await ctx.sendMessage({
                 embeds: [
                     embed

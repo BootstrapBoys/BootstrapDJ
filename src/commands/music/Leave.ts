@@ -29,7 +29,9 @@ export default class Leave extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
-        const player = client.queue.get(ctx.guild.id);
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
         const embed = this.client.embed();
         if (player) {
             ctx.sendMessage({
@@ -37,7 +39,7 @@ export default class Leave extends Command {
                     embed
                         .setColor(this.client.color.main)
                         .setDescription(
-                            `Left <#${player.node.manager.connections.get(ctx.guild.id).channelId}>`
+                            `Left <#${player.node.manager.connections.get(guild.id)?.channelId}>`
                         ),
                 ],
             });

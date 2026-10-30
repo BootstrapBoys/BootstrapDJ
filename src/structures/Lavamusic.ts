@@ -85,13 +85,12 @@ export default class Lavamusic extends Client {
         // Registration must finish before `ready` builds the slash-command body.
         await Promise.all(pending);
         this.once('ready', async () => {
+            const userId = this.user?.id;
+            if (!userId) return;
             const applicationCommands =
                 this.config.production === true
-                    ? Routes.applicationCommands(this.user.id ?? '')
-                    : Routes.applicationGuildCommands(
-                          this.user.id ?? '',
-                          this.config.guildId ?? ''
-                      );
+                    ? Routes.applicationCommands(userId)
+                    : Routes.applicationGuildCommands(userId, this.config.guildId);
             try {
                 const rest = new REST({ version: '10' }).setToken(this.config.token ?? '');
                 await rest.put(applicationCommands, { body: this.body });

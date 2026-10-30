@@ -38,6 +38,8 @@ export default class Create extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
+        const author = ctx.author;
+        if (!author) return;
         const name = args.join(' ').trim();
         if (name.length > 50)
             return await ctx.sendMessage({
@@ -48,7 +50,7 @@ export default class Create extends Command {
                     },
                 ],
             });
-        const playlist = await client.db.getPLaylist(ctx.author.id, name);
+        const playlist = await client.db.getPLaylist(author.id, name);
         if (playlist)
             return await ctx.sendMessage({
                 embeds: [
@@ -58,7 +60,7 @@ export default class Create extends Command {
                     },
                 ],
             });
-        client.db.createPlaylist(ctx.author.id, name);
+        client.db.createPlaylist(author.id, name);
         return await ctx.sendMessage({
             embeds: [
                 {
