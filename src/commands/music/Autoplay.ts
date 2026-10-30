@@ -39,7 +39,7 @@ export default class Autoplay extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const seed = args.join(' ').trim();
         const guild = ctx.guild;
         if (!guild) return;

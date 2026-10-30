@@ -27,7 +27,7 @@ export default class LavaLink extends Command {
             slashCommand: true,
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const clientUser = client.user;
         if (!clientUser) return;
         const embed = this.client.embed();

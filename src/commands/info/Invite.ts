@@ -30,7 +30,7 @@ export default class Invite extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const clientId = process.env.CLIENT_ID;
         if (!clientId) {
             console.error(

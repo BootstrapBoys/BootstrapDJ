@@ -8,7 +8,7 @@ export default class GuildCreate extends Event {
             name: 'guildCreate',
         });
     }
-    public async run(guild: Guild): Promise<any> {
+    public async run(guild: Guild): Promise<unknown> {
         let owner: GuildMember | undefined;
         try {
             owner = guild.members.cache.get(guild?.ownerId);

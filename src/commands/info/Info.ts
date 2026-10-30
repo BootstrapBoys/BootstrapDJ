@@ -31,7 +31,7 @@ export default class Info extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const osType = os.type();
         const osRelease = os.release();
         const osUptime = os.uptime();

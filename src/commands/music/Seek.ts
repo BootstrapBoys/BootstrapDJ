@@ -35,7 +35,7 @@ export default class Seek extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guild = ctx.guild;
         if (!guild) return;
         const player = client.queue.get(guild.id);

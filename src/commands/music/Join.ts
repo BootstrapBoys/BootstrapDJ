@@ -28,7 +28,7 @@ export default class Join extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const guild = ctx.guild;
         if (!guild) return;
         let player = client.queue.get(guild.id);

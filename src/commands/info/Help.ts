@@ -35,7 +35,7 @@ export default class Help extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const embed = client.embed();
         const guildId = ctx.guild?.id;
         const clientUser = client.user;

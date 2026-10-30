@@ -37,7 +37,7 @@ export default class Create extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
         const name = args.join(' ').trim();

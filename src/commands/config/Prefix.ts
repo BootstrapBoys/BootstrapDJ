@@ -47,7 +47,7 @@ export default class Prefix extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guildId = ctx.guild?.id;
         if (!guildId) return;
         const embed = client.embed().setColor(client.color.main);

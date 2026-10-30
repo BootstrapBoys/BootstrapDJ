@@ -28,7 +28,7 @@ export default class ClearQueue extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const guild = ctx.guild;
         if (!guild) return;
         const player = client.queue.get(guild.id);

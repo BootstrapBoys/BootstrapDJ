@@ -14,6 +14,7 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { NodeOption } from 'shoukaku';
 
 import { Command, Queue, ShoukakuClient } from './index.js';
 import Logger from './Logger.js';
@@ -129,7 +130,7 @@ export default class BootstrapClient extends Client {
         this.body.push(JSON.parse(JSON.stringify(data)));
     }
 
-    private async getNodes(): Promise<any> {
+    private async getNodes(): Promise<NodeOption[]> {
         const params = new URLSearchParams({
             ssl: 'false',
             version: 'v4',
@@ -142,8 +143,8 @@ export default class BootstrapClient extends Client {
             },
         });
 
-        const nodes = await res.json();
-        return nodes;
+        // lavainfo returns the array in Shoukaku's NodeOption shape.
+        return (await res.json()) as NodeOption[];
     }
     private async loadEvents(): Promise<void> {
         const eventsPath = fs.readdirSync(path.join(__dirname, '../events'));

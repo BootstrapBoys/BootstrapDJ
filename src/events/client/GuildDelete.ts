@@ -8,7 +8,7 @@ export default class GuildDelete extends Event {
             name: 'guildDelete',
         });
     }
-    public async run(guild: Guild): Promise<any> {
+    public async run(guild: Guild): Promise<unknown> {
         let owner: GuildMember | undefined;
         try {
             owner = guild.members.cache.get(guild?.ownerId);

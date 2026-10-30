@@ -37,7 +37,7 @@ export default class Pitch extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         if (!ctx.guild) return await ctx.sendMessage({ content: 'This command only works in a server.' });
         const player = client.queue.get(ctx.guild.id);
 

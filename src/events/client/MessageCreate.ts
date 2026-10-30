@@ -8,7 +8,7 @@ export default class MessageCreate extends Event {
             name: 'messageCreate',
         });
     }
-    public async run(message: Message): Promise<any> {
+    public async run(message: Message): Promise<unknown> {
         if (message.author.bot) return;
         // Narrows to Message<true>: guild, member and guildId are then non-null.
         if (!message.inGuild()) return;

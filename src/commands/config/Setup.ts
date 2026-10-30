@@ -52,7 +52,7 @@ export default class Setup extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guild = ctx.guild;
         const clientUser = client.user;
         if (!guild || !clientUser) return;

@@ -28,7 +28,7 @@ export default class Ping extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const author = ctx.author;
         const clientUser = client.user;
         if (!author || !clientUser) return;

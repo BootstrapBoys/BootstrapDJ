@@ -31,7 +31,7 @@ export default class GuildList extends Command {
         });
     }
 
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const guilds = this.client.guilds.cache.map(g => `${g.name} (${g.id})`);
 
         const chunks = client.utils.chunk(guilds, 10);

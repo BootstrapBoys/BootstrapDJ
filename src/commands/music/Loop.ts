@@ -28,7 +28,7 @@ export default class Loop extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const embed = client.embed().setColor(client.color.main);
         const guild = ctx.guild;
         if (!guild) return;

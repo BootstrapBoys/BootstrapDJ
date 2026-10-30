@@ -28,7 +28,7 @@ export default class _247 extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const guild = ctx.guild;
         const channel = ctx.channel;
         if (!guild || !channel) return;
