@@ -12,11 +12,45 @@ import { LoadType } from 'shoukaku';
 import { Context, Event, Lavamusic } from '../../structures/index.js';
 
 export default class InteractionCreate extends Event {
+    private static readonly PLAYLIST_CACHE_MS = 5000;
+    private playlistCache = new Map<
+        string,
+        { at: number; playlists: Array<{ name: string; songs: number }> }
+    >();
+
     constructor(client: Lavamusic, file: string) {
         super(client, file, {
             name: 'interactionCreate',
         });
     }
+
+    /**
+     * Playlist names for autocomplete. Discord fires one request per keystroke,
+     * so the user's list is cached briefly instead of one SQLite query each time.
+     */
+    private async playlistChoices(
+        userId: string
+    ): Promise<Array<{ name: string; songs: number }>> {
+        const now = Date.now();
+        const cached = this.playlistCache.get(userId);
+        if (cached && now - cached.at < InteractionCreate.PLAYLIST_CACHE_MS) return cached.playlists;
+
+        const playlists = await this.client.db.getPlaylists(userId);
+        const entries = playlists.map(playlist => ({
+            name: playlist.name,
+            songs: playlist._count.songs,
+        }));
+        this.playlistCache.set(userId, { at: now, playlists: entries });
+
+        // Bound the map: drop expired users instead of letting it grow.
+        if (this.playlistCache.size > 200) {
+            for (const [id, entry] of this.playlistCache) {
+                if (now - entry.at >= InteractionCreate.PLAYLIST_CACHE_MS) this.playlistCache.delete(id);
+            }
+        }
+        return entries;
+    }
+
     public async run(interaction: ChatInputCommandInteraction | AutocompleteInteraction): Promise<any> {
         if (
             interaction instanceof CommandInteraction &&
@@ -204,14 +238,14 @@ export default class InteractionCreate extends Event {
             // Playlist name suggestions for /add, /load and /delete.
             if (focused.name === 'playlist') {
                 const query = String(focused.value ?? '').toLowerCase();
-                const playlists = await this.client.db.getPlaylists(interaction.user.id);
+                const playlists = await this.playlistChoices(interaction.user.id);
                 const choices = playlists
                     .filter(playlist => playlist.name.toLowerCase().includes(query))
                     .slice(0, 25)
                     .map(playlist => ({
                         // Discord caps both fields at 100 characters.
-                        name: `${playlist.name} — ${playlist._count.songs} song${
-                            playlist._count.songs === 1 ? '' : 's'
+                        name: `${playlist.name} — ${playlist.songs} song${
+                            playlist.songs === 1 ? '' : 's'
                         }`.slice(0, 100),
                         value: playlist.name.slice(0, 100),
                     }));

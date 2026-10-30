@@ -5,6 +5,7 @@ import {
     ButtonBuilder,
     ButtonStyle,
     CommandInteraction,
+    Message,
     TextChannel,
 } from 'discord.js';
 
@@ -99,6 +100,19 @@ export class Utils {
         return `${'▓'.repeat(filledSize)}${'░'.repeat(emptySize)} ${percent}%`;
     }
 
+    /**
+     * Delete a message whose components kept it exempt from auto-delete, once
+     * its collector has ended. Honours COMMAND_DELETE_AFTER (0 keeps it).
+     */
+    public static scheduleDelete(client: Lavamusic, message: Message, seconds?: number): void {
+        const timeout = seconds ?? config.deleteAfter;
+        if (!timeout || timeout <= 0) return;
+        const timer = setTimeout(() => {
+            Promise.resolve(message.delete()).catch(() => {});
+        }, timeout * 1000);
+        (timer as unknown as { unref?: () => void }).unref?.();
+    }
+
     public static async paginate(ctx: Context, embed: any[]): Promise<void> {
         if (embed.length < 2) {
             if (ctx.isInteraction) {
@@ -190,10 +204,6 @@ export class Utils {
                 }
                 if (interaction.customId === 'stop') {
                     collector.stop();
-                    await interaction.editReply({
-                        embeds: [embed[page]],
-                        components: [],
-                    });
                 }
                 if (interaction.customId === 'next') {
                     if (page !== embed.length - 1) {
@@ -218,7 +228,9 @@ export class Utils {
         });
 
         collector.on('end', async () => {
-            await msg.edit({ embeds: [embed[page]], components: [] });
+            // The paginator carried components, so armDelete() never touched it;
+            // delete rather than leave it behind without buttons.
+            await msg.delete().catch(() => {});
         });
     }
 }

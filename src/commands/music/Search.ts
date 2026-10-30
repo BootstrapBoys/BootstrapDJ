@@ -164,11 +164,15 @@ export default class Search extends Command {
                     components: [],
                 })
                 .catch(() => {});
-            collector.stop();
+            client.utils.scheduleDelete(client, msg);
+            collector.stop('picked');
         });
 
         collector.on('end', async (_collected: any, reason: string) => {
-            if (reason === 'time') await msg.edit({ components: [] }).catch(() => {});
+            // A pick already turned the picker into a confirmation on a timer;
+            // on timeout the message would otherwise linger forever without buttons.
+            if (reason === 'picked') return;
+            await msg.delete().catch(() => {});
         });
     }
 }
