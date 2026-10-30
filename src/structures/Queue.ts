@@ -1,4 +1,4 @@
-import { Guild } from 'discord.js';
+import { Channel, Guild } from 'discord.js';
 import { LavalinkResponse, Node } from 'shoukaku';
 
 import { Dispatcher, Lavamusic } from './index.js';
@@ -32,8 +32,9 @@ export class Queue extends Map {
 
     public async create(
         guild: Guild,
-        voice: any,
-        channel: any,
+        // Only the channel ids are used; callers have already validated voice state.
+        voice: Channel | null,
+        channel: Channel | null,
         givenNode?: Node
     ): Promise<Dispatcher> {
         let dispatcher = this.get(guild.id);

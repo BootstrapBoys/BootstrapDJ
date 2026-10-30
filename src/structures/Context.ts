@@ -12,6 +12,7 @@ import {
     PartialGroupDMChannel,
     TextChannel,
     User,
+    VoiceBasedChannel,
 } from 'discord.js';
 
 import { Lavamusic } from './index.js';
@@ -72,12 +73,23 @@ export default class Context {
         return this.ctx instanceof ChatInputCommandInteraction;
     }
 
-    public setArgs(args: any[]): void {
+    public setArgs(args: readonly any[]): void {
         if (this.isInteraction) {
             this.args = args.map((arg: { value: any }) => arg.value);
         } else {
-            this.args = args;
+            this.args = [...args];
         }
+    }
+
+
+    /**
+     * The invoking member's voice channel. The handler already rejects members
+     * who are not connected, so null here means they left during the invocation.
+     */
+    public get voiceChannel(): VoiceBasedChannel | null {
+        const member = this.member;
+        if (!member || typeof member !== 'object' || !('voice' in member)) return null;
+        return member.voice?.channel ?? null;
     }
     public async sendMessage(content: any, deleteAfter?: number): Promise<Message> {
         if (this.isInteraction) {

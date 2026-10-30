@@ -33,16 +33,24 @@ export default class _247 extends Command {
         const channel = ctx.channel;
         if (!guild || !channel) return;
         const embed = client.embed();
-        let player = client.shoukaku.players.get(guild.id) as any;
+        const player = client.shoukaku.players.get(guild.id);
 
         const data = await client.db.get_247(guild.id);
-        const vc = ctx.member as any;
+        const vc = ctx.voiceChannel;
+        if (!vc)
+            return await ctx.sendMessage({
+                embeds: [
+                    embed
+                        .setDescription('You must be connected to a voice channel to use 24/7 mode.')
+                        .setColor(client.color.red),
+                ],
+            });
         if (!data) {
-            client.db.set_247(guild.id, channel.id, vc.voice.channel.id);
+            client.db.set_247(guild.id, channel.id, vc.id);
             if (!player)
                 await client.queue.create(
                     guild,
-                    vc.voice.channel,
+                    vc,
                     channel,
                     client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
                 );

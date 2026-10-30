@@ -5,6 +5,7 @@ import {
     ButtonBuilder,
     ButtonStyle,
     CommandInteraction,
+    EmbedBuilder,
     Message,
     MessageComponentInteraction,
     TextChannel,
@@ -46,21 +47,19 @@ export class Utils {
                                 type: config.botActivityType,
                             },
                         ],
-                        status: config.botStatus as any,
+                        status: config.botStatus,
                     });
                 }
             }
         }
     }
 
-    public static chunk(array: any[], size: number): any[] {
-        const chunked_arr: any[][] = [];
-        let index = 0;
-        while (index < array.length) {
-            chunked_arr.push(array.slice(index, size + index));
-            index += size;
+    public static chunk<T>(array: readonly T[], size: number): T[][] {
+        const chunked: T[][] = [];
+        for (let index = 0; index < array.length; index += size) {
+            chunked.push(array.slice(index, index + size));
         }
-        return chunked_arr;
+        return chunked;
     }
 
     public static formatBytes(bytes: number, decimals = 2): string {
@@ -114,7 +113,7 @@ export class Utils {
         (timer as unknown as { unref?: () => void }).unref?.();
     }
 
-    public static async paginate(ctx: Context, embed: any[]): Promise<void> {
+    public static async paginate(ctx: Context, embed: EmbedBuilder[]): Promise<void> {
         if (embed.length < 2) {
             if (ctx.isInteraction) {
                 if (ctx.deferred) await ctx.interaction!.followUp({ embeds: embed });

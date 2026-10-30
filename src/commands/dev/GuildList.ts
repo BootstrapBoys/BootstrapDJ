@@ -34,8 +34,8 @@ export default class GuildList extends Command {
     public async run(client: Lavamusic, ctx: Context): Promise<any> {
         const guilds = this.client.guilds.cache.map(g => `${g.name} (${g.id})`);
 
-        let chunks = client.utils.chunk(guilds, 10) as any;
-        if (chunks.length === 0) chunks = 1;
+        const chunks = client.utils.chunk(guilds, 10);
+        if (chunks.length === 0) chunks.push([]);
         const pages: EmbedBuilder[] = [];
         for (let i = 0; i < chunks.length; i++) {
             const embed = this.client

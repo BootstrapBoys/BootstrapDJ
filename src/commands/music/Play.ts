@@ -47,7 +47,7 @@ export default class Play extends Command {
         const author = ctx.author;
         if (!guild || !author) return;
         let player = client.queue.get(guild.id);
-        const vc = ctx.member as any;
+        const vc = ctx.voiceChannel;
         if (!client.queue.hasNode)
             return await ctx.sendMessage({
                 embeds: [
@@ -59,7 +59,7 @@ export default class Play extends Command {
                         ),
                 ],
             });
-        if (!player) player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
+        if (!player) player = await client.queue.create(guild, vc, ctx.channel);
 
         const res = await this.client.queue.search(query);
         const embed = this.client.embed();

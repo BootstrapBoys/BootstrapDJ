@@ -108,7 +108,7 @@ export default class InteractionCreate extends Event {
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
             const ctx = new Context(interaction, [...interaction.options.data]);
-            ctx.setArgs(interaction.options.data as any);
+            ctx.setArgs(interaction.options.data);
             const channel = interaction.channel;
             if (!channel || channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true)
                 return;

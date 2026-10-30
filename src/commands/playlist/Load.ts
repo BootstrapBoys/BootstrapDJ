@@ -65,8 +65,8 @@ export default class Load extends Command {
                 ],
             });
         if (!player) {
-            const vc = ctx.member as any;
-            player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
+            const vc = ctx.voiceChannel;
+            player = await client.queue.create(guild, vc, ctx.channel);
         }
 
         let loaded = 0;
@@ -86,7 +86,7 @@ export default class Load extends Command {
                     skipped++;
                     continue;
                 }
-                player.enqueue(player.buildTrack(entry, ctx.author as any));
+                player.enqueue(player.buildTrack(entry, author));
                 loaded++;
             }
         }

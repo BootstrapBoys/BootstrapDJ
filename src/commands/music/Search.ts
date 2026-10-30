@@ -58,8 +58,8 @@ export default class Search extends Command {
 
         let player = client.queue.get(guild.id);
         if (!player) {
-            const vc = ctx.member as any;
-            player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
+            const vc = ctx.voiceChannel;
+            player = await client.queue.create(guild, vc, ctx.channel);
         }
 
         const res = await this.client.queue.search(query);

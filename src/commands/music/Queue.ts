@@ -70,8 +70,8 @@ export default class Queue extends Command {
                     track.info.isStream ? 'LIVE' : this.client.utils.formatTime(track.info.length)
                 }`
         );
-        let chunks = client.utils.chunk(queue, 10) as any;
-        if (chunks.length === 0) chunks = 1;
+        const chunks = client.utils.chunk(queue, 10);
+        if (chunks.length === 0) chunks.push([]);
         const pages: EmbedBuilder[] = [];
         for (let i = 0; i < chunks.length; i++) {
             const embed = this.client

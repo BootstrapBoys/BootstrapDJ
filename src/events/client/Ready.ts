@@ -20,7 +20,7 @@ export default class Ready extends Event {
                     type: config.botActivityType,
                 },
             ],
-            status: config.botStatus as any,
+            status: config.botStatus,
         });
 
         try {

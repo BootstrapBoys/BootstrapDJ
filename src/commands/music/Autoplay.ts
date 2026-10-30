@@ -43,7 +43,7 @@ export default class Autoplay extends Command {
         const seed = args.join(' ').trim();
         const guild = ctx.guild;
         if (!guild) return;
-        const vc = ctx.member as any;
+        const vc = ctx.voiceChannel;
         let player = client.queue.get(guild.id);
         const embed = this.client.embed();
 
@@ -70,7 +70,7 @@ export default class Autoplay extends Command {
             });
         }
 
-        if (!player) player = await client.queue.create(guild, vc.voice.channel, ctx.channel);
+        if (!player) player = await client.queue.create(guild, vc, ctx.channel);
 
         if (seed) {
             const picked = await player.seedFrom(seed);

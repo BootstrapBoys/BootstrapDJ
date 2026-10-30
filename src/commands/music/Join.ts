@@ -34,10 +34,10 @@ export default class Join extends Command {
         let player = client.queue.get(guild.id);
         const embed = this.client.embed();
         if (!player) {
-            const vc = ctx.member as any;
+            const vc = ctx.voiceChannel;
             player = await client.queue.create(
                 guild,
-                vc.voice.channel,
+                vc,
                 ctx.channel,
                 client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
             );

@@ -11,7 +11,7 @@ export default class SetupSystem extends Event {
     }
     public async run(message: Message): Promise<void> {
         if (!message.inGuild()) return;
-        const channel = message.channel as any;
+        const channel = message.channel;
         if (!(channel instanceof TextChannel)) return;
 
         const member = message.member;
