@@ -1,8 +1,5 @@
 
 
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-
-import config from '../config.js';
 import {
     Botchannel,
     Dj,
@@ -14,7 +11,9 @@ import {
     Setup,
     Song,
     Stay,
-} from '../generated/prisma/client.js';
+} from '@prisma/client';
+
+import config from '../config.js';
 
 /**
  * Stable identity for a Lavalink track. `encoded` cannot be used: the Deezer
@@ -32,12 +31,6 @@ function trackKey(track: unknown): string | null {
     return encoded ?? null;
 }
 
-/** Prisma 7 requires a driver adapter; the path is relative to the cwd. */
-function createPrismaClient(): PrismaClient {
-    const url = process.env.DATABASE_URL || 'file:./prisma/lavamusic.db';
-    return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
-}
-
 export default class ServerData {
     private prisma: PrismaClient;
     /** Guild rows are read for every message and every command; cache them and
@@ -46,9 +39,9 @@ export default class ServerData {
     private setupCache = new Map<string, Setup | null>();
 
     constructor(prisma?: PrismaClient) {
-        // Injectable so tests can pass a client wired to a throwaway SQLite
-        // file instead of the tracked prisma/lavamusic.db.
-        this.prisma = prisma ?? createPrismaClient();
+        // Injectable so tests can point at a throwaway SQLite file instead of
+        // the tracked prisma/lavamusic.db.
+        this.prisma = prisma ?? new PrismaClient();
     }
 
     public async get(guildId: string): Promise<Guild | null> {

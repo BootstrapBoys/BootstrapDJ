@@ -3,8 +3,7 @@ import { after, before, test } from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaClient } from '../dist/generated/prisma/client.js';
+import { PrismaClient } from '@prisma/client';
 
 import ServerData from '../dist/database/server.js';
 import { fromSaved, toSaved } from '../dist/structures/Dispatcher.js';
@@ -12,7 +11,7 @@ import { hasListeners, isRestorable, waitForListeners } from '../dist/utils/Sess
 import { fakeUser, makeSong } from './helpers.mjs';
 
 const dbPath = path.join(os.tmpdir(), `bootstrapdj-session-${process.pid}-${Date.now()}.db`);
-const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: `file:${dbPath}` }) });
+const prisma = new PrismaClient({ datasources: { db: { url: `file:${dbPath}` } } });
 const db = new ServerData(prisma);
 
 before(async () => {

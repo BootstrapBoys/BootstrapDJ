@@ -46,14 +46,12 @@
         "eslint-plugin-import-x": "^4.17.1",
         "eslint-plugin-unicorn": "^79.0.0",
         "prettier": "^3.9.10",
-        "prisma": "^7.10.1",
+        "prisma": "^6.19.3",
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.72.1"
     },
     "dependencies": {
-        "@prisma/adapter-better-sqlite3": "^7.10.1",
-        "@prisma/client": "^7.10.1",
-        "better-sqlite3": "^13.0.3",
+        "@prisma/client": "^6.19.3",
         "discord.js": "^14.27.0",
         "dotenv": "~18.0.9",
         "shoukaku": "^4.3.0",
