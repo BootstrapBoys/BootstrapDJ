@@ -15,6 +15,9 @@ const DEEZER_API = 'https://api.deezer.com';
 type DeezerTrackRef = { id?: number; artist?: { id?: number } };
 type DeezerList = { data?: Array<{ id?: number; name?: string }> };
 
+/** Related artists change rarely and cost 2-3 HTTP calls; cache per artist. */
+const relatedArtistCache = new Map<string, string[]>();
+
 export class Song implements Track {
     encoded: string;
     info: {
@@ -401,6 +404,10 @@ export default class Dispatcher {
 
     /** Artists Deezer considers similar to the seed's artist. */
     private async relatedArtistNames(song: Song): Promise<string[]> {
+        const cacheKey = song.info.author?.toLowerCase() ?? '';
+        const cached = relatedArtistCache.get(cacheKey);
+        if (cached) return cached;
+
         const trackId = await this.deezerTrackId(song);
         if (!trackId) return [];
         const track = await this.fetchJson<DeezerTrackRef>(`${DEEZER_API}/track/${trackId}`);
@@ -409,9 +416,11 @@ export default class Dispatcher {
         const related = await this.fetchJson<DeezerList>(
             `${DEEZER_API}/artist/${artistId}/related?limit=10`
         );
-        return (related?.data ?? [])
+        const names = (related?.data ?? [])
             .map(artist => artist?.name)
             .filter((name): name is string => Boolean(name));
+        if (names.length && cacheKey) relatedArtistCache.set(cacheKey, names);
+        return names;
     }
 
     /** Seed pool, newest intent first: the track that just ended, the last
