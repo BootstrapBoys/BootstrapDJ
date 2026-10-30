@@ -42,7 +42,14 @@ if git pull --ff-only --quiet; then
     AFTER=$(git rev-parse HEAD 2>/dev/null || echo none)
 else
     AFTER=$BEFORE
-    log "git pull failed — continuing with the current tree"
+    # A pull that fails because tracked files are dirty must not fall through
+    # to "start whatever is here": that silently runs the previous build.
+    if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+        log "git pull failed and tracked files have local changes — refusing to start stale code"
+        git status --porcelain --untracked-files=no | sed -n '1,5p' | while read -r line; do log "  $line"; done
+        exit 1
+    fi
+    log "git pull failed (network?) — continuing with the current tree"
 fi
 if [ "$BEFORE" != "$AFTER" ]; then
     log "updated ${BEFORE:0:7} -> ${AFTER:0:7}"
