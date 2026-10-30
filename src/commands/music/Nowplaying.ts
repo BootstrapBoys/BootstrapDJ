@@ -34,7 +34,9 @@ export default class Nowplaying extends Command {
         const track = player.current;
         const position = player.player.position;
         const duration = track.info.length;
-        const bar = client.utils.progressBar(position, duration, 20);
+        const bar = track.info.isStream
+            ? '🔴 LIVE'
+            : client.utils.progressBar(position, duration, 20);
         const embed1 = this.client
             .embed()
             .setColor(this.client.color.main)
@@ -45,9 +47,11 @@ export default class Nowplaying extends Command {
             )
             .addFields({
                 name: '\u200b',
-                value: `\`${client.utils.formatTime(position)} / ${client.utils.formatTime(
-                    duration
-                )}\``,
+                value: track.info.isStream
+                    ? '`🔴 LIVE`'
+                    : `\`${client.utils.formatTime(position)} / ${client.utils.formatTime(
+                          duration
+                      )}\``,
             });
         return await ctx.sendMessage({ embeds: [embed1] });
     }

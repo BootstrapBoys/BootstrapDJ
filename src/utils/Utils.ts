@@ -89,13 +89,14 @@ export class Utils {
         return ms;
     }
     public static progressBar(current: number, total: number, size = 20): string {
-        const percent = Math.round((current / total) * 100);
-        const filledSize = Math.round((size * current) / total);
-        const emptySize = size - filledSize;
-        const filledBar = '▓'.repeat(filledSize);
-        const emptyBar = '░'.repeat(emptySize);
-        const progressBar = `${filledBar}${emptyBar} ${percent}%`;
-        return progressBar;
+        // Livestreams report length 0; dividing by it produced Infinity and
+        // '▓'.repeat(Infinity) threw RangeError inside /nowplaying.
+        if (!Number.isFinite(total) || total <= 0) return '🔴 LIVE';
+        const ratio = Math.min(Math.max(current / total, 0), 1);
+        const filledSize = Math.round(size * ratio);
+        const emptySize = Math.max(size - filledSize, 0);
+        const percent = Math.round(ratio * 100);
+        return `${'▓'.repeat(filledSize)}${'░'.repeat(emptySize)} ${percent}%`;
     }
 
     public static async paginate(ctx: Context, embed: any[]): Promise<void> {
