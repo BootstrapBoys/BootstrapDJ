@@ -48,10 +48,61 @@ export class Song implements Track {
         };
     }
 }
+export interface SavedTrack {
+    encoded: string;
+    autoplay: boolean;
+    info: {
+        identifier: string;
+        isSeekable: boolean;
+        author: string;
+        length: number;
+        isStream: boolean;
+        title: string;
+        uri?: string;
+        artworkUrl?: string;
+        isrc?: string;
+        sourceName: string;
+    };
+}
+
+export interface SavedCurrent extends SavedTrack {
+    position: number;
+}
+
+/** Strip runtime-only state (requester, live player position) for storage. */
+export function toSaved(song: Song): SavedTrack {
+    // Optional fields are only set when present: undefined keys vanish through
+    // JSON.stringify and the stored row would no longer match this shape.
+    const info: SavedTrack['info'] = {
+        identifier: song.info.identifier,
+        isSeekable: song.info.isSeekable,
+        author: song.info.author,
+        length: song.info.length,
+        isStream: song.info.isStream,
+        title: song.info.title,
+        sourceName: song.info.sourceName,
+    };
+    if (song.info.uri) info.uri = song.info.uri;
+    if (song.info.artworkUrl) info.artworkUrl = song.info.artworkUrl;
+    if (song.info.isrc) info.isrc = song.info.isrc;
+    return { encoded: song.encoded, autoplay: song.autoplay, info };
+}
+
+/** Rebuild a playable Song; the requester becomes whoever restored it. */
+export function fromSaved(saved: SavedTrack, user: User): Song {
+    return new Song(
+        { encoded: saved.encoded, info: { ...saved.info, position: 0 }, pluginInfo: {} },
+        user,
+        saved.autoplay
+    );
+}
+
 export default class Dispatcher {
     private client: Lavamusic;
     public guildId: string;
     public channelId: string;
+    /** Voice channel this dispatcher is bound to; needed for session restore. */
+    public voiceId: string | null;
     public player: Player;
     public queue: Song[];
     public stopped: boolean;
@@ -67,6 +118,7 @@ export default class Dispatcher {
     /** Last track a user asked for; autoplay seeds from it. */
     public seed: Song | null;
     private toppingUp = false;
+    private persistTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
     public history: Song[] = [];
 
@@ -74,6 +126,7 @@ export default class Dispatcher {
         this.client = options.client;
         this.guildId = options.guildId;
         this.channelId = options.channelId;
+        this.voiceId = options.voiceId ?? null;
         this.player = options.player;
         this.queue = [];
         this.stopped = false;
@@ -87,6 +140,8 @@ export default class Dispatcher {
         this.autoplay = false;
         this.seed = null;
         this.nowPlayingMessage = null;
+        this.persistTimer = setInterval(() => void this.persist(), 10_000);
+        (this.persistTimer as unknown as { unref?: () => void }).unref?.();
 
         this.player
             .on('start', () =>
@@ -131,6 +186,7 @@ export default class Dispatcher {
         this.current = (this.queue.length !== 0 ? this.queue.shift() : this.queue[0]) ?? null;
         if (!this.current) return;
         this.player.playTrack({ track: { encoded: this.current?.encoded } });
+        void this.persist();
         if (this.current) {
             this.history.push(this.current);
             if (this.history.length > 100) {
@@ -147,6 +203,7 @@ export default class Dispatcher {
             this.player.setPaused(false);
             this.paused = false;
         }
+        void this.persist();
     }
     public remove(index: number): void {
         if (!this.player) return;
@@ -160,6 +217,9 @@ export default class Dispatcher {
         this.player.stopTrack();
     }
     public destroy(): void {
+        if (this.persistTimer) clearInterval(this.persistTimer);
+        this.persistTimer = null;
+        void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.queue.length = 0;
         this.history = [];
         this.client.shoukaku.leaveVoiceChannel(this.guildId);
@@ -201,10 +261,44 @@ export default class Dispatcher {
         this.seed = null;
         this.repeat = 0;
         this.stopped = true;
+        void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.player.stopTrack();
     }
+    /**
+     * Snapshot playback state so a crash or restart can resume it. The row is
+     * deleted when playback ends normally, so a later boot has nothing stale.
+     */
+    public async persist(): Promise<void> {
+        if (!this.voiceId) return;
+        try {
+            if (!this.current && !this.queue.length) {
+                await this.client.db.deleteSession(this.guildId);
+                return;
+            }
+            await this.client.db.saveSession({
+                guildId: this.guildId,
+                textId: this.channelId,
+                voiceId: this.voiceId,
+                current: this.current
+                    ? JSON.stringify({
+                          ...toSaved(this.current),
+                          position: this.player.position,
+                      })
+                    : null,
+                queue: JSON.stringify(this.queue.map(toSaved)),
+                loop: this.loop,
+                autoplay: this.autoplay,
+                volume: this.player.volume,
+                paused: this.paused,
+            });
+        } catch (error) {
+            this.client.logger.error(`[session] persist failed for ${this.guildId}: ${error}`);
+        }
+    }
+
     public setLoop(loop: any): void {
         this.loop = loop;
+        void this.persist();
     }
 
     public buildTrack(track: Song | Track, user: User): Song {
@@ -224,6 +318,7 @@ export default class Dispatcher {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.push(song);
         this.seed = song;
+        void this.persist();
         void this.ensureLookahead().catch(() => {});
     }
 
@@ -232,6 +327,7 @@ export default class Dispatcher {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.unshift(song);
         this.seed = song;
+        void this.persist();
         void this.ensureLookahead().catch(() => {});
     }
 
@@ -255,6 +351,7 @@ export default class Dispatcher {
     public purgeAutoplay(): number {
         const before = this.queue.length;
         this.queue = this.queue.filter(track => !track.autoplay);
+        void this.persist();
         return before - this.queue.length;
     }
 
@@ -489,6 +586,7 @@ export default class Dispatcher {
 
     public async setAutoplay(autoplay: boolean): Promise<Song | null> {
         this.autoplay = autoplay;
+        void this.persist();
         if (!autoplay) {
             this.purgeAutoplay();
             return null;
@@ -504,6 +602,7 @@ export interface DispatcherOptions {
     client: Lavamusic;
     guildId: string;
     channelId: string;
+    voiceId?: string;
     player: Player;
     node: Node;
 }

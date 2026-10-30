@@ -1,5 +1,16 @@
 
-import { Botchannel, Dj, Guild, Playlist, PrismaClient, Role, Setup, Song, Stay, } from '@prisma/client';
+import {
+    Botchannel,
+    Dj,
+    Guild,
+    Playlist,
+    PrismaClient,
+    Role,
+    Session,
+    Setup,
+    Song,
+    Stay,
+} from '@prisma/client';
 
 import config from '../config.js';
 
@@ -236,6 +247,34 @@ export default class ServerData {
             },
         });
         this.setupCache.set(guildId, null);
+    }
+
+    /** Save (or refresh) the guild's playback state for restart recovery. */
+    public async saveSession(session: {
+        guildId: string;
+        textId: string;
+        voiceId: string;
+        current: string | null;
+        queue: string;
+        loop: string;
+        autoplay: boolean;
+        volume: number;
+        paused: boolean;
+    }): Promise<void> {
+        await this.prisma.session.upsert({
+            where: { guildId: session.guildId },
+            update: session,
+            create: session,
+        });
+    }
+
+    public async getSessions(): Promise<Session[]> {
+        return await this.prisma.session.findMany();
+    }
+
+    public async deleteSession(guildId: string): Promise<void> {
+        // deleteMany: a missing row is not an error here.
+        await this.prisma.session.deleteMany({ where: { guildId } });
     }
 
     public async getPLaylist(userId: string, name: string): Promise<Playlist | null> {

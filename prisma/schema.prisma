@@ -63,6 +63,21 @@ model Song {
   @@index([playlistId])
 }
 
+/// Playback state for crash/restart recovery. One row per guild; deleted when
+/// playback ends normally so a later boot has nothing to resurrect.
+model Session {
+  guildId   String   @id
+  textId    String
+  voiceId   String
+  current   String?
+  queue     String
+  loop      String   @default("off")
+  autoplay  Boolean  @default(false)
+  volume    Int      @default(100)
+  paused    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
 model Botchannel {
   guildId String @id
   textId  String

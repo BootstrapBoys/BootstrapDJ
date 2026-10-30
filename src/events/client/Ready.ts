@@ -1,5 +1,6 @@
 import config from '../../config.js';
 import { Event, Lavamusic } from '../../structures/index.js';
+import { restoreSessions, waitForNode } from '../../utils/Session.js';
 import { resetSetupChannel, startSetupJanitor } from '../../utils/SetupSystem.js';
 
 let channelsPurged = false;
@@ -29,6 +30,12 @@ export default class Ready extends Event {
                 // ready again and must not wipe the channel each time.
                 if (!channelsPurged) await resetSetupChannel(this.client, setup);
                 startSetupJanitor(this.client, setup.guildId);
+            }
+            // Resume whatever was playing when the process last died. Runs once
+            // per process, after a node is usable.
+            if (!channelsPurged) {
+                if (await waitForNode(this.client, 20_000)) await restoreSessions(this.client);
+                else this.client.logger.error('[session] no node available; skipping restore');
             }
         } catch (error) {
             this.client.logger.error(`[setup] startup cleanup failed: ${error}`);
