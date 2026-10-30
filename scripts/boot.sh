@@ -91,6 +91,15 @@ if [ "$NEED_BUILD" = "0" ] && [ -n "$(find src -name '*.ts' -newer "$BUILD_STAMP
 fi
 
 if [ "$NEED_BUILD" = "1" ]; then
+    # tsc leaves artefacts for files that moved or were deleted, and the bot
+    # loads commands/events/plugins by scanning dist — a stale copy would load
+    # a second, older handler. Build from an empty directory instead.
+    if [ "$PLAN_ONLY" = "1" ]; then
+        log "would run: rm -rf dist"
+    else
+        rm -rf dist
+        log "cleared dist"
+    fi
     run npm run build
 else
     log "dist up to date — skipping build"
