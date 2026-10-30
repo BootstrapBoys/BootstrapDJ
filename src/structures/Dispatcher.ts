@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/typedef */
 import { Message, User } from 'discord.js';
-import { Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
+import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
 
 import { Lavamusic } from './index.js';
 
@@ -244,13 +244,13 @@ export default class Dispatcher {
         return before - this.queue.length;
     }
 
-    private recentAuthors(count: number): Set<string> {
-        return new Set(
-            this.history
-                .slice(-count)
-                .map(track => track.info?.author)
-                .filter((author): author is string => Boolean(author))
-        );
+    /** Stable identity: the URI survives re-searching, `encoded` does not
+     * (LavaSrc embeds a per-search token, so the same track looks new). */
+    private trackKey(track: Song | Track): string {
+        const info = track?.info;
+        if (info?.uri) return info.uri;
+        if (info?.identifier && info?.sourceName) return `${info.sourceName}:${info.identifier}`;
+        return track?.encoded ?? '';
     }
 
     private shuffle<T>(items: T[]): T[] {
@@ -262,50 +262,91 @@ export default class Dispatcher {
         return copy;
     }
 
-    /**
-     * Seed pool, most recent intent first: the track that just ended, the last
-     * user request, the current track, then recent history. Authors heard in
-     * the last two tracks are demoted so autoplay does not chain one artist.
-     */
-    private seedCandidates(explicit?: Song): string[] {
-        const authors = new Set<string>();
+    /** Already queued or heard in the recent past? */
+    private isRecent(track: Song | Track): boolean {
+        const key = this.trackKey(track);
+        if (!key) return false;
+        if (this.queue.some(queued => this.trackKey(queued) === key)) return true;
+        return this.history.slice(-15).some(played => this.trackKey(played) === key);
+    }
+
+    /** Choose from candidates, skipping recent tracks and demoting the artist
+     * that just played so consecutive picks do not chain one name. */
+    private chooseFrom(tracks: Track[]): Song | null {
+        const usable = tracks.filter(track => track?.encoded && !this.isRecent(track));
+        if (!usable.length) return null;
+        const lastAuthor = this.history[this.history.length - 1]?.info?.author;
+        const varied = usable.filter(track => track.info?.author !== lastAuthor);
+        const pool = varied.length ? varied : usable;
+        return this.buildTrack(pool[Math.floor(Math.random() * pool.length)], this.client.user);
+    }
+
+    /** Search a free-text query and pick one result. */
+    private async pickFromQuery(query: string): Promise<Song | null> {
+        const resolve = await this.node?.rest
+            .resolve(`${this.client.config.searchEngine}:${query}`)
+            .catch(() => null);
+        const data = resolve?.data;
+        return Array.isArray(data) ? this.chooseFrom(data as Track[]) : null;
+    }
+
+    /** YouTube id for a track; searches for the song when it came from another
+     * source, so a Deezer/Spotify seed can still feed a YouTube mix. */
+    private async youtubeIdFor(song: Song): Promise<string | null> {
+        const looksLikeId = (value?: string): boolean => Boolean(value && /^[\w-]{11}$/.test(value));
+        if (song.info.sourceName === 'youtube' && looksLikeId(song.info.identifier)) {
+            return song.info.identifier;
+        }
+        const resolve = await this.node?.rest
+            .resolve(`${this.client.config.searchEngine}:${song.info.title} ${song.info.author}`)
+            .catch(() => null);
+        const data = resolve?.data;
+        if (!Array.isArray(data)) return null;
+        const match = (data as Track[]).find(
+            track => track.info?.sourceName === 'youtube' && looksLikeId(track.info?.identifier)
+        );
+        return match?.info?.identifier ?? null;
+    }
+
+    /** YouTube's mix for a seed track — the only source here that spans
+     * artists; an artist search returns the same name over and over. */
+    private async relatedTracks(seed: Song): Promise<Track[]> {
+        const id = await this.youtubeIdFor(seed);
+        if (!id) return [];
+        const resolve = await this.node?.rest
+            .resolve(`https://www.youtube.com/watch?v=${id}&list=RD${id}`)
+            .catch(() => null);
+        if (!resolve || resolve.loadType !== LoadType.PLAYLIST) return [];
+        const playlist = resolve.data as { tracks?: Track[] };
+        return playlist.tracks ?? [];
+    }
+
+    private async pickForSeed(seed: Song): Promise<Song | null> {
+        const fromMix = this.chooseFrom(await this.relatedTracks(seed));
+        if (fromMix) return fromMix;
+        return await this.pickFromQuery(seed.info.author);
+    }
+
+    /** Seed pool, newest intent first: the track that just ended, the last
+     * user request, the current track, then recent history. */
+    private seedCandidates(explicit?: Song): Song[] {
+        const seen = new Set<string>();
+        const candidates: Song[] = [];
         const add = (track?: Song | null): void => {
-            const author = track?.info?.author;
-            if (author) authors.add(author);
+            if (!track?.info?.author) return;
+            const key = this.trackKey(track);
+            if (seen.has(key)) return;
+            seen.add(key);
+            candidates.push(track);
         };
         add(explicit);
         add(this.seed);
         add(this.current);
         for (const track of this.history.slice(-5)) add(track);
-        if (!authors.size && this.client.config.autoplaySeed) {
-            authors.add(this.client.config.autoplaySeed);
-        }
 
-        const avoid = this.recentAuthors(2);
-        const fresh = [...authors].filter(author => !avoid.has(author));
-        return this.shuffle(fresh.length ? fresh : [...authors]);
-    }
-
-    /** Search one seed and return an unplayed, unqueued track from it. */
-    private async pickRelated(seed: string): Promise<Song | null> {
-        const resolve = await this.node?.rest
-            .resolve(`${this.client.config.searchEngine}:${seed}`)
-            .catch(() => null);
-        const data = resolve?.data;
-        if (!Array.isArray(data) || !data.length) return null;
-
-        const avoid = this.recentAuthors(2);
-        const usable = (data as Track[]).filter(track => {
-            if (!track?.encoded) return false;
-            if (this.queue.some(queued => queued.encoded === track.encoded)) return false;
-            if (this.history.some(played => played.encoded === track.encoded)) return false;
-            return true;
-        });
-        const varied = usable.filter(track => !avoid.has(track.info?.author));
-        const pool = varied.length ? varied : usable;
-        if (!pool.length) return null;
-
-        return this.buildTrack(pool[Math.floor(Math.random() * pool.length)], this.client.user);
+        const rest = this.shuffle(candidates);
+        if (!explicit) return rest;
+        return [explicit, ...rest.filter(candidate => candidate !== explicit)];
     }
 
     /**
@@ -314,10 +355,17 @@ export default class Dispatcher {
      */
     public async seedFrom(query: string): Promise<Song | null> {
         this.purgeAutoplay();
-        const pick = await this.pickRelated(query);
+        const pick = await this.pickFromQuery(query);
         if (!pick) return null;
         pick.autoplay = true;
         this.seed = pick;
+        this.queue.push(pick);
+        await this.isPlaying();
+        return pick;
+    }
+
+    private async queueAutoplay(pick: Song): Promise<Song> {
+        pick.autoplay = true;
         this.queue.push(pick);
         await this.isPlaying();
         return pick;
@@ -329,13 +377,13 @@ export default class Dispatcher {
      */
     public async Autoplay(explicit?: Song): Promise<Song | null> {
         for (const seed of this.seedCandidates(explicit)) {
-            const pick = await this.pickRelated(seed);
-            if (pick) {
-                pick.autoplay = true;
-                this.queue.push(pick);
-                await this.isPlaying();
-                return pick;
-            }
+            const pick = await this.pickForSeed(seed);
+            if (pick) return await this.queueAutoplay(pick);
+        }
+        // Cold start: nothing has played and no seed was requested.
+        if (this.client.config.autoplaySeed) {
+            const pick = await this.pickFromQuery(this.client.config.autoplaySeed);
+            if (pick) return await this.queueAutoplay(pick);
         }
         this.client.logger.error(`[autoplay] no usable track found for guild ${this.guildId}`);
         return null;
