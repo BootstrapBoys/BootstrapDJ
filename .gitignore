@@ -33,3 +33,6 @@ src/generated/
 
 # Launcher state (hashes of the last successful boot)
 .boot-state
+
+# Local SQLite database (live data, never in git)
+prisma/lavamusic.db
