@@ -290,6 +290,21 @@ export default class Dispatcher {
     }
 
     /**
+     * Seed explicitly from a query ("/autoplay Akon"): queue one random result
+     * from that search, adopt it as the seed, and start playing if idle.
+     */
+    public async seedFrom(query: string): Promise<Song | null> {
+        this.purgeAutoplay();
+        const pick = await this.pickRelated(query);
+        if (!pick) return null;
+        pick.autoplay = true;
+        this.seed = pick;
+        this.queue.push(pick);
+        await this.isPlaying();
+        return pick;
+    }
+
+    /**
      * Queue exactly one bot pick. Returns it, or null when no seed yields
      * anything usable — a failed pick must never take the player down.
      */
