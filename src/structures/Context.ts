@@ -37,6 +37,7 @@ export default class Context {
     public member: GuildMemberResolvable | GuildMember | APIInteractionGuildMember | null;
     public args: any[];
     public msg: any;
+    private deleteTimer: NodeJS.Timeout | null = null;
     constructor(ctx: ChatInputCommandInteraction | Message, args: any[]) {
         this.ctx = ctx;
         this.interaction = this.ctx instanceof ChatInputCommandInteraction ? this.ctx : null;
@@ -66,58 +67,75 @@ export default class Context {
         }
     }
     public async sendMessage(content: any, deleteAfter?: number): Promise<Message> {
-        const timeout = deleteAfter ?? this.client.config.deleteAfter;
         if (this.isInteraction) {
             this.msg = this.interaction.reply(content);
-            this.scheduleDelete(content, timeout);
+            this.armDelete(content, 'reply', deleteAfter);
             return this.msg;
         } else {
             this.msg = await (this.message.channel as TextChannel).send(content);
-            this.scheduleDelete(content, timeout);
+            this.armDelete(content, 'message', deleteAfter);
             return this.msg;
         }
     }
 
     /**
-     * Delete a reply after `seconds` so command output doesn't linger.
-     * Messages carrying components are left alone: those are pickers and
-     * paginators that must outlive the reply.
+     * (Re)arm deletion of this context's reply so command output doesn't
+     * linger. Called after every send/edit — the last thing displayed decides
+     * the lifetime. Messages carrying components (pickers, paginators) are
+     * exempt, and an exempt edit cancels a pending timer.
      */
-    private scheduleDelete(content: any, seconds: number): void {
-        if (!seconds || seconds <= 0) return;
+    private armDelete(content: any, target: 'reply' | 'message', seconds?: number): void {
+        if (this.deleteTimer) {
+            clearTimeout(this.deleteTimer);
+            this.deleteTimer = null;
+        }
+        const timeout = seconds ?? this.client.config.deleteAfter;
+        if (!timeout || timeout <= 0) return;
         if (content?.components?.length) return;
         if (content?.ephemeral) return;
         const timer = setTimeout(() => {
-            const removal = this.isInteraction
-                ? this.interaction.deleteReply()
-                : Promise.resolve(this.msg).then((msg: Message) => msg?.delete?.());
+            const removal =
+                target === 'reply'
+                    ? this.interaction.deleteReply()
+                    : Promise.resolve(this.msg).then((msg: Message) => msg?.delete?.());
             Promise.resolve(removal).catch(() => {});
-        }, seconds * 1000);
+        }, timeout * 1000);
         (timer as unknown as { unref?: () => void }).unref?.();
+        this.deleteTimer = timer;
     }
     public async editMessage(content: any): Promise<Message> {
         if (this.isInteraction) {
-            if (this.msg) this.msg = await this.interaction.editReply(content);
+            if (this.msg) {
+                this.msg = await this.interaction.editReply(content);
+                this.armDelete(content, 'reply');
+            }
             return this.msg;
         } else {
-            if (this.msg) this.msg = await this.msg.edit(content);
+            if (this.msg) {
+                this.msg = await this.msg.edit(content);
+                this.armDelete(content, 'message');
+            }
             return this.msg;
         }
     }
     public async sendDeferMessage(content: any): Promise<Message> {
         if (this.isInteraction) {
             this.msg = await this.interaction.deferReply({ fetchReply: true });
+            this.armDelete(content, 'reply');
             return this.msg;
         } else {
             this.msg = await (this.message.channel as TextChannel).send(content);
+            this.armDelete(content, 'message');
             return this.msg;
         }
     }
     public async sendFollowUp(content: any): Promise<void> {
         if (this.isInteraction) {
-            await this.interaction.followUp(content);
+            this.msg = await this.interaction.followUp(content);
+            this.armDelete(content, 'message');
         } else {
             this.msg = await (this.message.channel as TextChannel).send(content);
+            this.armDelete(content, 'message');
         }
     }
     public get deferred(): boolean | Promise<any> {
