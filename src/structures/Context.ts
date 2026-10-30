@@ -91,9 +91,19 @@ export default class Context {
         if (!member || typeof member !== 'object' || !('voice' in member)) return null;
         return member.voice?.channel ?? null;
     }
+    /**
+     * Acknowledge the interaction before slow work (Lavalink searches, playlist
+     * resolution). Discord fails the command if the first reply takes over 3s.
+     */
+    public async defer(ephemeral: boolean = false): Promise<void> {
+        if (!this.isInteraction) return;
+        if (this.cmd.deferred || this.cmd.replied) return;
+        await this.cmd.deferReply({ ephemeral });
+    }
+
     public async sendMessage(content: any, deleteAfter?: number): Promise<Message> {
         if (this.isInteraction) {
-            this.msg = this.cmd.reply(content);
+            this.msg = this.deferred ? await this.cmd.editReply(content) : await this.cmd.reply(content);
             this.armDelete(content, 'reply', deleteAfter);
             return this.msg;
         } else {
@@ -130,7 +140,7 @@ export default class Context {
     }
     public async editMessage(content: any): Promise<Message> {
         if (this.isInteraction) {
-            if (this.msg) {
+            if (this.msg || this.deferred) {
                 this.msg = await this.cmd.editReply(content);
                 this.armDelete(content, 'reply');
             }
@@ -163,14 +173,9 @@ export default class Context {
             this.armDelete(content, 'message');
         }
     }
-    public get deferred(): boolean | Promise<any> {
-        if (this.isInteraction) {
-            return this.cmd.deferred;
-        }
-
-        if (this.msg) return true;
-
-        return false;
+    public get deferred(): boolean {
+        if (this.isInteraction) return this.cmd.deferred;
+        return Boolean(this.msg);
     }
 }
 

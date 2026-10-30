@@ -27,6 +27,7 @@ export default class Command {
         user: PermissionsString[];
     };
     public slashCommand: boolean;
+    public defer: boolean;
     public options: ApplicationCommandOption[];
     public category: string | null;
     constructor(client: BootstrapClient, options: CommandOptions) {
@@ -60,10 +61,11 @@ export default class Command {
             user: options.permissions ? options.permissions.user || [] : [],
         };
         this.slashCommand = options.slashCommand || false;
+        this.defer = options.defer || false;
         this.options = options.options || [];
         this.category = options.category || 'general';
     }
-    public async run(_client: BootstrapClient, _message: any, _args: string[]): Promise<any> {
+    public async run(_client: BootstrapClient, _message: any, _args: string[]): Promise<unknown> {
         return await Promise.resolve();
     }
 }
@@ -92,6 +94,7 @@ interface CommandOptions {
         user: PermissionsString[];
     };
     slashCommand?: boolean;
+    defer?: boolean;
     options?: ApplicationCommandOption[];
     category?: string;
 }

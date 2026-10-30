@@ -27,6 +27,7 @@ export default class Load extends Command {
                 user: [],
             },
             slashCommand: true,
+            defer: true,
             options: [
                 {
                     name: 'playlist',
@@ -38,7 +39,7 @@ export default class Load extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guild = ctx.guild;
         const author = ctx.author;
         if (!guild || !author) return;

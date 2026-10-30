@@ -28,6 +28,7 @@ export default class Add extends Command {
                 user: [],
             },
             slashCommand: true,
+            defer: true,
             options: [
                 {
                     name: 'playlist',
@@ -45,7 +46,7 @@ export default class Add extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
         const playlist = args[0];

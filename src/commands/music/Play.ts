@@ -30,6 +30,7 @@ export default class Play extends Command {
                 user: [],
             },
             slashCommand: true,
+            defer: true,
             options: [
                 {
                     name: 'song',
@@ -41,7 +42,7 @@ export default class Play extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const query = args.join(' ');
         const guild = ctx.guild;
         const author = ctx.author;

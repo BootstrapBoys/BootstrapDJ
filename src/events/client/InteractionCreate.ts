@@ -93,7 +93,7 @@ export default class InteractionCreate extends Event {
         return choices;
     }
 
-    public async run(interaction: ChatInputCommandInteraction | AutocompleteInteraction): Promise<any> {
+    public async run(interaction: ChatInputCommandInteraction | AutocompleteInteraction): Promise<unknown> {
         if (
             interaction instanceof CommandInteraction &&
             interaction.type === InteractionType.ApplicationCommand
@@ -194,15 +194,8 @@ export default class InteractionCreate extends Event {
                     }
                 }
                 if (command.player.active) {
-                    if (!this.client.queue.get(interaction.guildId))
-                        return await interaction.reply({
-                            content: 'Nothing is playing right now.',
-                        });
-                    if (!this.client.queue.get(interaction.guildId).queue)
-                        return await interaction.reply({
-                            content: 'Nothing is playing right now.',
-                        });
-                    if (!this.client.queue.get(interaction.guildId).current)
+                    const activePlayer = this.client.queue.get(interaction.guildId);
+                    if (!activePlayer || !activePlayer.current)
                         return await interaction.reply({
                             content: 'Nothing is playing right now.',
                         });
@@ -269,11 +262,15 @@ export default class InteractionCreate extends Event {
                     content: 'You can\'t mention everyone or here.',
                     ephemeral: true,
                 });
+            if (command.defer) await ctx.defer();
             try {
                 await command.run(this.client, ctx, ctx.args);
             } catch (error) {
                 this.client.logger.error(error);
-                await interaction.reply({ content: `An error occurred: \`${error}\`` });
+                const payload = { content: `An error occurred: \`${error}\`` };
+                await (interaction.deferred || interaction.replied
+                    ? interaction.editReply(payload)
+                    : interaction.reply(payload));
             }
         } else if (interaction.type == InteractionType.ApplicationCommandAutocomplete) {
             const focused = interaction.options.getFocused(true);

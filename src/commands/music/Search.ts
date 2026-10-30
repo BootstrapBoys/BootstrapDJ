@@ -28,6 +28,7 @@ export default class Search extends Command {
                 user: [],
             },
             slashCommand: true,
+            defer: true,
             options: [
                 {
                     name: 'song',
@@ -38,7 +39,7 @@ export default class Search extends Command {
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<any> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const embed = client.embed().setColor(client.color.main);
         const query = args.join(' ');
         const guild = ctx.guild;
