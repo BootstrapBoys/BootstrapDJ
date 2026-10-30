@@ -4,6 +4,10 @@ import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } fro
 
 import { Lavamusic } from './index.js';
 
+/** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
+ * rather than following config.searchEngine (which may be Deezer/Spotify). */
+const YOUTUBE_SEARCH = 'ytmsearch';
+
 export class Song implements Track {
     encoded: string;
     info: {
@@ -283,22 +287,28 @@ export default class Dispatcher {
 
     /** Search a free-text query and pick one result. */
     private async pickFromQuery(query: string): Promise<Song | null> {
-        const resolve = await this.node?.rest
-            .resolve(`${this.client.config.searchEngine}:${query}`)
-            .catch(() => null);
-        const data = resolve?.data;
-        return Array.isArray(data) ? this.chooseFrom(data as Track[]) : null;
+        return this.chooseFrom(
+            await this.resolveTracks(`${this.client.config.searchEngine}:${query}`)
+        );
     }
 
-    /** YouTube id for a track; searches for the song when it came from another
-     * source, so a Deezer/Spotify seed can still feed a YouTube mix. */
+    /** Resolve an identifier to a plain track list ([] on any failure). */
+    private async resolveTracks(identifier: string): Promise<Track[]> {
+        const resolve = await this.node?.rest.resolve(identifier).catch(() => null);
+        return Array.isArray(resolve?.data) ? (resolve.data as Track[]) : [];
+    }
+
+    /** YouTube id for a track. The lookup deliberately uses a YouTube prefix
+     * rather than config.searchEngine: with a Deezer/Spotify engine configured,
+     * searching it for a video id returns none, the mix never resolves, and
+     * autoplay stays pinned to the seed artist. */
     private async youtubeIdFor(song: Song): Promise<string | null> {
         const looksLikeId = (value?: string): boolean => Boolean(value && /^[\w-]{11}$/.test(value));
         if (song.info.sourceName === 'youtube' && looksLikeId(song.info.identifier)) {
             return song.info.identifier;
         }
         const resolve = await this.node?.rest
-            .resolve(`${this.client.config.searchEngine}:${song.info.title} ${song.info.author}`)
+            .resolve(`${YOUTUBE_SEARCH}:${song.info.title} ${song.info.author}`)
             .catch(() => null);
         const data = resolve?.data;
         if (!Array.isArray(data)) return null;
@@ -324,6 +334,12 @@ export default class Dispatcher {
     private async pickForSeed(seed: Song): Promise<Song | null> {
         const fromMix = this.chooseFrom(await this.relatedTracks(seed));
         if (fromMix) return fromMix;
+        // No mix available: prefer a YouTube artist search so the next seed is
+        // a YouTube track (mixes need a video id), then the configured engine.
+        const fromYoutube = this.chooseFrom(
+            await this.resolveTracks(`${YOUTUBE_SEARCH}:${seed.info.author}`)
+        );
+        if (fromYoutube) return fromYoutube;
         return await this.pickFromQuery(seed.info.author);
     }
 
