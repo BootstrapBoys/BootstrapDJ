@@ -38,7 +38,7 @@ export default class Create extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
-        const name = args.join(' ').replace(/\s/g, '');
+        const name = args.join(' ').trim();
         if (name.length > 50)
             return await ctx.sendMessage({
                 embeds: [

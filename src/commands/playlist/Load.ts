@@ -40,7 +40,7 @@ export default class Load extends Command {
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
         let player = client.queue.get(ctx.guild.id);
-        const playlist = args.join(' ').replace(/\s/g, '');
+        const playlist = args.join(' ').trim();
         const playlistData = await client.db.getPLaylist(ctx.author.id, playlist);
         if (!playlistData)
             return await ctx.sendMessage({

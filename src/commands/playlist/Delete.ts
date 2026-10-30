@@ -39,7 +39,7 @@ export default class Delete extends Command {
         });
     }
     public async run(client: Lavamusic, ctx: Context, args: string[]): Promise<any> {
-        const playlist = args.join(' ').replace(/\s/g, '');
+        const playlist = args.join(' ').trim();
 
         const playlistExists = await client.db.getPLaylist(ctx.author.id, playlist);
         if (!playlistExists)
@@ -51,11 +51,24 @@ export default class Delete extends Command {
                     },
                 ],
             });
-        client.db.deletePlaylist(ctx.author.id, playlist);
+
+        const songs = await client.db.getSong(ctx.author.id, playlist);
+        const deleted = await client.db.deletePlaylist(ctx.author.id, playlist);
+        if (!deleted)
+            return await ctx.sendMessage({
+                embeds: [
+                    {
+                        description: `Could not delete playlist **${playlist}**`,
+                        color: client.color.red,
+                    },
+                ],
+            });
         return await ctx.sendMessage({
             embeds: [
                 {
-                    description: `Deleted playlist **${playlist}**`,
+                    description: `Deleted playlist **${playlist}** and its ${songs.length} song${
+                        songs.length === 1 ? '' : 's'
+                    }`,
                     color: client.color.main,
                 },
             ],

@@ -252,15 +252,18 @@ export default class ServerData {
         });
     }
 
-    public async deletePlaylist(userId: string, name: string): Promise<void> {
-        await this.prisma.playlist.delete({
-            where: {
-                userId_name: {
-                    userId,
-                    name,
-                },
-            },
-        });
+    public async deletePlaylist(userId: string, name: string): Promise<boolean> {
+        const playlist = await this.getPLaylist(userId, name);
+        if (!playlist) return false;
+        // Song.playlistId has no ON DELETE CASCADE, so deleting the parent
+        // throws P2003 while rows still reference it. Remove the children in
+        // the same transaction, otherwise a partial failure leaves an orphaned
+        // playlist that looks deleted to the caller.
+        await this.prisma.$transaction([
+            this.prisma.song.deleteMany({ where: { playlistId: playlist.id } }),
+            this.prisma.playlist.delete({ where: { id: playlist.id } }),
+        ]);
+        return true;
     }
 
     public async addSong(userId: string, name: string, track: unknown): Promise<boolean> {
