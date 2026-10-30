@@ -239,24 +239,37 @@ export default class ServerData {
             await this.createPlaylist(userId, name);
             playlist = await this.getPLaylist(userId, name);
         }
-        // One row per track. Previously callers passed arrays, so a whole
-        // playlist landed in a single row and re-adding hit the unique index.
-        const payload = JSON.stringify(track);
-        const existing = await this.prisma.song.findUnique({
-            where: {
-                track_playlistId: {
-                    track: payload,
+        // Compare on `encoded`: the stable Lavalink track id. Comparing the whole
+        // JSON let the same track in twice, because fields like artworkUrl differ
+        // between identical searches.
+        const encoded = (track as { encoded?: string } | null)?.encoded;
+        if (encoded) {
+            const rows = await this.prisma.song.findMany({
+                where: { playlistId: playlist.id },
+                select: { track: true },
+            });
+            const duplicate = rows.some(row => {
+                try {
+                    const parsed = JSON.parse(row.track);
+                    const entries = Array.isArray(parsed) ? parsed : [parsed];
+                    return entries.some(entry => entry?.encoded === encoded);
+                } catch {
+                    return false;
+                }
+            });
+            if (duplicate) return false;
+        }
+        try {
+            await this.prisma.song.create({
+                data: {
+                    track: JSON.stringify(track),
                     playlistId: playlist.id,
                 },
-            },
-        });
-        if (existing) return false;
-        await this.prisma.song.create({
-            data: {
-                track: payload,
-                playlistId: playlist.id,
-            },
-        });
+            });
+        } catch (error) {
+            if ((error as { code?: string }).code === 'P2002') return false;
+            throw error;
+        }
         return true;
     }
 
