@@ -60,6 +60,7 @@ model Song {
   playlist   Playlist @relation(fields: [playlistId], references: [id])
 
   @@unique([track, playlistId])
+  @@index([playlistId])
 }
 
 model Botchannel {

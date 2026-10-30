@@ -21,12 +21,18 @@ function trackKey(track: unknown): string | null {
 
 export default class ServerData {
     private prisma: PrismaClient;
+    /** Guild rows are read for every message and every command; cache them and
+     * invalidate on write (single-process bot, so no cross-process staleness). */
+    private guildCache = new Map<string, Guild>();
+    private setupCache = new Map<string, Setup | null>();
 
     constructor() {
         this.prisma = new PrismaClient();
     }
 
     public async get(guildId: string): Promise<Guild | null> {
+        const cached = this.guildCache.get(guildId);
+        if (cached) return cached;
         let data = await this.prisma.guild.findUnique({
             where: {
                 guildId,
@@ -39,8 +45,8 @@ export default class ServerData {
                     prefix: config.prefix,
                 },
             });
-            return data;
         }
+        this.guildCache.set(guildId, data);
         return data;
     }
 
@@ -57,6 +63,7 @@ export default class ServerData {
                 prefix,
             },
         });
+        this.guildCache.delete(guildId);
     }
 
     public async set_247(guildId: string, textId: string, voiceId: string): Promise<void> {
@@ -186,15 +193,20 @@ export default class ServerData {
     }
 
     public async getSetup(guildId: string): Promise<Setup | null> {
-        return await this.prisma.setup.findUnique({
+        if (this.setupCache.has(guildId)) return this.setupCache.get(guildId) ?? null;
+        const setup = await this.prisma.setup.findUnique({
             where: {
                 guildId,
             },
         });
+        this.setupCache.set(guildId, setup);
+        return setup;
     }
 
     public async getSetups(): Promise<Setup[]> {
-        return await this.prisma.setup.findMany();
+        const setups = await this.prisma.setup.findMany();
+        for (const setup of setups) this.setupCache.set(setup.guildId, setup);
+        return setups;
     }
 
     public async setSetup(guildId: string, textId: string, messageId: string): Promise<void> {
@@ -212,6 +224,7 @@ export default class ServerData {
                 messageId,
             },
         });
+        this.setupCache.delete(guildId);
     }
 
     public async deleteSetup(guildId: string): Promise<void> {
@@ -220,6 +233,7 @@ export default class ServerData {
                 guildId,
             },
         });
+        this.setupCache.set(guildId, null);
     }
 
     public async getPLaylist(userId: string, name: string): Promise<Playlist | null> {

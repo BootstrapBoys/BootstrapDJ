@@ -11,6 +11,9 @@ const antiCrash: BotPlugin = {
         });
         process.on('uncaughtException', err => {
             client.logger.error('Uncaught Exception thrown:', err);
+            // Continuing after an uncaught exception means running with unknown
+            // state; pm2 restarts a cleaner process than this one.
+            process.exit(1);
         });
 
         const handleExit = async (): Promise<void> => {

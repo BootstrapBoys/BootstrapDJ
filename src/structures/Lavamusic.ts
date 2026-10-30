@@ -50,9 +50,9 @@ export default class Lavamusic extends Client {
         } else {
             this.shoukaku = new ShoukakuClient(this, this.config.lavalink);
         }
-        this.loadCommands();
+        await this.loadCommands();
         this.logger.info(`Successfully loaded commands!`);
-        this.loadEvents();
+        await this.loadEvents();
         this.logger.info(`Successfully loaded events!`);
         loadPlugins(this);
         await this.login(token);
@@ -73,62 +73,27 @@ export default class Lavamusic extends Client {
         );
     }
 
-    private loadCommands(): void {
+    private async loadCommands(): Promise<void> {
         const commandsPath = fs.readdirSync(path.join(__dirname, '../commands'));
-        commandsPath.forEach(dir => {
+        const pending: Array<Promise<void>> = [];
+        for (const dir of commandsPath) {
             const commandFiles = fs
                 .readdirSync(path.join(__dirname, `../commands/${dir}`))
                 .filter(file => file.endsWith('.js'));
-            commandFiles.forEach(async file => {
-                const cmd = (await import(`../commands/${dir}/${file}`)).default;
-                const command = new cmd(this);
-                command.category = dir;
-                this.commands.set(command.name, command);
-                if (command.aliases.length !== 0) {
-                    command.aliases.forEach((alias: any) => {
-                        this.aliases.set(alias, command.name);
-                    });
-                }
-                if (command.slashCommand) {
-                    const data = {
-                        name: command.name,
-                        description: command.description.content,
-                        type: ApplicationCommandType.ChatInput,
-                        options: command.options ? command.options : null,
-                        name_localizations: command.nameLocalizations
-                            ? command.nameLocalizations
-                            : null,
-                        description_localizations: command.descriptionLocalizations
-                            ? command.descriptionLocalizations
-                            : null,
-                        default_member_permissions:
-                            command.permissions.user.length > 0 ? command.permissions.user : null,
-                    };
-                    if (command.permissions.user.length > 0) {
-                        const permissionValue = PermissionsBitField.resolve(
-                            command.permissions.user
-                        );
-                        if (typeof permissionValue === 'bigint') {
-                            data.default_member_permissions = permissionValue.toString();
-                        } else {
-                            data.default_member_permissions = permissionValue;
-                        }
-                    }
-                    const json = JSON.stringify(data);
-                    this.body.push(JSON.parse(json));
-                }
-            });
-        });
+            for (const file of commandFiles) pending.push(this.registerCommand(dir, file));
+        }
+        // Registration must finish before `ready` builds the slash-command body.
+        await Promise.all(pending);
         this.once('ready', async () => {
             const applicationCommands =
                 this.config.production === true
                     ? Routes.applicationCommands(this.user.id ?? '')
                     : Routes.applicationGuildCommands(
-                        this.user.id ?? '',
-                        this.config.guildId ?? ''
-                    );
+                          this.user.id ?? '',
+                          this.config.guildId ?? ''
+                      );
             try {
-                const rest = new REST({ version: '9' }).setToken(this.config.token ?? '');
+                const rest = new REST({ version: '10' }).setToken(this.config.token ?? '');
                 await rest.put(applicationCommands, { body: this.body });
                 this.logger.info(`Successfully loaded slash commands!`);
             } catch (error) {
@@ -136,6 +101,39 @@ export default class Lavamusic extends Client {
             }
         });
     }
+
+    private async registerCommand(dir: string, file: string): Promise<void> {
+        const cmd = (await import(`../commands/${dir}/${file}`)).default;
+        const command = new cmd(this);
+        command.category = dir;
+        this.commands.set(command.name, command);
+        if (command.aliases.length !== 0) {
+            command.aliases.forEach((alias: any) => {
+                this.aliases.set(alias, command.name);
+            });
+        }
+        if (!command.slashCommand) return;
+        const data: any = {
+            name: command.name,
+            description: command.description.content,
+            type: ApplicationCommandType.ChatInput,
+            options: command.options ? command.options : null,
+            name_localizations: command.nameLocalizations ? command.nameLocalizations : null,
+            description_localizations: command.descriptionLocalizations
+                ? command.descriptionLocalizations
+                : null,
+            default_member_permissions:
+                command.permissions.user.length > 0 ? command.permissions.user : null,
+        };
+        if (command.permissions.user.length > 0) {
+            const permissionValue = PermissionsBitField.resolve(command.permissions.user);
+            data.default_member_permissions =
+                typeof permissionValue === 'bigint' ? permissionValue.toString() : permissionValue;
+        }
+        // Round-trip through JSON to drop undefined values Discord rejects.
+        this.body.push(JSON.parse(JSON.stringify(data)));
+    }
+
     private async getNodes(): Promise<any> {
         const params = new URLSearchParams({
             ssl: 'false',
@@ -152,25 +150,27 @@ export default class Lavamusic extends Client {
         const nodes = await res.json();
         return nodes;
     }
-    private loadEvents(): void {
+    private async loadEvents(): Promise<void> {
         const eventsPath = fs.readdirSync(path.join(__dirname, '../events'));
-        eventsPath.forEach(dir => {
+        const pending: Array<Promise<void>> = [];
+        for (const dir of eventsPath) {
             const events = fs
                 .readdirSync(path.join(__dirname, `../events/${dir}`))
                 .filter(file => file.endsWith('.js'));
-            events.forEach(async file => {
-                const event = (await import(`../events/${dir}/${file}`)).default;
-                const evt = new event(this, file);
-                switch (dir) {
-                    case 'player':
-                        this.shoukaku.on(evt.name, (...args) => evt.run(...args));
-                        break;
-                    default:
-                        this.on(evt.name, (...args) => evt.run(...args));
-                        break;
-                }
-            });
-        });
+            for (const file of events) pending.push(this.registerEvent(dir, file));
+        }
+        // Must be registered before login, or a fast gateway connect misses them.
+        await Promise.all(pending);
+    }
+
+    private async registerEvent(dir: string, file: string): Promise<void> {
+        const event = (await import(`../events/${dir}/${file}`)).default;
+        const evt = new event(this, file);
+        if (dir === 'player') {
+            this.shoukaku.on(evt.name, (...args) => evt.run(...args));
+        } else {
+            this.on(evt.name, (...args) => evt.run(...args));
+        }
     }
 }
 
