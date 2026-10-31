@@ -12,6 +12,13 @@ export default class NodeDestroy extends Event {
     public async run(node: string, code: number, reason: string): Promise<void> {
         if (isFallbackNode(node)) {
             markFallbackFailed(node);
+            // Drop it from the map now: leaving it there lets Shoukaku's own
+            // reconnectTries fire every 10s against a node that just refused us.
+            try {
+                this.client.shoukaku.removeNode(node, 'fallback lost');
+            } catch (error) {
+                this.client.logger.debug(`[nodes] could not remove fallback ${node}: ${error}`);
+            }
             this.client.logger.debug(
                 `[nodes] public fallback "${node}" closed: code ${code}${reason?.trim() ? ` (${reason.trim()})` : ''}`
             );
