@@ -224,7 +224,12 @@ export default class Dispatcher {
             return;
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            this.client.logger.error(`[queue] play failed for ${this.guildId}: ${message}`);
+            const detail = error as { status?: number; path?: string; error?: string; trace?: string };
+            this.client.logger.error(
+                `[queue] play failed for ${this.guildId}: ${message}` +
+                    (detail.status ? ` (status ${detail.status}, ${detail.path ?? '?'})` : '') +
+                    (detail.error ? ` — ${detail.error}` : '')
+            );
 
             // Encoded tracks can be rejected after a Lavalink restart ("missing
             // source manager" / version mismatch). Re-resolve by URI once and
