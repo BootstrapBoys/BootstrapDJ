@@ -80,25 +80,17 @@ export class Queue extends Map {
      * track, loop/autoplay/volume and playback position across. Used when the
      * node dies (move to standby) and when it returns (move back).
      */
-    public async rebuild(
-        dispatcher: Dispatcher,
-        node: Node | undefined,
-        freeze: boolean = false
-    ): Promise<Dispatcher | null> {
+    public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
         if (this.rebuilding.has(dispatcher.guildId)) return null;
         this.rebuilding.add(dispatcher.guildId);
         try {
-            return await this.doRebuild(dispatcher, node, freeze);
+            return await this.doRebuild(dispatcher, node);
         } finally {
             this.rebuilding.delete(dispatcher.guildId);
         }
     }
 
-    private async doRebuild(
-        dispatcher: Dispatcher,
-        node: Node | undefined,
-        freeze: boolean = false
-    ): Promise<Dispatcher | null> {
+    private async doRebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
         if (!node || !dispatcher.channelId || !dispatcher.voiceId) return null;
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         const voice = guild?.channels.cache.get(dispatcher.voiceId);
@@ -119,7 +111,7 @@ export class Queue extends Map {
             seed: dispatcher.seed,
             volume: dispatcher.volume,
             position:
-                dispatcher.frozenPosition ??
+                dispatcher.resumePosition ??
                 (Number.isFinite(dispatcher.player.position) ? dispatcher.player.position : 0),
             paused: dispatcher.paused,
         };
@@ -157,33 +149,30 @@ export class Queue extends Map {
             this.set(guild.id, rebuilt);
             this.client.shoukaku.emitPlayerEvent('playerCreate', rebuilt.player);
 
-            let held = false;
+            let resumedAt = 0;
             if (saved.current) {
                 await rebuilt.play();
                 if (saved.position > 1000 && rebuilt.player.track) {
                     try {
                         await rebuilt.player.seekTo(saved.position);
+                        resumedAt = saved.position;
                     } catch (error) {
                         this.client.logger.warn(`[queue] seek to ${saved.position}ms failed: ${error}`);
                     }
                 }
-                if (freeze || saved.paused) {
+                if (saved.paused) {
                     try {
                         await rebuilt.player.setPaused(true);
                         rebuilt.paused = true;
-                        rebuilt.frozenPosition = saved.position;
-                        held = true;
                     } catch (error) {
-                        this.client.logger.warn(`[queue] could not freeze playback: ${error}`);
+                        this.client.logger.warn(`[queue] could not restore paused state: ${error}`);
                     }
-                } else {
-                    rebuilt.frozenPosition = null;
                 }
+                rebuilt.resumePosition = null;
             }
-            if (!held) rebuilt.frozenPosition = null;
             this.client.logger.info(
                 `[queue] moved ${guild.id} to "${node.name}" (${saved.queue.length} queued${
-                    held ? `, frozen at ${Math.round(saved.position / 1000)}s` : saved.position > 1000 ? `, resumed at ${Math.round(saved.position / 1000)}s` : ''
+                    resumedAt ? `, resumed at ${Math.round(resumedAt / 1000)}s` : ''
                 })`
             );
             return rebuilt;
@@ -193,8 +182,24 @@ export class Queue extends Map {
         }
     }
 
+    /** Sample the live position for every active guild on a node (or all),
+     * so the replacement player seeks to the moment the old node was lost
+     * instead of the moment its voice connection finished. */
+    public holdPositions(fromNodeName?: string): void {
+        for (const dispatcher of this.values()) {
+            if (!dispatcher.current) continue;
+            if (fromNodeName && dispatcher.player.node?.name !== fromNodeName) continue;
+            if (Number.isFinite(dispatcher.player.position)) {
+                dispatcher.resumePosition = dispatcher.player.position;
+                this.client.logger.debug(
+                    `[queue] held ${dispatcher.guildId} at ${Math.round(dispatcher.player.position / 1000)}s for the switch`
+                );
+            }
+        }
+    }
+
     /** Move every active guild onto `node` (e.g. a standby after node loss). */
-    public async migrateToNode(node: Node | undefined, freeze: boolean = false): Promise<number> {
+    public async migrateToNode(node: Node | undefined): Promise<number> {
         if (!node) {
             this.client.logger.warn('[queue] migration skipped: no connected node');
             return 0;
@@ -203,7 +208,7 @@ export class Queue extends Map {
         for (const dispatcher of [...this.values()]) {
             if (!dispatcher.current && !dispatcher.queue.length) continue;
             if (dispatcher.player.node?.name === node.name) continue;
-            const rebuilt = await this.rebuild(dispatcher, node, freeze);
+            const rebuilt = await this.rebuild(dispatcher, node);
             if (rebuilt) moved += 1;
         }
         if (!moved) {
@@ -215,8 +220,8 @@ export class Queue extends Map {
     }
 
     /** Move active guilds onto whichever node the resolver currently prefers. */
-    public async migrateToBestNode(freeze: boolean = false): Promise<number> {
-        return await this.migrateToNode(this.node, freeze);
+    public async migrateToBestNode(): Promise<number> {
+        return await this.migrateToNode(this.node);
     }
 
     public async search(query: string): Promise<LavalinkResponse | null> {

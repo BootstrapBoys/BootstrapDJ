@@ -33,9 +33,11 @@ export default class NodeConnect extends Event {
             }
         }
 
-        // Switch back: anything playing on a standby returns to this node.
+        // Switch back: anything playing on a standby returns to this node, and
+        // resumes at the position sampled now (not after the switch delay).
         const primary = this.client.shoukaku.nodes.get(node);
         if (primary) {
+            this.client.queue.holdPositions();
             void this.client.queue
                 .migrateToNode(primary)
                 .then(moved => {

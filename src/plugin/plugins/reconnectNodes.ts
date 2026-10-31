@@ -108,7 +108,7 @@ const reconnectNodes: BotPlugin = {
                 );
                 if (stranded && target) {
                     void client.queue
-                        .migrateToNode(target, true)
+                        .migrateToNode(target)
                         .catch(error => client.logger.error(`[nodes] migration retry failed: ${error}`));
                 }
             }

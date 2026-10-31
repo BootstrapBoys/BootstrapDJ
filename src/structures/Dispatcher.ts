@@ -113,8 +113,9 @@ export default class Dispatcher {
     public node: Node;
     private readonly nodeSession: string | null;
     public paused: boolean;
-    /** Position the track was frozen at when its node died (null = live). */
-    public frozenPosition: number | null = null;
+    /** Position sampled when the node died/was abandoned, so the replacement
+     * node resumes at that instant rather than after the switch delay. */
+    public resumePosition: number | null = null;
     public filters: Array<string>;
     public autoplay: boolean;
     /** Last track a user asked for; autoplay seeds from it. */
