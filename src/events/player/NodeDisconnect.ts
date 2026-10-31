@@ -1,6 +1,6 @@
 import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
-import { isQuietWindow } from '../../utils/NodeStatus.js';
+import { beginIncident, formatDuration } from '../../utils/NodeStatus.js';
 
 export default class NodeDisconnect extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -9,10 +9,15 @@ export default class NodeDisconnect extends Event {
         });
     }
     public async run(node: string, count: number): Promise<void> {
-        const message = `Lost connection to Lavalink node "${
-            node
-        }" (${count} reconnect attempt${count === 1 ? '' : 's'} so far) — retrying.`;
-        if (isQuietWindow()) return;
+        const incident = beginIncident();
+        if (!incident.started) {
+            this.client.logger.debug(
+                `[nodes] disconnect #${count} (${formatDuration(incident.durationMs)} into the outage)`
+            );
+            return;
+        }
+
+        const message = `Lost connection to Lavalink node "${node}" (attempt ${count}) — retrying in the background. One message will follow when it recovers.`;
         this.client.logger.warn(message);
         BotLog.send(this.client, message, 'warn');
     }

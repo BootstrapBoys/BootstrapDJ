@@ -1,16 +1,22 @@
 /**
- * Human-readable Lavalink node failures.
+ * Lavalink node health: readable close codes, readable errors, and an incident
+ * model so a long outage produces one message instead of one per retry.
  *
  * Shoukaku hands us raw WebSocket close codes and whatever error object the
- * server sent — frequently `{}`. A normal Lavalink restart (1001) used to be
- * posted to the log channel as "destroyed with code 1001 and reason", which
- * reads like a crash even though the bot reconnects by itself.
+ * server sent — frequently `{}`. A normal restart (1001) used to be posted as
+ * "destroyed with code 1001 and reason", which reads like a crash.
  */
 
 export interface CloseCodeInfo {
     summary: string;
     /** True when the server is expected to come back without intervention. */
     expected: boolean;
+}
+
+export interface IncidentStatus {
+    /** True only for the call that actually opened the incident. */
+    started: boolean;
+    durationMs: number;
 }
 
 export function describeCloseCode(code: number): CloseCodeInfo {
@@ -54,24 +60,53 @@ export function formatNodeError(error: unknown): string {
     return parts.length ? parts.join(', ') : 'no details from the server';
 }
 
-let destroyCount = 0;
-let quietUntil = 0;
-
-/** An expected close (restart/shutdown) opens a window where follow-up socket
- * errors are part of the same event and should not be posted separately. */
-export function openQuietWindow(seconds: number = 90): void {
-    quietUntil = Date.now() + seconds * 1000;
+export function formatDuration(ms: number): string {
+    const seconds = Math.max(0, Math.round(ms / 1000));
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    if (minutes < 60) return rest ? `${minutes}m ${rest}s` : `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const restMinutes = minutes % 60;
+    return restMinutes ? `${hours}h ${restMinutes}m` : `${hours}h`;
 }
 
-export function isQuietWindow(): boolean {
-    return Date.now() < quietUntil;
+let incidentStartedAt: number | null = null;
+let lastNoticeAt = 0;
+
+export function beginIncident(now: number = Date.now()): IncidentStatus {
+    if (incidentStartedAt !== null) return { started: false, durationMs: now - incidentStartedAt };
+    incidentStartedAt = now;
+    lastNoticeAt = now;
+    return { started: true, durationMs: 0 };
 }
 
-export function noteDestroy(): number {
-    destroyCount += 1;
-    return destroyCount;
+export function isIncidentActive(): boolean {
+    return incidentStartedAt !== null;
 }
 
-export function resetDestroyCount(): void {
-    destroyCount = 0;
+export function incidentDurationMs(now: number = Date.now()): number {
+    return incidentStartedAt === null ? 0 : now - incidentStartedAt;
+}
+
+/** True at most once per interval, so a long outage gets one reminder, not spam. */
+export function takeReminder(reminderMs: number, now: number = Date.now()): boolean {
+    if (incidentStartedAt === null || reminderMs <= 0) return false;
+    if (now - lastNoticeAt < reminderMs) return false;
+    lastNoticeAt = now;
+    return true;
+}
+
+/** Returns how long the outage lasted, or null when there was no incident. */
+export function endIncident(now: number = Date.now()): number | null {
+    if (incidentStartedAt === null) return null;
+    const duration = now - incidentStartedAt;
+    incidentStartedAt = null;
+    lastNoticeAt = 0;
+    return duration;
+}
+
+export function resetNodeStatus(): void {
+    incidentStartedAt = null;
+    lastNoticeAt = 0;
 }

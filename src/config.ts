@@ -25,6 +25,9 @@ export default {
     setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
     autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // search term autoplay uses when nothing has played yet
     sessionRestoreAge: process.env.SESSION_RESTORE_AGE ? parseInt(process.env.SESSION_RESTORE_AGE) : 21600, // seconds a saved queue stays restorable (0 disables)
+    nodeAlertReminderMinutes: process.env.NODE_ALERT_REMINDER_MINUTES
+        ? parseInt(process.env.NODE_ALERT_REMINDER_MINUTES)
+        : 15, // minutes between 'still down' notices during a node outage (0 disables)
     sessionEmptyWait: process.env.SESSION_EMPTY_WAIT ? parseInt(process.env.SESSION_EMPTY_WAIT) : 30, // seconds to wait for a listener before discarding the queue (0 = no wait)
     owners: (process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : []) as string[], // bot owners
     clientId: process.env.CLIENT_ID ?? '', // bot client id

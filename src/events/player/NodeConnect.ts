@@ -1,6 +1,6 @@
 import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
-import { resetDestroyCount } from '../../utils/NodeStatus.js';
+import { endIncident, formatDuration } from '../../utils/NodeStatus.js';
 
 export default class NodeConnect extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -9,10 +9,17 @@ export default class NodeConnect extends Event {
         });
     }
     public async run(node: string): Promise<void> {
-        // A successful connect resets the disconnect alarm; without this the
-        // counter accumulated across days and removed a healthy node.
-        resetDestroyCount();
-        this.client.logger.success(`Lavalink node "${node}" is ready!`);
+        const recoveredMs = endIncident();
+        if (recoveredMs === null) {
+            const ready = `Lavalink node "${node}" is ready!`;
+            this.client.logger.success(ready);
+            BotLog.send(this.client, ready, 'success');
+        } else {
+            const recovered = `Lavalink node "${node}" recovered after ${formatDuration(recoveredMs)}.`;
+            this.client.logger.success(recovered);
+            BotLog.send(this.client, recovered, 'success');
+        }
+
         let data = await this.client.db.get_247();
         if (!data) return;
         if (!Array.isArray(data)) {
@@ -30,6 +37,5 @@ export default class NodeConnect extends Event {
                 await this.client.queue.create(guild, vc, channel);
             }, index * 1000);
         }
-        BotLog.send(this.client, `Lavalink node "${node}" is ready!`, 'success');
     }
 }

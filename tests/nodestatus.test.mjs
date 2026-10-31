@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+    beginIncident,
     describeCloseCode,
+    endIncident,
+    formatDuration,
     formatNodeError,
-    isQuietWindow,
-    noteDestroy,
-    openQuietWindow,
-    resetDestroyCount,
+    isIncidentActive,
+    resetNodeStatus,
+    takeReminder,
 } from '../dist/utils/NodeStatus.js';
 
 test('a 1001 close reads as a restart, not a crash', () => {
@@ -21,7 +23,6 @@ test('abnormal closes are reported as unexpected', () => {
     for (const code of [1005, 1006, 1011, 4321]) {
         assert.equal(describeCloseCode(code).expected, false, `code ${code}`);
     }
-    assert.equal(describeCloseCode(1006).expected, false);
     assert.match(describeCloseCode(1006).summary, /close frame/);
 });
 
@@ -33,22 +34,42 @@ test('formatNodeError copes with the empty object Shoukaku often sends', () => {
     assert.equal(formatNodeError('plain text'), 'plain text');
 });
 
-test('the disconnect counter only trips at five and resets', () => {
-    resetDestroyCount();
-    for (let i = 1; i <= 4; i++) assert.equal(noteDestroy(), i);
-    assert.equal(noteDestroy(), 5);
-    resetDestroyCount();
-    assert.equal(noteDestroy(), 1);
-    resetDestroyCount();
+test('formatDuration reads naturally from seconds to hours', () => {
+    assert.equal(formatDuration(0), '0s');
+    assert.equal(formatDuration(45_000), '45s');
+    assert.equal(formatDuration(90_000), '1m 30s');
+    assert.equal(formatDuration(120_000), '2m');
+    assert.equal(formatDuration(3_600_000), '1h');
+    assert.equal(formatDuration(5_400_000), '1h 30m');
 });
 
-test('an expected close opens and closes the quiet window', () => {
-    openQuietWindow(0);
-    assert.equal(isQuietWindow(), false);
+test('an incident opens once and reports its duration on recovery', () => {
+    resetNodeStatus();
+    const start = 1_000_000;
 
-    openQuietWindow(60);
-    assert.equal(isQuietWindow(), true);
+    const first = beginIncident(start);
+    assert.equal(first.started, true);
+    assert.equal(isIncidentActive(), true);
 
-    openQuietWindow(0);
-    assert.equal(isQuietWindow(), false);
+    const second = beginIncident(start + 5_000);
+    assert.equal(second.started, false);
+    assert.equal(second.durationMs, 5_000);
+
+    assert.equal(endIncident(start + 65_000), 65_000);
+    assert.equal(isIncidentActive(), false);
+    assert.equal(endIncident(start + 70_000), null);
+});
+
+test('reminders fire at most once per interval', () => {
+    resetNodeStatus();
+    const start = 2_000_000;
+    beginIncident(start);
+
+    assert.equal(takeReminder(60_000, start + 30_000), false);
+    assert.equal(takeReminder(60_000, start + 61_000), true);
+    assert.equal(takeReminder(60_000, start + 90_000), false);
+    assert.equal(takeReminder(60_000, start + 130_000), true);
+    assert.equal(takeReminder(0, start + 999_000), false);
+
+    resetNodeStatus();
 });
