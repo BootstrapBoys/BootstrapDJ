@@ -3,7 +3,7 @@ import { Constants } from 'shoukaku';
 import { BootstrapClient } from '../../structures/index.js';
 import { BotPlugin } from '../index.js';
 
-const CHECK_INTERVAL_MS = 60_000;
+const CHECK_INTERVAL_MS = 30_000;
 
 /**
  * After a reboot the bot can win the race against Lavalink, exhaust Shoukaku's
