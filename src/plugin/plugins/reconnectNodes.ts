@@ -98,6 +98,21 @@ const reconnectNodes: BotPlugin = {
                 }
             }
 
+            // If the primary is down but players are still bound to it, move
+            // them onto the standby that is serving (retry each tick until the
+            // rebuild succeeds; failures log their reason).
+            if (!primaryUp() && client.queue.hasNode) {
+                const target = client.queue.node;
+                const stranded = [...client.queue.values()].some(
+                    dispatcher => dispatcher.player.node?.name !== target?.name
+                );
+                if (stranded && target) {
+                    void client.queue
+                        .migrateToNode(target)
+                        .catch(error => client.logger.error(`[nodes] migration retry failed: ${error}`));
+                }
+            }
+
             // A configured standby is serving; tell the channel once per outage
             // (the public fallback already announces itself when it is added).
             if (client.queue.hasNode) {

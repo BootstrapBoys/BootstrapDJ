@@ -80,7 +80,12 @@ export class Queue extends Map {
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         const voice = guild?.channels.cache.get(dispatcher.voiceId);
         const channel = guild?.channels.cache.get(dispatcher.channelId);
-        if (!guild || !voice || !channel) return null;
+        if (!guild || !voice || !channel) {
+            this.client.logger.warn(
+                `[queue] cannot rebuild ${dispatcher.guildId}: guild=${Boolean(guild)} voice=${Boolean(voice)} channel=${Boolean(channel)}`
+            );
+            return null;
+        }
 
         const saved = {
             current: dispatcher.current,
@@ -142,13 +147,21 @@ export class Queue extends Map {
 
     /** Move every active guild onto `node` (e.g. a standby after node loss). */
     public async migrateToNode(node: Node | undefined): Promise<number> {
-        if (!node) return 0;
+        if (!node) {
+            this.client.logger.warn('[queue] migration skipped: no connected node');
+            return 0;
+        }
         let moved = 0;
         for (const dispatcher of [...this.values()]) {
             if (!dispatcher.current && !dispatcher.queue.length) continue;
             if (dispatcher.player.node?.name === node.name) continue;
             const rebuilt = await this.rebuild(dispatcher, node);
             if (rebuilt) moved += 1;
+        }
+        if (!moved) {
+            this.client.logger.info(
+                `[queue] nothing to migrate to "${node.name}" (${this.size} dispatcher(s))`
+            );
         }
         return moved;
     }
