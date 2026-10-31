@@ -16,7 +16,31 @@ interface VoiceCommandBody {
 
 /** Commands Earl may run. Everything else is a no-op, so a misheard word cannot
  * reach destructive commands. */
-const ACTIONS = new Set(['play', 'playnext', 'skip', 'pause', 'resume', 'stop', 'queue', 'np', 'nowplaying', 'volume']);
+const ACTIONS = new Set(['play', 'playnext', 'skip', 'pause', 'resume', 'stop', 'queue', 'np', 'volume']);
+
+/** Speech-to-text reliably turns short words into homophones ("queue" -> "Q",
+ * "next" -> "nex"), so map the likely spellings onto the real verbs. */
+const ALIASES: Record<string, string> = {
+    q: 'queue',
+    que: 'queue',
+    cue: 'queue',
+    cueue: 'queue',
+    'queue up': 'queue',
+    next: 'skip',
+    nex: 'skip',
+    skip: 'skip',
+    nowplaying: 'np',
+    whats: 'np',
+    'now playing': 'np',
+    pause: 'pause',
+    unpause: 'resume',
+    continue: 'resume',
+    resume: 'resume',
+    stop: 'stop',
+    play: 'play',
+    playnext: 'playnext',
+    volume: 'volume',
+};
 
 function readBody(req: IncomingMessage): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -125,8 +149,10 @@ async function handle(
         }
     }
 
-    const [verbRaw, ...rest] = text.trim().toLowerCase().split(/\s+/);
-    const verb = verbRaw === 'nowplaying' ? 'np' : verbRaw;
+    const words = text.trim().toLowerCase().split(/\s+/);
+    const pair = `${words[0]} ${words[1] ?? ''}`.trim();
+    const verb = ALIASES[pair] ?? ALIASES[words[0]] ?? words[0];
+    const rest = verb === ALIASES[pair] ? words.slice(2) : words.slice(1);
     const query = rest.join(' ').trim();
     if (!ACTIONS.has(verb)) {
         return { status: 200, message: `I heard “${text}” but that is not a command I know.` };
