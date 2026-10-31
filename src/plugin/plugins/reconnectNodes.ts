@@ -77,9 +77,9 @@ const reconnectNodes: BotPlugin = {
             }
 
             if (!downSince) downSince = Date.now();
-            if (client.queue.hasNode) return; // a fallback is serving playback
 
-            // 1. keep trying the operator's own node
+            // 1. keep trying the operator's own nodes, even while a standby or
+            // public fallback is serving playback
             for (const option of client.config.lavalink) {
                 if (!option.url) continue;
                 const existing = client.shoukaku.nodes.get(option.name);
@@ -92,6 +92,19 @@ const reconnectNodes: BotPlugin = {
                 } catch (error) {
                     client.logger.error(`[nodes] could not re-add ${option.name}: ${error}`);
                 }
+            }
+
+            // A configured standby is serving; tell the channel once per outage
+            // (the public fallback already announces itself when it is added).
+            if (client.queue.hasNode) {
+                const active = client.queue.node?.name;
+                if (active && !isFallbackNode(active) && !fallbackAnnounced) {
+                    const announced = `Primary node is down — standby node "${active}" is handling playback.`;
+                    client.logger.warn(announced);
+                    BotLog.send(client, announced, 'warn');
+                    fallbackAnnounced = true;
+                }
+                return;
             }
 
             // 2. public fallback once the outage is long enough

@@ -71,3 +71,8 @@ export function nodePriority(name: string, configuredNames: string[]): number {
     if (index !== -1) return index;
     return 1000 + (isFallbackNode(name) ? 0 : 1);
 }
+
+/** The first configured node is the one incidents and recovery messages track. */
+export function isPrimaryNode(name: string, configuredNames: string[]): boolean {
+    return configuredNames.length > 0 && configuredNames[0] === name;
+}

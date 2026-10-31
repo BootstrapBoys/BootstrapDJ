@@ -1,5 +1,6 @@
 import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
+import { isPrimaryNode } from '../../utils/NodeConfig.js';
 import { beginIncident, formatDuration, formatNodeError, takeReminder } from '../../utils/NodeStatus.js';
 import { isFallbackNode } from '../../utils/PublicNodes.js';
 
@@ -15,6 +16,12 @@ export default class NodeError extends Event {
             detail === 'no details from the server'
                 ? 'no details were provided by the server — check `pm2 logs Lavalink`'
                 : `${detail} — check \`pm2 logs Lavalink\``;
+
+        const configured = this.client.config.lavalink.map(option => option.name);
+        if (!isFallbackNode(node) && configured.includes(node) && !isPrimaryNode(node, configured)) {
+            this.client.logger.debug(`[nodes] standby node "${node}" error: ${detail}`);
+            return;
+        }
 
         if (isFallbackNode(node)) {
             this.client.logger.debug(`[nodes] public fallback "${node}" error: ${detail}`);

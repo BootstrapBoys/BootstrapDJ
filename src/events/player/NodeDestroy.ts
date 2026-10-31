@@ -1,5 +1,6 @@
 import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
+import { isPrimaryNode } from '../../utils/NodeConfig.js';
 import { beginIncident, describeCloseCode, formatDuration } from '../../utils/NodeStatus.js';
 import { isFallbackNode, markFallbackFailed } from '../../utils/PublicNodes.js';
 
@@ -10,6 +11,12 @@ export default class NodeDestroy extends Event {
         });
     }
     public async run(node: string, code: number, reason: string): Promise<void> {
+        const configured = this.client.config.lavalink.map(option => option.name);
+        if (!isFallbackNode(node) && configured.includes(node) && !isPrimaryNode(node, configured)) {
+            this.client.logger.warn(`[nodes] standby node "${node}" disconnected`);
+            return;
+        }
+
         if (isFallbackNode(node)) {
             markFallbackFailed(node);
             // Drop it from the map now: leaving it there lets Shoukaku's own
