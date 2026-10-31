@@ -153,7 +153,7 @@ async function handle(
     const pair = `${words[0]} ${words[1] ?? ''}`.trim();
     const verb = ALIASES[pair] ?? ALIASES[words[0]] ?? words[0];
     const rest = verb === ALIASES[pair] ? words.slice(2) : words.slice(1);
-    const query = rest.join(' ').trim();
+    const query = cleanQuery(rest.join(' '));
     if (!ACTIONS.has(verb)) {
         return { status: 200, message: `I heard “${text}” but that is not a command I know.` };
     }
@@ -202,6 +202,17 @@ async function handle(
         }
         default:
             return { status: 200, message: 'That command is not wired up yet.' };
+    }
+}
+
+/** "play some NF" must search "NF", not "some NF" — the filler word otherwise
+ * dominates the search and returns an unrelated track. */
+function cleanQuery(query: string): string {
+    let out = query.trim();
+    for (;;) {
+        const next = out.replace(/^(?:some|me|us|the song|a song)\s+/i, '').trim();
+        if (next === out) return out;
+        out = next;
     }
 }
 
