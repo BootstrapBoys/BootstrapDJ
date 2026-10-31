@@ -1,6 +1,11 @@
 import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
-import { describeCloseCode, noteDestroy, resetDestroyCount } from '../../utils/NodeStatus.js';
+import {
+    describeCloseCode,
+    noteDestroy,
+    openQuietWindow,
+    resetDestroyCount,
+} from '../../utils/NodeStatus.js';
 
 export default class NodeDestroy extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -17,9 +22,16 @@ export default class NodeDestroy extends Event {
                 : ' Check that Lavalink is running and reachable.'
         }`;
 
-        if (info.expected) this.client.logger.warn(message);
-        else this.client.logger.error(message);
-        BotLog.send(this.client, message, info.expected ? 'warn' : 'error');
+        if (info.expected) {
+            // One message per restart: the socket errors that follow belong to
+            // this same shutdown and are demoted to debug by NodeError.
+            openQuietWindow();
+            this.client.logger.warn(message);
+            BotLog.send(this.client, message, 'warn');
+        } else {
+            this.client.logger.error(message);
+            BotLog.send(this.client, message, 'error');
+        }
 
         if (noteDestroy() >= 5) {
             resetDestroyCount();

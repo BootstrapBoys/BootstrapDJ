@@ -55,6 +55,17 @@ export function formatNodeError(error: unknown): string {
 }
 
 let destroyCount = 0;
+let quietUntil = 0;
+
+/** An expected close (restart/shutdown) opens a window where follow-up socket
+ * errors are part of the same event and should not be posted separately. */
+export function openQuietWindow(seconds: number = 90): void {
+    quietUntil = Date.now() + seconds * 1000;
+}
+
+export function isQuietWindow(): boolean {
+    return Date.now() < quietUntil;
+}
 
 export function noteDestroy(): number {
     destroyCount += 1;

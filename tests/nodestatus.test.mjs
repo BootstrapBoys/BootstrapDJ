@@ -4,7 +4,9 @@ import { test } from 'node:test';
 import {
     describeCloseCode,
     formatNodeError,
+    isQuietWindow,
     noteDestroy,
+    openQuietWindow,
     resetDestroyCount,
 } from '../dist/utils/NodeStatus.js';
 
@@ -38,4 +40,15 @@ test('the disconnect counter only trips at five and resets', () => {
     resetDestroyCount();
     assert.equal(noteDestroy(), 1);
     resetDestroyCount();
+});
+
+test('an expected close opens and closes the quiet window', () => {
+    openQuietWindow(0);
+    assert.equal(isQuietWindow(), false);
+
+    openQuietWindow(60);
+    assert.equal(isQuietWindow(), true);
+
+    openQuietWindow(0);
+    assert.equal(isQuietWindow(), false);
 });
