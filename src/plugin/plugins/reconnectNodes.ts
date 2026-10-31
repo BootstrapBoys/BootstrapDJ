@@ -27,6 +27,7 @@ const reconnectNodes: BotPlugin = {
         let fallbackName: string | null = null;
         let downSince = 0;
         let probing = false;
+        let fallbackAnnounced = false;
 
         const primaryUp = (): boolean =>
             [...client.shoukaku.nodes.values()].some(
@@ -56,6 +57,7 @@ const reconnectNodes: BotPlugin = {
 
             if (primaryUp()) {
                 downSince = 0;
+                fallbackAnnounced = false;
                 dropIdleFallback();
                 return;
             }
@@ -97,9 +99,14 @@ const reconnectNodes: BotPlugin = {
                     fallbackName = option.name;
                     const message = `Primary node still down after ${formatDuration(
                         Date.now() - downSince
-                    )} — switched to public fallback "${option.name}" (${best.latencyMs}ms, ${best.players} players).`;
+                    )} — using public fallback "${option.name}" (${best.latencyMs}ms, ${best.players} players).`;
                     client.logger.warn(message);
-                    BotLog.send(client, message, 'warn');
+                    // One notice per outage: later candidates are console-only,
+                    // otherwise a flaky public list turns into Discord spam.
+                    if (!fallbackAnnounced) {
+                        BotLog.send(client, message, 'warn');
+                        fallbackAnnounced = true;
+                    }
                 } catch (error) {
                     client.logger.error(`[nodes] public fallback failed: ${error}`);
                 } finally {

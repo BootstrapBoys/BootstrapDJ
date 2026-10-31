@@ -38,7 +38,7 @@ export default class NodeError extends Event {
             return;
         }
 
-        const message = `Lavalink node "${node}" is unreachable: ${reason}. Retrying in the background — one message will follow when it recovers.`;
+        const message = `Lavalink node "${node}" is unreachable: ${reason}. Retrying in the background.`;
         this.client.logger.error(message);
         BotLog.send(this.client, message, 'error');
     }

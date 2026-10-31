@@ -13,7 +13,6 @@ export default class NodeReconnect extends Event {
         if (isFallbackNode(node)) {
             const message = `Public fallback node "${node}" reconnected — the configured nodes are still down.`;
             this.client.logger.warn(message);
-            BotLog.send(this.client, message, 'warn');
             return;
         }
 

@@ -17,7 +17,7 @@ export default class NodeDisconnect extends Event {
             return;
         }
 
-        const message = `Lost connection to Lavalink node "${node}" (attempt ${count}) — retrying in the background. One message will follow when it recovers.`;
+        const message = `Lost connection to Lavalink node "${node}" (attempt ${count}) — retrying in the background.`;
         this.client.logger.warn(message);
         BotLog.send(this.client, message, 'warn');
     }

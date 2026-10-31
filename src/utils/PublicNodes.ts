@@ -35,6 +35,25 @@ interface CacheEntry {
 
 let cache: CacheEntry | null = null;
 
+// A public node that dropped us once should not be picked again immediately;
+// the list is small and the same "best" node would otherwise be retried.
+const BLOCK_MS = 5 * 60_000;
+const blocked = new Map<string, number>();
+
+export function markFallbackFailed(name: string): void {
+    blocked.set(name, Date.now());
+}
+
+export function isFallbackBlocked(name: string): boolean {
+    const at = blocked.get(name);
+    if (!at) return false;
+    if (Date.now() - at > BLOCK_MS) {
+        blocked.delete(name);
+        return false;
+    }
+    return true;
+}
+
 export function parsePublicNodes(payload: unknown): PublicNodeEntry[] {
     if (!Array.isArray(payload)) return [];
 
@@ -165,10 +184,11 @@ export async function findBestPublicNode(
         for (const result of results) if (result) usable.push(result);
     }
 
-    const ranked = rankNodes(usable);
+    const ranked = rankNodes(usable).filter(probe => !isFallbackBlocked(toNodeOption(probe.entry).name));
     return ranked[0] ?? null;
 }
 
 export function clearPublicNodeCache(): void {
     cache = null;
+    blocked.clear();
 }

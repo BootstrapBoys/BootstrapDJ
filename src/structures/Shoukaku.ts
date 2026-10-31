@@ -21,7 +21,7 @@ export default class ShoukakuClient extends Shoukaku {
             reconnectInterval: 10,
             reconnectTries: 20,
             restTimeout: 30000,
-            userAgent: `Bootstrap DJ (@zebz213)`, // don't change this
+            userAgent: `BootstrapDJ/4.1.0 (https://github.com/zebz213/BootstrapDJ)`, // NAME/VERSION form; some public nodes reject others
             nodeResolver: nodes => {
                 const configured = client.config.lavalink.map(node => node.name);
                 return [...nodes.values()]

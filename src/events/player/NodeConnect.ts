@@ -13,7 +13,6 @@ export default class NodeConnect extends Event {
         if (isFallbackNode(node)) {
             const message = `Public fallback node "${node}" is handling playback — the configured nodes are still down.`;
             this.client.logger.warn(message);
-            BotLog.send(this.client, message, 'warn');
         } else {
             const recoveredMs = endIncident();
             if (recoveredMs === null) {
