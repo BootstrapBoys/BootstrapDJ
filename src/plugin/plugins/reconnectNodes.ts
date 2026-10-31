@@ -1,23 +1,69 @@
 import { Constants } from 'shoukaku';
 
 import { BootstrapClient } from '../../structures/index.js';
+import BotLog from '../../utils/BotLog.js';
+import { formatDuration } from '../../utils/NodeStatus.js';
+import {
+    findBestPublicNode,
+    isFallbackNode,
+    shouldFallback,
+    toNodeOption,
+} from '../../utils/PublicNodes.js';
 import { BotPlugin } from '../index.js';
 
 const CHECK_INTERVAL_MS = 30_000;
 
 /**
- * After a reboot the bot can win the race against Lavalink, exhaust Shoukaku's
- * reconnect tries and then sit with no node until someone restarts it by hand.
- * This watchdog re-adds any configured node that is missing or disconnected.
+ * Keeps a node available: re-adds the operator's own node when it drops, and
+ * after NODE_FALLBACK_AFTER seconds of continuous outage probes the public
+ * list for a usable fallback. Once the primary is back, new players go to it
+ * (lowest penalty) and the fallback is removed when its players drain.
  */
 const reconnectNodes: BotPlugin = {
     name: 'Node Watchdog',
-    version: '1.0.0',
+    version: '1.1.0',
     author: 'Zebz213',
     initialize: (client: BootstrapClient) => {
-        const timer = setInterval(() => {
-            if (client.queue.hasNode) return;
+        let fallbackName: string | null = null;
+        let downSince = 0;
+        let probing = false;
 
+        const primaryUp = (): boolean =>
+            [...client.shoukaku.nodes.values()].some(
+                node => node.state === Constants.State.CONNECTED && !isFallbackNode(node.name)
+            );
+
+        const dropIdleFallback = (): void => {
+            if (!fallbackName) return;
+            const node = client.shoukaku.nodes.get(fallbackName);
+            if (node && (node.stats?.players ?? 0) > 0) return;
+
+            try {
+                client.shoukaku.removeNode(fallbackName, 'primary restored');
+            } catch (error) {
+                client.logger.error(`[nodes] could not remove fallback ${fallbackName}: ${error}`);
+            }
+            const message = `A configured Lavalink node is back — removed public fallback "${fallbackName}".`;
+            client.logger.success(message);
+            BotLog.send(client, message, 'success');
+            fallbackName = null;
+        };
+
+        const timer = setInterval(() => {
+            if (!client.isReady()) return;
+
+            if (fallbackName && !client.shoukaku.nodes.get(fallbackName)) fallbackName = null;
+
+            if (primaryUp()) {
+                downSince = 0;
+                dropIdleFallback();
+                return;
+            }
+
+            if (!downSince) downSince = Date.now();
+            if (client.queue.hasNode) return; // a fallback is serving playback
+
+            // 1. keep trying the operator's own node
             for (const option of client.config.lavalink) {
                 if (!option.url) continue;
                 const existing = client.shoukaku.nodes.get(option.name);
@@ -31,6 +77,35 @@ const reconnectNodes: BotPlugin = {
                     client.logger.error(`[nodes] could not re-add ${option.name}: ${error}`);
                 }
             }
+
+            // 2. public fallback once the outage is long enough
+            if (probing) return;
+            if (!client.config.nodeFallback) return;
+            if (!shouldFallback(Date.now() - downSince, client.config.nodeFallbackAfter, fallbackName !== null))
+                return;
+
+            probing = true;
+            void (async () => {
+                try {
+                    const best = await findBestPublicNode(client.config.publicNodeListUrl);
+                    if (!best) {
+                        client.logger.warn('[nodes] no public fallback answered the probe');
+                        return;
+                    }
+                    const option = toNodeOption(best.entry);
+                    client.shoukaku.addNode(option);
+                    fallbackName = option.name;
+                    const message = `Primary node still down after ${formatDuration(
+                        Date.now() - downSince
+                    )} — switched to public fallback "${option.name}" (${best.latencyMs}ms, ${best.players} players).`;
+                    client.logger.warn(message);
+                    BotLog.send(client, message, 'warn');
+                } catch (error) {
+                    client.logger.error(`[nodes] public fallback failed: ${error}`);
+                } finally {
+                    probing = false;
+                }
+            })();
         }, CHECK_INTERVAL_MS);
 
         (timer as unknown as { unref?: () => void }).unref?.();

@@ -1,7 +1,8 @@
 import { Channel, Guild } from 'discord.js';
-import { LavalinkResponse, Node } from 'shoukaku';
+import { LavalinkResponse, LoadType, Node } from 'shoukaku';
 
 import { BootstrapClient, Dispatcher } from './index.js';
+import { isFallbackNode } from '../utils/PublicNodes.js';
 export class Queue extends Map {
     public client: BootstrapClient;
     constructor(client: BootstrapClient) {
@@ -74,22 +75,40 @@ export class Queue extends Map {
             this.client.logger.warn('Search attempted with no connected Lavalink node');
             return null;
         }
-        const regex = /^https?:\/\//;
-        try {
-            const result = await node.rest.resolve(
-                regex.test(query) ? query : `${this.client.config.searchEngine}:${query}`
-            );
-            if (!result) this.client.logger.warn(`Lavalink returned no response for ${query}`);
-            return result ?? null;
-        } catch (err) {
-            this.client.logger.error(
-                `Lavalink search failed on ${node.name} for ${query}: ${
-                    err instanceof Error ? err.message : String(err)
-                }`
-            );
-            return null;
+
+        const isUrl = /^https?:\/\//.test(query);
+        const resolve = async (identifier: string): Promise<LavalinkResponse | null> => {
+            try {
+                return (await node.rest.resolve(identifier)) ?? null;
+            } catch (error) {
+                this.client.logger.error(
+                    `Lavalink search failed on ${node.name} for ${identifier}: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`
+                );
+                return null;
+            }
+        };
+
+        const identifier = isUrl ? query : `${this.client.config.searchEngine}:${query}`;
+        let result = await resolve(identifier);
+
+        // A public fallback usually has no LavaSrc, so dzsearch comes back empty;
+        // retry with plain YouTube search on that node before giving up.
+        if (
+            !isUrl &&
+            isFallbackNode(node.name) &&
+            !/^ytm?search:/i.test(query) &&
+            (!result || result.loadType === LoadType.EMPTY || result.loadType === LoadType.ERROR)
+        ) {
+            const retried = await resolve(`ytsearch:${query}`);
+            if (retried) result = retried;
         }
+
+        if (!result) this.client.logger.warn(`Lavalink returned no response for ${query}`);
+        return result;
     }
+
 }
 
 /**

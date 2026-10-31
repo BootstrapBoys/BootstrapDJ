@@ -16,11 +16,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NodeOption } from 'shoukaku';
 
+
 import { Command, Queue, ShoukakuClient } from './index.js';
 import Logger from './Logger.js';
 import config from '../config.js';
 import ServerData from '../database/server.js';
 import loadPlugins from '../plugin/index.js';
+import { findBestPublicNode, toNodeOption } from '../utils/PublicNodes.js';
 import { Utils } from '../utils/Utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,11 +47,13 @@ export default class BootstrapClient extends Client {
         return new EmbedBuilder();
     }
     public async start(token: string): Promise<void> {
-        if (this.config.autoNode) {
+        if (this.config.lavalink.length > 0) {
+            this.shoukaku = new ShoukakuClient(this, this.config.lavalink);
+        } else if (this.config.autoNode) {
             const nodes = await this.getNodes();
             this.shoukaku = new ShoukakuClient(this, nodes);
         } else {
-            this.shoukaku = new ShoukakuClient(this, this.config.lavalink);
+            this.shoukaku = new ShoukakuClient(this, []);
         }
         await this.loadCommands();
         this.logger.info(`Successfully loaded commands!`);
@@ -131,21 +135,22 @@ export default class BootstrapClient extends Client {
     }
 
     private async getNodes(): Promise<NodeOption[]> {
-        const params = new URLSearchParams({
-            ssl: 'false',
-            version: 'v4',
-            format: 'shoukaku',
-        });
-
-        const res = await fetch(`https://lavainfo-api.deno.dev/nodes?${params.toString()}`, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        // lavainfo returns the array in Shoukaku's NodeOption shape.
-        return (await res.json()) as NodeOption[];
+        try {
+            const best = await findBestPublicNode(this.config.publicNodeListUrl);
+            if (!best) {
+                this.logger.warn('[nodes] no public Lavalink node answered the probe; starting without a node');
+                return [];
+            }
+            this.logger.info(
+                `[nodes] using public node ${best.entry.identifier} (${best.latencyMs}ms, ${best.players} players)`
+            );
+            return [toNodeOption(best.entry)];
+        } catch (error) {
+            this.logger.error(`[nodes] public node lookup failed: ${error}`);
+            return [];
+        }
     }
+
     private async loadEvents(): Promise<void> {
         const eventsPath = fs.readdirSync(path.join(__dirname, '../events'));
         const pending: Array<Promise<void>> = [];

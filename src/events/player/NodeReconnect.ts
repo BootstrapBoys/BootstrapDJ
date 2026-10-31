@@ -1,6 +1,7 @@
 import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
 import { endIncident, formatDuration } from '../../utils/NodeStatus.js';
+import { isFallbackNode } from '../../utils/PublicNodes.js';
 
 export default class NodeReconnect extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -9,6 +10,13 @@ export default class NodeReconnect extends Event {
         });
     }
     public async run(node: string): Promise<void> {
+        if (isFallbackNode(node)) {
+            const message = `Public fallback node "${node}" reconnected — the configured nodes are still down.`;
+            this.client.logger.warn(message);
+            BotLog.send(this.client, message, 'warn');
+            return;
+        }
+
         const recoveredMs = endIncident();
         const message =
             recoveredMs === null

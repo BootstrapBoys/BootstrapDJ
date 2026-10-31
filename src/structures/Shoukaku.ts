@@ -1,6 +1,8 @@
 import { Connectors, NodeOption, Shoukaku } from 'shoukaku';
 
 import { BootstrapClient } from './index.js';
+import { nodePriority } from '../utils/NodeConfig.js';
+
 
 /**
  * Shoukaku 4.x State: CONNECTING = 0, CONNECTED = 1, DISCONNECTING = 2,
@@ -20,11 +22,17 @@ export default class ShoukakuClient extends Shoukaku {
             reconnectTries: 20,
             restTimeout: 30000,
             userAgent: `Bootstrap DJ (@zebz213)`, // don't change this
-            nodeResolver: nodes =>
-                [...nodes.values()]
+            nodeResolver: nodes => {
+                const configured = client.config.lavalink.map(node => node.name);
+                return [...nodes.values()]
                     .filter(node => Number(node.state) === NODE_CONNECTED)
-                    .sort((a, b) => a.penalties - b.penalties)
-                    .shift(),
+                    .sort(
+                        (a, b) =>
+                            nodePriority(a.name, configured) - nodePriority(b.name, configured) ||
+                            a.penalties - b.penalties
+                    )
+                    .shift();
+            },
         });
         this.client = client;
         this.on('ready', (name, reconnected) => {

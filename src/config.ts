@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 
 import { SearchEngine } from './types.js';
+import { parseFallbackNodes, toNodeOptions } from './utils/NodeConfig.js';
 // quiet: dotenv >=17 prints an 'injected env' banner on every boot.
 dotenv.config({ quiet: true });
 
@@ -25,6 +26,10 @@ export default {
     setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
     autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // search term autoplay uses when nothing has played yet
     sessionRestoreAge: process.env.SESSION_RESTORE_AGE ? parseInt(process.env.SESSION_RESTORE_AGE) : 21600, // seconds a saved queue stays restorable (0 disables)
+    nodeFallback: process.env.NODE_FALLBACK ? parseBoolean(process.env.NODE_FALLBACK) : true, // use a probed public node when the primary is down
+    nodeFallbackAfter: process.env.NODE_FALLBACK_AFTER ? parseInt(process.env.NODE_FALLBACK_AFTER) : 180, // seconds of continuous outage before falling back
+    publicNodeListUrl:
+        process.env.PUBLIC_NODE_LIST_URL || 'https://lavalink-list.ajieblogs.eu.org/All', // public node list API
     nodeAlertReminderMinutes: process.env.NODE_ALERT_REMINDER_MINUTES
         ? parseInt(process.env.NODE_ALERT_REMINDER_MINUTES)
         : 15, // minutes between 'still down' notices during a node outage (0 disables)
@@ -44,14 +49,15 @@ export default {
         deezer: 'https://i.imgur.com/xyZ43FG.png',
     } as Record<string, string>, // music icons
     production: process.env.PRODUCTION ? parseBoolean(process.env.PRODUCTION) : true,
-    lavalink: [
+    lavalink: toNodeOptions(
         {
-            url: process.env.LAVALINK_URL ?? '',
-            auth: process.env.LAVALINK_AUTH ?? '',
             name: process.env.LAVALINK_NAME || 'Bootstrap Node',
+            url: (process.env.LAVALINK_URL ?? '').trim(),
+            auth: process.env.LAVALINK_AUTH ?? '',
             secure: process.env.LAVALINK_SECURE ? parseBoolean(process.env.LAVALINK_SECURE) : false,
         },
-    ], // lavalink nodes
+        parseFallbackNodes(process.env.LAVALINK_FALLBACKS)
+    ), // primary node followed by LAVALINK_FALLBACKS, in order
 };
 
 function parseBoolean(value: string | undefined): boolean {

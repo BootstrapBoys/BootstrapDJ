@@ -1,6 +1,7 @@
 import { BootstrapClient, Event } from '../../structures/index.js';
 import BotLog from '../../utils/BotLog.js';
 import { beginIncident, formatDuration, formatNodeError, takeReminder } from '../../utils/NodeStatus.js';
+import { isFallbackNode } from '../../utils/PublicNodes.js';
 
 export default class NodeError extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -14,6 +15,11 @@ export default class NodeError extends Event {
             detail === 'no details from the server'
                 ? 'no details were provided by the server — check `pm2 logs Lavalink`'
                 : `${detail} — check \`pm2 logs Lavalink\``;
+
+        if (isFallbackNode(node)) {
+            this.client.logger.debug(`[nodes] public fallback "${node}" error: ${detail}`);
+            return;
+        }
 
         const incident = beginIncident();
         if (!incident.started) {
