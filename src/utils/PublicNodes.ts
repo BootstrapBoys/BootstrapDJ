@@ -66,6 +66,10 @@ export function parsePublicNodes(payload: unknown): PublicNodeEntry[] {
         const port = Number(record.port);
         if (!host || !Number.isInteger(port) || port <= 0 || port > 65535) continue;
         if (record.version !== 'v4') continue;
+        // NodeLink answers /v4/info but wraps load results in `data`, which
+        // Lavalink v4 clients (us) cannot parse — playback would fail silently.
+        const identifier = typeof record.identifier === 'string' ? record.identifier : '';
+        if (/nodelink/i.test(identifier) || /nodelink/i.test(host)) continue;
 
         nodes.push({
             identifier:

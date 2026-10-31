@@ -18,6 +18,8 @@ test('parsePublicNodes keeps only usable v4 entries', () => {
         { host: '', port: 2333, version: 'v4' },
         { host: 'bad-port.example.com', port: 'x', version: 'v4' },
         { host: 'no-id.example.com', port: 443, secure: true, version: 'v4' },
+        { identifier: 'nodelink-x', host: 'nl.example.com', port: 443, version: 'v4' },
+        { identifier: 'plain', host: 'nodelink.example.com', port: 443, version: 'v4' },
         'not-an-object',
     ]);
 
