@@ -53,7 +53,19 @@ const reconnectNodes: BotPlugin = {
         const timer = setInterval(() => {
             if (!client.isReady()) return;
 
-            if (fallbackName && !client.shoukaku.nodes.get(fallbackName)) fallbackName = null;
+            // A dead public node must leave the map, otherwise Shoukaku keeps
+            // retrying it and every attempt logs another destroy.
+            const fallbackNode = fallbackName ? client.shoukaku.nodes.get(fallbackName) : null;
+            if (fallbackName && (!fallbackNode || fallbackNode.state === Constants.State.DISCONNECTED)) {
+                if (fallbackNode) {
+                    try {
+                        client.shoukaku.removeNode(fallbackName, 'fallback disconnected');
+                    } catch (error) {
+                        client.logger.debug(`[nodes] could not remove fallback ${fallbackName}: ${error}`);
+                    }
+                }
+                fallbackName = null;
+            }
 
             if (primaryUp()) {
                 downSince = 0;

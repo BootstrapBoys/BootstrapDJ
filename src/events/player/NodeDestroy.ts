@@ -15,7 +15,7 @@ export default class NodeDestroy extends Event {
             this.client.logger.debug(
                 `[nodes] public fallback "${node}" closed: code ${code}${reason?.trim() ? ` (${reason.trim()})` : ''}`
             );
-            const message = `Public fallback node "${node}" was lost — the configured nodes are still down; another fallback will be probed.`;
+            const message = `Public fallback node "${node}" was lost — trying another node.`;
             this.client.logger.warn(message);
             return;
         }
