@@ -18,6 +18,22 @@ function badgeFile(): AttachmentBuilder {
     return new AttachmentBuilder(LIVE_BADGE_PATH, { name: 'earl-live.png' });
 }
 
+/** LIVE thumbnail on the mock player: a guild-emoji URL when configured, else
+ * the bundled PNG attached to the message (guilds with no free emoji slots). */
+function withLiveBadge(client: BootstrapClient, embed: EmbedBuilder): {
+    embeds: EmbedBuilder[];
+    files?: AttachmentBuilder[];
+    attachments?: [];
+} {
+    const url = client.config.earlLiveBadgeUrl;
+    if (url) return { embeds: [embed.setThumbnail(url)] };
+    return {
+        embeds: [embed.setThumbnail('attachment://earl-live.png')],
+        files: [badgeFile()],
+        attachments: [],
+    };
+}
+
 function neb(embed: EmbedBuilder, player: Dispatcher, client: BootstrapClient): EmbedBuilder {
     
     if (!player || !player.current || !player.current.info) return embed;
@@ -251,12 +267,7 @@ async function trackStart(
         await m
             .edit(
                 listening
-                    ? {
-                          embeds: [embed.setThumbnail('attachment://earl-live.png')],
-                          components,
-                          files: [badgeFile()],
-                          attachments: [],
-                      }
+                    ? { ...withLiveBadge(client, embed), components }
                     : { embeds: [embed], components, attachments: [] }
             )
             .catch(error => client.logger.error(`[setup] mock message edit failed: ${error}`));
@@ -332,12 +343,7 @@ async function updateSetup(client: BootstrapClient, guild: any): Promise<void> {
             await m
                 .edit(
                     listening
-                        ? {
-                              embeds: [embed.setThumbnail('attachment://earl-live.png')],
-                              components,
-                              files: [badgeFile()],
-                              attachments: [],
-                          }
+                        ? { ...withLiveBadge(client, embed), components }
                         : { embeds: [embed], components, attachments: [] }
                 )
                 .catch(() => { });
@@ -361,12 +367,7 @@ async function updateSetup(client: BootstrapClient, guild: any): Promise<void> {
             await m
                 .edit(
                     listening
-                        ? {
-                              embeds: [embed.setThumbnail('attachment://earl-live.png')],
-                              components,
-                              files: [badgeFile()],
-                              attachments: [],
-                          }
+                        ? { ...withLiveBadge(client, embed), components }
                         : { embeds: [embed], components, attachments: [] }
                 )
                 .catch(() => { });
@@ -459,11 +460,7 @@ export async function resetSetupChannel(
         const listening = await listeningActive(client, guild.id);
         const message = await channel.send(
             listening
-                ? {
-                      embeds: [embed.setThumbnail('attachment://earl-live.png')],
-                      components,
-                      files: [badgeFile()],
-                  }
+                ? { ...withLiveBadge(client, embed), components }
                 : { embeds: [embed], components }
         );
         await client.db.setSetup(guild.id, channel.id, message.id);
