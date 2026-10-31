@@ -65,7 +65,53 @@ export class Queue extends Map {
             this.client.shoukaku.emitPlayerEvent('playerCreate', dispatcher.player);
             return dispatcher;
         } else {
-            return dispatcher;
+            if (!dispatcher.isStale) return dispatcher;
+
+            // The node died and took the player with it; the dispatcher kept the
+            // queue, so every /play was enqueued onto a player that no longer
+            // existed (tracks appeared in /queue, nothing played). Rebuild it.
+            const saved = {
+                current: dispatcher.current,
+                queue: dispatcher.queue.slice(),
+                history: dispatcher.history.slice(),
+                loop: dispatcher.loop,
+                autoplay: dispatcher.autoplay,
+                seed: dispatcher.seed,
+                volume: dispatcher.volume,
+            };
+            dispatcher.destroy();
+
+            const node = givenNode ?? this.node;
+            if (!node) throw new Error('No Lavalink node is available right now');
+            const player = await this.client.shoukaku.joinVoiceChannel({
+                guildId: guild.id,
+                channelId: voice.id,
+                shardId: guild.shard.id,
+                deaf: true,
+            });
+            const rebuilt = new Dispatcher({
+                client: this.client,
+                guildId: guild.id,
+                channelId: channel.id,
+                voiceId: voice.id,
+                player,
+                node,
+            });
+            rebuilt.current = saved.current;
+            rebuilt.queue = saved.queue;
+            rebuilt.history = saved.history;
+            rebuilt.loop = saved.loop;
+            rebuilt.autoplay = saved.autoplay;
+            rebuilt.seed = saved.seed;
+            rebuilt.player.setGlobalVolume(saved.volume);
+
+            this.set(guild.id, rebuilt);
+            this.client.shoukaku.emitPlayerEvent('playerCreate', rebuilt.player);
+            this.client.logger.info(
+                `[queue] rebuilt player on "${node.name}" after node loss (${saved.queue.length} queued)`
+            );
+            if (saved.current) void rebuilt.play();
+            return rebuilt;
         }
     }
 

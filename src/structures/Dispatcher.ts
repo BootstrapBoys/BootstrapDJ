@@ -179,6 +179,12 @@ export default class Dispatcher {
     get exists(): boolean {
         return this.client.queue.has(this.guildId);
     }
+
+    /** True when Shoukaku has destroyed the player (node loss) but the
+     * dispatcher, its queue and the session row are still around. */
+    get isStale(): boolean {
+        return this.client.shoukaku.players.get(this.guildId) !== this.player;
+    }
     get volume(): number {
         return this.player.volume;
     }
