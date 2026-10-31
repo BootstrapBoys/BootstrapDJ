@@ -1,10 +1,22 @@
 /* eslint-disable no-case-declarations */
-import { ColorResolvable, EmbedBuilder, Message, TextChannel } from 'discord.js';
+import { AttachmentBuilder, ColorResolvable, EmbedBuilder, Message, TextChannel } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { getButtons } from './Buttons.js';
 import { Song } from '../structures/Dispatcher.js';
 import { BootstrapClient, Dispatcher } from '../structures/index.js';
+
+const LIVE_BADGE_PATH = '/root/EarlTheEar/assets/live.png';
+
+/** The listener owns this state; DB is the single source for the embed badge. */
+async function listeningActive(client: BootstrapClient, guildId: string): Promise<boolean> {
+    const state = await client.db.getVoiceListen(guildId);
+    return state?.enabled === true;
+}
+
+function badgeFile(): AttachmentBuilder {
+    return new AttachmentBuilder(LIVE_BADGE_PATH, { name: 'earl-live.png' });
+}
 
 function neb(embed: EmbedBuilder, player: Dispatcher, client: BootstrapClient): EmbedBuilder {
     
@@ -229,16 +241,24 @@ async function trackStart(
                 )}]\` - Requested by ${track.info.requester}`
             )
             .setImage(icon ?? null);
+        const listening = await listeningActive(client, channel.guild.id);
+        const components = getButtons().map(b => {
+            b.components.forEach(c => {
+                c.setDisabled(!player.current);
+            });
+            return b;
+        });
         await m
-            .edit({
-                embeds: [embed],
-                components: getButtons().map(b => {
-                    b.components.forEach(c => {
-                        c.setDisabled(!player.current);
-                    });
-                    return b;
-                }),
-            })
+            .edit(
+                listening
+                    ? {
+                          embeds: [embed.setThumbnail('attachment://earl-live.png')],
+                          components,
+                          files: [badgeFile()],
+                          attachments: [],
+                      }
+                    : { embeds: [embed], components, attachments: [] }
+            )
             .catch(error => client.logger.error(`[setup] mock message edit failed: ${error}`));
     } else {
         let iconUrl: string | undefined = client.config.icons[current.info.sourceName];
@@ -302,16 +322,24 @@ async function updateSetup(client: BootstrapClient, guild: any): Promise<void> {
                     )}]\` - Requested by ${player.current.info.requester}`
                 )
                 .setImage(player.current.info.artworkUrl ?? null);
+            const listening = await listeningActive(client, guild.id);
+            const components = getButtons().map(b => {
+                b.components.forEach(c => {
+                    c.setDisabled(player && player.current ? false : true);
+                });
+                return b;
+            });
             await m
-                .edit({
-                    embeds: [embed],
-                    components: getButtons().map(b => {
-                        b.components.forEach(c => {
-                            c.setDisabled(player && player.current ? false : true);
-                        });
-                        return b;
-                    }),
-                })
+                .edit(
+                    listening
+                        ? {
+                              embeds: [embed.setThumbnail('attachment://earl-live.png')],
+                              components,
+                              files: [badgeFile()],
+                              attachments: [],
+                          }
+                        : { embeds: [embed], components, attachments: [] }
+                )
                 .catch(() => { });
         } else {
             const embed = client
@@ -323,16 +351,24 @@ async function updateSetup(client: BootstrapClient, guild: any): Promise<void> {
                 })
                 .setDescription(`Nothing playing right now`)
                 .setImage(client.config.links.img);
+            const listening = await listeningActive(client, guild.id);
+            const components = getButtons().map(b => {
+                b.components.forEach(c => {
+                    c.setDisabled(true);
+                });
+                return b;
+            });
             await m
-                .edit({
-                    embeds: [embed],
-                    components: getButtons().map(b => {
-                        b.components.forEach(c => {
-                            c.setDisabled(true);
-                        });
-                        return b;
-                    }),
-                })
+                .edit(
+                    listening
+                        ? {
+                              embeds: [embed.setThumbnail('attachment://earl-live.png')],
+                              components,
+                              files: [badgeFile()],
+                              attachments: [],
+                          }
+                        : { embeds: [embed], components, attachments: [] }
+                )
                 .catch(() => { });
         }
     }
@@ -416,13 +452,20 @@ export async function resetSetupChannel(
             })
             .setDescription('Nothing playing right now')
             .setImage(client.config.links.img);
-        const message = await channel.send({
-            embeds: [embed],
-            components: getButtons().map(row => {
-                row.components.forEach(component => component.setDisabled(true));
-                return row;
-            }),
+        const components = getButtons().map(row => {
+            row.components.forEach(component => component.setDisabled(true));
+            return row;
         });
+        const listening = await listeningActive(client, guild.id);
+        const message = await channel.send(
+            listening
+                ? {
+                      embeds: [embed.setThumbnail('attachment://earl-live.png')],
+                      components,
+                      files: [badgeFile()],
+                  }
+                : { embeds: [embed], components }
+        );
         await client.db.setSetup(guild.id, channel.id, message.id);
     } catch (error) {
         client.logger.error(`[setup] could not post a fresh mock in ${channel.id}: ${error}`);

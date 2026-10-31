@@ -21,6 +21,8 @@ model Guild {
   roles      Role[]
   botchannel Botchannel?
   setup      Setup?
+  voiceListen VoiceListen?
+  voiceOptOuts VoiceListenOptOut[]
 }
 
 model Stay {
@@ -94,4 +96,26 @@ model Setup {
 model Premium {
   userId  String @id
   guildId String
+}
+
+
+/// Guild-level voice-listening state. Off by default; /listen flips it.
+model VoiceListen {
+  guildId        String   @id
+  enabled        Boolean  @default(false)
+  voiceChannelId String?
+  textChannelId  String?
+  updatedBy      String?
+  updatedAt      DateTime @updatedAt
+  Guild          Guild    @relation(fields: [guildId], references: [guildId])
+}
+
+/// Members whose frames must be dropped before STT when listening is active.
+model VoiceListenOptOut {
+  guildId   String
+  userId    String
+  createdAt DateTime @default(now())
+  Guild     Guild    @relation(fields: [guildId], references: [guildId])
+
+  @@id([guildId, userId])
 }

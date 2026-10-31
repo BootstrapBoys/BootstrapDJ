@@ -14,6 +14,8 @@ import {
     Setup,
     Song,
     Stay,
+    VoiceListen,
+    VoiceListenOptOut,
 } from '../generated/prisma/client.js';
 
 /**
@@ -137,6 +139,56 @@ export default class ServerData {
         } else {
             return await this.prisma.stay.findMany();
         }
+    }
+
+    public async getVoiceListen(guildId: string): Promise<VoiceListen | null> {
+        return await this.prisma.voiceListen.findUnique({ where: { guildId } });
+    }
+
+    public async setVoiceListen(
+        guildId: string,
+        data: {
+            enabled: boolean;
+            voiceChannelId?: string | null;
+            textChannelId?: string | null;
+            updatedBy?: string | null;
+        }
+    ): Promise<VoiceListen> {
+        return await this.prisma.voiceListen.upsert({
+            where: { guildId },
+            create: {
+                guildId,
+                enabled: data.enabled,
+                voiceChannelId: data.voiceChannelId ?? null,
+                textChannelId: data.textChannelId ?? null,
+                updatedBy: data.updatedBy ?? null,
+            },
+            update: {
+                enabled: data.enabled,
+                voiceChannelId: data.voiceChannelId ?? null,
+                textChannelId: data.textChannelId ?? null,
+                updatedBy: data.updatedBy ?? null,
+            },
+        });
+    }
+
+    public async addVoiceOptOut(guildId: string, userId: string): Promise<VoiceListenOptOut> {
+        return await this.prisma.voiceListenOptOut.upsert({
+            where: { guildId_userId: { guildId, userId } },
+            create: { guildId, userId },
+            update: {},
+        });
+    }
+
+    public async removeVoiceOptOut(guildId: string, userId: string): Promise<boolean> {
+        const result = await this.prisma.voiceListenOptOut.deleteMany({
+            where: { guildId, userId },
+        });
+        return result.count > 0;
+    }
+
+    public async listVoiceOptOuts(guildId: string): Promise<VoiceListenOptOut[]> {
+        return await this.prisma.voiceListenOptOut.findMany({ where: { guildId } });
     }
 
     public async getDj(guildId: string): Promise<Dj | null> {

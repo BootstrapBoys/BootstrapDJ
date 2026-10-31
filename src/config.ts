@@ -38,6 +38,10 @@ export default {
     clientId: process.env.CLIENT_ID ?? '', // bot client id
     guildId: process.env.GUILD_ID ?? '', // guild id
     logChannelId: process.env.LOG_CHANNEL_ID || '', // log channel id
+    // Voice listener (Earl the Ear): localhost control API + bridge.
+    earlControlUrl: process.env.EARL_CONTROL_URL || 'http://127.0.0.1:8791',
+    earlBridgeSecret: process.env.EARL_BRIDGE_SECRET || '',
+    voiceBridgePort: process.env.VOICE_BRIDGE_PORT ? parseInt(process.env.VOICE_BRIDGE_PORT) : 8790,
     links: {
         img: process.env.IMG_LINK || 'https://i.imgur.com/ud3EWNh.jpg',
     }, // image links
