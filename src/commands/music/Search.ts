@@ -58,7 +58,7 @@ export default class Search extends Command {
             });
 
         let player = client.queue.get(guild.id);
-        if (!player) {
+        if (!player || player.isStale) {
             const vc = ctx.voiceChannel;
             player = await client.queue.create(guild, vc, ctx.channel);
         }

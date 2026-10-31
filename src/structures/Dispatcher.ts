@@ -111,6 +111,7 @@ export default class Dispatcher {
     public loop: 'off' | 'repeat' | 'queue';
     public repeat: number;
     public node: Node;
+    private readonly nodeSession: string | null;
     public paused: boolean;
     public filters: Array<string>;
     public autoplay: boolean;
@@ -134,6 +135,7 @@ export default class Dispatcher {
         this.loop = 'off';
         this.repeat = 0;
         this.node = options.node;
+        this.nodeSession = options.node.sessionId;
         this.paused = false;
         this.filters = [];
         this.autoplay = false;
@@ -180,21 +182,39 @@ export default class Dispatcher {
         return this.client.queue.has(this.guildId);
     }
 
-    /** True when Shoukaku has destroyed the player (node loss) but the
-     * dispatcher, its queue and the session row are still around. */
+    /** True when the player no longer belongs to a live Lavalink session:
+     * the node restarted (new session id) or Shoukaku dropped the player.
+     * Comparing object identity alone missed the common case — Shoukaku keeps
+     * the player in its map after a reconnect with a null session, so calls
+     * failed with "Session not found" instead of rebuilding. */
     get isStale(): boolean {
-        return this.client.shoukaku.players.get(this.guildId) !== this.player;
+        if (this.client.shoukaku.players.get(this.guildId) !== this.player) return true;
+        return this.node.sessionId === null || this.node.sessionId !== this.nodeSession;
     }
     get volume(): number {
         return this.player.volume;
     }
+    /** Shoukaku's player methods return promises nobody awaits; a player on a
+     * dead session would otherwise raise unhandled rejections for every click. */
+    private callPlayer(action: string, run: () => Promise<unknown>): void {
+        void run().catch(error => {
+            this.client.logger.warn(`[queue] ${action} failed for ${this.guildId}: ${error}`);
+        });
+    }
+
     public async play(): Promise<void> {
         if (!this.exists || (!this.queue.length && !this.current)) {
             return;
         }
+        if (this.isStale) {
+            this.client.logger.warn(
+                `[queue] refusing to play on a stale player for ${this.guildId} (node session changed)`
+            );
+            return;
+        }
         this.current = (this.queue.length !== 0 ? this.queue.shift() : this.queue[0]) ?? null;
         if (!this.current) return;
-        this.player.playTrack({ track: { encoded: this.current?.encoded } });
+        this.callPlayer('play', () => this.player.playTrack({ track: { encoded: this.current?.encoded } }));
         void this.persist();
         if (this.current) {
             this.history.push(this.current);
@@ -206,10 +226,10 @@ export default class Dispatcher {
     public pause(): void {
         if (!this.player) return;
         if (!this.paused) {
-            this.player.setPaused(true);
+            this.callPlayer('pause', () => this.player.setPaused(true));
             this.paused = true;
         } else {
-            this.player.setPaused(false);
+            this.callPlayer('resume', () => this.player.setPaused(false));
             this.paused = false;
         }
         void this.persist();
@@ -223,7 +243,7 @@ export default class Dispatcher {
         if (!this.player) return;
         if (!this.previous) return;
         this.queue.unshift(this.previous);
-        this.player.stopTrack();
+        this.callPlayer('stop', () => this.player.stopTrack());
     }
     public destroy(): void {
         if (this.persistTimer) clearInterval(this.persistTimer);
@@ -255,11 +275,11 @@ export default class Dispatcher {
             }
         }
         this.repeat = this.repeat == 1 ? 0 : this.repeat;
-        this.player.stopTrack();
+        this.callPlayer('stop', () => this.player.stopTrack());
     }
     public seek(time: number): void {
         if (!this.player) return;
-        this.player.seekTo(time);
+        this.callPlayer('seek', () => this.player.seekTo(time));
     }
     public stop(): void {
         if (!this.player) return;
@@ -271,7 +291,7 @@ export default class Dispatcher {
         this.repeat = 0;
         this.stopped = true;
         void this.client.db.deleteSession(this.guildId).catch(() => {});
-        this.player.stopTrack();
+        this.callPlayer('stop', () => this.player.stopTrack());
     }
     /**
      * Snapshot playback state so a crash or restart can resume it. The row is

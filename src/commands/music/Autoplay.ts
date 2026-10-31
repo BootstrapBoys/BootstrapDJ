@@ -70,7 +70,7 @@ export default class Autoplay extends Command {
             });
         }
 
-        if (!player) player = await client.queue.create(guild, vc, ctx.channel);
+        if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
 
         if (seed) {
             const picked = await player.seedFrom(seed);

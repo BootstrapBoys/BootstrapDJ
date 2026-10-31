@@ -33,7 +33,7 @@ export default class Join extends Command {
         if (!guild) return;
         let player = client.queue.get(guild.id);
         const embed = this.client.embed();
-        if (!player) {
+        if (!player || player.isStale) {
             const vc = ctx.voiceChannel;
             player = await client.queue.create(
                 guild,

@@ -60,7 +60,7 @@ export default class Play extends Command {
                         ),
                 ],
             });
-        if (!player) player = await client.queue.create(guild, vc, ctx.channel);
+        if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
 
         const res = await this.client.queue.search(query);
         const embed = this.client.embed();
