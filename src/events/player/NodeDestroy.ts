@@ -51,9 +51,13 @@ export default class NodeDestroy extends Event {
         BotLog.send(this.client, message, info.expected ? 'warn' : 'error');
 
         // Immediate failover: replay the active queue on a connected standby
-        // rather than waiting for the next command.
+        // rather than waiting for the next command. Pick the target explicitly:
+        // during nodeDestroy the resolver may still hand back the dying node.
+        const failoverTarget = [...this.client.shoukaku.nodes.values()].find(
+            candidate => candidate.name !== node && Number(candidate.state) === 1
+        );
         void this.client.queue
-            .migrateToBestNode()
+            .migrateToNode(failoverTarget)
             .then(moved => {
                 if (moved) this.client.logger.warn(`[nodes] moved ${moved} player(s) off "${node}"`);
             })

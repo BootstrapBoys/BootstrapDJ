@@ -97,6 +97,9 @@ export class Queue extends Map {
             volume: dispatcher.volume,
             position: Number.isFinite(dispatcher.player.position) ? dispatcher.player.position : 0,
         };
+        this.client.logger.info(
+            `[queue] rebuilding ${dispatcher.guildId} on "${node.name}" (was "${dispatcher.player.node?.name}")`
+        );
         dispatcher.destroy();
 
         try {

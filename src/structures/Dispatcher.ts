@@ -230,22 +230,22 @@ export default class Dispatcher {
             // source manager" / version mismatch). Re-resolve by URI once and
             // retry with a fresh payload instead of leaving a dead current track
             // that makes isPlaying() believe playback is running.
-            if (attempt <= 2 && this.current?.info?.uri) {
+            if (attempt <= 3 && this.current?.info?.uri) {
                 const fresh = await this.resolveFresh(this.current);
-                if (fresh) {
-                    this.current = fresh;
-                    await this.play(attempt + 1);
-                    return;
-                }
+                if (fresh) this.current = fresh;
+                // A freshly reconnected node may still be registering its source
+                // managers, so retry with backoff instead of once immediately.
+                setTimeout(() => {
+                    if (this.current) void this.play(attempt + 1);
+                }, 3000 * attempt);
+                return;
             }
 
             // Give up on this track but do not strand it as `current`.
             if (this.current) this.queue.unshift(this.current);
             this.current = null;
             void this.persist();
-            if (this.queue.length && attempt <= 3) {
-                setTimeout(() => void this.isPlaying(), 3000);
-            }
+            if (this.queue.length) setTimeout(() => void this.isPlaying(), 3000);
         }
     }
 
