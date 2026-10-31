@@ -33,6 +33,17 @@ export default class NodeConnect extends Event {
             }
         }
 
+        // Switch back: anything playing on a standby returns to this node.
+        const primary = this.client.shoukaku.nodes.get(node);
+        if (primary) {
+            void this.client.queue
+                .migrateToNode(primary)
+                .then(moved => {
+                    if (moved) this.client.logger.success(`[nodes] moved ${moved} player(s) back to "${node}"`);
+                })
+                .catch(error => this.client.logger.error(`[nodes] switch-back migration failed: ${error}`));
+        }
+
         let data = await this.client.db.get_247();
         if (!data) return;
         if (!Array.isArray(data)) {

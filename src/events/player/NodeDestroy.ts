@@ -49,5 +49,14 @@ export default class NodeDestroy extends Event {
         if (info.expected) this.client.logger.warn(message);
         else this.client.logger.error(message);
         BotLog.send(this.client, message, info.expected ? 'warn' : 'error');
+
+        // Immediate failover: replay the active queue on a connected standby
+        // rather than waiting for the next command.
+        void this.client.queue
+            .migrateToBestNode()
+            .then(moved => {
+                if (moved) this.client.logger.warn(`[nodes] moved ${moved} player(s) off "${node}"`);
+            })
+            .catch(error => this.client.logger.error(`[nodes] failover migration failed: ${error}`));
     }
 }

@@ -202,7 +202,7 @@ export default class Dispatcher {
         });
     }
 
-    public async play(): Promise<void> {
+    public async play(attempt: number = 1): Promise<void> {
         if (!this.exists || (!this.queue.length && !this.current)) {
             return;
         }
@@ -212,17 +212,60 @@ export default class Dispatcher {
             );
             return;
         }
-        this.current = (this.queue.length !== 0 ? this.queue.shift() : this.queue[0]) ?? null;
+
+        if (this.queue.length !== 0) this.current = this.queue.shift() ?? null;
         if (!this.current) return;
-        this.callPlayer('play', () => this.player.playTrack({ track: { encoded: this.current?.encoded } }));
-        void this.persist();
-        if (this.current) {
+
+        try {
+            await this.player.playTrack({ track: { encoded: this.current.encoded } });
+            void this.persist();
             this.history.push(this.current);
-            if (this.history.length > 100) {
-                this.history.shift();
+            if (this.history.length > 100) this.history.shift();
+            return;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.client.logger.error(`[queue] play failed for ${this.guildId}: ${message}`);
+
+            // Encoded tracks can be rejected after a Lavalink restart ("missing
+            // source manager" / version mismatch). Re-resolve by URI once and
+            // retry with a fresh payload instead of leaving a dead current track
+            // that makes isPlaying() believe playback is running.
+            if (attempt <= 2 && this.current?.info?.uri) {
+                const fresh = await this.resolveFresh(this.current);
+                if (fresh) {
+                    this.current = fresh;
+                    await this.play(attempt + 1);
+                    return;
+                }
+            }
+
+            // Give up on this track but do not strand it as `current`.
+            if (this.current) this.queue.unshift(this.current);
+            this.current = null;
+            void this.persist();
+            if (this.queue.length && attempt <= 3) {
+                setTimeout(() => void this.isPlaying(), 3000);
             }
         }
     }
+
+    /** Re-resolve a saved track so its encoded payload matches this node. */
+    private async resolveFresh(track: Song): Promise<Song | null> {
+        const uri = track.info?.uri;
+        const requester = track.info?.requester;
+        if (!uri || !requester) return null;
+        try {
+            const res = await this.node.rest.resolve(uri);
+            if (!res) return null;
+            if (res.loadType === LoadType.TRACK) return this.buildTrack(res.data, requester);
+            if (res.loadType === LoadType.SEARCH && res.data.length)
+                return this.buildTrack(res.data[0], requester);
+        } catch (error) {
+            this.client.logger.warn(`[queue] could not re-resolve ${uri}: ${error}`);
+        }
+        return null;
+    }
+
     public pause(): void {
         if (!this.player) return;
         if (!this.paused) {

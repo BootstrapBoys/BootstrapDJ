@@ -66,23 +66,35 @@ export class Queue extends Map {
             return dispatcher;
         } else {
             if (!dispatcher.isStale) return dispatcher;
+            return (await this.rebuild(dispatcher, givenNode ?? this.node)) ?? dispatcher;
+        }
+    }
 
-            // The node died and took the player with it; the dispatcher kept the
-            // queue, so every /play was enqueued onto a player that no longer
-            // existed (tracks appeared in /queue, nothing played). Rebuild it.
-            const saved = {
-                current: dispatcher.current,
-                queue: dispatcher.queue.slice(),
-                history: dispatcher.history.slice(),
-                loop: dispatcher.loop,
-                autoplay: dispatcher.autoplay,
-                seed: dispatcher.seed,
-                volume: dispatcher.volume,
-            };
-            dispatcher.destroy();
+    /**
+     * Recreate a dispatcher on a specific node, carrying its queue, current
+     * track, loop/autoplay/volume and playback position across. Used when the
+     * node dies (move to standby) and when it returns (move back).
+     */
+    public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
+        if (!node || !dispatcher.channelId || !dispatcher.voiceId) return null;
+        const guild = this.client.guilds.cache.get(dispatcher.guildId);
+        const voice = guild?.channels.cache.get(dispatcher.voiceId);
+        const channel = guild?.channels.cache.get(dispatcher.channelId);
+        if (!guild || !voice || !channel) return null;
 
-            const node = givenNode ?? this.node;
-            if (!node) throw new Error('No Lavalink node is available right now');
+        const saved = {
+            current: dispatcher.current,
+            queue: dispatcher.queue.slice(),
+            history: dispatcher.history.slice(),
+            loop: dispatcher.loop,
+            autoplay: dispatcher.autoplay,
+            seed: dispatcher.seed,
+            volume: dispatcher.volume,
+            position: Number.isFinite(dispatcher.player.position) ? dispatcher.player.position : 0,
+        };
+        dispatcher.destroy();
+
+        try {
             const player = await this.client.shoukaku.joinVoiceChannel({
                 guildId: guild.id,
                 channelId: voice.id,
@@ -107,12 +119,43 @@ export class Queue extends Map {
 
             this.set(guild.id, rebuilt);
             this.client.shoukaku.emitPlayerEvent('playerCreate', rebuilt.player);
+
+            let resumed = false;
+            if (saved.current) {
+                await rebuilt.play();
+                if (saved.position > 1000 && rebuilt.player.track) {
+                    rebuilt.player.seekTo(saved.position);
+                    resumed = true;
+                }
+            }
             this.client.logger.info(
-                `[queue] rebuilt player on "${node.name}" after node loss (${saved.queue.length} queued)`
+                `[queue] moved ${guild.id} to "${node.name}" (${saved.queue.length} queued${
+                    resumed ? `, resumed at ${Math.round(saved.position / 1000)}s` : ''
+                })`
             );
-            if (saved.current) void rebuilt.play();
             return rebuilt;
+        } catch (error) {
+            this.client.logger.error(`[queue] could not move ${guild.id} to "${node.name}": ${error}`);
+            return null;
         }
+    }
+
+    /** Move every active guild onto `node` (e.g. a standby after node loss). */
+    public async migrateToNode(node: Node | undefined): Promise<number> {
+        if (!node) return 0;
+        let moved = 0;
+        for (const dispatcher of [...this.values()]) {
+            if (!dispatcher.current && !dispatcher.queue.length) continue;
+            if (dispatcher.player.node?.name === node.name) continue;
+            const rebuilt = await this.rebuild(dispatcher, node);
+            if (rebuilt) moved += 1;
+        }
+        return moved;
+    }
+
+    /** Move active guilds onto whichever node the resolver currently prefers. */
+    public async migrateToBestNode(): Promise<number> {
+        return await this.migrateToNode(this.node);
     }
 
     public async search(query: string): Promise<LavalinkResponse | null> {
