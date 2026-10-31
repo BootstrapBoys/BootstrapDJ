@@ -16,8 +16,8 @@ export default class ShoukakuClient extends Shoukaku {
         super(new Connectors.DiscordJS(client), nodes, {
             moveOnDisconnect: false,
             resume: false,
-            reconnectInterval: 30,
-            reconnectTries: 2,
+            reconnectInterval: 10,
+            reconnectTries: 10,
             restTimeout: 30000,
             userAgent: `Bootstrap DJ (@zebz213)`, // don't change this
             nodeResolver: nodes =>

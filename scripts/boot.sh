@@ -30,6 +30,34 @@ run() {
     fi
 }
 
+
+# The bot used to start before Lavalink finished booting, exhaust its reconnect
+# tries and then stay node-less until a manual restart (2026-10-31 reboot).
+wait_for_lavalink() {
+    local url auth secure base deadline code
+    url=$(sed -n 's/^LAVALINK_URL=//p' .env 2>/dev/null | head -1 | sed -E 's/ *#.*$//; s/^"//; s/"$//')
+    auth=$(sed -n 's/^LAVALINK_AUTH=//p' .env 2>/dev/null | head -1 | sed -E 's/ *#.*$//; s/^"//; s/"$//')
+    secure=$(sed -n 's/^LAVALINK_SECURE=//p' .env 2>/dev/null | head -1 | sed -E 's/ *#.*$//; s/["[:space:]]//g')
+    if [ -z "$url" ]; then
+        log "no Lavalink url configured — not waiting"
+        return 0
+    fi
+    case "$url" in
+        http://*|https://*) base="$url" ;;
+        *) if [ "$secure" = "true" ]; then base="https://$url"; else base="http://$url"; fi ;;
+    esac
+    deadline=$(( $(date +%s) + ${LAVALINK_WAIT:-120} ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        code=$(curl -sk -m 4 -o /dev/null -w '%{http_code}' -H "Authorization: $auth" "$base/v4/info" 2>/dev/null)
+        if [ "$code" = "200" ]; then
+            log "Lavalink is answering — starting the bot"
+            return 0
+        fi
+        sleep 2
+    done
+    log "Lavalink did not answer within ${LAVALINK_WAIT:-120}s — starting anyway (watchdog retries)"
+}
+
 state_get() {
     [ -f "$STATE_FILE" ] && sed -n "s/^$1=//p" "$STATE_FILE" | head -1
 }
@@ -106,9 +134,11 @@ else
 fi
 
 if [ "$PLAN_ONLY" = "1" ]; then
-    log "would start: node dist/index.js"
+    log "would wait for Lavalink, then start: node dist/index.js"
     exit 0
 fi
+
+wait_for_lavalink
 
 cat >"$STATE_FILE" <<EOF
 lock=$LOCK_HASH
