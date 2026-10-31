@@ -57,7 +57,7 @@ export default class NodeDestroy extends Event {
             candidate => candidate.name !== node && Number(candidate.state) === 1
         );
         void this.client.queue
-            .migrateToNode(failoverTarget)
+            .migrateToNode(failoverTarget, true)
             .then(moved => {
                 if (moved) this.client.logger.warn(`[nodes] moved ${moved} player(s) off "${node}"`);
             })

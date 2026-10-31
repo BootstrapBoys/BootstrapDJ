@@ -80,17 +80,25 @@ export class Queue extends Map {
      * track, loop/autoplay/volume and playback position across. Used when the
      * node dies (move to standby) and when it returns (move back).
      */
-    public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
+    public async rebuild(
+        dispatcher: Dispatcher,
+        node: Node | undefined,
+        freeze: boolean = false
+    ): Promise<Dispatcher | null> {
         if (this.rebuilding.has(dispatcher.guildId)) return null;
         this.rebuilding.add(dispatcher.guildId);
         try {
-            return await this.doRebuild(dispatcher, node);
+            return await this.doRebuild(dispatcher, node, freeze);
         } finally {
             this.rebuilding.delete(dispatcher.guildId);
         }
     }
 
-    private async doRebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
+    private async doRebuild(
+        dispatcher: Dispatcher,
+        node: Node | undefined,
+        freeze: boolean = false
+    ): Promise<Dispatcher | null> {
         if (!node || !dispatcher.channelId || !dispatcher.voiceId) return null;
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         const voice = guild?.channels.cache.get(dispatcher.voiceId);
@@ -110,7 +118,10 @@ export class Queue extends Map {
             autoplay: dispatcher.autoplay,
             seed: dispatcher.seed,
             volume: dispatcher.volume,
-            position: Number.isFinite(dispatcher.player.position) ? dispatcher.player.position : 0,
+            position:
+                dispatcher.frozenPosition ??
+                (Number.isFinite(dispatcher.player.position) ? dispatcher.player.position : 0),
+            paused: dispatcher.paused,
         };
         this.client.logger.info(
             `[queue] rebuilding ${dispatcher.guildId} on "${node.name}" (was "${dispatcher.player.node?.name}")`
@@ -132,8 +143,11 @@ export class Queue extends Map {
                 player,
                 node,
             });
-            rebuilt.current = saved.current;
-            rebuilt.queue = saved.queue;
+            // play() pulls from the queue into current, so the saved current must
+            // sit at the head of the queue; pre-setting current made it skip a
+            // track and play the next song at the old timestamp.
+            rebuilt.current = null;
+            rebuilt.queue = saved.current ? [saved.current, ...saved.queue] : saved.queue;
             rebuilt.history = saved.history;
             rebuilt.loop = saved.loop;
             rebuilt.autoplay = saved.autoplay;
@@ -143,17 +157,33 @@ export class Queue extends Map {
             this.set(guild.id, rebuilt);
             this.client.shoukaku.emitPlayerEvent('playerCreate', rebuilt.player);
 
-            let resumed = false;
+            let held = false;
             if (saved.current) {
                 await rebuilt.play();
                 if (saved.position > 1000 && rebuilt.player.track) {
-                    rebuilt.player.seekTo(saved.position);
-                    resumed = true;
+                    try {
+                        await rebuilt.player.seekTo(saved.position);
+                    } catch (error) {
+                        this.client.logger.warn(`[queue] seek to ${saved.position}ms failed: ${error}`);
+                    }
+                }
+                if (freeze || saved.paused) {
+                    try {
+                        await rebuilt.player.setPaused(true);
+                        rebuilt.paused = true;
+                        rebuilt.frozenPosition = saved.position;
+                        held = true;
+                    } catch (error) {
+                        this.client.logger.warn(`[queue] could not freeze playback: ${error}`);
+                    }
+                } else {
+                    rebuilt.frozenPosition = null;
                 }
             }
+            if (!held) rebuilt.frozenPosition = null;
             this.client.logger.info(
                 `[queue] moved ${guild.id} to "${node.name}" (${saved.queue.length} queued${
-                    resumed ? `, resumed at ${Math.round(saved.position / 1000)}s` : ''
+                    held ? `, frozen at ${Math.round(saved.position / 1000)}s` : saved.position > 1000 ? `, resumed at ${Math.round(saved.position / 1000)}s` : ''
                 })`
             );
             return rebuilt;
@@ -164,7 +194,7 @@ export class Queue extends Map {
     }
 
     /** Move every active guild onto `node` (e.g. a standby after node loss). */
-    public async migrateToNode(node: Node | undefined): Promise<number> {
+    public async migrateToNode(node: Node | undefined, freeze: boolean = false): Promise<number> {
         if (!node) {
             this.client.logger.warn('[queue] migration skipped: no connected node');
             return 0;
@@ -173,7 +203,7 @@ export class Queue extends Map {
         for (const dispatcher of [...this.values()]) {
             if (!dispatcher.current && !dispatcher.queue.length) continue;
             if (dispatcher.player.node?.name === node.name) continue;
-            const rebuilt = await this.rebuild(dispatcher, node);
+            const rebuilt = await this.rebuild(dispatcher, node, freeze);
             if (rebuilt) moved += 1;
         }
         if (!moved) {
@@ -185,8 +215,8 @@ export class Queue extends Map {
     }
 
     /** Move active guilds onto whichever node the resolver currently prefers. */
-    public async migrateToBestNode(): Promise<number> {
-        return await this.migrateToNode(this.node);
+    public async migrateToBestNode(freeze: boolean = false): Promise<number> {
+        return await this.migrateToNode(this.node, freeze);
     }
 
     public async search(query: string): Promise<LavalinkResponse | null> {
