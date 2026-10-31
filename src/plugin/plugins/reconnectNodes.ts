@@ -31,9 +31,13 @@ const reconnectNodes: BotPlugin = {
         let fallbackAnnounced = false;
         let lastProbeAt = 0;
 
+        // The primary specifically — a connected standby must NOT count, or we
+        // stop re-adding the primary and never return to it.
+        const primaryName = client.config.lavalink[0]?.name;
         const primaryUp = (): boolean =>
+            Boolean(primaryName) &&
             [...client.shoukaku.nodes.values()].some(
-                node => node.state === Constants.State.CONNECTED && !isFallbackNode(node.name)
+                node => node.state === Constants.State.CONNECTED && node.name === primaryName
             );
 
         const dropIdleFallback = (): void => {
