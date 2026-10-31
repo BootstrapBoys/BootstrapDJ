@@ -8,7 +8,8 @@ export default class NodeReconnect extends Event {
         });
     }
     public async run(node: string): Promise<void> {
-        this.client.logger.warn(`Node ${node} reconnected`);
-        BotLog.send(this.client, `Node ${node} reconnected`, 'warn');
+        const message = `Lavalink node "${node}" reconnected.`;
+        this.client.logger.success(message);
+        BotLog.send(this.client, message, 'success');
     }
 }

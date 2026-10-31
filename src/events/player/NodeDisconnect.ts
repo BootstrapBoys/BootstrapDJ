@@ -8,7 +8,10 @@ export default class NodeDisconnect extends Event {
         });
     }
     public async run(node: string, count: number): Promise<void> {
-        this.client.logger.warn(`Node ${node} disconnected ${count} times`);
-        BotLog.send(this.client, `Node ${node} disconnected ${count} times`, 'warn');
+        const message = `Lost connection to Lavalink node "${
+            node
+        }" (${count} reconnect attempt${count === 1 ? '' : 's'} so far) — retrying.`;
+        this.client.logger.warn(message);
+        BotLog.send(this.client, message, 'warn');
     }
 }
