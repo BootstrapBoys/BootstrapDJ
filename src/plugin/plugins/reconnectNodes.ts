@@ -12,6 +12,7 @@ import {
 import { BotPlugin } from '../index.js';
 
 const CHECK_INTERVAL_MS = 30_000;
+const PROBE_COOLDOWN_MS = 60_000;
 
 /**
  * Keeps a node available: re-adds the operator's own node when it drops, and
@@ -28,6 +29,7 @@ const reconnectNodes: BotPlugin = {
         let downSince = 0;
         let probing = false;
         let fallbackAnnounced = false;
+        let lastProbeAt = 0;
 
         const primaryUp = (): boolean =>
             [...client.shoukaku.nodes.values()].some(
@@ -95,10 +97,12 @@ const reconnectNodes: BotPlugin = {
             // 2. public fallback once the outage is long enough
             if (probing) return;
             if (!client.config.nodeFallback) return;
+            if (Date.now() - lastProbeAt < PROBE_COOLDOWN_MS) return;
             if (!shouldFallback(Date.now() - downSince, client.config.nodeFallbackAfter, fallbackName !== null))
                 return;
 
             probing = true;
+            lastProbeAt = Date.now();
             void (async () => {
                 try {
                     const best = await findBestPublicNode(client.config.publicNodeListUrl);
