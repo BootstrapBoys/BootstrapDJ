@@ -22,6 +22,10 @@ export class Queue extends Map {
         return super.clear();
     }
 
+    /** Guards against two code paths (command + migration) rebuilding the same
+     * guild at once — Shoukaku throws if joinVoiceChannel runs twice. */
+    private readonly rebuilding = new Set<string>();
+
     public get node(): Node | undefined {
         return this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes);
     }
@@ -42,6 +46,7 @@ export class Queue extends Map {
         if (!voice) throw new Error('No voice channel was provided');
         if (!channel) throw new Error('No text channel was provided');
         if (!guild) throw new Error('No guild was provided');
+        if (dispatcher && this.rebuilding.has(guild.id)) return dispatcher;
         if (!dispatcher) {
             const node = givenNode ?? this.node;
             if (!node) throw new Error('No Lavalink node is available right now');
@@ -76,6 +81,16 @@ export class Queue extends Map {
      * node dies (move to standby) and when it returns (move back).
      */
     public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
+        if (this.rebuilding.has(dispatcher.guildId)) return null;
+        this.rebuilding.add(dispatcher.guildId);
+        try {
+            return await this.doRebuild(dispatcher, node);
+        } finally {
+            this.rebuilding.delete(dispatcher.guildId);
+        }
+    }
+
+    private async doRebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
         if (!node || !dispatcher.channelId || !dispatcher.voiceId) return null;
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         const voice = guild?.channels.cache.get(dispatcher.voiceId);

@@ -58,7 +58,11 @@ export default class NodeConnect extends Event {
                 if (!channel) return;
                 const vc = guild.channels.cache.get(main.voiceId);
                 if (!vc) return;
-                await this.client.queue.create(guild, vc, channel);
+                try {
+                    await this.client.queue.create(guild, vc, channel);
+                } catch (error) {
+                    this.client.logger.warn(`[nodes] 24/7 rejoin failed for ${guild.id}: ${error}`);
+                }
             }, index * 1000);
         }
     }
