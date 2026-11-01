@@ -18,6 +18,19 @@ type DeezerList = { data?: Array<{ id?: number; name?: string }> };
 /** Related artists change rarely and cost 2-3 HTTP calls; cache per artist. */
 const relatedArtistCache = new Map<string, string[]>();
 
+/** Draw from the relevance-ordered head of a mix; its tail is loosely related. */
+const AUTOPLAY_HEAD = 12;
+
+/** Weighted draws keep most autoplay picks near the requested artist without
+ * turning the queue into a single-artist loop. */
+const AUTOPLAY_SEED_WEIGHT = 4;
+const AUTOPLAY_RELATED_WEIGHT = 2;
+
+type AutoplayAffinity = {
+    seedArtist: string;
+    relatedArtists: string[];
+};
+
 export class Song implements Track {
     encoded: string;
     info: {
@@ -461,10 +474,31 @@ export default class Dispatcher {
         return this.history.slice(-15).some(played => this.trackKey(played) === key);
     }
 
+    private normalizeAuthor(value?: string): string {
+        return (value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    /** How close a candidate is to what the user actually asked for. */
+    private affinityWeight(track: Track, affinity: AutoplayAffinity): number {
+        const author = this.normalizeAuthor(track.info?.author);
+        if (!author) return 1;
+        const seed = this.normalizeAuthor(affinity.seedArtist);
+        if (seed && (author === seed || author.includes(seed) || seed.includes(author))) {
+            return AUTOPLAY_SEED_WEIGHT;
+        }
+        const related = affinity.relatedArtists.some(name => {
+            const normalized = this.normalizeAuthor(name);
+            return normalized && (author === normalized || author.includes(normalized) || normalized.includes(author));
+        });
+        return related ? AUTOPLAY_RELATED_WEIGHT : 1;
+    }
+
     /** Choose from candidates, skipping recent tracks and demoting the artists
      * heard in the last few tracks, so a thin mix (a niche artist's radio can
-     * be mostly that artist) still drifts instead of looping one name. */
-    private chooseFrom(tracks: Track[]): Song | null {
+     * be mostly that artist) still drifts instead of looping one name.
+     * `affinity` biases the draw toward the requested artist and its closest
+     * neighbours; without it the pick stays uniform (playlist/search callers). */
+    private chooseFrom(tracks: Track[], affinity?: AutoplayAffinity): Song | null {
         const botUser = this.client.user;
         if (!botUser) return null;
         const usable = tracks.filter(track => track?.encoded && !this.isRecent(track));
@@ -476,8 +510,11 @@ export default class Dispatcher {
                 .filter((author): author is string => Boolean(author))
         );
         const varied = usable.filter(track => !avoid.has(track.info?.author));
-        const pool = varied.length ? varied : usable;
-        return this.buildTrack(pool[Math.floor(Math.random() * pool.length)], botUser);
+        const pool = (varied.length ? varied : usable).slice(0, AUTOPLAY_HEAD);
+        const draw = affinity
+            ? pool.flatMap(track => Array(this.affinityWeight(track, affinity)).fill(track) as Track[])
+            : pool;
+        return this.buildTrack(draw[Math.floor(Math.random() * draw.length)], botUser);
     }
 
     /** Search a free-text query and pick one result. */
@@ -528,20 +565,18 @@ export default class Dispatcher {
 
     private async pickForSeed(seed: Song): Promise<Song | null> {
         const mix = await this.relatedTracks(seed);
-        // Trust the mix only when it leaves the seed artist's orbit: YouTube
-        // builds "Parker Jack radio" out of Parker Jack tracks alone.
-        const seedArtist = seed.info.author?.toLowerCase() ?? '';
-        const hasOtherArtist = mix.some(track => {
-            const author = track.info?.author?.toLowerCase() ?? '';
-            return Boolean(author) && !author.includes(seedArtist) && !seedArtist.includes(author);
-        });
-        if (hasOtherArtist) {
-            const fromMix = this.chooseFrom(mix);
+        const seedArtist = seed.info.author ?? '';
+        const related = this.shuffle(await this.relatedArtistNames(seed)).slice(0, 3);
+
+        // Weight the mix toward the seed artist first, related artists second.
+        // The old "any other artist present" gate let a radio with 24 unknown
+        // tracks walk away from the request after one pick.
+        if (mix.length) {
+            const fromMix = this.chooseFrom(mix, { seedArtist, relatedArtists: related });
             if (fromMix) return fromMix;
         }
 
-        // Same-artist radio: hop to a related artist instead.
-        const related = this.shuffle(await this.relatedArtistNames(seed)).slice(0, 3);
+        // No usable mix tracks: hop to a related artist, closest first.
         for (const name of related) {
             const pick = await this.pickFromQuery(name);
             if (pick) return pick;
