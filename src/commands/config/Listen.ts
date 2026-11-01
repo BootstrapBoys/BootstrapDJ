@@ -3,6 +3,7 @@ import { ApplicationCommandOptionType, TextChannel } from 'discord.js';
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 import { updateSetup } from '../../utils/SetupSystem.js';
 import { hasDjAccess } from '../../utils/VoiceAccess.js';
+import { setServerMute } from '../../utils/VoiceMute.js';
 
 export default class Listen extends Command {
     constructor(client: BootstrapClient) {
@@ -92,6 +93,14 @@ export default class Listen extends Command {
                 updatedBy: authorId,
             });
             await updateSetup(client, guild).catch(() => {});
+            const optedOut = await client.db.listVoiceOptOuts(guild.id);
+            await pushOptOuts(client, optedOut.map(entry => entry.userId));
+            for (const entry of optedOut) {
+                if (guild.voiceStates.cache.get(entry.userId)?.channelId) {
+                    const muted = await setServerMute(client, guild.id, entry.userId, true);
+                    if (muted.ok) await client.db.setVoiceOptOutMuted(guild.id, entry.userId, true);
+                }
+            }
             return await ctx.sendMessage({ embeds: [embed.setDescription(`Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`)] });
         }
 
@@ -105,7 +114,15 @@ export default class Listen extends Command {
                     embeds: [embed.setColor(client.color.red).setDescription(`Earl did not stop: ${stopped.error ?? 'listener unreachable'}. Listening is still on.`)],
                 });
             }
+            const optedOut = await client.db.listVoiceOptOuts(guild.id);
+            for (const entry of optedOut) {
+                if (entry.mutedByBot) {
+                    await setServerMute(client, guild.id, entry.userId, false);
+                    await client.db.setVoiceOptOutMuted(guild.id, entry.userId, false);
+                }
+            }
             await client.db.setVoiceListen(guild.id, { enabled: false, updatedBy: authorId });
+            await pushOptOuts(client, []);
             await updateSetup(client, guild).catch(() => {});
             return await ctx.sendMessage({ embeds: [embed.setDescription('Voice listening is off. Earl is sleeping one off.')] });
         }
@@ -124,17 +141,49 @@ export default class Listen extends Command {
 
         if (sub === 'optout') {
             await client.db.addVoiceOptOut(guild.id, authorId);
-            return await ctx.sendMessage({ embeds: [embed.setDescription('You are opted out — Earl will discard your audio before transcription.')] });
+            let muted = false;
+            let failure = '';
+            const result = await setServerMute(client, guild.id, authorId, true);
+            if (result.ok) {
+                muted = true;
+                await client.db.setVoiceOptOutMuted(guild.id, authorId, true);
+            } else {
+                failure = ` (mute failed: ${result.error})`;
+            }
+            await pushOptOuts(client, (await client.db.listVoiceOptOuts(guild.id)).map(entry => entry.userId));
+            return await ctx.sendMessage({
+                embeds: [embed.setDescription(`You are opted out — Earl discards your audio before transcription${muted ? ' and server-muted you' : ''}${failure}.`)],
+            });
         }
 
         if (sub === 'optin') {
+            const entry = (await client.db.listVoiceOptOuts(guild.id)).find(row => row.userId === authorId);
             await client.db.removeVoiceOptOut(guild.id, authorId);
+            if (entry?.mutedByBot) await setServerMute(client, guild.id, authorId, false);
+            await pushOptOuts(client, (await client.db.listVoiceOptOuts(guild.id)).map(row => row.userId));
             return await ctx.sendMessage({ embeds: [embed.setDescription('You are opted in again.')] });
         }
 
         return await ctx.sendMessage({
             embeds: [embed.setDescription('Usage: `/listen enable|disable|status|optout|optin`')],
         });
+    }
+}
+
+async function pushOptOuts(client: BootstrapClient, userIds: string[]): Promise<void> {
+    if (!client.config.earlBridgeSecret) return;
+    try {
+        await fetch(`${client.config.earlControlUrl}/listen/optouts`, {
+            method: 'POST',
+            headers: {
+                authorization: `Bearer ${client.config.earlBridgeSecret}`,
+                'content-type': 'application/json',
+            },
+            body: JSON.stringify({ userIds }),
+            signal: AbortSignal.timeout(5_000),
+        });
+    } catch {
+        // The listener restarts independently; the next enable pushes again.
     }
 }
 

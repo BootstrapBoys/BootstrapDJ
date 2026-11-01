@@ -4,6 +4,7 @@ import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Dispatcher } from '../../structures/index.js';
 import { hasDjAccess, isVoiceOptedOut } from '../../utils/VoiceAccess.js';
+import { setServerMute } from '../../utils/VoiceMute.js';
 import { BotPlugin } from '../index.js';
 
 interface VoiceCommandBody {
@@ -81,11 +82,17 @@ function createPlugin(): BotPlugin {
                 }
 
                 server = createServer(async (req, res) => {
-                    if (req.method !== 'POST' || req.url !== '/voice/command') {
-                        return send(res, 404, { error: 'not found' });
-                    }
+                    const url = new URL(req.url ?? '/', 'http://localhost');
                     if (req.headers.authorization !== `Bearer ${secret}`) {
                         return send(res, 401, { error: 'unauthorized' });
+                    }
+                    if (req.method === 'GET' && url.pathname === '/voice/optouts') {
+                        const guildId = url.searchParams.get('guildId') ?? '';
+                        const rows = guildId ? await client.db.listVoiceOptOuts(guildId) : [];
+                        return send(res, 200, { userIds: rows.map(row => row.userId) });
+                    }
+                    if (req.method !== 'POST' || url.pathname !== '/voice/command') {
+                        return send(res, 404, { error: 'not found' });
                     }
                     try {
                         const raw = await readBody(req);
@@ -103,6 +110,23 @@ function createPlugin(): BotPlugin {
 
                 server.listen(client.config.voiceBridgePort, '127.0.0.1', () => {
                     client.logger.info(`[earl] voice bridge on 127.0.0.1:${client.config.voiceBridgePort}`);
+                });
+
+                // Re-apply the server mute if an opted-out member rejoins while
+                // listening is enabled; the DB remembers who opted out.
+                client.on('voiceStateUpdate', async (oldState, newState) => {
+                    if (!newState.channelId || newState.channelId === oldState.channelId) return;
+                    if (!newState.guild || newState.member?.user.bot) return;
+                    try {
+                        const state = await client.db.getVoiceListen(newState.guild.id);
+                        if (!state?.enabled) return;
+                        const optedOut = await client.db.listVoiceOptOuts(newState.guild.id);
+                        if (!optedOut.some(row => row.userId === newState.id)) return;
+                        const muted = await setServerMute(client, newState.guild.id, newState.id, true);
+                        if (muted.ok) await client.db.setVoiceOptOutMuted(newState.guild.id, newState.id, true);
+                    } catch (error) {
+                        client.logger.warn(`[earl] re-mute failed: ${error}`);
+                    }
                 });
             },
             shutdown: () => {

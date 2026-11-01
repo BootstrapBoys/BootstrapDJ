@@ -112,10 +112,12 @@ model VoiceListen {
 
 /// Members whose frames must be dropped before STT when listening is active.
 model VoiceListenOptOut {
-  guildId   String
-  userId    String
-  createdAt DateTime @default(now())
-  Guild     Guild    @relation(fields: [guildId], references: [guildId])
+  guildId    String
+  userId     String
+  /// True when the bot applied the server mute (so opt-in only undoes ours).
+  mutedByBot Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  Guild      Guild    @relation(fields: [guildId], references: [guildId])
 
   @@id([guildId, userId])
 }
