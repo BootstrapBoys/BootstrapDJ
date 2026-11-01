@@ -238,17 +238,37 @@ function resolveCommand(text: string): { verb: string; query: string } {
             .replace(/^add\s+(?:(?:some|a|another|the)\s+)?/, '')
             .replace(/^song\s+/, '')
             .trim();
-        return { verb: 'play', query: cleanQuery(query) };
+        return { verb: 'play', query: correctArtist(cleanQuery(query)) };
     }
     const words = phrase.split(' ');
     const pair = `${words[0]} ${words[1] ?? ''}`.trim();
     const verb = ALIASES[pair] ?? ALIASES[words[0]] ?? words[0];
     const rest = verb === ALIASES[pair] ? words.slice(2) : words.slice(1);
-    return { verb, query: cleanQuery(rest.join(' ')) };
+    return { verb, query: correctArtist(cleanQuery(rest.join(' '))) };
 }
 
 /** "play some NF" must search "NF", not "some NF" — the filler word otherwise
  * dominates the search and returns an unrelated track. */
+/** Short artist names are the worst STT case: "NF" comes back as nerf/nap/
+ * "in F"/"your nerf". Correct the common ones before searching. */
+const ARTIST_ALIASES: Record<string, string> = {
+    nf: 'NF',
+    nerf: 'NF',
+    nurf: 'NF',
+    nap: 'NF',
+    'your nerf': 'NF',
+    'your nap': 'NF',
+    'in f': 'NF',
+    'en ef': 'NF',
+    'n f': 'NF',
+    unf: 'NF',
+};
+
+function correctArtist(query: string): string {
+    const key = query.trim().toLowerCase();
+    return ARTIST_ALIASES[key] ?? query;
+}
+
 function cleanQuery(query: string): string {
     let out = query.trim();
     for (;;) {
