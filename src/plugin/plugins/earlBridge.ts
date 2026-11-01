@@ -121,6 +121,7 @@ async function handle(
     if (!guildId || !voiceChannelId || !userId || !text) {
         return { status: 400, message: 'Missing guild, channel, user or text.' };
     }
+    if (text.trim() === '__wake__') return { status: 200, message: 'Listening…' };
     const guild = client.guilds.cache.get(guildId);
     if (!guild) return { status: 404, message: 'Unknown guild.' };
     const member = await guild.members.fetch(userId).catch(() => null);
@@ -223,6 +224,16 @@ async function handle(
 /** Turn a spoken phrase into a verb + query. People do not always start with
  * the verb ("show me the queue", "add some NF"), so handle those shapes before
  * falling back to the first-word aliases. */
+const COMMAND_FIXES: Record<string, string> = {
+    'y all': 'skip',
+    yall: 'skip',
+    give: 'skip',
+    git: 'skip',
+    'it s cute': 'skip',
+    'its cute': 'skip',
+    'skip it': 'skip',
+};
+
 function resolveCommand(text: string): { verb: string; query: string } {
     const phrase = text
         .trim()
@@ -231,6 +242,7 @@ function resolveCommand(text: string): { verb: string; query: string } {
         .replace(/\s+/g, ' ')
         .replace(/\bauto\s+play\b/g, 'autoplay')
         .trim();
+    if (COMMAND_FIXES[phrase]) return { verb: COMMAND_FIXES[phrase], query: '' };
     // Whisper renders "queue" as cue/que/q about as often as the real word.
     if (/^(show|see|whats|what is|tell me|list).*\b(queue|cue|que|q)\b/.test(phrase) || /^(queue|cue)$/.test(phrase)) {
         return { verb: 'queue', query: '' };
