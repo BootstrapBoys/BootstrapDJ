@@ -227,10 +227,14 @@ async function handle(
 const COMMAND_FIXES: Record<string, string> = {
     'y all': 'skip',
     yall: 'skip',
-    give: 'skip',
-    git: 'skip',
+    yep: 'skip',
+    yeah: 'skip',
+    you: 'skip',
+    'it s you': 'skip',
     'it s cute': 'skip',
     'its cute': 'skip',
+    give: 'skip',
+    git: 'skip',
     'skip it': 'skip',
 };
 
