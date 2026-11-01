@@ -149,11 +149,8 @@ async function handle(
         }
     }
 
-    const words = text.trim().toLowerCase().split(/\s+/);
-    const pair = `${words[0]} ${words[1] ?? ''}`.trim();
-    const verb = ALIASES[pair] ?? ALIASES[words[0]] ?? words[0];
-    const rest = verb === ALIASES[pair] ? words.slice(2) : words.slice(1);
-    const query = cleanQuery(rest.join(' '));
+    const { verb, query } = resolveCommand(text);
+    const args = query ? query.split(' ').filter(Boolean) : [];
     if (!ACTIONS.has(verb)) {
         return { status: 200, message: `I heard “${text}” but that is not a command I know.` };
     }
@@ -165,7 +162,7 @@ async function handle(
             return await queueQuery(client, player, query, member, verb === 'playnext');
         }
         case 'skip': {
-            const amount = Math.max(1, Math.min(20, Number.parseInt(rest[0] ?? '1', 10) || 1));
+            const amount = Math.max(1, Math.min(20, Number.parseInt(args[0] ?? '1', 10) || 1));
             await player.skip(amount);
             return { status: 200, message: `Skipped ${amount} track${amount === 1 ? '' : 's'}.` };
         }
@@ -193,7 +190,7 @@ async function handle(
             return { status: 200, message: `Now playing [${title}](${uri}) by ${author}.` };
         }
         case 'volume': {
-            const level = Number.parseInt(rest[0] ?? '', 10);
+            const level = Number.parseInt(args[0] ?? '', 10);
             if (!Number.isFinite(level) || level < 0 || level > 200) {
                 return { status: 200, message: 'Volume must be between 0 and 200.' };
             }
@@ -205,12 +202,38 @@ async function handle(
     }
 }
 
+/** Turn a spoken phrase into a verb + query. People do not always start with
+ * the verb ("show me the queue", "add some NF"), so handle those shapes before
+ * falling back to the first-word aliases. */
+function resolveCommand(text: string): { verb: string; query: string } {
+    const phrase = text.trim().toLowerCase().replace(/[^a-z0-9\s']/g, ' ').replace(/\s+/g, ' ').trim();
+    if (/^(show|see|whats|what is|tell me|list).*\bqueue\b/.test(phrase) || phrase === 'queue') {
+        return { verb: 'queue', query: '' };
+    }
+    if (/^(whats|what is)\s+playing/.test(phrase)) return { verb: 'np', query: '' };
+    if (/^queue up\b/.test(phrase)) {
+        return { verb: 'play', query: cleanQuery(phrase.replace(/^queue up\s*/, '')) };
+    }
+    if (/^add\b/.test(phrase)) {
+        const query = phrase
+            .replace(/^add\s+(?:(?:some|a|another|the)\s+)?/, '')
+            .replace(/^song\s+/, '')
+            .trim();
+        return { verb: 'play', query: cleanQuery(query) };
+    }
+    const words = phrase.split(' ');
+    const pair = `${words[0]} ${words[1] ?? ''}`.trim();
+    const verb = ALIASES[pair] ?? ALIASES[words[0]] ?? words[0];
+    const rest = verb === ALIASES[pair] ? words.slice(2) : words.slice(1);
+    return { verb, query: cleanQuery(rest.join(' ')) };
+}
+
 /** "play some NF" must search "NF", not "some NF" — the filler word otherwise
  * dominates the search and returns an unrelated track. */
 function cleanQuery(query: string): string {
     let out = query.trim();
     for (;;) {
-        const next = out.replace(/^(?:some|me|us|the song|a song)\s+/i, '').trim();
+        const next = out.replace(/^(?:some|me|us|the song|a song)\s+/i, '').replace(/^song\s+/i, '').trim();
         if (next === out) return out;
         out = next;
     }
