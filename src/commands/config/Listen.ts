@@ -130,13 +130,16 @@ async function callListener(
 ): Promise<{ ok: boolean; error?: string } & Record<string, unknown>> {
     if (!client.config.earlBridgeSecret) return { ok: false, error: 'EARL_BRIDGE_SECRET is not set' };
     try {
+        // /listen/stop takes no fields but is still a POST; sending GET made the
+        // API return 404, so disable flipped the DB while Earl kept capturing.
+        const control = path.startsWith('/listen');
         const response = await fetch(`${client.config.earlControlUrl}${path}`, {
-            method: body ? 'POST' : 'GET',
+            method: control ? 'POST' : 'GET',
             headers: {
                 authorization: `Bearer ${client.config.earlBridgeSecret}`,
-                ...(body ? { 'content-type': 'application/json' } : {}),
+                ...(control ? { 'content-type': 'application/json' } : {}),
             },
-            body: body ? JSON.stringify(body) : undefined,
+            body: control ? JSON.stringify(body ?? {}) : undefined,
         });
         const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
         if (!response.ok)
