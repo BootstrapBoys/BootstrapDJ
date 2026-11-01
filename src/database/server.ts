@@ -187,17 +187,6 @@ export default class ServerData {
         return result.count > 0;
     }
 
-    public async setVoiceOptOutMuted(
-        guildId: string,
-        userId: string,
-        mutedByBot: boolean
-    ): Promise<void> {
-        await this.prisma.voiceListenOptOut.updateMany({
-            where: { guildId, userId },
-            data: { mutedByBot },
-        });
-    }
-
     public async listVoiceOptOuts(guildId: string): Promise<VoiceListenOptOut[]> {
         return await this.prisma.voiceListenOptOut.findMany({ where: { guildId } });
     }

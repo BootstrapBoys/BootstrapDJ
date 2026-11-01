@@ -3,7 +3,6 @@ import { ApplicationCommandOptionType, TextChannel } from 'discord.js';
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 import { updateSetup } from '../../utils/SetupSystem.js';
 import { hasDjAccess } from '../../utils/VoiceAccess.js';
-import { setServerMute } from '../../utils/VoiceMute.js';
 
 export default class Listen extends Command {
     constructor(client: BootstrapClient) {
@@ -95,12 +94,6 @@ export default class Listen extends Command {
             await updateSetup(client, guild).catch(() => {});
             const optedOut = await client.db.listVoiceOptOuts(guild.id);
             await pushOptOuts(client, optedOut.map(entry => entry.userId));
-            for (const entry of optedOut) {
-                if (guild.voiceStates.cache.get(entry.userId)?.channelId) {
-                    const muted = await setServerMute(client, guild.id, entry.userId, true);
-                    if (muted.ok) await client.db.setVoiceOptOutMuted(guild.id, entry.userId, true);
-                }
-            }
             return await ctx.sendMessage({ embeds: [embed.setDescription(`Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`)] });
         }
 
@@ -113,13 +106,6 @@ export default class Listen extends Command {
                 return await ctx.sendMessage({
                     embeds: [embed.setColor(client.color.red).setDescription(`Earl did not stop: ${stopped.error ?? 'listener unreachable'}. Listening is still on.`)],
                 });
-            }
-            const optedOut = await client.db.listVoiceOptOuts(guild.id);
-            for (const entry of optedOut) {
-                if (entry.mutedByBot) {
-                    await setServerMute(client, guild.id, entry.userId, false);
-                    await client.db.setVoiceOptOutMuted(guild.id, entry.userId, false);
-                }
             }
             await client.db.setVoiceListen(guild.id, { enabled: false, updatedBy: authorId });
             await pushOptOuts(client, []);
@@ -141,25 +127,14 @@ export default class Listen extends Command {
 
         if (sub === 'optout') {
             await client.db.addVoiceOptOut(guild.id, authorId);
-            let muted = false;
-            let failure = '';
-            const result = await setServerMute(client, guild.id, authorId, true);
-            if (result.ok) {
-                muted = true;
-                await client.db.setVoiceOptOutMuted(guild.id, authorId, true);
-            } else {
-                failure = ` (mute failed: ${result.error})`;
-            }
             await pushOptOuts(client, (await client.db.listVoiceOptOuts(guild.id)).map(entry => entry.userId));
             return await ctx.sendMessage({
-                embeds: [embed.setDescription(`You are opted out — Earl discards your audio before transcription${muted ? ' and server-muted you' : ''}${failure}.`)],
+                embeds: [embed.setDescription('You are opted out — Earl will not listen to you or reply while listening is active.')],
             });
         }
 
         if (sub === 'optin') {
-            const entry = (await client.db.listVoiceOptOuts(guild.id)).find(row => row.userId === authorId);
             await client.db.removeVoiceOptOut(guild.id, authorId);
-            if (entry?.mutedByBot) await setServerMute(client, guild.id, authorId, false);
             await pushOptOuts(client, (await client.db.listVoiceOptOuts(guild.id)).map(row => row.userId));
             return await ctx.sendMessage({ embeds: [embed.setDescription('You are opted in again.')] });
         }

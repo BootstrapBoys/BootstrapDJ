@@ -4,7 +4,6 @@ import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Dispatcher } from '../../structures/index.js';
 import { hasDjAccess, isVoiceOptedOut } from '../../utils/VoiceAccess.js';
-import { setServerMute } from '../../utils/VoiceMute.js';
 import { BotPlugin } from '../index.js';
 
 interface VoiceCommandBody {
@@ -112,22 +111,7 @@ function createPlugin(): BotPlugin {
                     client.logger.info(`[earl] voice bridge on 127.0.0.1:${client.config.voiceBridgePort}`);
                 });
 
-                // Re-apply the server mute if an opted-out member rejoins while
-                // listening is enabled; the DB remembers who opted out.
-                client.on('voiceStateUpdate', async (oldState, newState) => {
-                    if (!newState.channelId || newState.channelId === oldState.channelId) return;
-                    if (!newState.guild || newState.member?.user.bot) return;
-                    try {
-                        const state = await client.db.getVoiceListen(newState.guild.id);
-                        if (!state?.enabled) return;
-                        const optedOut = await client.db.listVoiceOptOuts(newState.guild.id);
-                        if (!optedOut.some(row => row.userId === newState.id)) return;
-                        const muted = await setServerMute(client, newState.guild.id, newState.id, true);
-                        if (muted.ok) await client.db.setVoiceOptOutMuted(newState.guild.id, newState.id, true);
-                    } catch (error) {
-                        client.logger.warn(`[earl] re-mute failed: ${error}`);
-                    }
-                });
+
             },
             shutdown: () => {
                 server?.close();
@@ -157,7 +141,8 @@ async function handle(
         return { status: 403, message: 'You need the DJ role to use voice commands.' };
     }
     if (await isVoiceOptedOut(client, guild.id, userId)) {
-        return { status: 403, message: 'You have opted out of voice listening.' };
+        // No reply at all: an opted-out member must not be acknowledged.
+        return { status: 200, message: '' };
     }
 
     const channel = await resolveTextChannel(client, guild, body.textChannelId);
