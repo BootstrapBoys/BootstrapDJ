@@ -16,7 +16,7 @@ interface VoiceCommandBody {
 
 /** Commands Earl may run. Everything else is a no-op, so a misheard word cannot
  * reach destructive commands. */
-const ACTIONS = new Set(['play', 'playnext', 'skip', 'pause', 'resume', 'stop', 'queue', 'np', 'volume']);
+const ACTIONS = new Set(['play', 'playnext', 'skip', 'pause', 'resume', 'stop', 'queue', 'np', 'volume', 'autoplay']);
 
 /** Speech-to-text reliably turns short words into homophones ("queue" -> "Q",
  * "next" -> "nex"), so map the likely spellings onto the real verbs. */
@@ -189,6 +189,11 @@ async function handle(
             const { title, author, uri } = player.current.info;
             return { status: 200, message: `Now playing [${title}](${uri}) by ${author}.` };
         }
+        case 'autoplay': {
+            const desired = args[0] === 'on' ? true : args[0] === 'off' ? false : !player.autoplay;
+            await player.setAutoplay(desired);
+            return { status: 200, message: `Autoplay ${desired ? 'enabled' : 'disabled'}.` };
+        }
         case 'volume': {
             const level = Number.parseInt(args[0] ?? '', 10);
             if (!Number.isFinite(level) || level < 0 || level > 200) {
@@ -206,10 +211,24 @@ async function handle(
  * the verb ("show me the queue", "add some NF"), so handle those shapes before
  * falling back to the first-word aliases. */
 function resolveCommand(text: string): { verb: string; query: string } {
-    const phrase = text.trim().toLowerCase().replace(/[^a-z0-9\s']/g, ' ').replace(/\s+/g, ' ').trim();
-    if (/^(show|see|whats|what is|tell me|list).*\bqueue\b/.test(phrase) || phrase === 'queue') {
+    const phrase = text
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s']/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/\bauto\s+play\b/g, 'autoplay')
+        .trim();
+    // Whisper renders "queue" as cue/que/q about as often as the real word.
+    if (/^(show|see|whats|what is|tell me|list).*\b(queue|cue|que|q)\b/.test(phrase) || /^(queue|cue)$/.test(phrase)) {
         return { verb: 'queue', query: '' };
     }
+    if (/^(turn on|enable|start|switch on)\b.*autoplay|^autoplay\s+on$|^turn\s+autoplay\s+on$/.test(phrase)) {
+        return { verb: 'autoplay', query: 'on' };
+    }
+    if (/^(turn off|disable|stop|switch off)\b.*autoplay|^autoplay\s+off$|^turn\s+autoplay\s+off$/.test(phrase)) {
+        return { verb: 'autoplay', query: 'off' };
+    }
+    if (/^autoplay$/.test(phrase)) return { verb: 'autoplay', query: '' };
     if (/^(whats|what is)\s+playing/.test(phrase)) return { verb: 'np', query: '' };
     if (/^queue up\b/.test(phrase)) {
         return { verb: 'play', query: cleanQuery(phrase.replace(/^queue up\s*/, '')) };

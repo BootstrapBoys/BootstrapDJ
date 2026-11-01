@@ -29,12 +29,22 @@ export default class Listen extends Command {
                 user: [],
             },
             slashCommand: true,
+            // One top-level command with an action option instead of five
+            // subcommands, so the slash list stays compact.
             options: [
-                { name: 'enable', description: 'Start listening for voice commands', type: ApplicationCommandOptionType.Subcommand },
-                { name: 'disable', description: 'Stop listening for voice commands', type: ApplicationCommandOptionType.Subcommand },
-                { name: 'status', description: 'Show listening state and opt-outs', type: ApplicationCommandOptionType.Subcommand },
-                { name: 'optout', description: 'Do not let Earl process your voice', type: ApplicationCommandOptionType.Subcommand },
-                { name: 'optin', description: 'Allow Earl to process your voice again', type: ApplicationCommandOptionType.Subcommand },
+                {
+                    name: 'action',
+                    description: 'What to do',
+                    type: ApplicationCommandOptionType.String,
+                    required: true,
+                    choices: [
+                        { name: 'Enable listening', value: 'enable' },
+                        { name: 'Disable listening', value: 'disable' },
+                        { name: 'Status', value: 'status' },
+                        { name: 'Opt out of voice processing', value: 'optout' },
+                        { name: 'Opt back in', value: 'optin' },
+                    ],
+                },
             ],
         });
     }
@@ -44,7 +54,7 @@ export default class Listen extends Command {
         if (!guild) return;
         const embed = client.embed().setColor(client.color.main);
         const sub = ctx.isInteraction
-            ? (ctx.interaction?.options.data[0]?.name ?? '')
+            ? (ctx.interaction?.options.getString('action') ?? '')
             : (args[0] ?? '');
         const authorId = ctx.author?.id;
         if (!authorId) return;
@@ -89,7 +99,12 @@ export default class Listen extends Command {
             if (!(await hasDjAccess(client, guild.id, member))) {
                 return await ctx.sendMessage({ embeds: [embed.setColor(client.color.red).setDescription('You need the DJ role to disable voice commands.')] });
             }
-            await callListener(client, '/listen/stop');
+            const stopped = await callListener(client, '/listen/stop');
+            if (!stopped.ok) {
+                return await ctx.sendMessage({
+                    embeds: [embed.setColor(client.color.red).setDescription(`Earl did not stop: ${stopped.error ?? 'listener unreachable'}. Listening is still on.`)],
+                });
+            }
             await client.db.setVoiceListen(guild.id, { enabled: false, updatedBy: authorId });
             await updateSetup(client, guild).catch(() => {});
             return await ctx.sendMessage({ embeds: [embed.setDescription('Voice listening is off. Earl is sleeping one off.')] });
@@ -101,7 +116,7 @@ export default class Listen extends Command {
                 `**Listening:** ${state?.enabled ? 'on' : 'off'}`,
                 state?.voiceChannelId ? `**Voice channel:** <#${state.voiceChannelId}>` : null,
                 state?.textChannelId ? `**Replies in:** <#${state.textChannelId}>` : null,
-                `**Listener:** ${typeof listener !== 'object' || listener.active ? 'connected' : 'not connected'}`,
+                `**Listener:** ${listener.active === true ? 'connected' : 'not connected'}`,
                 `**Opted out:** ${optOuts.length ? optOuts.map(entry => `<@${entry.userId}>`).join(', ') : 'nobody'}`,
             ].filter(Boolean);
             return await ctx.sendMessage({ embeds: [embed.setDescription(lines.join('\n'))] });
@@ -140,6 +155,7 @@ async function callListener(
                 ...(control ? { 'content-type': 'application/json' } : {}),
             },
             body: control ? JSON.stringify(body ?? {}) : undefined,
+            signal: AbortSignal.timeout(5_000),
         });
         const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
         if (!response.ok)
