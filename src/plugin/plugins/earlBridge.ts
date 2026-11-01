@@ -57,6 +57,10 @@ function readBody(req: IncomingMessage): Promise<string> {
     });
 }
 
+/** Identical voice commands can arrive twice when two capture streams overlap;
+ * ignore a repeat from the same member within a few seconds. */
+const recentCommands = new Map<string, number>();
+
 function send(res: ServerResponse, status: number, payload: unknown): void {
     res.writeHead(status, { 'content-type': 'application/json' });
     res.end(JSON.stringify(payload));
@@ -148,6 +152,15 @@ async function handle(
             return { status: 500, message: 'I could not join the voice channel.' };
         }
     }
+
+    // Voice capture can overlap itself; a repeated identical command within 6s
+    // must not enqueue the same song twice. Empty message = no second reply.
+    const dedupeKey = `${guildId}:${userId}:${text.trim().toLowerCase()}`;
+    const now = Date.now();
+    for (const [key, at] of recentCommands) if (now - at > 10_000) recentCommands.delete(key);
+    const last = recentCommands.get(dedupeKey);
+    if (last && now - last < 6_000) return { status: 200, message: '' };
+    recentCommands.set(dedupeKey, now);
 
     const { verb, query } = resolveCommand(text);
     const args = query ? query.split(' ').filter(Boolean) : [];
