@@ -1,8 +1,9 @@
-import { ChannelType, Guild, GuildMember, PermissionFlagsBits, TextChannel } from 'discord.js';
+import { ChannelType, Events, Guild, GuildMember, PermissionFlagsBits, TextChannel } from 'discord.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Dispatcher } from '../../structures/index.js';
+import { updateSetup } from '../../utils/SetupSystem.js';
 import { hasDjAccess, isVoiceOptedOut } from '../../utils/VoiceAccess.js';
 import { BotPlugin } from '../index.js';
 
@@ -85,6 +86,20 @@ function createPlugin(): BotPlugin {
                     if (req.headers.authorization !== `Bearer ${secret}`) {
                         return send(res, 401, { error: 'unauthorized' });
                     }
+                    if (req.method === 'POST' && url.pathname === '/voice/listener-stopped') {
+                        try {
+                            const raw = await readBody(req);
+                            const body = JSON.parse(raw || '{}') as { guildId?: string };
+                            if (body.guildId) {
+                                await client.db.setVoiceListen(body.guildId, { enabled: false });
+                                const guild = client.guilds.cache.get(body.guildId);
+                                if (guild) await updateSetup(client, guild).catch(() => {});
+                            }
+                            return send(res, 200, { ok: true });
+                        } catch (error) {
+                            return send(res, 400, { error: String(error) });
+                        }
+                    }
                     if (req.method === 'GET' && url.pathname === '/voice/optouts') {
                         const guildId = url.searchParams.get('guildId') ?? '';
                         const rows = guildId ? await client.db.listVoiceOptOuts(guildId) : [];
@@ -111,6 +126,33 @@ function createPlugin(): BotPlugin {
                     client.logger.info(`[earl] voice bridge on 127.0.0.1:${client.config.voiceBridgePort}`);
                 });
 
+                // The listener can stop without telling us (crash/restart). Once
+                // the bot is up, clear a stale enabled flag if it is not running.
+                client.once(Events.ClientReady, () => {
+                    setTimeout(() => {
+                        void (async () => {
+                            try {
+                                const response = await fetch(`${client.config.earlControlUrl}/status`, {
+                                    headers: { authorization: `Bearer ${secret}` },
+                                    signal: AbortSignal.timeout(5_000),
+                                });
+                                if (!response.ok) return;
+                                const status = (await response.json()) as { active?: boolean };
+                                if (status.active) return;
+                                const guildId = client.config.guildId;
+                                if (!guildId) return;
+                                const state = await client.db.getVoiceListen(guildId);
+                                if (!state?.enabled) return;
+                                await client.db.setVoiceListen(guildId, { enabled: false });
+                                const guild = client.guilds.cache.get(guildId);
+                                if (guild) await updateSetup(client, guild).catch(() => {});
+                                client.logger.warn('[earl] listener was not active; cleared stale listening state');
+                            } catch {
+                                // Listener may still be starting; leave the state alone.
+                            }
+                        })();
+                    }, 15_000);
+                });
 
             },
             shutdown: () => {
