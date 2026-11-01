@@ -92,7 +92,7 @@ export default class Listen extends Command {
                 updatedBy: authorId,
             });
             await updateSetup(client, guild).catch(() => {});
-            return await ctx.sendMessage({ embeds: [embed.setDescription(`Listening for commands in **${voice.name}**. Say “Hey Mister DJ …”.`)] });
+            return await ctx.sendMessage({ embeds: [embed.setDescription(`Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`)] });
         }
 
         if (sub === 'disable') {
