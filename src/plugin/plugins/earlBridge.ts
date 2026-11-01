@@ -139,7 +139,7 @@ function createPlugin(): BotPlugin {
                                 if (!response.ok) return;
                                 const status = (await response.json()) as { active?: boolean };
                                 if (status.active) return;
-                                const guildId = client.config.guildId;
+                                const guildId = client.config.guildId || client.guilds.cache.first()?.id;
                                 if (!guildId) return;
                                 const state = await client.db.getVoiceListen(guildId);
                                 if (!state?.enabled) return;
