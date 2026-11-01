@@ -85,7 +85,7 @@ export default class BootstrapClient extends Client {
         }
         // Registration must finish before `ready` builds the slash-command body.
         await Promise.all(pending);
-        this.once('ready', async () => {
+        this.once(Events.ClientReady, async () => {
             const userId = this.user?.id;
             if (!userId) return;
             const applicationCommands =

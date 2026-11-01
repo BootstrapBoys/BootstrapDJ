@@ -1,3 +1,5 @@
+import { Events } from 'discord.js';
+
 import config from '../../config.js';
 import { BootstrapClient, Event } from '../../structures/index.js';
 import { restoreSessions, waitForNode } from '../../utils/Session.js';
@@ -7,7 +9,7 @@ let channelsPurged = false;
 export default class Ready extends Event {
     constructor(client: BootstrapClient, file: string) {
         super(client, file, {
-            name: 'ready',
+            name: Events.ClientReady,
         });
     }
     public async run(): Promise<void> {

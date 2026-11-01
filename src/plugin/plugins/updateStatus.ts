@@ -1,3 +1,5 @@
+import { Events } from 'discord.js';
+
 import { BootstrapClient } from '../../structures/index.js';
 import { BotPlugin } from '../index.js';
 
@@ -6,7 +8,7 @@ const updateStatusPlugin: BotPlugin = {
     version: '1.0.0',
     author: 'Zebz213',
     initialize: (client: BootstrapClient) => {
-        client.on('ready', () => {
+        client.on(Events.ClientReady, () => {
             client.utils.updateStatus(client);
         });
     },
