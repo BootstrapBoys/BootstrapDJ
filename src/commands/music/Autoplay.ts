@@ -15,6 +15,9 @@ export default class Autoplay extends Command {
             aliases: ['ap'],
             cooldown: 3,
             args: false,
+            // seedFrom() resolves through Lavalink and may create the player,
+            // which can exceed Discord's 3s acknowledgement window.
+            defer: true,
             player: {
                 voice: true,
                 dj: true,

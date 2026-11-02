@@ -27,7 +27,14 @@ test('defer can be opted into', () => {
 });
 
 test('commands that do remote work before replying defer; fast ones do not', async () => {
-    const slow = ['music/Play', 'music/PlayNext', 'music/Search', 'playlist/Load', 'playlist/Add'];
+    const slow = [
+        'music/Play',
+        'music/PlayNext',
+        'music/Search',
+        'music/Autoplay',
+        'playlist/Load',
+        'playlist/Add',
+    ];
     const fast = ['music/Pause', 'music/Skip', 'music/Queue'];
 
     for (const path of slow) {

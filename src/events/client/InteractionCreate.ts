@@ -262,15 +262,36 @@ export default class InteractionCreate extends Event {
                     content: 'You can\'t mention everyone or here.',
                     ephemeral: true,
                 });
-            if (command.defer) await ctx.defer();
+            if (command.defer) {
+                try {
+                    await ctx.defer();
+                } catch (error) {
+                    // The interaction can expire before the bot reaches this
+                    // point; acknowledging again is impossible, so log and stop.
+                    this.client.logger.error(`[interaction] defer failed: ${error}`);
+                    return;
+                }
+            }
             try {
                 await command.run(this.client, ctx, ctx.args);
             } catch (error) {
                 this.client.logger.error(error);
+                const code =
+                    typeof error === 'object' && error !== null && 'code' in error
+                        ? (error as { code?: unknown }).code
+                        : undefined;
+                // 10062 = the 3s token expired; 40060 = already acknowledged.
+                // Trying to reply again here used to throw out of the handler,
+                // reach antiCrash and restart the whole bot.
+                if (code === 10062 || code === 40060) return;
                 const payload = { content: `An error occurred: \`${error}\`` };
-                await (interaction.deferred || interaction.replied
-                    ? interaction.editReply(payload)
-                    : interaction.reply(payload));
+                try {
+                    await (interaction.deferred || interaction.replied
+                        ? interaction.editReply(payload)
+                        : interaction.reply(payload));
+                } catch (replyError) {
+                    this.client.logger.error(`[interaction] error reply failed: ${replyError}`);
+                }
             }
         } else if (interaction.type == InteractionType.ApplicationCommandAutocomplete) {
             const focused = interaction.options.getFocused(true);
