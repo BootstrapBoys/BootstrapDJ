@@ -467,6 +467,16 @@ export default class Dispatcher {
         return track?.encoded ?? '';
     }
 
+    /** Secondary identity for the same recording from another source. A Deezer
+     * request and a YouTube mix entry for it have different URIs, so URI-only
+     * dedupe lets autoplay queue the track that is currently playing. */
+    private trackSignature(track: Song | Track): string {
+        const info = track?.info;
+        const title = (info?.title ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+        const author = this.normalizeAuthor(info?.author);
+        return title && author ? `${title}|${author}` : '';
+    }
+
     private shuffle<T>(items: T[]): T[] {
         const copy = [...items];
         for (let i = copy.length - 1; i > 0; i--) {
@@ -476,12 +486,17 @@ export default class Dispatcher {
         return copy;
     }
 
-    /** Already queued or heard in the recent past? */
+    /** Already current, queued, or heard in the recent past? */
     private isRecent(track: Song | Track): boolean {
         const key = this.trackKey(track);
-        if (!key) return false;
-        if (this.queue.some(queued => this.trackKey(queued) === key)) return true;
-        return this.history.slice(-15).some(played => this.trackKey(played) === key);
+        const signature = this.trackSignature(track);
+        if (!key && !signature) return false;
+        const matches = (candidate: Song | Track): boolean =>
+            (Boolean(key) && this.trackKey(candidate) === key) ||
+            (Boolean(signature) && this.trackSignature(candidate) === signature);
+        if (this.current && matches(this.current)) return true;
+        if (this.queue.some(matches)) return true;
+        return this.history.slice(-15).some(matches);
     }
 
     private normalizeAuthor(value?: string): string {

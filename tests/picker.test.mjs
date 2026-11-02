@@ -146,3 +146,19 @@ test('the same seed reuses its mix instead of resolving it on every pick', async
     assert.equal(first.length, 1);
     assert.equal(second, first);
 });
+
+
+test('the current track is rejected even when the mix uses another source', () => {
+    const dispatcher = makeDispatcher();
+    dispatcher.current = makeSong('Hate Myself', {
+        author: 'NF',
+        uri: 'https://deezer.com/track/716493422',
+    });
+    const sameSongOnYouTube = candidate(
+        'Hate Myself',
+        'NF',
+        'https://www.youtube.com/watch?v=6io0g7WuHaI'
+    );
+
+    assert.equal(dispatcher.chooseFrom([sameSongOnYouTube]), null);
+});
