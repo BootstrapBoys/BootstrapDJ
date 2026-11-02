@@ -167,10 +167,18 @@ export default class BootstrapClient extends Client {
     private async registerEvent(dir: string, file: string): Promise<void> {
         const event = (await import(`../events/${dir}/${file}`)).default;
         const evt = new event(this, file);
+        // EventEmitter does not await handlers, so a rejected event used to
+        // become an unhandled rejection and restart the bot via antiCrash.
+        // Log the failed event instead; genuine uncaught exceptions still exit.
+        const dispatch = (...args: unknown[]): void => {
+            void Promise.resolve()
+                .then(() => evt.run(...args))
+                .catch(error => this.logger.error(`[event] ${evt.name} failed: ${error}`));
+        };
         if (dir === 'player') {
-            this.shoukaku.on(evt.name, (...args) => evt.run(...args));
+            this.shoukaku.on(evt.name, dispatch);
         } else {
-            this.on(evt.name, (...args) => evt.run(...args));
+            this.on(evt.name, dispatch);
         }
     }
 }

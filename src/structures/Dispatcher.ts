@@ -28,6 +28,9 @@ const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
 /** Draw from the relevance-ordered head of a mix; its tail is loosely related. */
 const AUTOPLAY_HEAD = 12;
 
+/** Related artists are listed closest-first; use the closest few. */
+const AUTOPLAY_RELATED = 4;
+
 /** Weighted draws keep most autoplay picks near the requested artist without
  * turning the queue into a single-artist loop. */
 const AUTOPLAY_SEED_WEIGHT = 4;
@@ -585,7 +588,7 @@ export default class Dispatcher {
     private async pickForSeed(seed: Song): Promise<Song | null> {
         const mix = await this.relatedTracks(seed);
         const seedArtist = seed.info.author ?? '';
-        const related = this.shuffle(await this.relatedArtistNames(seed)).slice(0, 3);
+        const related = this.shuffle((await this.relatedArtistNames(seed)).slice(0, AUTOPLAY_RELATED));
 
         // Weight the mix toward the seed artist first, related artists second.
         // The old "any other artist present" gate let a radio with 24 unknown
