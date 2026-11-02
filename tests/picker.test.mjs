@@ -86,7 +86,7 @@ test('autoplay weights the seed artist above unrelated tracks', () => {
     const other = candidate('other', 'Other Artist', 'https://x/other');
     const seed = candidate('seed', 'Seed Artist', 'https://x/seed');
     const original = Math.random;
-    Math.random = () => 0.2;
+    Math.random = () => 0.3;
     try {
         assert.equal(dispatcher.chooseFrom([other, seed], { seedArtist: 'Seed Artist', relatedArtists: [] })?.info.author, 'Seed Artist');
     } finally {
@@ -97,7 +97,7 @@ test('autoplay weights the seed artist above unrelated tracks', () => {
 test('related artists sit between the seed artist and strangers', () => {
     const dispatcher = makeDispatcher();
     const affinity = { seedArtist: 'Seed Artist', relatedArtists: ['Close Artist'] };
-    assert.equal(dispatcher.affinityWeight(candidate('seed', 'Seed Artist', 'https://x/1'), affinity), 4);
+    assert.equal(dispatcher.affinityWeight(candidate('seed', 'Seed Artist', 'https://x/1'), affinity), 3);
     assert.equal(dispatcher.affinityWeight(candidate('close', 'Close Artist', 'https://x/2'), affinity), 2);
     assert.equal(dispatcher.affinityWeight(candidate('other', 'Other Artist', 'https://x/3'), affinity), 1);
 });
@@ -114,7 +114,14 @@ test('pickForSeed uses the mix even when it contains only the seed artist', asyn
         return makeSong('picked', { author: 'Seed Artist', uri: 'https://x/picked' });
     };
 
-    const picked = await dispatcher.pickForSeed(seed);
+    const original = Math.random;
+    Math.random = () => 0.99;
+    let picked;
+    try {
+        picked = await dispatcher.pickForSeed(seed);
+    } finally {
+        Math.random = original;
+    }
 
     assert.equal(picked?.info.title, 'picked');
     assert.equal(seen.tracks.length, 1);
@@ -247,4 +254,23 @@ test('enqueue can defer seed recording while a playlist is collected', () => {
 
     dispatcher.enqueue(makeSong('two', { author: 'B', uri: 'https://x/two' }));
     assert.deepEqual(dispatcher.seeds.map(track => track.info.title), ['two']);
+});
+
+test('a seed-only mix occasionally hops to a related artist', async () => {
+    const seed = makeSong('seed', { author: 'Seed Artist', uri: 'https://x/seed' });
+    const dispatcher = makeDispatcher({ seed });
+    const mix = [candidate('next', 'Seed Artist', 'https://x/next')];
+    dispatcher.relatedTracks = async () => mix;
+    dispatcher.relatedArtistNames = async () => ['Close Artist'];
+    dispatcher.pickFromQuery = async name =>
+        makeSong(name, { author: name, uri: `https://x/${encodeURIComponent(name)}` });
+
+    const original = Math.random;
+    Math.random = () => 0;
+    try {
+        const picked = await dispatcher.pickForSeed(seed);
+        assert.equal(picked?.info.author, 'Close Artist');
+    } finally {
+        Math.random = original;
+    }
 });

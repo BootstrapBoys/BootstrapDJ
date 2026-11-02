@@ -28,13 +28,19 @@ const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
 /** Draw from the relevance-ordered head of a mix; its tail is loosely related. */
 const AUTOPLAY_HEAD = 12;
 
-/** Related artists are listed closest-first; use the closest few. */
-const AUTOPLAY_RELATED = 4;
+/** Related artists are listed closest-first; use a wider nearest neighbourhood
+ * so a session can leave the seeded artists without jumping genres. */
+const AUTOPLAY_RELATED = 6;
 
-/** Weighted draws keep most autoplay picks near the requested artist without
- * turning the queue into a single-artist loop. */
-const AUTOPLAY_SEED_WEIGHT = 4;
+/** Weighted draws keep picks near the requested artists without camping on
+ * them. Lowering the seed weight (relative to related/strangers) is the spread
+ * knob: raise it for tighter, lower it for wider. */
+const AUTOPLAY_SEED_WEIGHT = 3;
 const AUTOPLAY_RELATED_WEIGHT = 2;
+
+/** A seed-only radio would otherwise never leave that artist. Occasionally
+ * take a related-artist lane before the mix so the session can breathe. */
+const AUTOPLAY_SPREAD_CHANCE = 0.35;
 
 /** Recent explicit requests kept as independent seed lanes. Newest is drawn
  * most often; the pool is additive and capped so a long session doesn't turn
@@ -665,6 +671,20 @@ export default class Dispatcher {
         const mix = await this.relatedTracks(seed);
         const seedArtist = seed.info.author ?? '';
         const related = this.shuffle((await this.relatedArtistNames(seed)).slice(0, AUTOPLAY_RELATED));
+        const seedOnlyMix =
+            mix.length > 0 &&
+            mix.every(track => {
+                const author = this.normalizeAuthor(track.info?.author);
+                const normalizedSeed = this.normalizeAuthor(seedArtist);
+                return !author || author === normalizedSeed || author.includes(normalizedSeed) || normalizedSeed.includes(author);
+            });
+
+        // A seed-only radio otherwise pins the queue to one artist forever:
+        // take a related lane occasionally, then fall through to the mix.
+        if (seedOnlyMix && related.length && Math.random() < AUTOPLAY_SPREAD_CHANCE) {
+            const spreadPick = await this.pickFromQuery(related[0]);
+            if (spreadPick) return spreadPick;
+        }
 
         // Weight the mix toward the seed artist first, related artists second.
         // The old "any other artist present" gate let a radio with 24 unknown
