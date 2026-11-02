@@ -18,6 +18,13 @@ type DeezerList = { data?: Array<{ id?: number; name?: string }> };
 /** Related artists change rarely and cost 2-3 HTTP calls; cache per artist. */
 const relatedArtistCache = new Map<string, string[]>();
 
+/** A seed's YouTube mix is stable for a while; re-resolving it on every pick
+ * costs a search + playlist load. Keep the bounded set small and short-lived. */
+type MixCacheEntry = { at: number; tracks: Track[] };
+const relatedTracksCache = new Map<string, MixCacheEntry>();
+const AUTOPLAY_CACHE_LIMIT = 100;
+const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
+
 /** Draw from the relevance-ordered head of a mix; its tail is loosely related. */
 const AUTOPLAY_HEAD = 12;
 
@@ -553,6 +560,10 @@ export default class Dispatcher {
     /** YouTube's mix for a seed track — the only source here that spans
      * artists; an artist search returns the same name over and over. */
     private async relatedTracks(seed: Song): Promise<Track[]> {
+        const key = this.trackKey(seed);
+        const cached = key ? relatedTracksCache.get(key) : undefined;
+        if (cached && Date.now() - cached.at < AUTOPLAY_MIX_TTL_MS) return cached.tracks;
+
         const id = await this.youtubeIdFor(seed);
         if (!id) return [];
         const resolve = await this.node?.rest
@@ -560,7 +571,15 @@ export default class Dispatcher {
             .catch(() => null);
         if (!resolve || resolve.loadType !== LoadType.PLAYLIST) return [];
         const playlist = resolve.data as { tracks?: Track[] };
-        return playlist.tracks ?? [];
+        const tracks = playlist.tracks ?? [];
+        if (key && tracks.length) {
+            if (relatedTracksCache.size >= AUTOPLAY_CACHE_LIMIT) {
+                const oldest = relatedTracksCache.keys().next().value;
+                if (oldest) relatedTracksCache.delete(oldest);
+            }
+            relatedTracksCache.set(key, { at: Date.now(), tracks });
+        }
+        return tracks;
     }
 
     private async pickForSeed(seed: Song): Promise<Song | null> {
@@ -633,7 +652,13 @@ export default class Dispatcher {
         const names = (related?.data ?? [])
             .map(artist => artist?.name)
             .filter((name): name is string => Boolean(name));
-        if (names.length && cacheKey) relatedArtistCache.set(cacheKey, names);
+        if (related && cacheKey) {
+            if (relatedArtistCache.size >= AUTOPLAY_CACHE_LIMIT) {
+                const oldest = relatedArtistCache.keys().next().value;
+                if (oldest) relatedArtistCache.delete(oldest);
+            }
+            relatedArtistCache.set(cacheKey, names);
+        }
         return names;
     }
 

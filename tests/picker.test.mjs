@@ -121,3 +121,28 @@ test('pickForSeed uses the mix even when it contains only the seed artist', asyn
     assert.equal(seen.affinity.seedArtist, 'Seed Artist');
     assert.deepEqual(seen.affinity.relatedArtists, ['Close Artist']);
 });
+
+test('the same seed reuses its mix instead of resolving it on every pick', async () => {
+    const dispatcher = makeDispatcher();
+    const seed = makeSong('seed', { uri: 'https://x/mix-seed' });
+    let calls = 0;
+    dispatcher.youtubeIdFor = async () => 'abcdefghijk';
+    dispatcher.node = {
+        rest: {
+            resolve: async () => {
+                calls += 1;
+                return {
+                    loadType: 'playlist',
+                    data: { tracks: [candidate('mix', 'Seed Artist', 'https://x/mix')] },
+                };
+            },
+        },
+    };
+
+    const first = await dispatcher.relatedTracks(seed);
+    const second = await dispatcher.relatedTracks(seed);
+
+    assert.equal(calls, 1);
+    assert.equal(first.length, 1);
+    assert.equal(second, first);
+});
