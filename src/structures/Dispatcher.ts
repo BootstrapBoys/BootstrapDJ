@@ -36,6 +36,12 @@ const AUTOPLAY_RELATED = 4;
 const AUTOPLAY_SEED_WEIGHT = 4;
 const AUTOPLAY_RELATED_WEIGHT = 2;
 
+/** Recent explicit requests kept as independent seed lanes. Newest is drawn
+ * most often; the pool is additive and capped so a long session doesn't turn
+ * into a bag of unrelated artists. */
+const AUTOPLAY_SEEDS = 3;
+const AUTOPLAY_SEED_LANE_WEIGHTS = [3, 2, 1];
+
 type AutoplayAffinity = {
     seedArtist: string;
     relatedArtists: string[];
@@ -141,8 +147,10 @@ export default class Dispatcher {
     public resumePosition: number | null = null;
     public filters: Array<string>;
     public autoplay: boolean;
-    /** Last track a user asked for; autoplay seeds from it. */
+    /** Last track a user asked for; the newest lane in `seeds`. */
     public seed: Song | null;
+    /** Recent explicit requests, newest first (max AUTOPLAY_SEEDS). */
+    public seeds: Song[];
     private toppingUp = false;
     private persistTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
@@ -166,6 +174,7 @@ export default class Dispatcher {
         this.filters = [];
         this.autoplay = false;
         this.seed = null;
+        this.seeds = [];
         this.nowPlayingMessage = null;
         this.persistTimer = setInterval(() => {
             // A paused player's position cannot change and pause() already wrote
@@ -362,6 +371,7 @@ export default class Dispatcher {
         this.loop = 'off';
         this.autoplay = false;
         this.seed = null;
+        this.seeds = [];
         this.repeat = 0;
         this.stopped = true;
         void this.client.db.deleteSession(this.guildId).catch(() => {});
@@ -420,7 +430,7 @@ export default class Dispatcher {
     public enqueue(song: Song): void {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.push(song);
-        this.seed = song;
+        this.rememberSeed(song);
         void this.persist();
         void this.ensureLookahead().catch(() => {});
     }
@@ -429,9 +439,24 @@ export default class Dispatcher {
     public enqueueNext(song: Song): void {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.unshift(song);
-        this.seed = song;
+        this.rememberSeed(song);
         void this.persist();
         void this.ensureLookahead().catch(() => {});
+    }
+
+    /** Add an explicit request to the seed pool, newest first, without
+     * duplicates and without letting an old request fall off the front. */
+    private rememberSeed(song: Song): void {
+        this.seed = song;
+        const signature = this.trackSignature(song);
+        this.seeds = [
+            song,
+            ...this.seeds.filter(
+                existing =>
+                    this.trackSignature(existing) !== signature &&
+                    this.trackKey(existing) !== this.trackKey(song)
+            ),
+        ].slice(0, AUTOPLAY_SEEDS);
     }
 
     /**
@@ -444,7 +469,10 @@ export default class Dispatcher {
         if (!this.autoplay || this.toppingUp || this.queue.length) return null;
         this.toppingUp = true;
         try {
-            return await this.Autoplay(this.current ?? undefined);
+            // Do not seed from the track that happens to be current: with the
+            // explicit seed first, a long session follows the last bot pick
+            // instead of the user's request pool.
+            return await this.Autoplay();
         } finally {
             this.toppingUp = false;
         }
@@ -680,41 +708,88 @@ export default class Dispatcher {
         return names;
     }
 
-    /** Seed pool, newest intent first: the track that just ended, the last
-     * user request, the current track, then recent history. */
+    /** Explicit seed lanes, newest first. A restored session has no persisted
+     * pool, so fall back to unplayed user requests in current/queue/history
+     * rather than treating the last bot pick as the user's intent. */
+    private seedPool(): Song[] {
+        const pool: Song[] = [];
+        const seen = new Set<string>();
+        const add = (track?: Song | null, includeAutoplay = false): void => {
+            if (!track?.info?.author) return;
+            if (track.autoplay && !includeAutoplay) return;
+            const signature = this.trackSignature(track) || this.trackKey(track);
+            if (!signature || seen.has(signature)) return;
+            seen.add(signature);
+            pool.push(track);
+        };
+
+        for (const track of this.seeds ?? []) add(track, true);
+        if (!this.seeds?.length) {
+            add(this.seed, true);
+            add(this.current);
+            for (const track of this.queue) add(track);
+            for (const track of this.history) add(track);
+        }
+        return pool.slice(0, AUTOPLAY_SEEDS);
+    }
+
+    /** Seed candidates for one lookahead. The first lane is a weighted draw
+     * from the explicit pool; the rest are fallbacks if its mix is unavailable. */
     private seedCandidates(explicit?: Song): Song[] {
+        const pool = this.seedPool();
         const seen = new Set<string>();
         const candidates: Song[] = [];
         const add = (track?: Song | null): void => {
             if (!track?.info?.author) return;
-            const key = this.trackKey(track);
-            if (seen.has(key)) return;
-            seen.add(key);
+            const signature = this.trackSignature(track) || this.trackKey(track);
+            if (!signature || seen.has(signature)) return;
+            seen.add(signature);
             candidates.push(track);
         };
-        add(explicit);
-        add(this.seed);
-        add(this.current);
-        for (const track of this.history.slice(-5)) add(track);
 
-        const rest = this.shuffle(candidates);
-        if (!explicit) return rest;
-        return [explicit, ...rest.filter(candidate => candidate !== explicit)];
+        add(explicit);
+        if (pool.length) {
+            const weighted: Song[] = [];
+            pool.forEach((track, index) => {
+                const weight = AUTOPLAY_SEED_LANE_WEIGHTS[index] ?? 1;
+                for (let i = 0; i < weight; i++) weighted.push(track);
+            });
+            add(weighted[Math.floor(Math.random() * weighted.length)]);
+            for (const track of this.shuffle(pool)) add(track);
+        } else {
+            add(this.seed);
+            add(this.current);
+            for (const track of this.history.slice(-5)) add(track);
+        }
+        return candidates;
     }
 
     /**
-     * Seed explicitly from a query ("/autoplay Akon"): queue one random result
-     * from that search, adopt it as the seed, and start playing if idle.
+     * Seed explicitly from one or more comma-separated queries
+     * ("/autoplay Akon, NF"): queue one random result from the first query,
+     * add each result to the seed pool, and start playing if idle.
      */
     public async seedFrom(query: string): Promise<Song | null> {
         this.purgeAutoplay();
-        const pick = await this.pickFromQuery(query);
-        if (!pick) return null;
-        pick.autoplay = true;
-        this.seed = pick;
-        this.queue.push(pick);
+        const queries = query
+            .split(',')
+            .map(part => part.trim())
+            .filter(Boolean)
+            .slice(0, AUTOPLAY_SEEDS);
+        const picks: Song[] = [];
+        for (const part of queries) {
+            const pick = await this.pickFromQuery(part);
+            if (!pick) continue;
+            pick.autoplay = true;
+            picks.push(pick);
+        }
+        if (!picks.length) return null;
+        // Add in reverse so the first query remains the newest lane.
+        for (const pick of [...picks].reverse()) this.rememberSeed(pick);
+        const opener = picks[0];
+        this.queue.push(opener);
         await this.isPlaying();
-        return pick;
+        return opener;
     }
 
     private async queueAutoplay(pick: Song): Promise<Song> {

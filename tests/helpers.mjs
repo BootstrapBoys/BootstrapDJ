@@ -43,6 +43,7 @@ export function makeDispatcher(overrides = {}) {
             autoplay: false,
             current: null,
             seed: null,
+            seeds: [],
             toppingUp: false,
             guildId: 'test-guild',
         },

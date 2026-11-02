@@ -162,3 +162,61 @@ test('the current track is rejected even when the mix uses another source', () =
 
     assert.equal(dispatcher.chooseFrom([sameSongOnYouTube]), null);
 });
+
+test('explicit requests form a newest-first seed pool capped at three', () => {
+    const dispatcher = makeDispatcher();
+    for (const [title, uri] of [
+        ['one', 'https://x/one'],
+        ['two', 'https://x/two'],
+        ['three', 'https://x/three'],
+        ['four', 'https://x/four'],
+    ]) {
+        dispatcher.enqueue(makeSong(title, { author: 'Artist', uri }));
+    }
+
+    assert.deepEqual(
+        dispatcher.seeds.map(seed => seed.info.title),
+        ['four', 'three', 'two']
+    );
+    assert.equal(dispatcher.seed?.info.title, 'four');
+});
+
+test('a comma-separated /autoplay seeds every lane and queues the first pick', async () => {
+    const dispatcher = makeDispatcher();
+    dispatcher.pickFromQuery = async query =>
+        makeSong(query, { author: query, uri: `https://x/${encodeURIComponent(query)}` });
+
+    const opener = await dispatcher.seedFrom('NF, Hotel Books');
+
+    assert.equal(opener?.info.title, 'NF');
+    assert.deepEqual(
+        dispatcher.seeds.map(seed => seed.info.title),
+        ['NF', 'Hotel Books']
+    );
+    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['NF']);
+});
+
+test('the newest seed lane is drawn most often', () => {
+    const dispatcher = makeDispatcher({
+        seeds: [
+            makeSong('newest', { author: 'A', uri: 'https://x/n' }),
+            makeSong('middle', { author: 'B', uri: 'https://x/m' }),
+            makeSong('oldest', { author: 'C', uri: 'https://x/o' }),
+        ],
+    });
+    const original = Math.random;
+    Math.random = () => 0;
+    try {
+        assert.equal(dispatcher.seedCandidates()[0]?.info.title, 'newest');
+    } finally {
+        Math.random = original;
+    }
+});
+
+test('a restored user request is eligible when no seed pool was persisted', () => {
+    const dispatcher = makeDispatcher({
+        current: makeSong('restored', { author: 'User Artist', uri: 'https://x/restored' }),
+    });
+
+    assert.equal(dispatcher.seedCandidates()[0]?.info.title, 'restored');
+});

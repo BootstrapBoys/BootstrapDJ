@@ -35,7 +35,7 @@ export default class Autoplay extends Command {
             options: [
                 {
                     name: 'seed',
-                    description: 'Artist or song to start from (optional)',
+                    description: 'Artist(s) or song(s), comma-separated (up to 3); blank toggles off',
                     type: ApplicationCommandOptionType.String,
                     required: false,
                 },

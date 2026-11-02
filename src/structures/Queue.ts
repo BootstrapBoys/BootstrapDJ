@@ -109,6 +109,7 @@ export class Queue extends Map {
             loop: dispatcher.loop,
             autoplay: dispatcher.autoplay,
             seed: dispatcher.seed,
+            seeds: dispatcher.seeds.slice(),
             volume: dispatcher.volume,
             position:
                 dispatcher.resumePosition ??
@@ -144,6 +145,7 @@ export class Queue extends Map {
             rebuilt.loop = saved.loop;
             rebuilt.autoplay = saved.autoplay;
             rebuilt.seed = saved.seed;
+            rebuilt.seeds = saved.seeds;
             rebuilt.player.setGlobalVolume(saved.volume);
 
             this.set(guild.id, rebuilt);
