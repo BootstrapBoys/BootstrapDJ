@@ -220,3 +220,31 @@ test('a restored user request is eligible when no seed pool was persisted', () =
 
     assert.equal(dispatcher.seedCandidates()[0]?.info.title, 'restored');
 });
+
+test('playlist seeds favor distinct artists and never duplicate a track', () => {
+    const dispatcher = makeDispatcher();
+    const playlist = [
+        makeSong('a1', { author: 'Artist A', uri: 'https://x/a1' }),
+        makeSong('a2', { author: 'Artist A', uri: 'https://x/a2' }),
+        makeSong('a3', { author: 'Artist A', uri: 'https://x/a3' }),
+        makeSong('b1', { author: 'Artist B', uri: 'https://x/b1' }),
+        makeSong('c1', { author: 'Artist C', uri: 'https://x/c1' }),
+        makeSong('c1-copy', { author: 'Artist C', uri: 'https://x/c1' }),
+        makeSong('c1', { author: 'Artist C', uri: 'https://x/c1-different-uri' }),
+    ];
+
+    dispatcher.seedPlaylist(playlist);
+
+    assert.equal(dispatcher.seeds.length, 3);
+    assert.equal(new Set(dispatcher.seeds.map(track => track.info.author)).size, 3);
+    assert.equal(new Set(dispatcher.seeds.map(track => track.info.uri)).size, 3);
+});
+
+test('enqueue can defer seed recording while a playlist is collected', () => {
+    const dispatcher = makeDispatcher();
+    dispatcher.enqueue(makeSong('one', { author: 'A', uri: 'https://x/one' }), false);
+    assert.equal(dispatcher.seeds.length, 0);
+
+    dispatcher.enqueue(makeSong('two', { author: 'B', uri: 'https://x/two' }));
+    assert.deepEqual(dispatcher.seeds.map(track => track.info.title), ['two']);
+});

@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
 
 export default class Load extends Command {
     constructor(client: BootstrapClient) {
@@ -72,6 +72,7 @@ export default class Load extends Command {
 
         let loaded = 0;
         let skipped = 0;
+        const added: Song[] = [];
         for (const row of songs) {
             let parsed: any;
             try {
@@ -87,11 +88,14 @@ export default class Load extends Command {
                     skipped++;
                     continue;
                 }
-                player.enqueue(player.buildTrack(entry, author));
+                const song = player.buildTrack(entry, author);
+                player.enqueue(song, false);
+                added.push(song);
                 loaded++;
             }
         }
 
+        player.seedPlaylist(added);
         await player.isPlaying();
         await ctx.sendMessage({
             embeds: [

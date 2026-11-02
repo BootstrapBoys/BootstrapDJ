@@ -1,6 +1,6 @@
 import { LoadType } from 'shoukaku';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
 
 export default class Play extends Command {
     constructor(client: BootstrapClient) {
@@ -137,6 +137,7 @@ export default class Play extends Command {
                                 ),
                         ],
                     });
+                const added: Song[] = [];
                 for (const track of res.data.tracks) {
                     const pl = player.buildTrack(track, author);
                     if (player.queue.length > client.config.maxQueueSize)
@@ -149,8 +150,10 @@ export default class Play extends Command {
                                     ),
                             ],
                         });
-                    player.enqueue(pl);
+                    player.enqueue(pl, false);
+                    added.push(pl);
                 }
+                player.seedPlaylist(added);
                 await player.isPlaying();
                 await ctx.sendMessage({
                     embeds: [

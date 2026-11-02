@@ -427,21 +427,54 @@ export default class Dispatcher {
      * first: once someone requests music, the bot's filler is obsolete, and the
      * request becomes the seed for future picks.
      */
-    public enqueue(song: Song): void {
+    public enqueue(song: Song, remember = true): void {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.push(song);
-        this.rememberSeed(song);
+        if (remember) this.rememberSeed(song);
         void this.persist();
         void this.ensureLookahead().catch(() => {});
     }
 
     /** Same contract as enqueue(), but jumps the queue (used by /playnext). */
-    public enqueueNext(song: Song): void {
+    public enqueueNext(song: Song, remember = true): void {
         if (this.autoplay) this.purgeAutoplay();
         this.queue.unshift(song);
-        this.rememberSeed(song);
+        if (remember) this.rememberSeed(song);
         void this.persist();
         void this.ensureLookahead().catch(() => {});
+    }
+
+    /** A playlist request contributes up to three random, distinct seed lanes.
+     * Favor different artists first (a playlist often repeats one act), then
+     * fill remaining slots with other unique tracks. */
+    public seedPlaylist(tracks: Song[]): void {
+        const unique: Song[] = [];
+        const seenTracks = new Set<string>();
+        const seenArtists = new Set<string>();
+        const leftovers: Song[] = [];
+        for (const track of this.shuffle(tracks)) {
+            const signature = this.trackSignature(track) || this.trackKey(track);
+            const key = this.trackKey(track);
+            if (!signature || seenTracks.has(`s:${signature}`)) continue;
+            if (key && seenTracks.has(`k:${key}`)) continue;
+            seenTracks.add(`s:${signature}`);
+            if (key) seenTracks.add(`k:${key}`);
+            const artist = this.normalizeAuthor(track.info?.author) || signature;
+            if (!seenArtists.has(artist) && unique.length < AUTOPLAY_SEEDS) {
+                seenArtists.add(artist);
+                unique.push(track);
+            } else {
+                leftovers.push(track);
+            }
+        }
+        for (const track of leftovers) {
+            if (unique.length >= AUTOPLAY_SEEDS) break;
+            unique.push(track);
+        }
+        if (!unique.length) return;
+        this.seeds = unique;
+        this.seed = unique[0];
+        void this.persist();
     }
 
     /** Add an explicit request to the seed pool, newest first, without
