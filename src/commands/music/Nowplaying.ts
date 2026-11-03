@@ -25,6 +25,7 @@ export default class Nowplaying extends Command {
                 user: [],
             },
             slashCommand: true,
+            ephemeral: false,
             options: [],
         });
     }

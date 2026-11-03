@@ -28,6 +28,8 @@ export default class Command {
     };
     public slashCommand: boolean;
     public defer: boolean;
+    /** Slash replies are ephemeral by default; prefix replies ignore this. */
+    public ephemeral: boolean;
     public options: ApplicationCommandOption[];
     public category: string | null;
     constructor(client: BootstrapClient, options: CommandOptions) {
@@ -62,6 +64,7 @@ export default class Command {
         };
         this.slashCommand = options.slashCommand || false;
         this.defer = options.defer || false;
+        this.ephemeral = options.ephemeral ?? true;
         this.options = options.options || [];
         this.category = options.category || 'general';
     }
@@ -95,6 +98,7 @@ interface CommandOptions {
     };
     slashCommand?: boolean;
     defer?: boolean;
+    ephemeral?: boolean;
     options?: ApplicationCommandOption[];
     category?: string;
 }

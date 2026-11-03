@@ -27,6 +27,7 @@ export default class Queue extends Command {
                 user: [],
             },
             slashCommand: true,
+            ephemeral: false,
             options: [],
         });
     }

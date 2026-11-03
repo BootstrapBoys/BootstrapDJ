@@ -107,7 +107,7 @@ export default class InteractionCreate extends Event {
             await this.client.db.get(interaction.guildId); // get or create guild data
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
-            const ctx = new Context(interaction, [...interaction.options.data]);
+            const ctx = new Context(interaction, [...interaction.options.data], command.ephemeral);
             ctx.setArgs(interaction.options.data);
             const channel = interaction.channel;
             if (!channel || channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true)
@@ -124,6 +124,7 @@ export default class InteractionCreate extends Event {
             if (!me.permissions.has(PermissionFlagsBits.EmbedLinks))
                 return await interaction.reply({
                     content: 'I don\'t have **`EmbedLinks`** permission.',
+                    ephemeral: true,
                 });
 
             if (command.permissions) {
@@ -131,6 +132,7 @@ export default class InteractionCreate extends Event {
                     if (!me.permissions.has(command.permissions.client))
                         return await interaction.reply({
                             content: 'I don\'t have enough permissions to execute this command.',
+                            ephemeral: true,
                         });
                 }
 
@@ -161,16 +163,19 @@ export default class InteractionCreate extends Event {
                     if (!member.voice.channel)
                         return await interaction.reply({
                             content: `You must be connected to a voice channel to use this \`${command.name}\` command.`,
+                            ephemeral: true,
                         });
 
                     if (!me.permissions.has(PermissionFlagsBits.Connect))
                         return await interaction.reply({
                             content: `I don't have \`CONNECT\` permissions to execute this \`${command.name}\` command.`,
+                            ephemeral: true,
                         });
 
                     if (!me.permissions.has(PermissionFlagsBits.Speak))
                         return await interaction.reply({
                             content: `I don't have \`SPEAK\` permissions to execute this \`${command.name}\` command.`,
+                            ephemeral: true,
                         });
 
                     if (
@@ -182,6 +187,7 @@ export default class InteractionCreate extends Event {
                     )
                         return await interaction.reply({
                             content: `I don't have \`REQUEST TO SPEAK\` permission to execute this \`${command.name}\` command.`,
+                            ephemeral: true,
                         });
                     if (me.voice.channel) {
                         if (
@@ -190,6 +196,7 @@ export default class InteractionCreate extends Event {
                         )
                             return await interaction.reply({
                                 content: `You are not connected to <#${me.voice.channel.id}> to use this \`${command.name}\` command.`,
+                                ephemeral: true,
                             });
                     }
                 }
@@ -198,6 +205,7 @@ export default class InteractionCreate extends Event {
                     if (!activePlayer || !activePlayer.current)
                         return await interaction.reply({
                             content: 'Nothing is playing right now.',
+                            ephemeral: true,
                         });
                 }
                 if (command.player.dj) {
@@ -207,6 +215,7 @@ export default class InteractionCreate extends Event {
                         if (!djRole)
                             return await interaction.reply({
                                 content: 'DJ role is not set.',
+                                ephemeral: true,
                             });
                         const findDJRole = member.roles.cache.find(
                             (x: any) => djRole.map((y: any) => y.roleId).includes(x.id)
@@ -245,6 +254,7 @@ export default class InteractionCreate extends Event {
                         content: `Please wait ${timeLeft.toFixed(
                             1
                         )} more second(s) before reusing the \`${commandName}\` command.`,
+                        ephemeral: true,
                     });
                 }
                 timestamps.set(interaction.user.id, now);
@@ -264,7 +274,7 @@ export default class InteractionCreate extends Event {
                 });
             if (command.defer) {
                 try {
-                    await ctx.defer();
+                    await ctx.defer(command.ephemeral);
                 } catch (error) {
                     // The interaction can expire before the bot reaches this
                     // point; acknowledging again is impossible, so log and stop.
@@ -284,10 +294,13 @@ export default class InteractionCreate extends Event {
                 // Trying to reply again here used to throw out of the handler,
                 // reach antiCrash and restart the whole bot.
                 if (code === 10062 || code === 40060) return;
-                const payload = { content: `An error occurred: \`${error}\`` };
+                const payload = {
+                    content: `An error occurred: \`${error}\``,
+                    ephemeral: command.ephemeral,
+                };
                 try {
                     await (interaction.deferred || interaction.replied
-                        ? interaction.editReply(payload)
+                        ? interaction.editReply({ content: payload.content })
                         : interaction.reply(payload));
                 } catch (replyError) {
                     this.client.logger.error(`[interaction] error reply failed: ${replyError}`);

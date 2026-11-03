@@ -46,3 +46,14 @@ test('commands that do remote work before replying defer; fast ones do not', asy
         assert.equal(new CommandClass(fakeClient).defer, false, `${path} must not defer`);
     }
 });
+
+
+test('slash replies default to ephemeral; queue and nowplaying stay public', async () => {
+    const generic = new Command(fakeClient, baseOptions());
+    assert.equal(generic.ephemeral, true);
+
+    for (const path of ['music/Queue', 'music/Nowplaying']) {
+        const CommandClass = (await import(`../dist/commands/${path}.js`)).default;
+        assert.equal(new CommandClass(fakeClient).ephemeral, false, `${path} must stay public`);
+    }
+});

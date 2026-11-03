@@ -38,8 +38,10 @@ export default class Context {
     public member: GuildMemberResolvable | GuildMember | APIInteractionGuildMember | null;
     public args: any[] = [];
     public msg: any;
+    /** Slash command feedback is private unless the command opts out. */
+    public ephemeral: boolean;
     private deleteTimer: NodeJS.Timeout | null = null;
-    constructor(ctx: ChatInputCommandInteraction | Message, args: any[]) {
+    constructor(ctx: ChatInputCommandInteraction | Message, args: any[], ephemeral: boolean = true) {
         this.ctx = ctx;
         this.interaction = this.ctx instanceof ChatInputCommandInteraction ? this.ctx : null;
         this.message = this.ctx instanceof Message ? this.ctx : null;
@@ -53,6 +55,7 @@ export default class Context {
         this.createdAt = ctx.createdAt;
         this.createdTimestamp = ctx.createdTimestamp;
         this.member = ctx.member;
+        this.ephemeral = ephemeral;
         this.setArgs(args);
     }
 
@@ -101,9 +104,18 @@ export default class Context {
         await this.cmd.deferReply({ ephemeral });
     }
 
+    private ephemeralPayload(content: any): any {
+        if (!this.isInteraction || !this.ephemeral) return content;
+        if (content && typeof content === 'object' && !Array.isArray(content))
+            return { ...content, ephemeral: true };
+        return { content: String(content), ephemeral: true };
+    }
+
     public async sendMessage(content: any, deleteAfter?: number): Promise<Message> {
         if (this.isInteraction) {
-            this.msg = this.deferred ? await this.cmd.editReply(content) : await this.cmd.reply(content);
+            this.msg = this.deferred
+                ? await this.cmd.editReply(content)
+                : await this.cmd.reply(this.ephemeralPayload(content));
             this.armDelete(content, 'reply', deleteAfter);
             return this.msg;
         } else {
@@ -126,6 +138,7 @@ export default class Context {
         }
         const timeout = seconds ?? this.client.config.deleteAfter;
         if (!timeout || timeout <= 0) return;
+        if (this.isInteraction && this.ephemeral) return;
         if (content?.components?.length) return;
         if (content?.ephemeral) return;
         const timer = setTimeout(() => {
@@ -155,7 +168,7 @@ export default class Context {
     }
     public async sendDeferMessage(content: any): Promise<Message> {
         if (this.isInteraction) {
-            this.msg = await this.cmd.deferReply({ fetchReply: true });
+            this.msg = await this.cmd.deferReply({ ephemeral: this.ephemeral, fetchReply: true });
             this.armDelete(content, 'reply');
             return this.msg;
         } else {
@@ -166,7 +179,7 @@ export default class Context {
     }
     public async sendFollowUp(content: any): Promise<void> {
         if (this.isInteraction) {
-            this.msg = await this.cmd.followUp(content);
+            this.msg = await this.cmd.followUp(this.ephemeralPayload(content));
             this.armDelete(content, 'message');
         } else {
             this.msg = await this.messageChannel.send(content);
