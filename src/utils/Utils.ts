@@ -4,17 +4,25 @@ import {
     ActivityType,
     ButtonBuilder,
     ButtonStyle,
-    CommandInteraction,
     EmbedBuilder,
     Message,
     MessageComponentInteraction,
-    TextChannel,
 } from 'discord.js';
+import { LavalinkResponse, LoadType, Track } from 'shoukaku';
 
 import config from '../config.js';
 import { BootstrapClient, Context } from '../structures/index.js';
 
 export class Utils {
+    /** First playable track from any Lavalink load response. */
+    public static firstTrack(res: LavalinkResponse | null): Track | null {
+        if (!res) return null;
+        if (res.loadType === LoadType.TRACK) return res.data;
+        if (res.loadType === LoadType.SEARCH) return res.data[0] ?? null;
+        if (res.loadType === LoadType.PLAYLIST) return res.data.tracks[0] ?? null;
+        return null;
+    }
+
     public static formatTime(ms: number): string {
         const minuteMs = 60 * 1000;
         const hourMs = 60 * minuteMs;
@@ -113,124 +121,79 @@ export class Utils {
         (timer as unknown as { unref?: () => void }).unref?.();
     }
 
-    public static async paginate(ctx: Context, embed: EmbedBuilder[]): Promise<void> {
-        if (embed.length < 2) {
-            if (ctx.isInteraction) {
-                if (ctx.deferred) await ctx.interaction!.followUp({ embeds: embed });
-                else await ctx.interaction!.reply({ embeds: embed });
-                return;
-            } else {
-                (ctx.channel as TextChannel).send({ embeds: embed });
-                return;
-            }
+    public static async paginate(ctx: Context, pages: EmbedBuilder[]): Promise<void> {
+        if (!pages.length) return;
+        if (pages.length === 1) {
+            await ctx.sendMessage({ embeds: pages });
+            return;
         }
+
         let page = 0;
-        const getButton = (page: number): any => {
-            const firstEmbed = page === 0;
-            const lastEmbed = page === embed.length - 1;
-            const pageEmbed = embed[page];
-            const first = new ButtonBuilder()
+        const authorId = ctx.author?.id;
+        const getPayload = (index: number): { embeds: EmbedBuilder[]; components: ActionRowBuilder<ButtonBuilder>[] } => {
+            const first = index === 0;
+            const last = index === pages.length - 1;
+            const firstButton = new ButtonBuilder()
                 .setCustomId('fast')
                 .setEmoji('⏪')
-                .setStyle(ButtonStyle.Primary);
-            if (firstEmbed) first.setDisabled(true);
-            const back = new ButtonBuilder()
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(first);
+            const backButton = new ButtonBuilder()
                 .setCustomId('back')
                 .setEmoji('◀️')
-                .setStyle(ButtonStyle.Primary);
-            if (firstEmbed) back.setDisabled(true);
-            const next = new ButtonBuilder()
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(first);
+            const nextButton = new ButtonBuilder()
                 .setCustomId('next')
                 .setEmoji('▶️')
-                .setStyle(ButtonStyle.Primary);
-            if (lastEmbed) next.setDisabled(true);
-            const last = new ButtonBuilder()
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(last);
+            const lastButton = new ButtonBuilder()
                 .setCustomId('last')
                 .setEmoji('⏩')
-                .setStyle(ButtonStyle.Primary);
-            if (lastEmbed) last.setDisabled(true);
-            const stop = new ButtonBuilder()
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(last);
+            const stopButton = new ButtonBuilder()
                 .setCustomId('stop')
                 .setEmoji('⏹️')
                 .setStyle(ButtonStyle.Danger);
-            const row = new ActionRowBuilder().addComponents(first, back, stop, next, last);
-            return { embeds: [pageEmbed], components: [row] };
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+                firstButton,
+                backButton,
+                stopButton,
+                nextButton,
+                lastButton
+            );
+            return { embeds: [pages[index]], components: [row] };
         };
-        const msgOptions = getButton(0);
-        let msg: any;
-        if (ctx.isInteraction) {
-            msg = ctx.deferred
-                ? await ctx.interaction!.followUp({
-                      ...msgOptions,
-                      fetchReply: true as boolean,
-                  })
-                : await ctx.interaction!.reply({
-                      ...msgOptions,
-                      fetchReply: true,
-                  });
-        } else {
-            msg = await (ctx.channel as TextChannel).send({
-                ...msgOptions,
-                fetchReply: true,
-            });
-        }
-        let author: any;
-        if (ctx instanceof CommandInteraction) {
-            author = ctx.user;
-        } else {
-            author = ctx.author;
-        }
-        const filter = (int: any): any => int.user.id === author.id;
+
+        const msg = await ctx.sendMessage(getPayload(0));
         const collector = msg.createMessageComponentCollector({
-            filter,
-            time: 60000,
+            filter: (interaction: MessageComponentInteraction) =>
+                !authorId || interaction.user.id === authorId,
+            time: 60_000,
         });
         collector.on('collect', async (interaction: MessageComponentInteraction) => {
-            if (interaction.user.id === author.id) {
-                await interaction.deferUpdate();
-                if (interaction.customId === 'fast') {
-                    if (page !== 0) {
-                        page = 0;
-                        const newEmbed = getButton(page);
-                        await interaction.editReply(newEmbed);
-                    }
-                }
-                if (interaction.customId === 'back') {
-                    if (page !== 0) {
-                        page--;
-                        const newEmbed = getButton(page);
-                        await interaction.editReply(newEmbed);
-                    }
-                }
-                if (interaction.customId === 'stop') {
-                    collector.stop();
-                }
-                if (interaction.customId === 'next') {
-                    if (page !== embed.length - 1) {
-                        page++;
-                        const newEmbed = getButton(page);
-                        await interaction.editReply(newEmbed);
-                    }
-                }
-                if (interaction.customId === 'last') {
-                    if (page !== embed.length - 1) {
-                        page = embed.length - 1;
-                        const newEmbed = getButton(page);
-                        await interaction.editReply(newEmbed);
-                    }
-                }
-            } else {
-                await interaction.reply({
-                    content: 'You can\'t use this button',
-                    ephemeral: true,
-                });
+            if (authorId && interaction.user.id !== authorId) {
+                await interaction.reply({ content: 'You can\'t use this button', ephemeral: true });
+                return;
             }
+            if (interaction.customId === 'stop') {
+                collector.stop();
+                return;
+            }
+            const last = pages.length - 1;
+            if (interaction.customId === 'fast') page = 0;
+            else if (interaction.customId === 'back') page = Math.max(0, page - 1);
+            else if (interaction.customId === 'next') page = Math.min(last, page + 1);
+            else if (interaction.customId === 'last') page = last;
+            await interaction.update(getPayload(page));
         });
-
         collector.on('end', async () => {
-            // The paginator carried components, so armDelete() never touched it;
-            // delete rather than leave it behind without buttons.
-            await msg.delete().catch(() => {});
+            // Components kept the message exempt from armDelete(); clean up the
+            // public paginator when its collector ends. Ephemeral messages are
+            // private and cannot be deleted through the channel.
+            if (!ctx.ephemeral) await msg.delete().catch(() => {});
         });
     }
 }

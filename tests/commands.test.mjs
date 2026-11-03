@@ -32,8 +32,10 @@ test('commands that do remote work before replying defer; fast ones do not', asy
         'music/PlayNext',
         'music/Search',
         'music/Autoplay',
+        'music/Lyrics',
         'playlist/Load',
         'playlist/Add',
+        'playlist/RemoveSong',
     ];
     const fast = ['music/Pause', 'music/Skip', 'music/Queue'];
 
@@ -47,6 +49,21 @@ test('commands that do remote work before replying defer; fast ones do not', asy
     }
 });
 
+
+test('the new feature commands are registered and keep ephemeral defaults', async () => {
+    for (const path of [
+        'playlist/List',
+        'playlist/RemoveSong',
+        'music/Move',
+        'music/Replay',
+        'music/FairPlay',
+        'music/Lyrics',
+    ]) {
+        const CommandClass = (await import(`../dist/commands/${path}.js`)).default;
+        const command = new CommandClass(fakeClient);
+        assert.equal(command.ephemeral, true, `${path} must default to ephemeral`);
+    }
+});
 
 test('slash replies default to ephemeral; queue and nowplaying stay public', async () => {
     const generic = new Command(fakeClient, baseOptions());

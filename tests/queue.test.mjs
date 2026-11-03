@@ -89,3 +89,27 @@ test('ensureLookahead refills after a skip consumes the pick', async () => {
 
     assert.equal(view(dispatcher), 'bot2(auto)');
 });
+
+
+test('fairPlay round-robins the queue by requester', () => {
+    const dispatcher = makeDispatcher();
+    const song = (title, userId) => {
+        const track = makeSong(title, { uri: `https://x/${title}` });
+        track.info.requester = { id: userId };
+        return track;
+    };
+    dispatcher.queue = [
+        song('a1', 'a'),
+        song('b1', 'b'),
+        song('a2', 'a'),
+        song('c1', 'c'),
+        song('a3', 'a'),
+        song('b2', 'b'),
+    ];
+
+    assert.equal(dispatcher.fairPlay(), 6);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['a1', 'b1', 'c1', 'a2', 'b2', 'a3']
+    );
+});

@@ -328,6 +328,38 @@ export default class Dispatcher {
         if (index > this.queue.length) return;
         this.queue.splice(index, 1);
     }
+
+    /** Round-robin queued tracks by requester so one user cannot occupy the
+     * next N slots. Returns the number of tracks reordered. */
+    public fairPlay(): number {
+        if (!this.queue.length) return 0;
+        const groups = new Map<string, Song[]>();
+        for (const track of this.queue) {
+            const requester = track.info.requester as { id?: string } | undefined;
+            const key = requester?.id ?? 'unknown';
+            const group = groups.get(key);
+            if (group) group.push(track);
+            else groups.set(key, [track]);
+        }
+
+        // Index cursors avoid repeatedly shifting arrays (O(n) instead of
+        // O(n^2) for a long queue) while preserving requester round-robin.
+        const lanes = [...groups.values()];
+        const cursors = lanes.map((): number => 0);
+        const fair: Song[] = [];
+        let added = 0;
+        while (added < this.queue.length) {
+            for (let lane = 0; lane < lanes.length; lane++) {
+                const next = lanes[lane][cursors[lane]++];
+                if (!next) continue;
+                fair.push(next);
+                added++;
+            }
+        }
+        this.queue = fair;
+        void this.persist();
+        return added;
+    }
     public previousTrack(): void {
         if (!this.player) return;
         if (!this.previous) return;

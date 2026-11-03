@@ -420,18 +420,28 @@ export default class ServerData {
         return true;
     }
 
-    public async removeSong(userId: string, name: string, song: string): Promise<void> {
+    /** Remove the row containing the track identified by its canonical key.
+     * Rows store a JSON blob, and legacy rows may contain an array, so an exact
+     * `track: song` delete can miss a re-searched version of the same song. */
+    public async removeSong(userId: string, name: string, songKey: string): Promise<boolean> {
         const playlist = await this.getPLaylist(userId, name);
-        if (playlist) {
-            await this.prisma.song.delete({
-                where: {
-                    track_playlistId: {
-                        track: song,
-                        playlistId: playlist.id,
-                    },
-                },
-            });
-        }
+        if (!playlist) return false;
+        const rows = await this.prisma.song.findMany({
+            where: { playlistId: playlist.id },
+            select: { id: true, track: true },
+        });
+        const row = rows.find(candidate => {
+            try {
+                const parsed = JSON.parse(candidate.track);
+                const entries = Array.isArray(parsed) ? parsed : [parsed];
+                return entries.some(entry => trackKey(entry) === songKey);
+            } catch {
+                return candidate.track === songKey;
+            }
+        });
+        if (!row) return false;
+        await this.prisma.song.delete({ where: { id: row.id } });
+        return true;
     }
 
     public async getSong(userId: string, name: string): Promise<Song[]> {

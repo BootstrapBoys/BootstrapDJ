@@ -92,3 +92,14 @@ test('playlist names keep their internal spaces', async () => {
 
     assert.equal(found?.name, 'My Mix');
 });
+
+
+test('removeSong finds the stored row by canonical track key', async () => {
+    await db.createPlaylist(user, 'Canonical');
+    await db.addSong(user, 'Canonical', track('Keep', 'https://deezer.com/track/10', 'KEEP'));
+    await db.addSong(user, 'Canonical', track('Drop', 'https://deezer.com/track/11', 'DROP'));
+
+    assert.equal(await db.removeSong(user, 'Canonical', 'https://deezer.com/track/11'), true);
+    assert.equal((await db.getSong(user, 'Canonical')).length, 1);
+    assert.equal(await db.removeSong(user, 'Canonical', 'https://deezer.com/track/11'), false);
+});
