@@ -24,7 +24,7 @@ export default {
     maxQueueSize: process.env.MAX_QUEUE_SIZE ? parseInt(process.env.MAX_QUEUE_SIZE) : 100, // max queue size
     deleteAfter: process.env.COMMAND_DELETE_AFTER ? parseInt(process.env.COMMAND_DELETE_AFTER) : 10, // seconds before a command reply is deleted (0 disables)
     setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
-    autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // legacy single fallback when nothing has played yet
+    autoplaySeed: process.env.AUTOPLAY_SEED || 'dj', // legacy single fallback when nothing has played yet
     autoplayChart: process.env.AUTOPLAY_CHART ? parseBoolean(process.env.AUTOPLAY_CHART) : true, // use Deezer's chart before fallback seeds
     autoplaySeeds: (process.env.AUTOPLAY_SEEDS ?? '')
         .split(',')

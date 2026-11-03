@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType } from 'discord.js';
+import { ApplicationCommandOptionType, GuildMember, PermissionFlagsBits } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
@@ -27,7 +27,7 @@ export default class AutoplayConfig extends Command {
             args: false,
             player: {
                 voice: false,
-                dj: true,
+                dj: false,
                 active: false,
                 djPerm: null,
             },
@@ -73,6 +73,20 @@ export default class AutoplayConfig extends Command {
         return await client.db.getAutoplaySetting(guildId).catch(() => null);
     }
 
+    /** Server managers and configured DJ roles may change the policy. */
+    private async canConfigure(client: BootstrapClient, ctx: Context, guildId: string): Promise<boolean> {
+        const member = ctx.member;
+        if (!member || typeof member !== 'object' || !('permissions' in member) || !('roles' in member)) {
+            return false;
+        }
+        const guildMember = member as GuildMember;
+        if (guildMember.permissions.has(PermissionFlagsBits.ManageGuild)) return true;
+        const roles = await client.db.getRoles(guildId);
+        if (!roles.length) return false;
+        const ids = new Set(roles.map(role => role.roleId));
+        return guildMember.roles.cache.some(role => ids.has(role.id));
+    }
+
     private async show(
         client: BootstrapClient,
         ctx: Context,
@@ -108,6 +122,16 @@ export default class AutoplayConfig extends Command {
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guild = ctx.guild;
         if (!guild) return;
+        if (!(await this.canConfigure(client, ctx, guild.id))) {
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('You need the DJ role or Manage Server to change autoplay settings.'),
+                ],
+            });
+        }
         const setting = await this.currentSetting(client, guild.id);
 
         let source: AutoplaySource | undefined;

@@ -36,7 +36,7 @@ export function makeDispatcher(overrides = {}) {
                 user: fakeUser,
                 config: {
                     searchEngine: 'ytmsearch',
-                    autoplaySeed: 'top hits',
+                    autoplaySeed: 'dj',
                     autoplayChart: false,
                     autoplaySeeds: [],
                 },
