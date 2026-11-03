@@ -35,15 +35,45 @@ export default class Autoplay extends Command {
             options: [
                 {
                     name: 'seed',
-                    description: 'Artist(s) or song(s), comma-separated (up to 3); blank toggles off',
+                    description: 'First artist or song',
+                    type: ApplicationCommandOptionType.String,
+                    required: false,
+                },
+                {
+                    name: 'seed2',
+                    description: 'Second artist or song (optional)',
+                    type: ApplicationCommandOptionType.String,
+                    required: false,
+                },
+                {
+                    name: 'seed3',
+                    description: 'Third artist or song (optional)',
                     type: ApplicationCommandOptionType.String,
                     required: false,
                 },
             ],
         });
     }
+    /** Slash commands use the three option boxes; prefix commands keep the
+     * comma-separated form (and a single multi-word seed still works). */
+    private seedsFrom(ctx: Context, args: string[]): string[] {
+        if (ctx.isInteraction) {
+            return ['seed', 'seed2', 'seed3']
+                .map(name => ctx.interaction?.options.getString(name)?.trim() ?? '')
+                .filter(Boolean)
+                .slice(0, 3);
+        }
+        return args
+            .join(' ')
+            .split(',')
+            .map(seed => seed.trim())
+            .filter(Boolean)
+            .slice(0, 3);
+    }
+
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const seed = args.join(' ').trim();
+        const seeds = this.seedsFrom(ctx, args);
+        const seedLabel = seeds.join(', ');
         const guild = ctx.guild;
         if (!guild) return;
         const vc = ctx.voiceChannel;
@@ -62,7 +92,7 @@ export default class Autoplay extends Command {
             });
 
         // Bare /autoplay while it is on means "turn it off".
-        if (!seed && player?.autoplay) {
+        if (!seeds.length && player?.autoplay) {
             await player.setAutoplay(false);
             return await ctx.sendMessage({
                 embeds: [
@@ -75,15 +105,15 @@ export default class Autoplay extends Command {
 
         if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
 
-        if (seed) {
-            const picked = await player.seedFrom(seed);
+        if (seeds.length) {
+            const picked = await player.seedFrom(seeds);
             await player.setAutoplay(true);
             return await ctx.sendMessage({
                 embeds: [
                     embed.setColor(client.color.main).setDescription(
                         picked
-                            ? `Autoplay enabled — seeded from **${seed}**, starting with **${picked.info.title}** by ${picked.info.author}.`
-                            : `Autoplay enabled, but I couldn't find anything for **${seed}**. I'll pick tracks when the queue runs out.`
+                            ? `Autoplay enabled — seeded from **${seedLabel}**, starting with **${picked.info.title}** by ${picked.info.author}.`
+                            : `Autoplay enabled, but I couldn't find anything for **${seedLabel}**. I'll pick tracks when the queue runs out.`
                     ),
                 ],
             });

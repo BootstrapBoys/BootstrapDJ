@@ -854,10 +854,11 @@ export default class Dispatcher {
      * ("/autoplay Akon, NF"): queue one random result from the first query,
      * add each result to the seed pool, and start playing if idle.
      */
-    public async seedFrom(query: string): Promise<Song | null> {
+    public async seedFrom(query: string | string[]): Promise<Song | null> {
         this.purgeAutoplay();
-        const queries = query
-            .split(',')
+        const parts = Array.isArray(query) ? query : [query];
+        const queries = parts
+            .flatMap(part => part.split(','))
             .map(part => part.trim())
             .filter(Boolean)
             .slice(0, AUTOPLAY_SEEDS);

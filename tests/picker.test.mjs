@@ -274,3 +274,16 @@ test('a seed-only mix occasionally hops to a related artist', async () => {
         Math.random = original;
     }
 });
+
+test('seedFrom accepts the three slash option values as an array', async () => {
+    const dispatcher = makeDispatcher();
+    dispatcher.pickFromQuery = async query =>
+        makeSong(query, { author: query, uri: `https://x/${encodeURIComponent(query)}` });
+
+    await dispatcher.seedFrom(['NF', 'Hotel Books', 'The Search']);
+
+    assert.deepEqual(
+        dispatcher.seeds.map(seed => seed.info.title),
+        ['NF', 'Hotel Books', 'The Search']
+    );
+});

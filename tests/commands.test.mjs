@@ -74,3 +74,13 @@ test('slash replies default to ephemeral; queue and nowplaying stay public', asy
         assert.equal(new CommandClass(fakeClient).ephemeral, false, `${path} must stay public`);
     }
 });
+
+
+test('autoplay exposes three optional seed boxes', async () => {
+    const AutoplayClass = (await import('../dist/commands/music/Autoplay.js')).default;
+    const command = new AutoplayClass(fakeClient);
+    const names = command.options.map(option => option.name);
+
+    assert.deepEqual(names, ['seed', 'seed2', 'seed3']);
+    assert.ok(command.options.every(option => option.required === false));
+});
