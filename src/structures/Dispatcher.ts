@@ -671,7 +671,8 @@ export default class Dispatcher {
             const clean = tracks.filter(
                 track => !track.explicit_lyrics && !track.explicit_content_lyrics
             );
-            entry = { at: Date.now(), tracks: clean.length ? clean : tracks };
+            if (!clean.length) return null;
+            entry = { at: Date.now(), tracks: clean };
             chartCache = entry;
         }
         for (const candidate of this.shuffle(entry.tracks).slice(0, 6)) {
