@@ -311,3 +311,25 @@ test('cold start falls back to curated seeds when the chart yields nothing', asy
 
     assert.equal(picked?.info.title, 'curated');
 });
+
+
+test('a guild autoplay setting overrides the environment source and seeds', async () => {
+    const dispatcher = makeDispatcher();
+    dispatcher.client.config.autoplayChart = true;
+    dispatcher.client.db.getAutoplaySetting = async () => ({
+        guildId: 'test-guild',
+        source: 'curated',
+        seeds: 'One, Two',
+    });
+    let seen = null;
+    dispatcher.chartSeed = async () => makeSong('chart', { author: 'Chart', uri: 'https://x/chart' });
+    dispatcher.curatedSeed = async seeds => {
+        seen = seeds;
+        return makeSong('curated', { author: 'Curated', uri: 'https://x/curated' });
+    };
+
+    const picked = await dispatcher.Autoplay();
+
+    assert.equal(picked?.info.title, 'curated');
+    assert.deepEqual(seen, ['One', 'Two']);
+});

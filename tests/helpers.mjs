@@ -40,6 +40,7 @@ export function makeDispatcher(overrides = {}) {
                     autoplayChart: false,
                     autoplaySeeds: [],
                 },
+                db: { getAutoplaySetting: async () => null },
                 logger: { error: () => {}, info: () => {}, warn: () => {} },
             },
             player: { paused: false },

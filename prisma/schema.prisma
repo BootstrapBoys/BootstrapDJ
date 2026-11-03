@@ -13,6 +13,13 @@ datasource db {
   provider = "sqlite"
 }
 
+model AutoplaySetting {
+  guildId   String   @id
+  source    String   @default("chart")
+  seeds     String   @default("")
+  updatedAt DateTime @updatedAt
+}
+
 model Guild {
   guildId    String      @id
   prefix     String

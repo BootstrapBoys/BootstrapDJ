@@ -65,6 +65,8 @@ type AutoplayAffinity = {
     relatedArtists: string[];
 };
 
+type AutoplaySource = 'chart' | 'curated' | 'legacy';
+
 export class Song implements Track {
     encoded: string;
     info: {
@@ -685,9 +687,33 @@ export default class Dispatcher {
         return null;
     }
 
+    /** Per-guild cold-start policy, falling back to the environment defaults. */
+    private async autoplayColdStartConfig(): Promise<{ source: AutoplaySource; seeds: string[] }> {
+        let setting: Awaited<ReturnType<BootstrapClient['db']['getAutoplaySetting']>> | null = null;
+        try {
+            setting = await this.client.db.getAutoplaySetting(this.guildId);
+        } catch {
+            // Older/test databases may not have the table yet.
+        }
+        const storedSeeds = (setting?.seeds ?? '')
+            .split(',')
+            .map(seed => seed.trim())
+            .filter(Boolean);
+        const seeds = storedSeeds.length ? storedSeeds : (this.client.config.autoplaySeeds ?? []);
+        const configured = setting?.source;
+        const source: AutoplaySource =
+            configured === 'chart' || configured === 'curated' || configured === 'legacy'
+                ? configured
+                : this.client.config.autoplayChart
+                  ? 'chart'
+                  : seeds.length
+                    ? 'curated'
+                    : 'legacy';
+        return { source, seeds };
+    }
+
     /** Try curated cold-start queries in random order. */
-    private async curatedSeed(): Promise<Song | null> {
-        const seeds = this.client.config.autoplaySeeds ?? [];
+    private async curatedSeed(seeds: string[]): Promise<Song | null> {
         for (const query of this.shuffle(seeds)) {
             const pick = await this.pickFromQuery(query);
             if (pick) return pick;
@@ -941,14 +967,18 @@ export default class Dispatcher {
             const pick = await this.pickForSeed(seed);
             if (pick) return await this.queueAutoplay(pick);
         }
-        // Cold start: nothing has played and no seed was requested. Prefer the
-        // chart, then the curated safe list, then the legacy single query.
-        if (this.client.config.autoplayChart) {
+        // Cold start: nothing has played and no seed was requested. The
+        // per-guild policy picks the first source; each source falls through to
+        // the next so a bad chart/query never leaves autoplay empty.
+        const cold = await this.autoplayColdStartConfig();
+        if (cold.source === 'chart') {
             const chart = await this.chartSeed();
             if (chart) return await this.queueAutoplay(chart);
         }
-        const curated = await this.curatedSeed();
-        if (curated) return await this.queueAutoplay(curated);
+        if (cold.source === 'chart' || cold.source === 'curated') {
+            const curated = await this.curatedSeed(cold.seeds);
+            if (curated) return await this.queueAutoplay(curated);
+        }
         if (this.client.config.autoplaySeed) {
             const pick = await this.pickFromQuery(this.client.config.autoplaySeed);
             if (pick) return await this.queueAutoplay(pick);

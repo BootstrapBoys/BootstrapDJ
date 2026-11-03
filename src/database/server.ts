@@ -4,6 +4,7 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 import config from '../config.js';
 import {
+    AutoplaySetting,
     Botchannel,
     Dj,
     Guild,
@@ -127,6 +128,25 @@ export default class ServerData {
                 mode,
             },
         });
+    }
+
+    public async getAutoplaySetting(guildId: string): Promise<AutoplaySetting | null> {
+        return await this.prisma.autoplaySetting.findUnique({ where: { guildId } });
+    }
+
+    public async setAutoplaySetting(
+        guildId: string,
+        data: { source: string; seeds: string }
+    ): Promise<AutoplaySetting> {
+        return await this.prisma.autoplaySetting.upsert({
+            where: { guildId },
+            update: data,
+            create: { guildId, ...data },
+        });
+    }
+
+    public async deleteAutoplaySetting(guildId: string): Promise<void> {
+        await this.prisma.autoplaySetting.deleteMany({ where: { guildId } });
     }
 
     public async get_247(guildId?: string): Promise<Stay | Stay[] | null> {
