@@ -239,6 +239,8 @@ export default class Lyrics extends Command {
     }
 }
 
+export { cleanLyrics, paginateLyrics };
+
 /**
  * Project: BootstrapDJ
  * Author: Zebz213
