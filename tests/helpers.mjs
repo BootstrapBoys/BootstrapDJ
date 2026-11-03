@@ -34,7 +34,12 @@ export function makeDispatcher(overrides = {}) {
         {
             client: {
                 user: fakeUser,
-                config: { searchEngine: 'ytmsearch', autoplaySeed: 'top hits' },
+                config: {
+                    searchEngine: 'ytmsearch',
+                    autoplaySeed: 'top hits',
+                    autoplayChart: false,
+                    autoplaySeeds: [],
+                },
                 logger: { error: () => {}, info: () => {}, warn: () => {} },
             },
             player: { paused: false },

@@ -24,7 +24,12 @@ export default {
     maxQueueSize: process.env.MAX_QUEUE_SIZE ? parseInt(process.env.MAX_QUEUE_SIZE) : 100, // max queue size
     deleteAfter: process.env.COMMAND_DELETE_AFTER ? parseInt(process.env.COMMAND_DELETE_AFTER) : 10, // seconds before a command reply is deleted (0 disables)
     setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
-    autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // search term autoplay uses when nothing has played yet
+    autoplaySeed: process.env.AUTOPLAY_SEED || 'top hits', // legacy single fallback when nothing has played yet
+    autoplayChart: process.env.AUTOPLAY_CHART ? parseBoolean(process.env.AUTOPLAY_CHART) : true, // use Deezer's chart before fallback seeds
+    autoplaySeeds: (process.env.AUTOPLAY_SEEDS ?? '')
+        .split(',')
+        .map(seed => seed.trim())
+        .filter(Boolean), // curated fallback queries, tried in random order
     sessionRestoreAge: process.env.SESSION_RESTORE_AGE ? parseInt(process.env.SESSION_RESTORE_AGE) : 21600, // seconds a saved queue stays restorable (0 disables)
     nodeFallback: process.env.NODE_FALLBACK ? parseBoolean(process.env.NODE_FALLBACK) : true, // use a probed public node when the primary is down
     nodeFallbackAfter: process.env.NODE_FALLBACK_AFTER ? parseInt(process.env.NODE_FALLBACK_AFTER) : 180, // seconds of continuous outage before falling back

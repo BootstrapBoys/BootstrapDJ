@@ -287,3 +287,27 @@ test('seedFrom accepts the three slash option values as an array', async () => {
         ['NF', 'Hotel Books', 'The Search']
     );
 });
+
+test('cold start prefers the chart seed over curated and legacy seeds', async () => {
+    const dispatcher = makeDispatcher();
+    dispatcher.client.config.autoplayChart = true;
+    dispatcher.client.config.autoplaySeeds = ['curated'];
+    dispatcher.chartSeed = async () => makeSong('chart', { author: 'Chart Artist', uri: 'https://x/chart' });
+    dispatcher.curatedSeed = async () => makeSong('curated', { author: 'Curated Artist', uri: 'https://x/curated' });
+
+    const picked = await dispatcher.Autoplay();
+
+    assert.equal(picked?.info.title, 'chart');
+});
+
+test('cold start falls back to curated seeds when the chart yields nothing', async () => {
+    const dispatcher = makeDispatcher();
+    dispatcher.client.config.autoplayChart = true;
+    dispatcher.client.config.autoplaySeeds = ['curated'];
+    dispatcher.chartSeed = async () => null;
+    dispatcher.curatedSeed = async () => makeSong('curated', { author: 'Curated Artist', uri: 'https://x/curated' });
+
+    const picked = await dispatcher.Autoplay();
+
+    assert.equal(picked?.info.title, 'curated');
+});

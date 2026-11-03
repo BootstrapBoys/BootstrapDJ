@@ -24,6 +24,18 @@ type MixCacheEntry = { at: number; tracks: Track[] };
 const relatedTracksCache = new Map<string, MixCacheEntry>();
 const AUTOPLAY_CACHE_LIMIT = 100;
 const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
+const AUTOPLAY_CHART_URL = 'https://api.deezer.com/chart/0/tracks?limit=50';
+const AUTOPLAY_CHART_TTL_MS = 30 * 60_000;
+
+type DeezerChartTrack = {
+    link?: string;
+    title?: string;
+    artist?: { name?: string };
+    explicit_lyrics?: boolean;
+    explicit_content_lyrics?: number;
+};
+
+let chartCache: { at: number; tracks: DeezerChartTrack[] } | null = null;
 
 /** Draw from the relevance-ordered head of a mix; its tail is loosely related. */
 const AUTOPLAY_HEAD = 12;
@@ -648,6 +660,40 @@ export default class Dispatcher {
         );
     }
 
+    /** Cold-start seed from Deezer's chart, filtered to non-explicit tracks. */
+    private async chartSeed(): Promise<Song | null> {
+        if (!this.node || !this.client.user) return null;
+        let entry = chartCache;
+        if (!entry || Date.now() - entry.at >= AUTOPLAY_CHART_TTL_MS) {
+            const response = await this.fetchJson<{ data?: DeezerChartTrack[] }>(AUTOPLAY_CHART_URL);
+            const tracks = response?.data?.filter(track => track.link) ?? [];
+            if (!tracks.length) return null;
+            const clean = tracks.filter(
+                track => !track.explicit_lyrics && !track.explicit_content_lyrics
+            );
+            entry = { at: Date.now(), tracks: clean.length ? clean : tracks };
+            chartCache = entry;
+        }
+        for (const candidate of this.shuffle(entry.tracks).slice(0, 6)) {
+            if (!candidate.link) continue;
+            const resolved = await this.node.rest.resolve(candidate.link).catch(() => null);
+            if (resolved?.loadType === LoadType.TRACK) {
+                return this.buildTrack(resolved.data, this.client.user);
+            }
+        }
+        return null;
+    }
+
+    /** Try curated cold-start queries in random order. */
+    private async curatedSeed(): Promise<Song | null> {
+        const seeds = this.client.config.autoplaySeeds ?? [];
+        for (const query of this.shuffle(seeds)) {
+            const pick = await this.pickFromQuery(query);
+            if (pick) return pick;
+        }
+        return null;
+    }
+
     /** Resolve an identifier to a plain track list ([] on any failure). */
     private async resolveTracks(identifier: string): Promise<Track[]> {
         const resolve = await this.node?.rest.resolve(identifier).catch(() => null);
@@ -894,7 +940,14 @@ export default class Dispatcher {
             const pick = await this.pickForSeed(seed);
             if (pick) return await this.queueAutoplay(pick);
         }
-        // Cold start: nothing has played and no seed was requested.
+        // Cold start: nothing has played and no seed was requested. Prefer the
+        // chart, then the curated safe list, then the legacy single query.
+        if (this.client.config.autoplayChart) {
+            const chart = await this.chartSeed();
+            if (chart) return await this.queueAutoplay(chart);
+        }
+        const curated = await this.curatedSeed();
+        if (curated) return await this.queueAutoplay(curated);
         if (this.client.config.autoplaySeed) {
             const pick = await this.pickFromQuery(this.client.config.autoplaySeed);
             if (pick) return await this.queueAutoplay(pick);
