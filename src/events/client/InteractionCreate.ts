@@ -107,6 +107,18 @@ export default class InteractionCreate extends Event {
             await this.client.db.get(interaction.guildId); // get or create guild data
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
+            const permitted = await this.client.db.isCommandAllowed(
+                interaction.guildId,
+                command.name,
+                interaction.user.id,
+                [...member.roles.cache.keys()]
+            );
+            if (!permitted) {
+                return await interaction.reply({
+                    content: 'You are not allowed to use this command.',
+                    ephemeral: true,
+                });
+            }
             const ctx = new Context(interaction, [...interaction.options.data], command.ephemeral);
             ctx.setArgs(interaction.options.data);
             const channel = interaction.channel;

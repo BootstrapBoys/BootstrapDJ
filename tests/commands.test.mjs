@@ -55,6 +55,8 @@ test('commands that do remote work before replying defer; fast ones do not', asy
 test('the new feature commands are registered and keep ephemeral defaults', async () => {
     for (const path of [
         'config/AutoplayConfig',
+        'config/Permissions',
+        'config/Alias',
         'music/Backward',
         'music/EndTime',
         'music/Forward',

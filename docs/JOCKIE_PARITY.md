@@ -34,8 +34,10 @@ This branch is additive and experimental. It does **not** change `main`.
 ### Playback
 - `starttime`, `endtime`, `voteskip`, `shufflerepeat`, `playselect`
 
-### Settings
+### Settings / permissions / aliases
 - `settings` (per-guild key/value store, applied to new players for volume, repeat, autoplay, shuffle)
+- `permissions` (per-command allow/deny rules for users and roles, enforced in slash and prefix paths)
+- `alias` (server and user custom aliases, resolved in the prefix path)
 
 ### Filters
 - `filters` (active filter status)

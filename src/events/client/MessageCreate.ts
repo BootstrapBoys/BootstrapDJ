@@ -52,10 +52,23 @@ export default class MessageCreate extends Event {
 
         const cmd = args.shift()?.toLowerCase();
         if (!cmd) return;
-        const command =
+        let command =
             this.client.commands.get(cmd) ||
             this.client.commands.get(this.client.aliases.get(cmd) as string);
+        if (!command) {
+            const custom = await this.client.db.getCommandAlias(message.guildId, cmd, message.author.id);
+            if (custom) command = this.client.commands.get(custom.command);
+        }
         if (!command) return;
+        const permitted = await this.client.db.isCommandAllowed(
+            message.guildId,
+            command.name,
+            message.author.id,
+            [...member.roles.cache.keys()]
+        );
+        if (!permitted) {
+            return await replySafe({ content: 'You are not allowed to use this command.' });
+        }
         const ctx = new Context(message, args);
         ctx.setArgs(args);
 

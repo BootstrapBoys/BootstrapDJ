@@ -29,6 +29,28 @@ model GuildSetting {
   @@id([guildId, key])
 }
 
+model PermissionRule {
+  id         String  @id @default(uuid())
+  guildId    String
+  command    String
+  targetId   String
+  targetType String
+  allow      Boolean @default(false)
+
+  @@unique([guildId, command, targetId, targetType])
+}
+
+model CommandAlias {
+  id      String @id @default(uuid())
+  guildId String
+  scope   String
+  userId  String @default("")
+  alias   String
+  command String
+
+  @@unique([guildId, scope, userId, alias])
+}
+
 model Guild {
   guildId    String      @id
   prefix     String
