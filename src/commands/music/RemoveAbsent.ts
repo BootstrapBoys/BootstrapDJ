@@ -1,0 +1,62 @@
+import { ChannelType } from 'discord.js';
+
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { requesterId } from '../../utils/QueueTools.js';
+
+export default class RemoveAbsent extends Command {
+    constructor(client: BootstrapClient) {
+        super(client, {
+            name: 'removeabsent',
+            description: { content: 'Removes tracks requested by users not in the voice channel', usage: 'removeabsent', examples: ['removeabsent'] },
+            category: 'music',
+            aliases: ['ra'],
+            cooldown: 3,
+            args: false,
+            player: { voice: true, dj: true, active: true, djPerm: null },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
+            slashCommand: true,
+            options: [],
+        });
+    }
+
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
+        const guild = ctx.guild;
+        if (!guild) return;
+        const player = client.queue.get(guild.id);
+        if (!player?.current || !player.queue.length) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('The queue is empty.')],
+            });
+        }
+        const channel = player.voiceId ? guild.channels.cache.get(player.voiceId) : null;
+        if (!channel || (channel.type !== ChannelType.GuildVoice && channel.type !== ChannelType.GuildStageVoice)) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('I am not in a voice channel.')],
+            });
+        }
+        const present = new Set(channel.members.keys());
+        const before = player.queue.length;
+        player.queue = player.queue.filter(track => {
+            const requester = requesterId(track);
+            return requester === 'unknown' || present.has(requester);
+        });
+        const removed = before - player.queue.length;
+        await player.persist();
+        return await ctx.sendMessage({
+            embeds: [
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setDescription(
+                        removed
+                            ? `Removed ${removed} track${removed === 1 ? '' : 's'} requested by absent users.`
+                            : 'No queued tracks were requested by absent users.'
+                    ),
+            ],
+        });
+    }
+}

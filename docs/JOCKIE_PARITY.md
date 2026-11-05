@@ -7,8 +7,8 @@ This branch is additive and experimental. It does **not** change `main`.
 ## Implemented in this batch
 
 ### Queue state
-- `reverse`, `sort`, `swap`, `massremove`
-- `removecurrent`, `removeduplicates`, `removekeyword`, `removeuser`
+- `reverse`, `sort`, `swap`, `massremove`, `massmove`
+- `removecurrent`, `removeduplicates`, `removekeyword`, `removeuser`, `removeabsent`, `removelast`
 - `selectrandom`, `nextup` (`upcoming` alias), `recentlyplayed` (`history` alias)
 
 ### Track state
