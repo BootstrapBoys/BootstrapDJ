@@ -25,6 +25,8 @@ export default class Permissions extends Command {
                         { name: 'allow', value: 'allow' },
                         { name: 'deny', value: 'deny' },
                         { name: 'reset', value: 'reset' },
+                        { name: 'claim', value: 'claim' },
+                        { name: 'transfer', value: 'transfer' },
                     ],
                 },
                 {
@@ -49,6 +51,31 @@ export default class Permissions extends Command {
         const action = String(ctx.interaction.options.getString('action') ?? 'list');
         const commandName = ctx.interaction.options.getString('command')?.toLowerCase() ?? null;
 
+        if (action === 'claim' || action === 'transfer') {
+            const owner = await client.db.getGuildSetting(guild.id, 'ownerid');
+            if (action === 'claim' && owner) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('This server already has a bot owner.')],
+                });
+            }
+            if (action === 'transfer' && owner && owner !== ctx.author?.id && guild.ownerId !== ctx.author?.id) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Only the current bot owner or server owner can transfer ownership.')],
+                });
+            }
+            const selected = ctx.interaction.options.getMentionable('target') as User | Role | null;
+            const target = action === 'claim' && !selected ? ctx.author : selected;
+            if (!target || target instanceof Role) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Mention the user who should own this bot.')],
+                });
+            }
+            await client.db.setGuildSetting(guild.id, 'ownerid', target.id);
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.green).setDescription(`Bot ownership set to <@${target.id}>.`)],
+            });
+        }
+
         if (action === 'list') {
             const rules = await client.db.getPermissionRules(guild.id);
             if (!rules.length) {
@@ -56,9 +83,11 @@ export default class Permissions extends Command {
                     embeds: [client.embed().setColor(client.color.main).setDescription('No permission rules are set.')],
                 });
             }
-            const lines = rules
-                .slice(0, 20)
-                .map(rule => `${rule.allow ? '✅' : '⛔'} **${rule.command}** — <@${rule.targetId}>`);
+            const owner = await client.db.getGuildSetting(guild.id, 'ownerid');
+            const lines = [
+                `**Bot owner:** ${owner ? `<@${owner}>` : 'unclaimed'}`,
+                ...rules.slice(0, 20).map(rule => `${rule.allow ? '✅' : '⛔'} **${rule.command}** — <@${rule.targetId}>`),
+            ];
             return await ctx.sendMessage({
                 embeds: [
                     client

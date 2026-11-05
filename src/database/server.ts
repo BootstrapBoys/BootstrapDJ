@@ -6,6 +6,7 @@ import config from '../config.js';
 import {
     AutoplaySetting,
     Botchannel,
+    CollectionShare,
     CommandAlias,
     CommandMapping,
     Dj,
@@ -338,7 +339,16 @@ export default class ServerData {
 
     public async setProfile(
         userId: string,
-        data: { color?: string | null; bio?: string | null; privacy?: string; visible?: boolean }
+        data: {
+            color?: string | null;
+            bio?: string | null;
+            background?: string | null;
+            avatarShape?: string | null;
+            avatarBorder?: string | null;
+            privacy?: string;
+            visible?: boolean;
+            serverVisible?: boolean;
+        }
     ): Promise<Profile> {
         return await this.prisma.profile.upsert({
             where: { userId },
@@ -718,6 +728,26 @@ export default class ServerData {
             return songs;
         }
         return [];
+    }
+
+    public async createCollectionShare(ownerId: string, name: string, code: string): Promise<CollectionShare> {
+        return await this.prisma.collectionShare.create({ data: { code, ownerId, name } });
+    }
+
+    public async getCollectionShare(code: string): Promise<CollectionShare | null> {
+        return await this.prisma.collectionShare.findUnique({ where: { code } });
+    }
+
+    public async deleteCollectionShare(ownerId: string, code: string): Promise<boolean> {
+        const result = await this.prisma.collectionShare.deleteMany({ where: { code, ownerId } });
+        return result.count > 0;
+    }
+
+    public async listCollectionShares(ownerId: string): Promise<CollectionShare[]> {
+        return await this.prisma.collectionShare.findMany({
+            where: { ownerId },
+            orderBy: { createdAt: 'desc' },
+        });
     }
 
     public async removeSongAt(userId: string, name: string, index: number): Promise<boolean> {

@@ -38,6 +38,10 @@ export default class Profile extends Command {
                         { name: 'bio', value: 'bio' },
                         { name: 'privacy', value: 'privacy' },
                         { name: 'visible', value: 'visible' },
+                        { name: 'background', value: 'background' },
+                        { name: 'avatarshape', value: 'avatarshape' },
+                        { name: 'avatarborder', value: 'avatarborder' },
+                        { name: 'servervisible', value: 'servervisible' },
                     ],
                 },
                 { name: 'value', description: 'New value', type: ApplicationCommandOptionType.String, required: false },
@@ -77,13 +81,24 @@ export default class Profile extends Command {
                 .setDescription(profile?.bio || 'No bio set.')
                 .addFields(
                     { name: 'Visibility', value: profile?.visible === false ? 'hidden' : 'visible', inline: true },
-                    { name: 'Privacy', value: profile?.privacy ?? 'public', inline: true }
+                    { name: 'Privacy', value: profile?.privacy ?? 'public', inline: true },
+                    { name: 'Server visible', value: profile?.serverVisible === false ? 'no' : 'yes', inline: true },
+                    { name: 'Avatar shape', value: profile?.avatarShape ?? 'circle', inline: true }
                 );
             return await ctx.sendMessage({ embeds: [embed] });
         }
 
         if (action === 'clear') {
-            await client.db.setProfile(author.id, { color: null, bio: null, privacy: 'public', visible: true });
+            await client.db.setProfile(author.id, {
+                color: null,
+                bio: null,
+                background: null,
+                avatarShape: null,
+                avatarBorder: null,
+                privacy: 'public',
+                visible: true,
+                serverVisible: true,
+            });
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.green).setDescription('Profile reset.')],
             });
@@ -118,6 +133,30 @@ export default class Profile extends Command {
         } else if (key === 'visible') {
             const visible = ['true', 'yes', 'on', '1'].includes(value.toLowerCase());
             await client.db.setProfile(author.id, { visible });
+        } else if (key === 'servervisible') {
+            const serverVisible = ['true', 'yes', 'on', '1'].includes(value.toLowerCase());
+            await client.db.setProfile(author.id, { serverVisible });
+        } else if (key === 'background') {
+            if (value.length > 200) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Backgrounds are limited to 200 characters.')],
+                });
+            }
+            await client.db.setProfile(author.id, { background: value || null });
+        } else if (key === 'avatarshape') {
+            if (!['circle', 'square', 'rounded'].includes(value.toLowerCase())) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Avatar shape must be `circle`, `square`, or `rounded`.')],
+                });
+            }
+            await client.db.setProfile(author.id, { avatarShape: value.toLowerCase() });
+        } else if (key === 'avatarborder') {
+            if (value.length > 50) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Avatar borders are limited to 50 characters.')],
+                });
+            }
+            await client.db.setProfile(author.id, { avatarBorder: value || null });
         } else {
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.red).setDescription('Unknown profile field.')],

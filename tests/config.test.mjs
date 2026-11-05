@@ -39,10 +39,13 @@ test.before(async () => {
         `CREATE TABLE "UserPrefix" ("guildId" TEXT NOT NULL, "userId" TEXT NOT NULL, "prefix" TEXT NOT NULL, PRIMARY KEY ("guildId", "userId"))`
     );
     await prisma.$executeRawUnsafe(
-        `CREATE TABLE "Profile" ("userId" TEXT NOT NULL PRIMARY KEY, "color" TEXT, "bio" TEXT, "privacy" TEXT NOT NULL DEFAULT 'public', "visible" BOOLEAN NOT NULL DEFAULT true, "updatedAt" DATETIME NOT NULL)`
+        `CREATE TABLE "Profile" ("userId" TEXT NOT NULL PRIMARY KEY, "color" TEXT, "bio" TEXT, "background" TEXT, "avatarShape" TEXT, "avatarBorder" TEXT, "privacy" TEXT NOT NULL DEFAULT 'public', "visible" BOOLEAN NOT NULL DEFAULT true, "serverVisible" BOOLEAN NOT NULL DEFAULT true, "updatedAt" DATETIME NOT NULL)`
     );
     await prisma.$executeRawUnsafe(
         `CREATE TABLE "GameScore" ("guildId" TEXT NOT NULL, "userId" TEXT NOT NULL, "wins" INTEGER NOT NULL DEFAULT 0, "plays" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY ("guildId", "userId"))`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "CollectionShare" ("code" TEXT NOT NULL PRIMARY KEY, "ownerId" TEXT NOT NULL, "name" TEXT NOT NULL, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`
     );
 });
 

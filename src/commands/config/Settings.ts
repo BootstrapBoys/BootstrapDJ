@@ -22,6 +22,12 @@ const DEFAULTS: Record<string, string> = {
     disabledcommands: '',
     autoplaysource: '',
     autoplayseeds: '',
+    maxtracklength: '0',
+    mintracklength: '0',
+    maxusertracks: '0',
+    maxusertrackslength: '0',
+    autocorrect: 'false',
+    volumeautomatic: 'false',
 };
 
 function isKnown(key: string): key is keyof typeof DEFAULTS {

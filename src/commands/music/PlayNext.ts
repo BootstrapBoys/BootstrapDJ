@@ -1,6 +1,7 @@
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
 
 export default class PlayNext extends Command {
     constructor(client: BootstrapClient) {
@@ -50,6 +51,7 @@ export default class PlayNext extends Command {
         let player = client.queue.get(guild.id);
         const vc = ctx.voiceChannel;
         if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
+        const limits = await getPlayLimits(client, guild.id);
 
         const res = await this.client.queue.search(query);
         const embed = this.client.embed();
@@ -82,6 +84,11 @@ export default class PlayNext extends Command {
                 break;
             case LoadType.TRACK: {
                 const track = player.buildTrack(res.data, author);
+                const rejected = checkTrack(player, track, author.id, limits);
+                if (rejected)
+                    return await ctx.sendMessage({
+                        embeds: [embed.setColor(client.color.red).setDescription(rejected)],
+                    });
                 if (player.queue.length > client.config.maxQueueSize)
                     return await ctx.sendMessage({
                         embeds: [
@@ -118,6 +125,8 @@ export default class PlayNext extends Command {
                     });
                 for (const track of res.data.tracks) {
                     const pl = player.buildTrack(track, author);
+                    const rejected = checkTrack(player, pl, author.id, limits);
+                    if (rejected) continue;
                     if (player.queue.length > client.config.maxQueueSize)
                         return await ctx.sendMessage({
                             embeds: [
@@ -144,6 +153,11 @@ export default class PlayNext extends Command {
             }
             case LoadType.SEARCH: {
                 const track1 = player.buildTrack(res.data[0], author);
+                const rejected = checkTrack(player, track1, author.id, limits);
+                if (rejected)
+                    return await ctx.sendMessage({
+                        embeds: [embed.setColor(client.color.red).setDescription(rejected)],
+                    });
                 if (player.queue.length > client.config.maxQueueSize)
                     return await ctx.sendMessage({
                         embeds: [

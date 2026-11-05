@@ -1,4 +1,5 @@
 import { ApplicationCommandOptionType, ChannelType } from 'discord.js';
+import { randomBytes } from 'node:crypto';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
@@ -34,12 +35,17 @@ export default class Collection extends Command {
                         { name: 'copy', value: 'copy' },
                         { name: 'merge', value: 'merge' },
                         { name: 'clear', value: 'clear' },
+                        { name: 'share', value: 'share' },
+                        { name: 'import', value: 'import' },
+                        { name: 'unshare', value: 'unshare' },
+                        { name: 'shares', value: 'shares' },
                     ],
                 },
                 { name: 'name', description: 'Collection name', type: ApplicationCommandOptionType.String, required: false },
                 { name: 'query', description: 'Track or playlist URL for add', type: ApplicationCommandOptionType.String, required: false },
                 { name: 'target', description: 'Destination name for rename/copy/merge', type: ApplicationCommandOptionType.String, required: false },
                 { name: 'index', description: '1-based track position for remove', type: ApplicationCommandOptionType.Integer, required: false, minValue: 1 },
+                { name: 'code', description: 'Share code', type: ApplicationCommandOptionType.String, required: false },
             ],
         });
     }
@@ -86,6 +92,7 @@ export default class Collection extends Command {
         const query = (this.get(ctx, 'query', 2) ?? '').trim();
         const target = (this.get(ctx, 'target', 3) ?? '').trim();
         const index = Number(this.get(ctx, 'index', 4) ?? 0);
+        const code = (this.get(ctx, 'code', 5) ?? '').trim();
 
         if (action === 'list') {
             const playlists = await client.db.getPlaylists(author.id);
@@ -100,6 +107,68 @@ export default class Collection extends Command {
             return await ctx.sendMessage({
                 embeds: [
                     client.embed().setColor(client.color.main).setTitle('Your collections').setDescription(lines.join('\n')),
+                ],
+            });
+        }
+
+        if (action === 'shares') {
+            const shares = await client.db.listCollectionShares(author.id);
+            if (!shares.length) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.main).setDescription('You have no shared collections.')],
+                });
+            }
+            const lines = shares.map(share => `\`${share.code}\` — **${share.name}**`);
+            return await ctx.sendMessage({
+                embeds: [
+                    client.embed().setColor(client.color.main).setTitle('Collection share codes').setDescription(lines.join('\n')),
+                ],
+            });
+        }
+
+        if (action === 'import') {
+            if (!code) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Provide a share code.')],
+                });
+            }
+            const share = await client.db.getCollectionShare(code);
+            if (!share) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('That share code is not valid.')],
+                });
+            }
+            const destination = name || `${share.name} (imported)`;
+            if (await client.db.getPLaylist(author.id, destination)) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('A collection with that name already exists.')],
+                });
+            }
+            await client.db.createPlaylist(author.id, destination);
+            const copied = await this.copyTracks(client, author.id, share.name, destination);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(`Imported **${share.name}** as **${destination}** (${copied} tracks).`),
+                ],
+            });
+        }
+
+        if (action === 'unshare') {
+            if (!code) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Provide a share code.')],
+                });
+            }
+            const removed = await client.db.deleteCollectionShare(author.id, code);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(removed ? client.color.green : client.color.red)
+                        .setDescription(removed ? 'Share code removed.' : 'That share code is not yours.'),
                 ],
             });
         }
@@ -143,6 +212,20 @@ export default class Collection extends Command {
         if (!collection) {
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.red).setDescription('That collection does not exist.')],
+            });
+        }
+
+        if (action === 'share') {
+            let shareCode = randomBytes(4).toString('hex');
+            while (await client.db.getCollectionShare(shareCode)) shareCode = randomBytes(4).toString('hex');
+            await client.db.createCollectionShare(author.id, name, shareCode);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(`Share code for **${name}**: \`${shareCode}\`\nUse \`collection import\` with this code to copy it.`),
+                ],
             });
         }
 

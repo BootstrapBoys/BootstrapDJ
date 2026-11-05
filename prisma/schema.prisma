@@ -64,11 +64,15 @@ model CommandMapping {
 
 model Profile {
   userId    String   @id
-  color     String?
-  bio       String?
-  privacy   String   @default("public")
-  visible   Boolean  @default(true)
-  updatedAt DateTime @updatedAt
+  color       String?
+  bio         String?
+  background  String?
+  avatarShape String?
+  avatarBorder String?
+  privacy     String   @default("public")
+  visible     Boolean  @default(true)
+  serverVisible Boolean @default(true)
+  updatedAt   DateTime @updatedAt
 }
 
 model UserPrefix {
@@ -86,6 +90,13 @@ model GameScore {
   plays   Int    @default(0)
 
   @@id([guildId, userId])
+}
+
+model CollectionShare {
+  code      String   @id
+  ownerId   String
+  name      String
+  createdAt DateTime @default(now())
 }
 
 model Guild {
