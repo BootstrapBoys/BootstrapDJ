@@ -31,6 +31,28 @@ export default class TrackStart extends Event {
         const channel = guild.channels.cache.get(dispatcher.channelId) as TextChannel;
         if (!channel) return;
         this.client.utils.updateStatus(this.client, guild.id);
+        // Text announcements are opt-in through a dedicated channel, so the
+        // existing now-playing message stays untouched for guilds that do not
+        // configure one.
+        const settings = await this.client.db.getGuildSettings(guild.id);
+        if (settings.announcechannel && settings.announce !== 'false') {
+            const announceChannel = guild.channels.cache.get(settings.announcechannel);
+            if (announceChannel?.isTextBased()) {
+                const announce = await announceChannel
+                    .send({
+                        embeds: [
+                            this.client
+                                .embed()
+                                .setColor(this.client.color.main)
+                                .setDescription(
+                                    `Now playing **${track.info.title}** by **${track.info.author}** in <#${dispatcher.voiceId ?? ''}>.`
+                                ),
+                        ],
+                    })
+                    .catch(() => null);
+                if (announce) this.client.utils.scheduleDelete(this.client, announce);
+            }
+        }
         function buttonBuilder(): ActionRowBuilder<ButtonBuilder> {
             const previousButton = new ButtonBuilder()
                 .setCustomId('previous')

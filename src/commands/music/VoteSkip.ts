@@ -39,7 +39,9 @@ export default class VoteSkip extends Command {
             });
         }
         const listeners = channel.members.filter(member => !member.user.bot).size;
-        const needed = Math.max(1, Math.ceil(listeners / 2));
+        const settings = await client.db.getGuildSettings(guild.id);
+        const percent = Math.min(100, Math.max(1, Number(settings.voteskippercent) || 50));
+        const needed = Math.max(1, Math.ceil((listeners * percent) / 100));
         const key = player.current.info.uri ?? player.current.encoded;
         let vote = votes.get(guild.id);
         if (!vote || vote.key !== key) {

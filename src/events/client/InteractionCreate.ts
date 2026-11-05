@@ -120,6 +120,18 @@ export default class InteractionCreate extends Event {
                 });
             }
             const guildSettings = await this.client.db.getGuildSettings(interaction.guildId);
+            if (
+                (guildSettings.disabledcommands ?? '')
+                    .split(',')
+                    .map(name => name.trim().toLowerCase())
+                    .filter(Boolean)
+                    .includes(command.name)
+            ) {
+                return await interaction.reply({
+                    content: `**${command.name}** is disabled in this server.`,
+                    ephemeral: true,
+                });
+            }
             if (guildSettings.commandchannel && guildSettings.commandchannel !== interaction.channelId) {
                 return await interaction.reply({
                     content: `Commands are restricted to <#${guildSettings.commandchannel}>.`,

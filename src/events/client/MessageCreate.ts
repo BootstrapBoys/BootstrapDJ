@@ -83,6 +83,15 @@ export default class MessageCreate extends Event {
             return await replySafe({ content: 'You are not allowed to use this command.' });
         }
         const guildSettings = await this.client.db.getGuildSettings(message.guildId);
+        if (
+            (guildSettings.disabledcommands ?? '')
+                .split(',')
+                .map(name => name.trim().toLowerCase())
+                .filter(Boolean)
+                .includes(command.name)
+        ) {
+            return await replySafe({ content: `**${command.name}** is disabled in this server.` });
+        }
         if (guildSettings.commandchannel && guildSettings.commandchannel !== message.channelId) {
             return await replySafe({ content: `Commands are restricted to <#${guildSettings.commandchannel}>.` });
         }

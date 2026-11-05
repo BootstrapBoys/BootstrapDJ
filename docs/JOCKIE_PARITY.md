@@ -59,10 +59,10 @@ deliberate exclusions.
 
 - **Profile:** color, bio, privacy, and visibility are implemented; background, avatar shape/border, and server visibility settings remain.
 - **Games:** game leaderboards and any variants beyond guess-the-song.
-- **Announcements:** text/stage/voice announcements, templates, auto-delete, extended announcements, status defaults.
+- **Announcements:** opt-in text announcements via `settings announcechannel` are implemented; voice/stage announcements, templates, extended announcements, and status defaults remain.
 - **Prefix modes:** personal prefixes are implemented (`selfprefix`); combine and full server/self list/add/remove flows remain.
 - **Permission modes:** claim/rebind/transfer ownership, session/property/permission modes.
-- **Command routing:** text and voice channel gates are implemented through `settings commandchannel`/`voicechannel`; disable/enable/toggle, disabled-command listing, and message/thread policies remain.
+- **Command routing:** text/voice gates, `settings disabledcommands`, and vote-skip percentages are implemented; per-command toggle UI, disabled-command listing, and message/thread policies remain.
 - **Settings families:** max user tracks, max track length, playlist limits, search type, auto-delete, 24/7, lock, timeout, auto-correct, preferred bots, volume automation.
 - **Premium equivalents:** perks, boosts, renew, and any other formerly paid command—built locally and free.
 - **Owner tools:** shard/status/restart/reload equivalents that are safe and permission-gated.
