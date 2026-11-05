@@ -1,0 +1,130 @@
+import { ApplicationCommandOptionType } from 'discord.js';
+
+import { BootstrapClient, Command, Context } from '../../structures/index.js';
+
+const HEX = /^#?[0-9a-f]{6}$/i;
+
+export default class Profile extends Command {
+    constructor(client: BootstrapClient) {
+        super(client, {
+            name: 'profile',
+            description: { content: 'View or customize a BootstrapDJ profile', usage: 'profile [view|set|clear] [key] [value]', examples: ['profile', 'profile set color #ff8800', 'profile set bio Music first'] },
+            category: 'info',
+            aliases: ['profiles'],
+            cooldown: 3,
+            args: false,
+            player: { voice: false, dj: false, active: false, djPerm: null },
+            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            slashCommand: true,
+            options: [
+                {
+                    name: 'action',
+                    description: 'View, set, or clear profile fields',
+                    type: ApplicationCommandOptionType.String,
+                    required: false,
+                    choices: [
+                        { name: 'view', value: 'view' },
+                        { name: 'set', value: 'set' },
+                        { name: 'clear', value: 'clear' },
+                    ],
+                },
+                {
+                    name: 'key',
+                    description: 'Field to change: color, bio, privacy, visible',
+                    type: ApplicationCommandOptionType.String,
+                    required: false,
+                    choices: [
+                        { name: 'color', value: 'color' },
+                        { name: 'bio', value: 'bio' },
+                        { name: 'privacy', value: 'privacy' },
+                        { name: 'visible', value: 'visible' },
+                    ],
+                },
+                { name: 'value', description: 'New value', type: ApplicationCommandOptionType.String, required: false },
+                { name: 'user', description: 'Profile to view', type: ApplicationCommandOptionType.User, required: false },
+            ],
+        });
+    }
+
+    private option(ctx: Context, name: string, index: number): string | null {
+        if (ctx.isInteraction && ctx.interaction) return ctx.interaction.options.getString(name) ?? null;
+        return ctx.args[index] ?? null;
+    }
+
+    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
+        const author = ctx.author;
+        if (!author) return;
+        const action = (this.option(ctx, 'action', 0) ?? 'view').toLowerCase();
+        const key = (this.option(ctx, 'key', 1) ?? '').toLowerCase();
+        const value = (this.option(ctx, 'value', 2) ?? '').trim();
+
+        if (action === 'view') {
+            const target =
+                (ctx.isInteraction && ctx.interaction?.options.getUser('user')) ||
+                ctx.message?.mentions.users.first() ||
+                author;
+            const profile = await client.db.getProfile(target.id);
+            if (target.id !== author.id && (!profile || profile.privacy === 'private' || !profile.visible)) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('That profile is private.')],
+                });
+            }
+            const color = profile?.color && HEX.test(profile.color) ? profile.color.replace(/^#/, '') : null;
+            const embed = client
+                .embed()
+                .setColor(color ? `#${color}` : client.color.main)
+                .setAuthor({ name: target.username, iconURL: target.displayAvatarURL() })
+                .setDescription(profile?.bio || 'No bio set.')
+                .addFields(
+                    { name: 'Visibility', value: profile?.visible === false ? 'hidden' : 'visible', inline: true },
+                    { name: 'Privacy', value: profile?.privacy ?? 'public', inline: true }
+                );
+            return await ctx.sendMessage({ embeds: [embed] });
+        }
+
+        if (action === 'clear') {
+            await client.db.setProfile(author.id, { color: null, bio: null, privacy: 'public', visible: true });
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.green).setDescription('Profile reset.')],
+            });
+        }
+
+        if (!key) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('Choose color, bio, privacy, or visible.')],
+            });
+        }
+        if (key === 'color') {
+            if (!HEX.test(value)) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Use a hex color such as `#ff8800`.')],
+                });
+            }
+            await client.db.setProfile(author.id, { color: value.startsWith('#') ? value : `#${value}` });
+        } else if (key === 'bio') {
+            if (value.length > 200) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Bios are limited to 200 characters.')],
+                });
+            }
+            await client.db.setProfile(author.id, { bio: value || null });
+        } else if (key === 'privacy') {
+            if (!['public', 'private'].includes(value)) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Privacy must be `public` or `private`.')],
+                });
+            }
+            await client.db.setProfile(author.id, { privacy: value });
+        } else if (key === 'visible') {
+            const visible = ['true', 'yes', 'on', '1'].includes(value.toLowerCase());
+            await client.db.setProfile(author.id, { visible });
+        } else {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('Unknown profile field.')],
+            });
+        }
+        return await ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.green).setDescription(`Updated profile **${key}**.`)],
+        });
+    }
+}

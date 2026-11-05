@@ -35,6 +35,12 @@ test.before(async () => {
     await prisma.$executeRawUnsafe(
         `CREATE UNIQUE INDEX "CommandMapping_identity" ON "CommandMapping"("guildId", "scope", "userId", "trigger")`
     );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "UserPrefix" ("guildId" TEXT NOT NULL, "userId" TEXT NOT NULL, "prefix" TEXT NOT NULL, PRIMARY KEY ("guildId", "userId"))`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "Profile" ("userId" TEXT NOT NULL PRIMARY KEY, "color" TEXT, "bio" TEXT, "privacy" TEXT NOT NULL DEFAULT 'public', "visible" BOOLEAN NOT NULL DEFAULT true, "updatedAt" DATETIME NOT NULL)`
+    );
 });
 
 test.after(async () => {
@@ -82,4 +88,19 @@ test('command mappings resolve server before user scope', async () => {
     assert.equal((await db.getCommandMapping('g1', 'r', 'u1'))?.expansion, 'play two');
     assert.equal(await db.deleteCommandMapping('g1', 'server', '', 'r'), true);
     assert.equal((await db.getCommandMapping('g1', 'r', 'u1'))?.expansion, 'play one');
+});
+
+
+test('user prefixes round-trip and reset', async () => {
+    await db.setUserPrefix('g1', 'u1', '?');
+    assert.equal(await db.getUserPrefix('g1', 'u1'), '?');
+    assert.equal(await db.resetUserPrefix('g1', 'u1'), true);
+    assert.equal(await db.getUserPrefix('g1', 'u1'), null);
+});
+
+test('profiles store customization and privacy', async () => {
+    const profile = await db.setProfile('u1', { color: '#ff8800', bio: 'Music first', privacy: 'private', visible: false });
+    assert.equal(profile.color, '#ff8800');
+    assert.equal(profile.privacy, 'private');
+    assert.equal((await db.getProfile('u1'))?.bio, 'Music first');
 });

@@ -119,6 +119,19 @@ export default class InteractionCreate extends Event {
                     ephemeral: true,
                 });
             }
+            const guildSettings = await this.client.db.getGuildSettings(interaction.guildId);
+            if (guildSettings.commandchannel && guildSettings.commandchannel !== interaction.channelId) {
+                return await interaction.reply({
+                    content: `Commands are restricted to <#${guildSettings.commandchannel}>.`,
+                    ephemeral: true,
+                });
+            }
+            if (guildSettings.voicechannel && member.voice.channelId !== guildSettings.voicechannel) {
+                return await interaction.reply({
+                    content: `You must be in <#${guildSettings.voicechannel}> to use commands.`,
+                    ephemeral: true,
+                });
+            }
             const ctx = new Context(interaction, [...interaction.options.data], command.ephemeral);
             ctx.setArgs(interaction.options.data);
             const channel = interaction.channel;

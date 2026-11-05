@@ -14,6 +14,8 @@ const DEFAULTS: Record<string, string> = {
     voteskippercent: '50',
     announce: 'true',
     deleteafter: '10',
+    commandchannel: '',
+    voicechannel: '',
 };
 
 function isKnown(key: string): key is keyof typeof DEFAULTS {

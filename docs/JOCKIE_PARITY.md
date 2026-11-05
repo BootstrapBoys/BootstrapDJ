@@ -44,6 +44,11 @@ This branch is additive and experimental. It does **not** change `main`.
 ### Filters
 - `filters` (active filter status), `rate`; existing 8D, bass boost, distortion, karaoke, nightcore, pitch, rotation, speed, tremolo, vibrato, and low-pass commands remain.
 
+### Profile / prefixes / gates
+- `profile` (color, bio, privacy, visibility)
+- `selfprefix` (personal prefix; prefix-only)
+- `settings commandchannel` and `settings voicechannel` gates for slash and prefix commands.
+
 ### Sessions / playlists
 - `sessionstats`, `save`.
 
@@ -52,12 +57,12 @@ This branch is additive and experimental. It does **not** change `main`.
 These are **not** complete yet; they are the next implementation waves, not
 deliberate exclusions.
 
-- **Profile:** profile card, color, background, avatar shape/border, privacy/visibility, server visibility.
+- **Profile:** color, bio, privacy, and visibility are implemented; background, avatar shape/border, and server visibility settings remain.
 - **Games:** game leaderboards and any variants beyond guess-the-song.
 - **Announcements:** text/stage/voice announcements, templates, auto-delete, extended announcements, status defaults.
-- **Prefix modes:** self prefixes, combine, server/self add-remove-set-reset/list.
+- **Prefix modes:** personal prefixes are implemented (`selfprefix`); combine and full server/self list/add/remove flows remain.
 - **Permission modes:** claim/rebind/transfer ownership, session/property/permission modes.
-- **Command routing:** disable/enable/toggle, disabled-command listing, text/voice channel gates and message/thread policies.
+- **Command routing:** text and voice channel gates are implemented through `settings commandchannel`/`voicechannel`; disable/enable/toggle, disabled-command listing, and message/thread policies remain.
 - **Settings families:** max user tracks, max track length, playlist limits, search type, auto-delete, 24/7, lock, timeout, auto-correct, preferred bots, volume automation.
 - **Premium equivalents:** perks, boosts, renew, and any other formerly paid command—built locally and free.
 - **Owner tools:** shard/status/restart/reload equivalents that are safe and permission-gated.

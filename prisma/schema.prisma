@@ -62,6 +62,23 @@ model CommandMapping {
   @@unique([guildId, scope, userId, trigger])
 }
 
+model Profile {
+  userId    String   @id
+  color     String?
+  bio       String?
+  privacy   String   @default("public")
+  visible   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model UserPrefix {
+  guildId String
+  userId  String
+  prefix  String
+
+  @@id([guildId, userId])
+}
+
 model Guild {
   guildId    String      @id
   prefix     String

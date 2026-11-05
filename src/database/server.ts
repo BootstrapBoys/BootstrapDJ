@@ -14,11 +14,13 @@ import {
     PermissionRule,
     Playlist,
     PrismaClient,
+    Profile,
     Role,
     Session,
     Setup,
     Song,
     Stay,
+    UserPrefix,
     VoiceListen,
     VoiceListenOptOut,
 } from '../generated/prisma/client.js';
@@ -291,6 +293,41 @@ export default class ServerData {
         const allowed = matches.some(rule => rule.allow);
         const denied = matches.some(rule => !rule.allow);
         return allowed || !denied;
+    }
+
+    public async getUserPrefix(guildId: string, userId: string): Promise<string | null> {
+        const row = await this.prisma.userPrefix.findUnique({
+            where: { guildId_userId: { guildId, userId } },
+        });
+        return row?.prefix ?? null;
+    }
+
+    public async setUserPrefix(guildId: string, userId: string, prefix: string): Promise<UserPrefix> {
+        return await this.prisma.userPrefix.upsert({
+            where: { guildId_userId: { guildId, userId } },
+            create: { guildId, userId, prefix },
+            update: { prefix },
+        });
+    }
+
+    public async resetUserPrefix(guildId: string, userId: string): Promise<boolean> {
+        const result = await this.prisma.userPrefix.deleteMany({ where: { guildId, userId } });
+        return result.count > 0;
+    }
+
+    public async getProfile(userId: string): Promise<Profile | null> {
+        return await this.prisma.profile.findUnique({ where: { userId } });
+    }
+
+    public async setProfile(
+        userId: string,
+        data: { color?: string | null; bio?: string | null; privacy?: string; visible?: boolean }
+    ): Promise<Profile> {
+        return await this.prisma.profile.upsert({
+            where: { userId },
+            create: { userId, ...data },
+            update: data,
+        });
     }
 
     public async getGuildSettings(guildId: string): Promise<Record<string, string>> {

@@ -43,7 +43,11 @@ export default class MessageCreate extends Event {
             return;
         }
         const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const prefixRegex = new RegExp(`^(<@!?${botId}>|${escapeRegex(guild.prefix)})\\s*`);
+        const userPrefix = await this.client.db.getUserPrefix(message.guildId, message.author.id);
+        const prefixes = userPrefix && userPrefix !== guild.prefix ? [guild.prefix, userPrefix] : [guild.prefix];
+        const prefixRegex = new RegExp(
+            `^(<@!?${botId}>|${prefixes.map(prefix => escapeRegex(prefix)).join('|')})\\s*`
+        );
         const match = message.content.match(prefixRegex);
         if (!match) return;
         const [matchedPrefix] = match;
@@ -77,6 +81,13 @@ export default class MessageCreate extends Event {
         );
         if (!permitted) {
             return await replySafe({ content: 'You are not allowed to use this command.' });
+        }
+        const guildSettings = await this.client.db.getGuildSettings(message.guildId);
+        if (guildSettings.commandchannel && guildSettings.commandchannel !== message.channelId) {
+            return await replySafe({ content: `Commands are restricted to <#${guildSettings.commandchannel}>.` });
+        }
+        if (guildSettings.voicechannel && member.voice.channelId !== guildSettings.voicechannel) {
+            return await replySafe({ content: `You must be in <#${guildSettings.voicechannel}> to use commands.` });
         }
         const ctx = new Context(message, args);
         ctx.setArgs(args);
