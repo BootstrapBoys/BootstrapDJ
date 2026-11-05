@@ -4,12 +4,11 @@
 Every feature is to remain free; no premium gate is to be introduced. Admin/owner
 restrictions may exist for safety, but they are not paid restrictions.
 
-
 Reference command list: <https://www.jockiemusic.com/commands> (retrieved 2026-11-05).
 
 This branch is additive and experimental. It does **not** change `main`.
 
-## Implemented in this batch
+## Implemented so far
 
 ### Queue state
 - `reverse`, `sort`, `swap`, `massremove`, `massmove`
@@ -17,56 +16,62 @@ This branch is additive and experimental. It does **not** change `main`.
 - `selectrandom`, `nextup` (`upcoming` alias), `recentlyplayed` (`history` alias)
 
 ### Track state
-- `backward`, `forward`, `previous`
+- `backward`, `forward`, `previous`, `starttime`, `endtime`, `voteskip`, `shufflerepeat`
 - Existing `move`, `replay`, `seek`, `skip`, `skipto`, `loop`, `shuffle`, `remove`, `clearqueue`, `volume`, and filter commands remain unchanged.
+- Jockie-compatible prefix aliases: `rewind`, `restart`, `windto`, `clear`.
 
 ### Playback / search
-- `playrecent`
-- `playsingle` (random single track from a playlist or search result)
+- `playrecent`, `playsingle`, `playselect`
+- `album`, `artist`, `playlistsearch`, `top`
+- Existing `play`, `playnext`, `search`, and playlist commands remain.
 
 ### Information / utility
 - `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`
-- Aliases added: `about`, `searchlyrics`, `rewind`, `restart`, `windto`, `clear`
-
-### Sessions / playlists
-- `sessionstats`, `save`
-
-### Playback / lookup
-- `starttime`, `endtime`, `voteskip`, `shufflerepeat`, `playselect`
-- `album`, `artist`, `playlistsearch`, `top`
+- Aliases added: `about`, `searchlyrics`.
 
 ### Games
-- `guess`
+- `guess` (button-based guess-the-song).
 
 ### Collections
-- `collection` with list/create/delete/view/add/remove/load/rename/copy/merge/clear actions
+- `collection` with list/create/delete/view/add/remove/load/rename/copy/merge/clear actions.
 
 ### Settings / permissions / aliases / mappings
-- `settings` (per-guild key/value store, applied to new players for volume, repeat, autoplay, shuffle)
-- `permissions` (per-command allow/deny rules for users and roles, enforced in slash and prefix paths)
-- `alias` (server and user custom aliases, resolved in the prefix path)
-- `mappings` (server and user shortcut expansions, resolved in the prefix path)
+- `settings` (per-guild key/value store, applied to new players for volume, repeat, autoplay, shuffle).
+- `permissions` (per-command allow/deny rules for users and roles, enforced in slash and prefix paths).
+- `alias` (server and user custom aliases, resolved in the prefix path).
+- `mappings` (server and user shortcut expansions, resolved in the prefix path).
 
 ### Filters
-- `filters` (active filter status)
-- `rate`
+- `filters` (active filter status), `rate`; existing 8D, bass boost, distortion, karaoke, nightcore, pitch, rotation, speed, tremolo, vibrato, and low-pass commands remain.
 
-## Deliberately skipped
+### Sessions / playlists
+- `sessionstats`, `save`.
 
-- **Overlap:** `play`, `pause`, `resume`, `skip`, `queue`, `nowplaying`, `loop`, `shuffle`, `volume`, `remove`, `seek`, `lyrics`, basic playlist create/add/delete/load, `setup`, `prefix`, `dj`, `247`, autoplay.
-- **Premium/community:** premium, leaderboards, votes, profile cosmetics, boosts, multi-bot ownership, dashboard access.
-- **Unsupported/infrastructure-specific:** dashboard, custom web pages, Jockie clones, bot-list votes, permission modes that require the Jockie host, shard management beyond the current single shard.
-- **Large settings/collection families:** text/voice announcements, command enable/disable, custom aliases/mappings, permission matrices, collection sharing/import/export. These need a separate data model and command-routing pass.
+## Remaining parity families
+
+These are **not** complete yet; they are the next implementation waves, not
+deliberate exclusions.
+
+- **Profile:** profile card, color, background, avatar shape/border, privacy/visibility, server visibility.
+- **Games:** game leaderboards and any variants beyond guess-the-song.
+- **Announcements:** text/stage/voice announcements, templates, auto-delete, extended announcements, status defaults.
+- **Prefix modes:** self prefixes, combine, server/self add-remove-set-reset/list.
+- **Permission modes:** claim/rebind/transfer ownership, session/property/permission modes.
+- **Command routing:** disable/enable/toggle, disabled-command listing, text/voice channel gates and message/thread policies.
+- **Settings families:** max user tracks, max track length, playlist limits, search type, auto-delete, 24/7, lock, timeout, auto-correct, preferred bots, volume automation.
+- **Premium equivalents:** perks, boosts, renew, and any other formerly paid command—built locally and free.
+- **Owner tools:** shard/status/restart/reload equivalents that are safe and permission-gated.
+- **Dashboard / hosted surfaces:** local equivalents where technically possible; bot-list vote/clone-only features cannot be reproduced without those external services.
 
 ## Known limitations
 
-- `massmove`, `reorder`, `sort` variants beyond the implemented field set, and `playselect` are not included yet.
 - `playrecent` uses in-memory history (same lifetime as the dispatcher), not a persistent recent-tracks table.
-- `playsingle` treats playlist/search results as one pick; it does not implement Jockie's page-selection UI.
+- `playsingle`/`playselect` use a single pick; they do not implement Jockie's page-selection UI.
+- Custom aliases and mappings affect the prefix path; Discord slash-command names are registered statically and cannot be added at runtime.
 - Any command that changes the queue persists through the existing session row.
 
 ## Verification
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` (79 tests at the time of this branch)
+- `npm test` — 83 tests at the latest branch commit.
