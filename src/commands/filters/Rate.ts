@@ -17,7 +17,7 @@ export default class Rate extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: [],
             },
-            slashCommand: true,
+            slashCommand: false,
             options: [
                 {
                     name: 'rate',

@@ -87,6 +87,7 @@ test('the new feature commands are registered and keep ephemeral defaults', asyn
         'playlist/RemoveSong',
         'music/FairPlay',
         'filters/Filters',
+        'filters/Filter',
         'music/Move',
         'music/PlayRecent',
         'music/PlaySelect',

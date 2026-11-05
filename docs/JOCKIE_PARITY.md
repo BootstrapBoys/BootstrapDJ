@@ -26,7 +26,7 @@ This branch is additive and experimental. It does **not** change `main`.
 - Existing `play`, `playnext`, `search`, and playlist commands remain.
 
 ### Information / utility
-- `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`
+- `/utility` grouped page selector for `overview`, `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`; the individual pages remain prefix commands.
 - Aliases added: `about`, `searchlyrics`.
 
 ### Games
@@ -42,7 +42,7 @@ This branch is additive and experimental. It does **not** change `main`.
 - `mappings` (server and user shortcut expansions, resolved in the prefix path).
 
 ### Filters
-- `filters` (active filter status), `rate`; existing 8D, bass boost, distortion, karaoke, nightcore, pitch, rotation, speed, tremolo, vibrato, and low-pass commands remain.
+- `/filter` grouped selector for 8D, bass boost, distortion, karaoke, nightcore, pitch, rate, reset, rotation, speed, tremolo, vibrato, and low-pass; child filter names remain prefix commands. `filters` reports active filters.
 
 ### Profile / prefixes / gates
 - `profile` (color, bio, privacy, visibility)

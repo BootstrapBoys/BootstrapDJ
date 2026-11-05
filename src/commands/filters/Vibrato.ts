@@ -24,7 +24,7 @@ export default class Vibrato extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: [],
             },
-            slashCommand: true,
+            slashCommand: false,
         });
     }
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {

@@ -24,7 +24,7 @@ export default class lowPass extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: ['ManageGuild'],
             },
-            slashCommand: true,
+            slashCommand: false,
         });
     }
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {

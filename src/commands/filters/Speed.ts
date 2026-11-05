@@ -26,7 +26,7 @@ export default class Speed extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: ['ManageGuild'],
             },
-            slashCommand: true,
+            slashCommand: false,
             options: [
                 {
                     name: 'speed',

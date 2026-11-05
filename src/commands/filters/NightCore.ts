@@ -24,7 +24,7 @@ export default class NightCore extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: [],
             },
-            slashCommand: true,
+            slashCommand: false,
             options: [],
         });
     }
