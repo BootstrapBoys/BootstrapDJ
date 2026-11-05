@@ -602,10 +602,19 @@ export default class ServerData {
                 where: {
                     playlistId: playlist.id,
                 },
+                orderBy: { id: 'asc' },
             });
             return songs;
         }
         return [];
+    }
+
+    public async removeSongAt(userId: string, name: string, index: number): Promise<boolean> {
+        const songs = await this.getSong(userId, name);
+        const row = songs[index - 1];
+        if (!row) return false;
+        await this.prisma.song.delete({ where: { id: row.id } });
+        return true;
     }
 
     public async clearPlaylist(userId: string, name: string): Promise<void> {

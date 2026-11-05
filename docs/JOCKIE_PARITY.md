@@ -34,6 +34,9 @@ This branch is additive and experimental. It does **not** change `main`.
 ### Playback
 - `starttime`, `endtime`, `voteskip`, `shufflerepeat`, `playselect`
 
+### Collections
+- `collection` with list/create/delete/view/add/remove/load/rename/copy/merge/clear actions
+
 ### Settings / permissions / aliases
 - `settings` (per-guild key/value store, applied to new players for volume, repeat, autoplay, shuffle)
 - `permissions` (per-command allow/deny rules for users and roles, enforced in slash and prefix paths)

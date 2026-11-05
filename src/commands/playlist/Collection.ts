@@ -1,0 +1,315 @@
+import { ApplicationCommandOptionType, ChannelType } from 'discord.js';
+import { LoadType } from 'shoukaku';
+
+import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
+
+export default class Collection extends Command {
+    constructor(client: BootstrapClient) {
+        super(client, {
+            name: 'collection',
+            description: { content: 'Manage saved collections (playlists)', usage: 'collection <action> [name] [query]', examples: ['collection list', 'collection load roadtrip'] },
+            category: 'playlist',
+            aliases: ['collections', 'col'],
+            cooldown: 3,
+            args: true,
+            defer: true,
+            player: { voice: false, dj: false, active: false, djPerm: null },
+            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            slashCommand: true,
+            options: [
+                {
+                    name: 'action',
+                    description: 'Collection operation',
+                    type: ApplicationCommandOptionType.String,
+                    required: true,
+                    choices: [
+                        { name: 'list', value: 'list' },
+                        { name: 'create', value: 'create' },
+                        { name: 'delete', value: 'delete' },
+                        { name: 'view', value: 'view' },
+                        { name: 'add', value: 'add' },
+                        { name: 'remove', value: 'remove' },
+                        { name: 'load', value: 'load' },
+                        { name: 'rename', value: 'rename' },
+                        { name: 'copy', value: 'copy' },
+                        { name: 'merge', value: 'merge' },
+                        { name: 'clear', value: 'clear' },
+                    ],
+                },
+                { name: 'name', description: 'Collection name', type: ApplicationCommandOptionType.String, required: false },
+                { name: 'query', description: 'Track or playlist URL for add', type: ApplicationCommandOptionType.String, required: false },
+                { name: 'target', description: 'Destination name for rename/copy/merge', type: ApplicationCommandOptionType.String, required: false },
+                { name: 'index', description: '1-based track position for remove', type: ApplicationCommandOptionType.Integer, required: false, minValue: 1 },
+            ],
+        });
+    }
+
+    private get(ctx: Context, name: string, index: number): string | null {
+        if (ctx.isInteraction && ctx.interaction) {
+            const value = ctx.interaction.options.get(name);
+            if (value === null || value === undefined) return null;
+            return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+                ? String(value)
+                : null;
+        }
+        return ctx.args[index] ?? null;
+    }
+
+    private async copyTracks(
+        client: BootstrapClient,
+        authorId: string,
+        source: string,
+        destination: string
+    ): Promise<number> {
+        const rows = await client.db.getSong(authorId, source);
+        let copied = 0;
+        for (const row of rows) {
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(row.track);
+            } catch {
+                continue;
+            }
+            const entries = Array.isArray(parsed) ? parsed : [parsed];
+            for (const entry of entries) {
+                if (await client.db.addSong(authorId, destination, entry)) copied++;
+            }
+        }
+        return copied;
+    }
+
+    public async run(client: BootstrapClient, ctx: Context, _args: string[]): Promise<unknown> {
+        const author = ctx.author;
+        if (!author) return;
+        const action = (this.get(ctx, 'action', 0) ?? 'list').toLowerCase();
+        const name = (this.get(ctx, 'name', 1) ?? '').trim();
+        const query = (this.get(ctx, 'query', 2) ?? '').trim();
+        const target = (this.get(ctx, 'target', 3) ?? '').trim();
+        const index = Number(this.get(ctx, 'index', 4) ?? 0);
+
+        if (action === 'list') {
+            const playlists = await client.db.getPlaylists(author.id);
+            if (!playlists.length) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.main).setDescription('You have no collections yet.')],
+                });
+            }
+            const lines = playlists
+                .slice(0, 25)
+                .map(item => `**${item.name}** — ${item._count.songs} track${item._count.songs === 1 ? '' : 's'}`);
+            return await ctx.sendMessage({
+                embeds: [
+                    client.embed().setColor(client.color.main).setTitle('Your collections').setDescription(lines.join('\n')),
+                ],
+            });
+        }
+
+        if (!name) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('Provide a collection name.')],
+            });
+        }
+
+        if (action === 'create') {
+            if (name.length > 50) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Collection names can be at most 50 characters.')],
+                });
+            }
+            if (await client.db.getPLaylist(author.id, name)) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('That collection already exists.')],
+                });
+            }
+            await client.db.createPlaylist(author.id, name);
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.green).setDescription(`Created collection **${name}**.`)],
+            });
+        }
+
+        if (action === 'delete') {
+            const removed = await client.db.deletePlaylist(author.id, name);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(removed ? client.color.green : client.color.red)
+                        .setDescription(removed ? `Deleted collection **${name}**.` : 'That collection does not exist.'),
+                ],
+            });
+        }
+
+        const collection = await client.db.getPLaylist(author.id, name);
+        if (!collection) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('That collection does not exist.')],
+            });
+        }
+
+        if (action === 'view') {
+            const rows = await client.db.getSong(author.id, name);
+            if (!rows.length) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.main).setDescription(`**${name}** is empty.`)],
+                });
+            }
+            const lines = rows.slice(0, 20).map((row, position) => {
+                try {
+                    const parsed = JSON.parse(row.track) as { info?: { title?: string; author?: string } };
+                    return `**${position + 1}.** ${parsed.info?.title ?? 'Unknown'} — ${parsed.info?.author ?? ''}`;
+                } catch {
+                    return `**${position + 1}.** Unknown track`;
+                }
+            });
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setTitle(name)
+                        .setDescription(`${lines.join('\n')}${rows.length > 20 ? `\n…and ${rows.length - 20} more` : ''}`),
+                ],
+            });
+        }
+
+        if (action === 'clear') {
+            await client.db.clearPlaylist(author.id, name);
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.green).setDescription(`Cleared **${name}**.`)],
+            });
+        }
+
+        if (action === 'remove') {
+            if (!index) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Provide the 1-based track index to remove.')],
+                });
+            }
+            const removed = await client.db.removeSongAt(author.id, name, index);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(removed ? client.color.green : client.color.red)
+                        .setDescription(removed ? `Removed track ${index} from **${name}**.` : 'No track at that index.'),
+                ],
+            });
+        }
+
+        if (action === 'add') {
+            if (!query) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Provide a track, search term, or playlist URL.')],
+                });
+            }
+            const res = await client.queue.search(query);
+            if (!res) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('No results found.')],
+                });
+            }
+            const tracks =
+                res.loadType === LoadType.PLAYLIST
+                    ? res.data.tracks
+                    : res.loadType === LoadType.TRACK
+                      ? [res.data]
+                      : res.loadType === LoadType.SEARCH
+                        ? res.data.slice(0, 20)
+                        : [];
+            let added = 0;
+            for (const track of tracks) {
+                if (await client.db.addSong(author.id, name, track)) added++;
+            }
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(`Added ${added} track${added === 1 ? '' : 's'} to **${name}**.`),
+                ],
+            });
+        }
+
+        if (action === 'copy' || action === 'merge' || action === 'rename') {
+            if (!target) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Provide a target collection name.')],
+                });
+            }
+            if (action !== 'merge' && (await client.db.getPLaylist(author.id, target))) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('The target collection already exists.')],
+                });
+            }
+            if (action !== 'merge') await client.db.createPlaylist(author.id, target);
+            const copied = await this.copyTracks(client, author.id, name, target);
+            if (action === 'rename') await client.db.deletePlaylist(author.id, name);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(
+                            `${action === 'merge' ? 'Merged' : action === 'rename' ? 'Renamed' : 'Copied'} **${name}** → **${target}** (${copied} tracks).`
+                        ),
+                ],
+            });
+        }
+
+        if (action === 'load') {
+            const voice = ctx.voiceChannel;
+            if (!voice || (voice.type !== ChannelType.GuildVoice && voice.type !== ChannelType.GuildStageVoice)) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Join a voice channel first.')],
+                });
+            }
+            const guild = ctx.guild;
+            if (!guild) return;
+            const rows = await client.db.getSong(author.id, name);
+            if (!rows.length) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('That collection is empty.')],
+                });
+            }
+            let player = client.queue.get(guild.id);
+            if (!player || player.isStale) player = await client.queue.create(guild, voice, ctx.channel);
+            const added: Song[] = [];
+            let skipped = 0;
+            for (const row of rows) {
+                let parsed: unknown;
+                try {
+                    parsed = JSON.parse(row.track);
+                } catch {
+                    skipped++;
+                    continue;
+                }
+                const entries = Array.isArray(parsed) ? parsed : [parsed];
+                for (const entry of entries) {
+                    if (player.queue.length >= client.config.maxQueueSize) {
+                        skipped++;
+                        continue;
+                    }
+                    const song = player.buildTrack(entry as Song, author);
+                    player.enqueue(song, false);
+                    added.push(song);
+                }
+            }
+            player.seedPlaylist(added);
+            await player.isPlaying();
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(
+                            `Loaded **${name}** with ${added.length} track${added.length === 1 ? '' : 's'}${skipped ? ` (${skipped} skipped)` : ''}.`
+                        ),
+                ],
+            });
+        }
+
+        return await ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.red).setDescription('Unknown collection action.')],
+        });
+    }
+}
