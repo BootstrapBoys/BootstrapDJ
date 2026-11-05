@@ -13,7 +13,7 @@ export default class Info extends Command {
                 usage: 'info',
             },
             category: 'info',
-            aliases: ['botinfo', 'bi'],
+            aliases: ['botinfo', 'bi', 'about'],
             cooldown: 3,
             args: false,
             player: {

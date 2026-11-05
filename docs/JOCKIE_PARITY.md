@@ -1,5 +1,10 @@
 # Jockie parity — experimental branch
 
+**Scope correction (2026-11-05):** full feature parity with Jockie’s public feature set.
+Every feature is to remain free; no premium gate is to be introduced. Admin/owner
+restrictions may exist for safety, but they are not paid restrictions.
+
+
 Reference command list: <https://www.jockiemusic.com/commands> (retrieved 2026-11-05).
 
 This branch is additive and experimental. It does **not** change `main`.
@@ -18,6 +23,19 @@ This branch is additive and experimental. It does **not** change `main`.
 ### Playback / search
 - `playrecent`
 - `playsingle` (random single track from a playlist or search result)
+
+### Information / utility
+- `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`
+- Aliases added: `about`, `searchlyrics`, `rewind`, `restart`, `windto`, `clear`
+
+### Sessions / playlists
+- `sessionstats`, `save`
+
+### Playback
+- `starttime`, `endtime`, `voteskip`, `shufflerepeat`, `playselect`
+
+### Settings
+- `settings` (per-guild key/value store, applied to new players for volume, repeat, autoplay, shuffle)
 
 ### Filters
 - `filters` (active filter status)

@@ -10,7 +10,7 @@ export default class Replay extends Command {
                 usage: 'replay',
             },
             category: 'music',
-            aliases: ['rp'],
+            aliases: ['rp', 'restart'],
             cooldown: 3,
             args: false,
             player: {

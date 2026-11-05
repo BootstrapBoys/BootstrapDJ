@@ -9,7 +9,7 @@ export default class Backward extends Command {
             name: 'backward',
             description: { content: 'Winds the current track backward', usage: 'backward <time>', examples: ['backward 30s', 'backward 01:30'] },
             category: 'music',
-            aliases: ['bw', 'backwards'],
+            aliases: ['bw', 'backwards', 'rewind'],
             cooldown: 3,
             args: true,
             player: { voice: true, dj: false, active: true, djPerm: null },

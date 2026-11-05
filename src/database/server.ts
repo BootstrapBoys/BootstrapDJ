@@ -8,6 +8,7 @@ import {
     Botchannel,
     Dj,
     Guild,
+    GuildSetting,
     Playlist,
     PrismaClient,
     Role,
@@ -128,6 +129,31 @@ export default class ServerData {
                 mode,
             },
         });
+    }
+
+    public async getGuildSettings(guildId: string): Promise<Record<string, string>> {
+        const rows = await this.prisma.guildSetting.findMany({ where: { guildId } });
+        return Object.fromEntries(rows.map((row: GuildSetting) => [row.key, row.value]));
+    }
+
+    public async getGuildSetting(guildId: string, key: string): Promise<string | null> {
+        const row = await this.prisma.guildSetting.findUnique({
+            where: { guildId_key: { guildId, key } },
+        });
+        return row?.value ?? null;
+    }
+
+    public async setGuildSetting(guildId: string, key: string, value: string): Promise<GuildSetting> {
+        return await this.prisma.guildSetting.upsert({
+            where: { guildId_key: { guildId, key } },
+            create: { guildId, key, value },
+            update: { value },
+        });
+    }
+
+    public async resetGuildSettings(guildId: string): Promise<number> {
+        const result = await this.prisma.guildSetting.deleteMany({ where: { guildId } });
+        return result.count;
     }
 
     public async getAutoplaySetting(guildId: string): Promise<AutoplaySetting | null> {

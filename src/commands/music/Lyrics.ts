@@ -135,7 +135,7 @@ export default class Lyrics extends Command {
                 usage: 'lyrics [song]',
             },
             category: 'music',
-            aliases: ['ly'],
+            aliases: ['ly', 'searchlyrics', 'findlyrics'],
             cooldown: 3,
             args: false,
             player: {

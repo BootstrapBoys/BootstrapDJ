@@ -67,6 +67,22 @@ export class Queue extends Map {
             });
 
             this.set(guild.id, dispatcher);
+            // Apply guild defaults once, at player creation. A session restore
+            // overwrites volume/loop later, so this only affects fresh sessions.
+            const defaults: Record<string, string> = await this.client.db.getGuildSettings(guild.id).catch(() => ({}));
+            const volume = Number(defaults.defaultvolume);
+            if (Number.isFinite(volume) && volume >= 0 && volume <= 200) {
+                dispatcher.player.setGlobalVolume(volume);
+            }
+            if (defaults.defaultrepeat === 'repeat' || defaults.defaultrepeat === 'queue') {
+                dispatcher.loop = defaults.defaultrepeat;
+            }
+            if (defaults.defaultautoplay === 'true') {
+                dispatcher.autoplay = true;
+            }
+            if (defaults.defaultshuffle === 'true') {
+                dispatcher.setShuffle();
+            }
             this.client.shoukaku.emitPlayerEvent('playerCreate', dispatcher.player);
             return dispatcher;
         } else {

@@ -20,6 +20,15 @@ model AutoplaySetting {
   updatedAt DateTime @updatedAt
 }
 
+model GuildSetting {
+  guildId   String
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@id([guildId, key])
+}
+
 model Guild {
   guildId    String      @id
   prefix     String
