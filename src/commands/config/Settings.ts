@@ -2,6 +2,8 @@ import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
+const AUTOPLAY_FIELDS = new Set(['autoplaysource', 'autoplayseeds', 'autoplayreset']);
+
 const DEFAULTS: Record<string, string> = {
     defaultvolume: '100',
     defaultautoplay: 'false',
@@ -18,10 +20,12 @@ const DEFAULTS: Record<string, string> = {
     voicechannel: '',
     announcechannel: '',
     disabledcommands: '',
+    autoplaysource: '',
+    autoplayseeds: '',
 };
 
 function isKnown(key: string): key is keyof typeof DEFAULTS {
-    return Object.prototype.hasOwnProperty.call(DEFAULTS, key);
+    return Object.prototype.hasOwnProperty.call(DEFAULTS, key) || AUTOPLAY_FIELDS.has(key);
 }
 
 export default class Settings extends Command {
@@ -46,7 +50,7 @@ export default class Settings extends Command {
                     description: 'Setting name; omit to list all',
                     type: ApplicationCommandOptionType.String,
                     required: false,
-                    choices: Object.keys(DEFAULTS).map(key => ({ name: key, value: key })),
+                    choices: [...Object.keys(DEFAULTS), ...AUTOPLAY_FIELDS].map(key => ({ name: key, value: key })),
                 },
                 {
                     name: 'value',
@@ -94,10 +98,16 @@ export default class Settings extends Command {
 
         if (!key) {
             const values = await client.db.getGuildSettings(guild.id);
+            const autoplay = await client.db.getAutoplaySetting(guild.id).catch(() => null);
             const lines = Object.entries(DEFAULTS).map(([name, fallback]) => {
+                if (name === 'autoplaysource' || name === 'autoplayseeds') return null;
                 const current = values[name] ?? fallback;
                 return `**${name}**: \`${current}\`${values[name] ? '' : ' *(default)*'}`;
-            });
+            }).filter((line): line is string => Boolean(line));
+            lines.push(
+                `**autoplaysource**: \`${autoplay?.source ?? 'environment default'}\``,
+                `**autoplayseeds**: \`${autoplay?.seeds || client.config.autoplaySeeds.join(', ') || 'none'}\``
+            );
             return await ctx.sendMessage({
                 embeds: [
                     client
@@ -117,6 +127,59 @@ export default class Settings extends Command {
                         .setColor(client.color.red)
                         .setDescription(`Unknown setting. Use one of: ${Object.keys(DEFAULTS).join(', ')}.`),
                 ],
+            });
+        }
+
+        if (AUTOPLAY_FIELDS.has(key)) {
+            const current = await client.db.getAutoplaySetting(guild.id).catch(() => null);
+            if (!value) {
+                const source = current?.source ?? 'environment default';
+                const seeds = current?.seeds || client.config.autoplaySeeds.join(', ') || 'none';
+                return await ctx.sendMessage({
+                    embeds: [
+                        client
+                            .embed()
+                            .setColor(client.color.main)
+                            .setTitle('Autoplay settings')
+                            .setDescription(
+                                `**source**: \`${source}\`\n**seeds**: \`${seeds}\`\n**legacy value**: \`${client.config.autoplaySeed || 'none'}\``
+                            ),
+                    ],
+                });
+            }
+            if (key === 'autoplayreset') {
+                await client.db.deleteAutoplaySetting(guild.id);
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.green).setDescription('Autoplay override removed.')],
+                });
+            }
+            if (key === 'autoplaysource') {
+                if (!['chart', 'curated', 'legacy'].includes(value)) {
+                    return await ctx.sendMessage({
+                        embeds: [client.embed().setColor(client.color.red).setDescription('Source must be `chart`, `curated`, or `legacy`.')],
+                    });
+                }
+                await client.db.setAutoplaySetting(guild.id, {
+                    source: value,
+                    seeds: current?.seeds ?? client.config.autoplaySeeds.join(', '),
+                });
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.green).setDescription(`Autoplay source set to **${value}**.`)],
+                });
+            }
+            const seeds = value
+                .split(',')
+                .map(seed => seed.trim())
+                .filter(Boolean)
+                .slice(0, 10);
+            if (!seeds.length) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Provide at least one seed.')],
+                });
+            }
+            await client.db.setAutoplaySetting(guild.id, { source: 'curated', seeds: seeds.join(', ') });
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.green).setDescription(`Autoplay seeds set to **${seeds.join(', ')}**.`)],
             });
         }
 
