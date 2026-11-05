@@ -9,6 +9,7 @@ import {
     CommandAlias,
     CommandMapping,
     Dj,
+    GameScore,
     Guild,
     GuildSetting,
     PermissionRule,
@@ -293,6 +294,22 @@ export default class ServerData {
         const allowed = matches.some(rule => rule.allow);
         const denied = matches.some(rule => !rule.allow);
         return allowed || !denied;
+    }
+
+    public async incrementGameScore(guildId: string, userId: string, win: boolean): Promise<GameScore> {
+        return await this.prisma.gameScore.upsert({
+            where: { guildId_userId: { guildId, userId } },
+            create: { guildId, userId, wins: win ? 1 : 0, plays: 1 },
+            update: { wins: { increment: win ? 1 : 0 }, plays: { increment: 1 } },
+        });
+    }
+
+    public async getGameLeaderboard(guildId: string, limit: number = 10): Promise<GameScore[]> {
+        return await this.prisma.gameScore.findMany({
+            where: { guildId },
+            orderBy: [{ wins: 'desc' }, { plays: 'asc' }],
+            take: limit,
+        });
     }
 
     public async getUserPrefix(guildId: string, userId: string): Promise<string | null> {

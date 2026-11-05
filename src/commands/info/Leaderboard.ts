@@ -20,9 +20,24 @@ export default class Leaderboard extends Command {
         const guild = ctx.guild;
         if (!guild) return;
         const player = client.queue.get(guild.id);
+        const gameScores = await client.db.getGameLeaderboard(guild.id);
+        const gameLines = gameScores.map(
+            (score, index) => `**${index + 1}.** <@${score.userId}> — ${score.wins} win${score.wins === 1 ? '' : 's'} / ${score.plays} played`
+        );
         if (!player) {
+            if (!gameLines.length) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('No session or game results to rank.')],
+                });
+            }
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No active session to rank.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setTitle('Game leaderboard')
+                        .setDescription(gameLines.join('\n')),
+                ],
             });
         }
         const counts = new Map<string, number>();
@@ -45,8 +60,10 @@ export default class Leaderboard extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Session request leaderboard')
-                    .setDescription(lines.join('\n')),
+                    .setTitle('Session leaderboards')
+                    .setDescription(
+                        `${lines.join('\n')}${gameLines.length ? `\n\n**Games**\n${gameLines.join('\n')}` : ''}`
+                    ),
             ],
         });
     }

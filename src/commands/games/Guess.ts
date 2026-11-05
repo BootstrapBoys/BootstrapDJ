@@ -69,6 +69,11 @@ export default class Guess extends Command {
         collector.on('collect', async interaction => {
             const index = Number(interaction.customId.split('-')[1]);
             const answer = choices[index];
+            if (interaction.guildId) {
+                await client.db
+                    .incrementGameScore(interaction.guildId, interaction.user.id, answer === correct)
+                    .catch(() => null);
+            }
             await interaction.reply({
                 content: answer === correct ? `Correct — **${correct}**!` : `Not quite. The answer was **${correct}**.`,
                 ephemeral: true,

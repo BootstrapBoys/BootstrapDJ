@@ -30,7 +30,8 @@ This branch is additive and experimental. It does **not** change `main`.
 - Aliases added: `about`, `searchlyrics`.
 
 ### Games
-- `guess` (button-based guess-the-song).
+- `guess` (button-based guess-the-song) with persistent win/play scores.
+- `leaderboard` includes game scores alongside session request counts.
 
 ### Collections
 - `collection` with list/create/delete/view/add/remove/load/rename/copy/merge/clear actions.

@@ -41,6 +41,9 @@ test.before(async () => {
     await prisma.$executeRawUnsafe(
         `CREATE TABLE "Profile" ("userId" TEXT NOT NULL PRIMARY KEY, "color" TEXT, "bio" TEXT, "privacy" TEXT NOT NULL DEFAULT 'public', "visible" BOOLEAN NOT NULL DEFAULT true, "updatedAt" DATETIME NOT NULL)`
     );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "GameScore" ("guildId" TEXT NOT NULL, "userId" TEXT NOT NULL, "wins" INTEGER NOT NULL DEFAULT 0, "plays" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY ("guildId", "userId"))`
+    );
 });
 
 test.after(async () => {
@@ -103,4 +106,15 @@ test('profiles store customization and privacy', async () => {
     assert.equal(profile.color, '#ff8800');
     assert.equal(profile.privacy, 'private');
     assert.equal((await db.getProfile('u1'))?.bio, 'Music first');
+});
+
+
+test('game scores increment and rank by wins', async () => {
+    await db.incrementGameScore('g1', 'u1', true);
+    await db.incrementGameScore('g1', 'u1', false);
+    await db.incrementGameScore('g1', 'u2', true);
+    const board = await db.getGameLeaderboard('g1');
+    assert.equal(board[0].userId, 'u2');
+    assert.equal(board[0].wins, 1);
+    assert.equal(board[0].plays, 1);
 });
