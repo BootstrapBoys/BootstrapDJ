@@ -63,8 +63,10 @@ export default class Play extends Command {
             });
         if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
         const limits = await getPlayLimits(client, guild.id);
+        const guildSettings: Record<string, string> = await client.db.getGuildSettings(guild.id).catch(() => ({}));
+        const searchEngine = guildSettings.searchtype || client.config.searchEngine;
 
-        const res = await this.client.queue.search(query);
+        const res = await this.client.queue.search(query, searchEngine);
         const embed = this.client.embed();
         if (!res)
             return await ctx.sendMessage({

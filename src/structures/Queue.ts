@@ -242,7 +242,7 @@ export class Queue extends Map {
         return await this.migrateToNode(this.node);
     }
 
-    public async search(query: string): Promise<LavalinkResponse | null> {
+    public async search(query: string, engine: string = this.client.config.searchEngine): Promise<LavalinkResponse | null> {
         const node = this.node;
         if (!node) {
             this.client.logger.warn('Search attempted with no connected Lavalink node');
@@ -263,7 +263,7 @@ export class Queue extends Map {
             }
         };
 
-        const identifier = isUrl ? query : `${this.client.config.searchEngine}:${query}`;
+        const identifier = isUrl ? query : `${engine}:${query}`;
         let result = await resolve(identifier);
 
         // A public fallback usually has no LavaSrc, so dzsearch comes back empty;
