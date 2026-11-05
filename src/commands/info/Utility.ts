@@ -12,6 +12,7 @@ const TARGETS: Record<string, string> = {
     premium: 'premium',
     support: 'support',
     leaderboard: 'leaderboard',
+    commands: 'commands',
 };
 
 export default class Utility extends Command {
@@ -40,6 +41,32 @@ export default class Utility extends Command {
                 ? ctx.interaction.options.data[0]?.name
                 : args[0]
         )?.toLowerCase();
+        if (page === 'commands') {
+            const guild = ctx.guild;
+            if (!guild) return;
+            const settings = await client.db.getGuildSettings(guild.id);
+            const guildData = await client.db.get(guild.id);
+            const disabled = (settings.disabledcommands ?? '')
+                .split(',')
+                .map(name => name.trim())
+                .filter(Boolean);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setTitle('Command status')
+                        .setDescription(
+                            [
+                                `**Loaded commands:** ${client.commands.size}`,
+                                `**Slash commands:** ${client.application?.commands.cache.size ?? 'not synced'}`,
+                                `**Guild prefix:** \`${guildData?.prefix ?? client.config.prefix}\``,
+                                `**Disabled here:** ${disabled.length ? disabled.map(name => `\`${name}\``).join(', ') : 'none'}`,
+                            ].join('\n')
+                        ),
+                ],
+            });
+        }
         const target = page ? TARGETS[page] : 'info';
         const command = target ? client.commands.get(target) : null;
         if (!command) {

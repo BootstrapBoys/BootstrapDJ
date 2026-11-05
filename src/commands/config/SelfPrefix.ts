@@ -21,6 +21,17 @@ export default class SelfPrefix extends Command {
         const author = ctx.author;
         if (!guild || !author) return;
         const action = (args[0] ?? '').toLowerCase();
+        if (action === 'list') {
+            const current = await client.db.getUserPrefix(guild.id, author.id);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(current ? `Your personal prefix is \`${current}\`.` : 'You have no personal prefix.'),
+                ],
+            });
+        }
         if (action === 'reset') {
             const removed = await client.db.resetUserPrefix(guild.id, author.id);
             return await ctx.sendMessage({
