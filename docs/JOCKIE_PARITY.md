@@ -79,4 +79,6 @@ deliberate exclusions.
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 83 tests at the latest branch commit.
+- `npm test` — 85 tests at the latest branch commit.
+
+Slash registration: **83 top-level commands** after grouping (`/utility`, `/filter`); child info/filter names remain prefix commands.
