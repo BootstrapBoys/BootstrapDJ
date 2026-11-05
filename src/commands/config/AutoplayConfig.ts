@@ -101,6 +101,18 @@ export default class AutoplayConfig extends Command {
             (setting?.source as AutoplaySource | undefined) ??
             (client.config.autoplayChart ? 'chart' : storedSeeds.length || envSeeds.length ? 'curated' : 'legacy');
         const seeds = storedSeeds.length ? storedSeeds : envSeeds;
+        const sourceLabel =
+            effectiveSource === 'chart'
+                ? 'Deezer global chart'
+                : effectiveSource === 'curated'
+                  ? 'Curated search seeds'
+                  : 'Legacy AUTOPLAY_SEED';
+        const order =
+            effectiveSource === 'chart'
+                ? 'chart → curated → legacy'
+                : effectiveSource === 'curated'
+                  ? 'curated → legacy'
+                  : 'legacy only';
         return await ctx.sendMessage({
             embeds: [
                 client
@@ -109,10 +121,14 @@ export default class AutoplayConfig extends Command {
                     .setTitle('Autoplay cold-start configuration')
                     .setDescription(
                         [
-                            `**Source:** \`${effectiveSource}\``,
-                            `**Curated seeds:** ${seeds.length ? seeds.join(', ') : 'none'}`,
-                            `**Chart fallback:** ${client.config.autoplayChart ? 'enabled' : 'disabled'}`,
-                            'Use `/autoplayconfig source:` or `seeds:` to change this guild.',
+                            `**Source:** \`${effectiveSource}\` — ${sourceLabel}`,
+                            `**Scope:** ${setting ? 'this server (override)' : 'environment default'}`,
+                            `**Cold-start order:** ${order}`,
+                            `**Chart:** Deezer global chart, explicit tracks filtered${effectiveSource === 'chart' ? ' — active' : ' — not used by this source'}`,
+                            '**What chart is:** a fixed Deezer global chart, not your playlists or search seeds.',
+                            `**Curated seeds:** ${seeds.length ? seeds.join(', ') : 'none'}${effectiveSource === 'curated' ? ' (search text, not playlist URLs)' : ''}`,
+                            `**Legacy value:** \`${client.config.autoplaySeed || 'none'}\``,
+                            'Use `/autoplayconfig source:` or `seeds:` to change this server, or `reset:true` to clear the override.',
                         ].join('\n')
                     ),
             ],
