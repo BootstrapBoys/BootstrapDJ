@@ -29,6 +29,12 @@ test.before(async () => {
     await prisma.$executeRawUnsafe(
         `CREATE UNIQUE INDEX "CommandAlias_identity" ON "CommandAlias"("guildId", "scope", "userId", "alias")`
     );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "CommandMapping" ("id" TEXT NOT NULL PRIMARY KEY, "guildId" TEXT NOT NULL, "scope" TEXT NOT NULL, "userId" TEXT NOT NULL DEFAULT '', "trigger" TEXT NOT NULL, "expansion" TEXT NOT NULL)`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE UNIQUE INDEX "CommandMapping_identity" ON "CommandMapping"("guildId", "scope", "userId", "trigger")`
+    );
 });
 
 test.after(async () => {
@@ -66,4 +72,14 @@ test('server aliases take precedence over user aliases', async () => {
     assert.equal((await db.listCommandAliases('g1', 'u1')).length, 2);
     assert.equal(await db.deleteCommandAlias('g1', 'server', '', 'b'), true);
     assert.equal((await db.getCommandAlias('g1', 'b', 'u1'))?.command, 'play');
+});
+
+
+test('command mappings resolve server before user scope', async () => {
+    await db.setCommandMapping('g1', 'user', 'u1', 'r', 'play one');
+    assert.equal((await db.getCommandMapping('g1', 'r', 'u1'))?.expansion, 'play one');
+    await db.setCommandMapping('g1', 'server', '', 'r', 'play two');
+    assert.equal((await db.getCommandMapping('g1', 'r', 'u1'))?.expansion, 'play two');
+    assert.equal(await db.deleteCommandMapping('g1', 'server', '', 'r'), true);
+    assert.equal((await db.getCommandMapping('g1', 'r', 'u1'))?.expansion, 'play one');
 });

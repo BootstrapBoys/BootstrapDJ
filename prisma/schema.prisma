@@ -51,6 +51,17 @@ model CommandAlias {
   @@unique([guildId, scope, userId, alias])
 }
 
+model CommandMapping {
+  id        String @id @default(uuid())
+  guildId   String
+  scope     String
+  userId    String @default("")
+  trigger   String
+  expansion String
+
+  @@unique([guildId, scope, userId, trigger])
+}
+
 model Guild {
   guildId    String      @id
   prefix     String

@@ -50,8 +50,17 @@ export default class MessageCreate extends Event {
 
         const args = message.content.slice(matchedPrefix.length).trim().split(/ +/g);
 
-        const cmd = args.shift()?.toLowerCase();
+        let cmd = args.shift()?.toLowerCase();
         if (!cmd) return;
+        const mapping = await this.client.db.getCommandMapping(message.guildId, cmd, message.author.id);
+        if (mapping) {
+            const expanded = mapping.expansion.trim().split(/ +/g);
+            const mappedCommand = expanded.shift()?.toLowerCase();
+            if (mappedCommand) {
+                cmd = mappedCommand;
+                args.unshift(...expanded);
+            }
+        }
         let command =
             this.client.commands.get(cmd) ||
             this.client.commands.get(this.client.aliases.get(cmd) as string);

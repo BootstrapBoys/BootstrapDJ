@@ -7,6 +7,7 @@ import {
     AutoplaySetting,
     Botchannel,
     CommandAlias,
+    CommandMapping,
     Dj,
     Guild,
     GuildSetting,
@@ -131,6 +132,62 @@ export default class ServerData {
                 mode,
             },
         });
+    }
+
+    public async getCommandMapping(
+        guildId: string,
+        trigger: string,
+        userId: string
+    ): Promise<CommandMapping | null> {
+        const server = await this.prisma.commandMapping.findUnique({
+            where: { guildId_scope_userId_trigger: { guildId, scope: 'server', userId: '', trigger } },
+        });
+        if (server) return server;
+        return await this.prisma.commandMapping.findUnique({
+            where: { guildId_scope_userId_trigger: { guildId, scope: 'user', userId, trigger } },
+        });
+    }
+
+    public async setCommandMapping(
+        guildId: string,
+        scope: 'server' | 'user',
+        userId: string,
+        trigger: string,
+        expansion: string
+    ): Promise<CommandMapping> {
+        return await this.prisma.commandMapping.upsert({
+            where: { guildId_scope_userId_trigger: { guildId, scope, userId, trigger } },
+            create: { guildId, scope, userId, trigger, expansion },
+            update: { expansion },
+        });
+    }
+
+    public async deleteCommandMapping(
+        guildId: string,
+        scope: 'server' | 'user',
+        userId: string,
+        trigger: string
+    ): Promise<boolean> {
+        const result = await this.prisma.commandMapping.deleteMany({
+            where: { guildId, scope, userId, trigger },
+        });
+        return result.count > 0;
+    }
+
+    public async listCommandMappings(guildId: string, userId: string): Promise<CommandMapping[]> {
+        return await this.prisma.commandMapping.findMany({
+            where: { guildId, OR: [{ scope: 'server' }, { scope: 'user', userId }] },
+            orderBy: { trigger: 'asc' },
+        });
+    }
+
+    public async clearCommandMappings(
+        guildId: string,
+        scope: 'server' | 'user',
+        userId: string
+    ): Promise<number> {
+        const result = await this.prisma.commandMapping.deleteMany({ where: { guildId, scope, userId } });
+        return result.count;
     }
 
     public async getCommandAlias(
