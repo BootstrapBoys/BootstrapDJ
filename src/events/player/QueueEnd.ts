@@ -16,6 +16,10 @@ export default class QueueEnd extends Event {
         // alongside this event, so repeating that work here queued every looped track
         // twice and started two autoplay tracks whenever the queue drained.
         this.client.utils.updateStatus(this.client, guild.id);
+        if (dispatcher.leaveOnEnd && !dispatcher.autoplay && !dispatcher.queue.length) {
+            dispatcher.leaveOnEnd = false;
+            dispatcher.destroy();
+        }
     }
 }
 

@@ -174,6 +174,8 @@ export default class Dispatcher {
     private toppingUp = false;
     private persistTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
+    /** Set by /playleave: tear down the player when the queue drains. */
+    public leaveOnEnd = false;
     public history: Song[] = [];
 
     constructor(options: DispatcherOptions) {

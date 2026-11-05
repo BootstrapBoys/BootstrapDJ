@@ -21,7 +21,7 @@ This branch is additive and experimental. It does **not** change `main`.
 - Jockie-compatible prefix aliases: `rewind`, `restart`, `windto`, `clear`.
 
 ### Playback / search
-- `playrecent`, `playsingle`, `playselect`
+- `playrecent`, `playsingle`, `playselect`, `playleave`, `radio`
 - `album`, `artist`, `playlistsearch`, `top`
 - Existing `play`, `playnext`, `search`, and playlist commands remain.
 
