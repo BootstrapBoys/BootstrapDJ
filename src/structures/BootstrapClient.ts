@@ -93,6 +93,15 @@ export default class BootstrapClient extends Client {
                     ? Routes.applicationCommands(userId)
                     : Routes.applicationGuildCommands(userId, this.config.guildId);
             try {
+                // Discord accepts at most 100 top-level chat-input commands.
+                // Group related commands or mark them prefix-only before this
+                // guard; truncating silently would hide a parity regression.
+                if (this.body.length > 100) {
+                    this.logger.error(
+                        `[slash] ${this.body.length} commands exceed Discord's 100-command limit; only the first 100 will register.`
+                    );
+                    this.body = this.body.slice(0, 100);
+                }
                 const rest = new REST({ version: '10' }).setToken(this.config.token ?? '');
                 await rest.put(applicationCommands, { body: this.body });
                 this.logger.info(`Successfully loaded slash commands!`);
