@@ -25,14 +25,18 @@ This branch is additive and experimental. It does **not** change `main`.
 - `playsingle` (random single track from a playlist or search result)
 
 ### Information / utility
-- `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`
+- `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`
 - Aliases added: `about`, `searchlyrics`, `rewind`, `restart`, `windto`, `clear`
 
 ### Sessions / playlists
 - `sessionstats`, `save`
 
-### Playback
+### Playback / lookup
 - `starttime`, `endtime`, `voteskip`, `shufflerepeat`, `playselect`
+- `album`, `artist`, `playlistsearch`, `top`
+
+### Games
+- `guess`
 
 ### Collections
 - `collection` with list/create/delete/view/add/remove/load/rename/copy/merge/clear actions
