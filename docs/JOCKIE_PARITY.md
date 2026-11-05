@@ -62,10 +62,10 @@ being completed first; external-service features are listed explicitly.
 - **Profile:** color, bio, background, avatar shape/border, privacy, visibility, and server visibility are implemented.
 - **Games:** guess-the-song with persistent wins/plays and leaderboard is implemented.
 - **Announcements:** opt-in text announcements are implemented. Voice/stage TTS announcements still need a TTS provider and are not locally available.
-- **Prefix modes:** personal prefix set/reset/list and server prefix set/reset are implemented; combine/multi-prefix flows remain.
+- **Prefix modes:** personal prefix set/reset/list and comma-combined server prefixes are implemented.
 - **Permission modes:** claim and transfer ownership and per-command allow/deny rules are implemented; rebind/session/property modes remain.
 - **Command routing:** text/voice gates, disabled-command filtering, vote-skip percentages, and `/utility commands` status listing are implemented; message/thread policies remain.
-- **Settings families:** max track length, min track length, queue size, max user tracks, and max user track length are enforced; playlist limits, search type, auto-delete, lock, timeout, auto-correct, preferred bots, and volume automation remain.
+- **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count, auto-delete, and prefix combine are implemented; search type, lock, timeout, auto-correct, preferred bots, and volume automation remain.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** existing dev-only owner commands remain; a safe restart/reload surface is not yet added.
 - **Dashboard / hosted surfaces:** a local dashboard is not implemented; bot-list votes/clones require external services.

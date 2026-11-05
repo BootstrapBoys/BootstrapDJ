@@ -145,6 +145,7 @@ export default class InteractionCreate extends Event {
                 });
             }
             const ctx = new Context(interaction, [...interaction.options.data], command.ephemeral);
+            ctx.deleteAfter = Number(guildSettings.deleteafter) || null;
             ctx.setArgs(interaction.options.data);
             const channel = interaction.channel;
             if (!channel || channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true)

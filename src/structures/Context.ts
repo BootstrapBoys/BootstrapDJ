@@ -40,6 +40,8 @@ export default class Context {
     public msg: any;
     /** Slash command feedback is private unless the command opts out. */
     public ephemeral: boolean;
+    /** Per-guild auto-delete override in seconds; null uses config. */
+    public deleteAfter: number | null = null;
     private deleteTimer: NodeJS.Timeout | null = null;
     constructor(ctx: ChatInputCommandInteraction | Message, args: any[], ephemeral: boolean = true) {
         this.ctx = ctx;
@@ -136,7 +138,7 @@ export default class Context {
             clearTimeout(this.deleteTimer);
             this.deleteTimer = null;
         }
-        const timeout = seconds ?? this.client.config.deleteAfter;
+        const timeout = seconds ?? this.deleteAfter ?? this.client.config.deleteAfter;
         if (!timeout || timeout <= 0) return;
         if (this.isInteraction && this.ephemeral) return;
         if (content?.components?.length) return;

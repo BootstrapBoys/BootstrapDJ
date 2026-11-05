@@ -65,7 +65,7 @@ export default class Prefix extends Command {
             pre = args[1];
         }
         switch (subCommand) {
-            case 'set':
+            case 'set': {
                 if (!pre) {
                     embed.setDescription(
                         `The prefix for this server is \`${guild ? guild.prefix : client.config.prefix
@@ -73,10 +73,14 @@ export default class Prefix extends Command {
                     );
                     return await ctx.sendMessage({ embeds: [embed] });
                 }
-                if (pre.length > 3)
+                const parts = pre
+                    .split(',')
+                    .map(part => part.trim())
+                    .filter(Boolean);
+                if (!parts.length || parts.some(part => part.length > 3))
                     return await ctx.sendMessage({
                         embeds: [
-                            embed.setDescription(`The prefix can't be longer than 3 characters`),
+                            embed.setDescription(`Each prefix must be 1–3 characters; combine them with commas.`),
                         ],
                     });
 
@@ -95,6 +99,7 @@ export default class Prefix extends Command {
                         ],
                     });
                 }
+            }
             case 'reset':
                 if (!guild)
                     return await ctx.sendMessage({

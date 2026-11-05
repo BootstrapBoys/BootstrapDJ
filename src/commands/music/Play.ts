@@ -145,7 +145,7 @@ export default class Play extends Command {
                         ],
                     });
                 const added: Song[] = [];
-                for (const track of res.data.tracks) {
+                for (const track of res.data.tracks.slice(0, limits.maxPlaylistTracks || undefined)) {
                     const pl = player.buildTrack(track, author);
                     const rejected = checkTrack(player, pl, author.id, limits);
                     if (rejected) continue;

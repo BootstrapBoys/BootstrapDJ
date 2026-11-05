@@ -44,7 +44,11 @@ export default class MessageCreate extends Event {
         }
         const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const userPrefix = await this.client.db.getUserPrefix(message.guildId, message.author.id);
-        const prefixes = userPrefix && userPrefix !== guild.prefix ? [guild.prefix, userPrefix] : [guild.prefix];
+        const serverPrefixes = guild.prefix
+            .split(',')
+            .map(prefix => prefix.trim())
+            .filter(Boolean);
+        const prefixes = userPrefix ? [...new Set([...serverPrefixes, userPrefix])] : serverPrefixes;
         const prefixRegex = new RegExp(
             `^(<@!?${botId}>|${prefixes.map(prefix => escapeRegex(prefix)).join('|')})\\s*`
         );
@@ -99,6 +103,7 @@ export default class MessageCreate extends Event {
             return await replySafe({ content: `You must be in <#${guildSettings.voicechannel}> to use commands.` });
         }
         const ctx = new Context(message, args);
+        ctx.deleteAfter = Number(guildSettings.deleteafter) || null;
         ctx.setArgs(args);
 
         if (message.channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true) return;

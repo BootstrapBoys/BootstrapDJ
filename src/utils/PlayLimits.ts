@@ -8,6 +8,8 @@ export type PlayLimits = {
     maxQueue: number;
     maxUserTracks: number;
     maxUserTracksLength: number;
+    maxPlaylistTracks: number;
+    maxPlaylistLength: number;
 };
 
 /** Read per-guild playback limits once per command invocation. */
@@ -23,6 +25,8 @@ export async function getPlayLimits(client: BootstrapClient, guildId: string): P
         maxQueue: number(settings.maxqueue, client.config.maxQueueSize),
         maxUserTracks: number(settings.maxusertracks, 0),
         maxUserTracksLength: number(settings.maxusertrackslength, 0),
+        maxPlaylistTracks: number(settings.maxplaylisttracks, 0),
+        maxPlaylistLength: number(settings.maxplaylistlength, 0),
     };
 }
 

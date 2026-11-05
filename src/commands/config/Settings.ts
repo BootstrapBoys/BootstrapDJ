@@ -26,6 +26,8 @@ const DEFAULTS: Record<string, string> = {
     mintracklength: '0',
     maxusertracks: '0',
     maxusertrackslength: '0',
+    maxplaylisttracks: '0',
+    maxplaylistlength: '0',
     autocorrect: 'false',
     volumeautomatic: 'false',
 };
