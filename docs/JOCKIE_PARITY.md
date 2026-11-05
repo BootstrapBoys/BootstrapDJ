@@ -67,7 +67,7 @@ being completed first; external-service features are listed explicitly.
 - **Command routing:** text/voice gates, disabled-command filtering, session lock, typo suggestions (`settings autocorrect`), vote-skip percentages, and `/utility commands` status listing are implemented; message/thread policies remain.
 - **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count, auto-delete, prefix combine, per-guild search type, session lock, and autocorrect suggestions are implemented; timeout confirmation, preferred bots, and volume automation remain.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
-- **Owner tools:** existing dev-only owner commands remain; a safe restart/reload surface is not yet added.
+- **Owner tools:** dev-only `restart` is implemented; broader reload/shutdown tooling remains.
 - **Dashboard / hosted surfaces:** a local dashboard is not implemented; bot-list votes/clones require external services.
 
 ## Known limitations
