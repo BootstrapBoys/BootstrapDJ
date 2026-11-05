@@ -30,6 +30,7 @@ const DEFAULTS: Record<string, string> = {
     maxplaylistlength: '0',
     autocorrect: 'false',
     volumeautomatic: 'false',
+    locked: 'false',
 };
 
 function isKnown(key: string): key is keyof typeof DEFAULTS {

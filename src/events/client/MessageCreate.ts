@@ -34,6 +34,7 @@ export default class MessageCreate extends Event {
         }
         const guild = await this.client.db.get(message.guildId);
         if (!guild) return;
+        const guildSettings = await this.client.db.getGuildSettings(message.guildId);
 
         const mention = new RegExp(`^<@!?${botId}>( |)$`);
         if (message.content.match(mention)) {
@@ -76,7 +77,23 @@ export default class MessageCreate extends Event {
             const custom = await this.client.db.getCommandAlias(message.guildId, cmd, message.author.id);
             if (custom) command = this.client.commands.get(custom.command);
         }
-        if (!command) return;
+        if (!command) {
+            if (guildSettings.autocorrect === 'true') {
+                const suggestion = this.closestCommand(cmd);
+                if (suggestion) {
+                    const prefix = guild.prefix.split(',')[0]?.trim() || this.client.config.prefix;
+                    return await replySafe({ content: `Did you mean \`${prefix}${suggestion}\`?` });
+                }
+            }
+            return;
+        }
+        if (
+            guildSettings.locked === 'true' &&
+            'permissions' in member &&
+            !member.permissions.has(PermissionFlagsBits.ManageGuild)
+        ) {
+            return await replySafe({ content: 'This session is locked. A server manager must unlock it.' });
+        }
         const permitted = await this.client.db.isCommandAllowed(
             message.guildId,
             command.name,
@@ -86,7 +103,6 @@ export default class MessageCreate extends Event {
         if (!permitted) {
             return await replySafe({ content: 'You are not allowed to use this command.' });
         }
-        const guildSettings = await this.client.db.getGuildSettings(message.guildId);
         if (
             (guildSettings.disabledcommands ?? '')
                 .split(',')
@@ -258,6 +274,33 @@ export default class MessageCreate extends Event {
             return;
         }
     }
+    private closestCommand(input: string): string | null {
+        const distance = (a: string, b: string): number => {
+            const rows = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+            for (let j = 1; j <= b.length; j++) rows[0][j] = j;
+            for (let i = 1; i <= a.length; i++) {
+                for (let j = 1; j <= b.length; j++) {
+                    rows[i][j] = Math.min(
+                        rows[i - 1][j] + 1,
+                        rows[i][j - 1] + 1,
+                        rows[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+                    );
+                }
+            }
+            return rows[a.length][b.length];
+        };
+        let best: string | null = null;
+        let score = 3;
+        for (const name of this.client.commands.keys()) {
+            const value = distance(input, name);
+            if (value < score) {
+                score = value;
+                best = name;
+            }
+        }
+        return best;
+    }
+
 }
 
 /**

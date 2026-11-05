@@ -33,6 +33,7 @@ export default class Collection extends Command {
                         { name: 'load', value: 'load' },
                         { name: 'rename', value: 'rename' },
                         { name: 'copy', value: 'copy' },
+                        { name: 'clone', value: 'clone' },
                         { name: 'merge', value: 'merge' },
                         { name: 'clear', value: 'clear' },
                         { name: 'share', value: 'share' },
@@ -313,7 +314,7 @@ export default class Collection extends Command {
             });
         }
 
-        if (action === 'copy' || action === 'merge' || action === 'rename') {
+        if (action === 'copy' || action === 'clone' || action === 'merge' || action === 'rename') {
             if (!target) {
                 return await ctx.sendMessage({
                     embeds: [client.embed().setColor(client.color.red).setDescription('Provide a target collection name.')],
@@ -333,7 +334,7 @@ export default class Collection extends Command {
                         .embed()
                         .setColor(client.color.main)
                         .setDescription(
-                            `${action === 'merge' ? 'Merged' : action === 'rename' ? 'Renamed' : 'Copied'} **${name}** → **${target}** (${copied} tracks).`
+                            `${action === 'merge' ? 'Merged' : action === 'rename' ? 'Renamed' : action === 'clone' ? 'Cloned' : 'Copied'} **${name}** → **${target}** (${copied} tracks).`
                         ),
                 ],
             });
