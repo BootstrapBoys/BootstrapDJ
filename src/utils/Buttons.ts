@@ -1,4 +1,10 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    MessageActionRowComponentBuilder,
+    StringSelectMenuBuilder,
+} from 'discord.js';
 
 function getButtons(): ActionRowBuilder<ButtonBuilder>[] {
     let pausebut = new ButtonBuilder()
@@ -70,7 +76,7 @@ function getButtons(): ActionRowBuilder<ButtonBuilder>[] {
 
 
 /** Compact controls for command responses; the setup mock keeps getButtons(). */
-function getNowPlayingButtons(): ActionRowBuilder<ButtonBuilder>[] {
+function getNowPlayingButtons(): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
     const previous = new ButtonBuilder()
         .setCustomId('PREV_BUT')
         .setEmoji({ name: '⏮️' })
@@ -86,7 +92,40 @@ function getNowPlayingButtons(): ActionRowBuilder<ButtonBuilder>[] {
         .setEmoji({ name: '⏭️' })
         .setLabel('Skip')
         .setStyle(ButtonStyle.Secondary);
-    return [new ActionRowBuilder<ButtonBuilder>().addComponents(previous, playPause, skip)];
+    return [new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(previous, playPause, skip)];
 }
 
-export { getButtons, getNowPlayingButtons };
+function getNowPlayingMenu(): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
+    const menu = new StringSelectMenuBuilder()
+        .setCustomId('NOWPLAYING_MENU')
+        .setPlaceholder('Playback controls')
+        .addOptions(
+            {
+                label: 'Previous',
+                value: 'PREV_BUT',
+                emoji: { name: '⏮️' },
+                description: 'Play the previous track',
+            },
+            {
+                label: 'Play/Pause',
+                value: 'PAUSE_BUT',
+                emoji: { name: '⏯️' },
+                description: 'Toggle playback',
+            },
+            {
+                label: 'Skip',
+                value: 'SKIP_BUT',
+                emoji: { name: '⏭️' },
+                description: 'Skip the current track',
+            }
+        );
+    return [new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(menu)];
+}
+
+function getNowPlayingControls(
+    mode: 'buttons' | 'menu'
+): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
+    return mode === 'menu' ? getNowPlayingMenu() : getNowPlayingButtons();
+}
+
+export { getButtons, getNowPlayingControls };

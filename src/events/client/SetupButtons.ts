@@ -62,7 +62,12 @@ export default class SetupButtons extends Event {
                 } - Requested by ${player.current.info.requester}`
             )
             .setImage(icon ?? null);
-        if (!interaction.isButton()) return;
+        const controlId = interaction.isButton()
+            ? interaction.customId
+            : interaction.isStringSelectMenu()
+              ? interaction.values[0]
+              : null;
+        if (!controlId) return;
         if (!(await checkDj(this.client, interaction))) {
             await buttonReply(
                 interaction,
@@ -72,7 +77,7 @@ export default class SetupButtons extends Event {
             return;
         }
         if (message) {
-            switch (interaction.customId) {
+            switch (controlId) {
                 case 'LOW_VOL_BUT': {
                     const vol = player.player.volume - 10;
                     player.player.setGlobalVolume(vol);

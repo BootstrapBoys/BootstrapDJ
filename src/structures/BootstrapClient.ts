@@ -96,10 +96,16 @@ export default class BootstrapClient extends Client {
         }
         startDashboard(this);
         this.on(Events.InteractionCreate, async (interaction: Interaction): Promise<void> => {
-            if (!interaction.isButton() || !interaction.guildId) return;
+            if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
+            if (!interaction.guildId) return;
             if (interaction.message?.author?.id !== this.user?.id) return;
             // The setup mock and /nowplaying both use the same control IDs.
-            if (CONTROL_BUTTON_IDS.has(interaction.customId)) {
+            if (interaction.isButton() && CONTROL_BUTTON_IDS.has(interaction.customId)) {
+                this.emit('setupButtons', interaction);
+            } else if (
+                interaction.isStringSelectMenu() &&
+                interaction.customId === 'NOWPLAYING_MENU'
+            ) {
                 this.emit('setupButtons', interaction);
             }
         });
