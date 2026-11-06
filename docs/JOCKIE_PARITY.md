@@ -12,18 +12,19 @@ This branch is additive and experimental. It does **not** change `main`.
 
 ### Queue state
 - `reverse`, `sort`, `swap`, `massremove`, `massmove`
-- `removecurrent`, `removeduplicates`, `removekeyword`, `removeuser`, `removeabsent`, `removelast`
-- `selectrandom`, `nextup` (`upcoming` alias), `recentlyplayed` (`history` alias)
+- `removeduplicates`, `removekeyword`, `removeuser`, `removeabsent`, `removelast`
+- `selectrandom`, `recentlyplayed` (`history` alias); queue totals and upcoming tracks are folded into `/queue`
 
 ### Track state
-- `backward`, `forward`, `previous`, `starttime`, `endtime`, `voteskip`, `shufflerepeat`
+- `backward`, `forward`, `previous`, `endtime`, `voteskip`, `shufflerepeat`; `seek` covers start-time seeking
 - Existing `move`, `replay`, `seek`, `skip`, `skipto`, `loop`, `shuffle`, `remove`, `clearqueue`, `volume`, and filter commands remain unchanged.
 - Jockie-compatible prefix aliases: `rewind`, `restart`, `windto`, `clear`.
 
 ### Playback / search
-- `playrecent` (persistent recent history), `playsingle`, `playselect` (paginated page picker), `playleave`, `radio`
+- `playrecent` (persistent recent history), `playselect` (paginated page picker), `playleave`, `radio`
+- Search is built into `/play`; the standalone `/search` command was removed
 - `album`, `artist`, `playlistsearch`, `top`
-- Existing `play`, `playnext`, `search`, and playlist commands remain.
+- Existing `play`, `playnext`, and playlist commands remain.
 
 ### Information / utility
 - `/utility` grouped page selector for `overview`, `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`; the individual pages remain prefix commands.
@@ -75,7 +76,7 @@ being completed first; public listing/clone services are explicitly out of scope
 ## Known limitations
 
 - `playrecent` stores the newest 100 tracks per guild in `RecentTrack`; it no longer depends on dispatcher lifetime.
-- `playselect` paginates playlist/search results 25 at a time with a select menu; `playsingle` intentionally picks one random track.
+- `playselect` paginates playlist/search results 25 at a time with a select menu.
 - Custom aliases and mappings affect the prefix path; registering aliases as slash commands was rejected because it consumes the limited top-level command slots.
 - Any command that changes the queue persists through the existing session row.
 
@@ -87,7 +88,11 @@ being completed first; public listing/clone services are explicitly out of scope
 
 Dashboard: `DASHBOARD_PORT=8795` on the bot host, loopback-bound by default; set `DASHBOARD_TOKEN` before binding non-loopback.
 
-Slash registration: **84 top-level commands** after grouping (`/utility`, `/filter`); child info/filter names remain prefix commands.
+Slash registration: **71 top-level commands** after grouping (`/utility`, `/filter`); child info/filter names remain prefix commands. `/collection` is the sole slash playlist interface; the legacy playlist commands remain prefix-only for compatibility.
+
+## Playlist consolidation
+
+`/collection` and the legacy playlist commands operate on the same `Playlist`/`Song` tables. `/collection` now covers list/create/delete/view/add/remove/removesong/load/save/rename/copy/clone/merge/clear/share/import/unshare/shares. The old `/create`, `/delete`, `/add`, `/load`, `/list`, `/save`, and `/removesong` commands are prefix-only.
 
 ## Out of scope
 

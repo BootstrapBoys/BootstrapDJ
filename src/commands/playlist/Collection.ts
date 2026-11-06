@@ -30,6 +30,8 @@ export default class Collection extends Command {
                         { name: 'view', value: 'view' },
                         { name: 'add', value: 'add' },
                         { name: 'remove', value: 'remove' },
+                        { name: 'removesong', value: 'removesong' },
+                        { name: 'save', value: 'save' },
                         { name: 'load', value: 'load' },
                         { name: 'rename', value: 'rename' },
                         { name: 'copy', value: 'copy' },
@@ -209,6 +211,28 @@ export default class Collection extends Command {
             });
         }
 
+        if (action === 'save') {
+            const guild = ctx.guild;
+            const player = guild ? client.queue.get(guild.id) : null;
+            if (!player?.current) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                });
+            }
+            let added = 0;
+            for (const track of [player.current, ...player.queue]) {
+                if (await client.db.addSong(author.id, name, track)) added++;
+            }
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(`Saved **${added}** track${added === 1 ? '' : 's'} to **${name}**.`),
+                ],
+            });
+        }
+
         const collection = await client.db.getPLaylist(author.id, name);
         if (!collection) {
             return await ctx.sendMessage({
@@ -260,6 +284,43 @@ export default class Collection extends Command {
             await client.db.clearPlaylist(author.id, name);
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.green).setDescription(`Cleared **${name}**.`)],
+            });
+        }
+
+        if (action === 'removesong') {
+            if (!query) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Provide a track name or URL to remove.')],
+                });
+            }
+            if (!client.queue.hasNode) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('No Lavalink node is available right now.')],
+                });
+            }
+            const track = client.utils.firstTrack(await client.queue.search(query));
+            if (!track) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription(`No results found for **${query}**.`)],
+                });
+            }
+            const key =
+                track.info.uri ??
+                (track.info.identifier && track.info.sourceName
+                    ? `${track.info.sourceName}:${track.info.identifier}`
+                    : track.encoded);
+            const removed = await client.db.removeSong(author.id, name, key);
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(removed ? client.color.green : client.color.red)
+                        .setDescription(
+                            removed
+                                ? `Removed [${track.info.title}](${track.info.uri}) from **${name}**.`
+                                : `[${track.info.title}](${track.info.uri}) is not in **${name}**.`
+                        ),
+                ],
             });
         }
 

@@ -27,7 +27,7 @@ export default class RemoveSong extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: [],
             },
-            slashCommand: true,
+            slashCommand: false,
             defer: true,
             options: [
                 {

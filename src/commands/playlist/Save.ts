@@ -13,7 +13,7 @@ export default class Save extends Command {
             args: true,
             player: { voice: true, dj: false, active: true, djPerm: null },
             permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
-            slashCommand: true,
+            slashCommand: false,
             options: [
                 {
                     name: 'name',

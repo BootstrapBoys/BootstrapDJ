@@ -54,7 +54,6 @@ test('commands that do remote work before replying defer; fast ones do not', asy
     const slow = [
         'music/Play',
         'music/PlayNext',
-        'music/Search',
         'music/Autoplay',
         'music/Lyrics',
         'music/PlayLeave',
@@ -90,10 +89,8 @@ test('the new feature commands are registered and keep ephemeral defaults', asyn
         'music/Forward',
         'music/MassRemove',
         'music/MassMove',
-        'music/NextUp',
         'music/Previous',
         'music/RecentlyPlayed',
-        'music/RemoveCurrent',
         'music/RemoveDuplicates',
         'music/RemoveAbsent',
         'music/RemoveKeyword',
@@ -104,7 +101,6 @@ test('the new feature commands are registered and keep ephemeral defaults', asyn
         'music/ShuffleRepeat',
         'music/SelectRandom',
         'music/Sort',
-        'music/StartTime',
         'music/Swap',
         'music/Top',
         'music/VoteSkip',
@@ -137,6 +133,17 @@ test('slash replies default to ephemeral; queue and nowplaying stay public', asy
     }
 });
 
+
+test('collection exposes the legacy playlist actions without exceeding Discord choice limits', async () => {
+    const CollectionClass = (await import('../dist/commands/playlist/Collection.js')).default;
+    const command = new CollectionClass(fakeClient);
+    const action = command.options[0];
+    const choices = action.choices?.map(choice => choice.value) ?? [];
+
+    assert.ok(choices.includes('save'), 'collection must cover saving the current queue');
+    assert.ok(choices.includes('removesong'), 'collection must cover removing a song by search');
+    assert.ok(choices.length <= 25, 'Discord caps one option at 25 choices');
+});
 
 test('autoplay exposes three optional seed boxes', async () => {
     const AutoplayClass = (await import('../dist/commands/music/Autoplay.js')).default;

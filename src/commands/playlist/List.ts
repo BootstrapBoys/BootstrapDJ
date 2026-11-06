@@ -26,7 +26,7 @@ export default class List extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: [],
             },
-            slashCommand: true,
+            slashCommand: false,
             options: [
                 {
                     name: 'user',

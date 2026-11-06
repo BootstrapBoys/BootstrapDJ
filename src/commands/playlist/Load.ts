@@ -26,7 +26,7 @@ export default class Load extends Command {
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: [],
             },
-            slashCommand: true,
+            slashCommand: false,
             defer: true,
             options: [
                 {

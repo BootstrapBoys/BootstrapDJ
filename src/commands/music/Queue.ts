@@ -59,6 +59,12 @@ export default class Queue extends Command {
                                     ? 'LIVE'
                                     : this.client.utils.formatTime(current.info.length)
                             }`
+                        )
+                        .addFields(
+                            { name: 'Queued tracks', value: '0', inline: true },
+                            { name: 'Queue length', value: '0:00', inline: true },
+                            { name: 'Autoplay', value: player.autoplay ? 'on' : 'off', inline: true },
+                            { name: 'Loop', value: player.loop, inline: true }
                         ),
                 ],
             });
@@ -71,6 +77,7 @@ export default class Queue extends Command {
                     track.info.isStream ? 'LIVE' : this.client.utils.formatTime(track.info.length)
                 }`
         );
+        const total = player.queue.reduce((sum, track) => sum + (track.info.length || 0), 0);
         const chunks = client.utils.chunk(queue, 10);
         if (chunks.length === 0) chunks.push([]);
         const pages: EmbedBuilder[] = [];
@@ -81,6 +88,14 @@ export default class Queue extends Command {
                 .setAuthor({ name: 'Queue', iconURL: guild.iconURL({}) ?? undefined })
                 .setDescription(chunks[i].join('\n'))
                 .setFooter({ text: `Page ${i + 1} of ${chunks.length}` });
+            if (i === 0) {
+                embed.addFields(
+                    { name: 'Queued tracks', value: String(player.queue.length), inline: true },
+                    { name: 'Queue length', value: client.utils.formatTime(total), inline: true },
+                    { name: 'Autoplay', value: player.autoplay ? 'on' : 'off', inline: true },
+                    { name: 'Loop', value: player.loop, inline: true }
+                );
+            }
             pages.push(embed);
         }
 
