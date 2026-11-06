@@ -9,6 +9,7 @@ import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Context, Event } from '../../structures/index.js';
 import { evaluateCommand } from '../../utils/CommandGate.js';
+import { shouldReplyEphemeral } from '../../utils/ResponseMode.js';
 
 export default class InteractionCreate extends Event {
     private static readonly PLAYLIST_CACHE_MS = 5000;
@@ -107,6 +108,7 @@ export default class InteractionCreate extends Event {
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
             const guildSettings = await this.client.db.getGuildSettings(interaction.guildId);
+            const ephemeral = shouldReplyEphemeral(command.ephemeral, guildSettings);
             const channel = interaction.channel;
             if (!channel) return;
             const gateArgs = [...interaction.options.data].map(option =>
@@ -147,16 +149,16 @@ export default class InteractionCreate extends Event {
                     await member.send(gate.response).catch(() => {});
                     return;
                 }
-                return await interaction.reply({ ...gate.response, ephemeral: true });
+                return await interaction.reply({ ...gate.response, ephemeral });
             }
 
-            const ctx = new Context(interaction, [...interaction.options.data], command.ephemeral);
+            const ctx = new Context(interaction, [...interaction.options.data], ephemeral);
             ctx.deleteAfter = Number(guildSettings.deleteafter) || null;
             ctx.setArgs(interaction.options.data);
 
             if (command.defer) {
                 try {
-                    await ctx.defer(command.ephemeral);
+                    await ctx.defer(ephemeral);
                 } catch (error) {
                     // The interaction can expire before the bot reaches this
                     // point; acknowledging again is impossible, so log and stop.
@@ -179,7 +181,7 @@ export default class InteractionCreate extends Event {
                 if (code === 10062 || code === 40060) return;
                 const payload = {
                     content: `An error occurred: \`${error}\``,
-                    ephemeral: command.ephemeral,
+                    ephemeral,
                 };
                 try {
                     await (interaction.deferred || interaction.replied

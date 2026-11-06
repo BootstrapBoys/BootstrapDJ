@@ -184,6 +184,16 @@ export default class Settings extends Command {
                 embeds: [client.embed().setColor(client.color.red).setDescription('That value is too long.')],
             });
         }
+        if (key === 'ephemeral' && value !== 'true' && value !== 'false') {
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('`ephemeral` must be `true` (private) or `false` (public).'),
+                ],
+            });
+        }
         await client.db.setGuildSetting(guild.id, key, value);
         return await ctx.sendMessage({
             embeds: [

@@ -13,6 +13,7 @@ const TARGETS: Record<string, string> = {
     support: 'support',
     leaderboard: 'leaderboard',
     commands: 'commands',
+    dashboard: 'dashboard',
 };
 
 export default class Utility extends Command {
@@ -62,6 +63,46 @@ export default class Utility extends Command {
                                 `**Slash commands:** ${client.application?.commands.cache.size ?? 'not synced'}`,
                                 `**Guild prefix:** \`${guildData?.prefix ?? client.config.prefix}\``,
                                 `**Disabled here:** ${disabled.length ? disabled.map(name => `\`${name}\``).join(', ') : 'none'}`,
+                            ].join('\n')
+                        ),
+                ],
+            });
+        }
+        if (page === 'dashboard') {
+            const configured = client.config.dashboardPublicUrl;
+            let url = '';
+            if (configured) {
+                url = configured;
+            } else if (client.config.dashboardOAuthRedirectUri) {
+                try {
+                    url = new URL(client.config.dashboardOAuthRedirectUri).origin + '/';
+                } catch {
+                    url = '';
+                }
+            }
+            if (!url) {
+                return await ctx.sendMessage({
+                    embeds: [
+                        client
+                            .embed()
+                            .setColor(client.color.red)
+                            .setDescription(
+                                'The dashboard is not configured. Set `DASHBOARD_PUBLIC_URL` or `DASHBOARD_OAUTH_REDIRECT_URI`.'
+                            ),
+                    ],
+                });
+            }
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setTitle('BootstrapDJ Dashboard')
+                        .setDescription(
+                            [
+                                `[Open the dashboard](${url})`,
+                                '',
+                                'Sign in with Discord. Only server admins can view or change settings.',
                             ].join('\n')
                         ),
                 ],

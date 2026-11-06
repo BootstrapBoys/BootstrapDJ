@@ -11,6 +11,7 @@ export const DEFAULTS: Record<string, string> = {
     voteskip: 'true',
     voteskippercent: '50',
     announce: 'true',
+    ephemeral: 'true',
     deleteafter: '10',
     commandchannel: '',
     voicechannel: '',

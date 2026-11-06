@@ -68,11 +68,11 @@ being completed first; public listing/clone services are explicitly out of scope
 - **Prefix modes:** personal prefix set/reset/list and comma-combined server prefixes are implemented.
 - **Permission modes:** claim/transfer ownership and per-command allow/deny rules are implemented; rebind/session/property modes are intentionally simplified away.
 - **Command routing:** text/voice gates, thread policy (`settings allowthreads`), disabled-command filtering, session lock, autocorrect execution, vote-skip percentages, and `/utility commands` status listing are implemented.
-- **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count and duration, listener/pause/idle timeouts, timeout confirmation prompt, auto-delete, prefix combine, per-guild search type, session lock, thread policy, and autocorrect execution are implemented; adaptive loudness is implemented via cached ffmpeg LUFS sampling; preferred-bot ordering still requires multiple bot accounts/instances.
+- **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count and duration, listener/pause/idle timeouts, timeout confirmation prompt, auto-delete, ephemeral/public slash replies (`settings ephemeral`), prefix combine, per-guild search type, session lock, thread policy, and autocorrect execution are implemented; adaptive loudness is implemented via cached ffmpeg LUFS sampling; preferred-bot ordering still requires multiple bot accounts/instances.
 - **24/7 mode:** stays connected and bypasses listener, pause, idle, and confirmation timeouts. If the channel empties, it pauses at the current track end and resumes/restarts when a listener joins; an explicit `/playleave` still leaves.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** dev-only restart, shutdown, and command reload are implemented.
-- **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, a categorized settings editor, and a statistics page (sessions, listen time, track types, hourly/weekday activity, most played, most listened, top commands).
+- **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, a categorized settings editor covering every setting, and a statistics page (sessions, listen time, track types, hourly/weekday activity, most played, most listened, top commands). `/utility dashboard` links to `DASHBOARD_PUBLIC_URL` (or derives the origin from the OAuth redirect URI).
 - **Multi-bot:** `BOTS_FILE` launches one client per token, heartbeats bots, routes voice commands to the first active bot in `preferredOrder`, and uses a durable `SessionLease` for automatic session handoff after the owner stops heartbeating. The lease is atomically claimed, refreshed every 10 s, and expires after 60 s.
 
 ## Known limitations
@@ -86,7 +86,7 @@ being completed first; public listing/clone services are explicitly out of scope
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 129 tests at the latest branch commit.
+- `npm test` — 132 tests at the latest branch commit.
 
 Storage: WAL mode and bounded stats retention are documented in [`docs/STORAGE.md`](STORAGE.md).
 

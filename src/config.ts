@@ -65,6 +65,7 @@ export default {
     // Local web dashboard: filter toggles and the /settings editor.
     dashboardPort: process.env.DASHBOARD_PORT ? parseInt(process.env.DASHBOARD_PORT) : 0,
     dashboardHost: process.env.DASHBOARD_HOST || '127.0.0.1',
+    dashboardPublicUrl: process.env.DASHBOARD_PUBLIC_URL || '',
     dashboardToken: process.env.DASHBOARD_TOKEN || '',
     dashboardOAuthClientId: process.env.DASHBOARD_OAUTH_CLIENT_ID || process.env.CLIENT_ID || '',
     dashboardOAuthClientSecret: process.env.DASHBOARD_OAUTH_CLIENT_SECRET || '',
