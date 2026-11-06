@@ -6,6 +6,7 @@ import config from '../config.js';
 import {
     AutoplaySetting,
     Botchannel,
+    BotPresence,
     CollectionShare,
     CommandAlias,
     CommandMapping,
@@ -311,6 +312,18 @@ export default class ServerData {
             orderBy: [{ wins: 'desc' }, { plays: 'asc' }],
             take: limit,
         });
+    }
+
+    public async heartbeatBot(botId: string, name: string): Promise<BotPresence> {
+        return await this.prisma.botPresence.upsert({
+            where: { botId },
+            create: { botId, name, lastSeen: new Date() },
+            update: { name, lastSeen: new Date() },
+        });
+    }
+
+    public async getBotPresence(botId: string): Promise<BotPresence | null> {
+        return await this.prisma.botPresence.findUnique({ where: { botId } });
     }
 
     public async getUserPrefix(guildId: string, userId: string): Promise<string | null> {

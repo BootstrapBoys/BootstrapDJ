@@ -28,7 +28,7 @@ const clientOptions: ClientOptions = {
 
 const client = new BootstrapClient(clientOptions);
 
-client.start(config.token);
+client.start(process.env.BOT_TOKEN || config.token);
 
 /**
  * Project: BootstrapDJ

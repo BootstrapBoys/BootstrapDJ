@@ -107,6 +107,15 @@ export default class InteractionCreate extends Event {
             await this.client.db.get(interaction.guildId); // get or create guild data
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
+            if (command.player?.voice) {
+                const preferred = await this.client.preferredBotStatus(interaction.guildId);
+                if (!preferred.allowed) {
+                    return await interaction.reply({
+                        content: `Voice commands are routed to **${preferred.name ?? 'the preferred bot'}** for this server. Use that bot.`,
+                        ephemeral: true,
+                    });
+                }
+            }
             const lockedSettings = await this.client.db.getGuildSettings(interaction.guildId);
             if (
                 lockedSettings.locked === 'true' &&

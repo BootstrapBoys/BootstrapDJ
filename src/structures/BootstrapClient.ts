@@ -23,6 +23,7 @@ import config from '../config.js';
 import { startDashboard } from '../dashboard/server.js';
 import ServerData from '../database/server.js';
 import loadPlugins from '../plugin/index.js';
+import { loadBots } from '../utils/BotsFile.js';
 import { findBestPublicNode, toNodeOption } from '../utils/PublicNodes.js';
 import { Utils } from '../utils/Utils.js';
 
@@ -62,6 +63,16 @@ export default class BootstrapClient extends Client {
         this.logger.info(`Successfully loaded events!`);
         await loadPlugins(this);
         await this.login(token);
+        if (this.config.botsFile && this.user) {
+            const beat = (): void => {
+                void this.db
+                    .heartbeatBot(this.user!.id, this.config.botName || this.user!.username)
+                    .catch(() => {});
+            };
+            beat();
+            const timer = setInterval(beat, 30_000);
+            (timer as unknown as { unref?: () => void }).unref?.();
+        }
         startDashboard(this);
         this.on(Events.InteractionCreate, async (interaction: Interaction): Promise<void> => {
             if (!interaction.isButton() || !interaction.guildId) return;
@@ -74,6 +85,32 @@ export default class BootstrapClient extends Client {
                 this.emit('setupButtons', interaction);
             }
         });
+    }
+
+    /** Which configured bot should own voice in this guild. Falls back to
+     * allowing the caller when no other bot has a fresh heartbeat. */
+    public async preferredBotStatus(guildId: string): Promise<{ allowed: boolean; name: string | null }> {
+        if (!this.config.botsFile || !this.user) return { allowed: true, name: null };
+        let bots;
+        try {
+            bots = loadBots(this.config.botsFile);
+        } catch {
+            return { allowed: true, name: null };
+        }
+        if (bots.length <= 1) return { allowed: true, name: null };
+        const guild = this.guilds.cache.get(guildId);
+        if (!guild) return { allowed: true, name: null };
+        for (const bot of bots) {
+            if (bot.clientId === this.user.id) {
+                return { allowed: true, name: bot.name };
+            }
+            const presence = await this.db.getBotPresence(bot.clientId).catch(() => null);
+            if (!presence) continue;
+            if (Date.now() - new Date(presence.lastSeen).getTime() > 90_000) continue;
+            if (!guild.members.cache.has(bot.clientId)) continue;
+            return { allowed: false, name: bot.name };
+        }
+        return { allowed: true, name: null };
     }
 
     private async loadCommands(): Promise<void> {

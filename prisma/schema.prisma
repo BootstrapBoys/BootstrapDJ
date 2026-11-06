@@ -99,6 +99,12 @@ model CollectionShare {
   createdAt DateTime @default(now())
 }
 
+model BotPresence {
+  botId    String   @id
+  name     String
+  lastSeen DateTime @default(now())
+}
+
 model Guild {
   guildId    String      @id
   prefix     String

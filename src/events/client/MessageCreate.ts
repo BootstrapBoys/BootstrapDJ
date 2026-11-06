@@ -91,6 +91,14 @@ export default class MessageCreate extends Event {
             }
             if (!command) return;
         }
+        if (command.player?.voice) {
+            const preferred = await this.client.preferredBotStatus(message.guildId);
+            if (!preferred.allowed) {
+                return await replySafe({
+                    content: `Voice commands are routed to **${preferred.name ?? 'the preferred bot'}** for this server. Use that bot.`,
+                });
+            }
+        }
         if (
             guildSettings.locked === 'true' &&
             'permissions' in member &&
