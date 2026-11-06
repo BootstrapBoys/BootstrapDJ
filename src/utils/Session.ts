@@ -101,6 +101,9 @@ export async function restoreSessions(client: BootstrapClient): Promise<void> {
     // the others take over later through the lease watchdog.
     if (client.config.botPriority >= 0 && client.config.botPriority !== 0) return;
     const sessions = await client.db.getSessions();
+    client.logger.info(
+        `[session] boot restore priority=${client.config.botPriority} sessions=${sessions.length}`
+    );
     if (!sessions.length) return;
     const botUser = client.user;
     if (!botUser) return;
@@ -187,7 +190,7 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
         );
         if (!claimed) continue;
         client.logger.info(
-            `[lease] ${botUser.username} claimed ${session.guildId} after lease expiry`
+            `[lease] ${botUser.username} claimed ${session.guildId} (priority ${client.config.botPriority})`
         );
         try {
             await restoreSession(client, session, botUser);
