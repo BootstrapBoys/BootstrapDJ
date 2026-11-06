@@ -261,7 +261,9 @@ function field(key,value){const box=document.createElement('label');box.classNam
 async function refreshPlayer(){const guildId=state.guildId;if(!guildId)return;try{const d=await api('/api/state?guildId='+encodeURIComponent(guildId));if(state.guildId!==guildId)return;state.data=d;renderPlayer(d)}catch(e){}}
 let progress={position:0,duration:0,at:0,paused:true};
 function drawProgress(){const p=state.data&&state.data.player;if(!p)return;const elapsed=p.paused?0:Date.now()-progress.at;const position=progress.duration>0?Math.min(progress.duration,progress.position+elapsed):progress.position+elapsed;const percent=progress.duration>0?Math.min(100,Math.round((position/progress.duration)*100)):0;$('#progress-bar').style.width=percent+'%'}
-function renderPlayer(d){const p=d.player;const title=$('#now-title'),meta=$('#now-meta'),stateEl=$('#player-state'),list=$('#queue-list'),count=$('#queue-count');if(!p){title.textContent='Nothing playing';meta.textContent='';progress={position:0,duration:0,at:Date.now(),paused:true};$('#progress-bar').style.width='0';stateEl.textContent='idle';list.innerHTML='<div class="small">Nothing queued.</div>';count.textContent='';$('#volume').value=100;$('#volume-label').textContent='100%';$('#loop-btn').textContent='Loop: off';return}title.textContent=p.title||'Nothing playing';meta.textContent=(p.author||'')+(p.duration?' · '+formatMs(p.duration):'')+(p.position?' · '+formatMs(p.position):'');progress={position:p.position||0,duration:p.duration||0,at:Date.now(),paused:Boolean(p.paused)};drawProgress();stateEl.textContent=(p.paused?'paused':'playing')+(p.autoplay?' · autoplay':'');$('#volume').value=p.volume??100;$('#volume-label').textContent=($('#volume').value)+'%';const loop=$('#loop-btn');loop.textContent='Loop: '+p.loop;loop.classList.toggle('on',p.loop!=='off');count.textContent=p.queueLength+' queued';list.innerHTML='';if(!p.upcoming||!p.upcoming.length){list.innerHTML='<div class="small">Nothing queued.</div>';return}for(const t of p.upcoming){const row=document.createElement('div');row.className='queue-item';const pos=document.createElement('span');pos.className='qpos';pos.textContent=t.position;const name=document.createElement('span');name.className='qtitle';name.textContent=t.title;const meta2=document.createElement('span');meta2.className='qmeta';meta2.textContent=(t.author||'')+(t.duration?' · '+formatMs(t.duration):'');row.append(pos,name,meta2);row.title='Skip to '+t.title;row.tabIndex=0;row.role='button';row.onclick=()=>playerAction('jump',t.position);row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();playerAction('jump',t.position)}};list.appendChild(row)}}
+function renderPlayer(d){const p=d.player;const title=$('#now-title'),meta=$('#now-meta'),stateEl=$('#player-state'),list=$('#queue-list'),count=$('#queue-count');if(!p){title.textContent='Nothing playing';meta.textContent='';progress={position:0,duration:0,at:Date.now(),paused:true};$('#progress-bar').style.width='0';stateEl.textContent='idle';list.innerHTML='<div class="small">Nothing queued.</div>';count.textContent='';$('#volume').value=100;$('#volume-label').textContent='100%';$('#loop-btn').textContent='Loop: off';return}title.textContent=p.title||'Nothing playing';meta.textContent=(p.author||'')+(p.duration?' · '+formatMs(p.duration):'')+(p.position?' · '+formatMs(p.position):'');const nextPosition=p.position||0;const nextDuration=p.duration||0;const nextPaused=Boolean(p.paused);
+if(nextPosition!==progress.position||nextDuration!==progress.duration||nextPaused!==progress.paused){progress={position:nextPosition,duration:nextDuration,at:Date.now(),paused:nextPaused}}
+drawProgress();stateEl.textContent=(p.paused?'paused':'playing')+(p.autoplay?' · autoplay':'');$('#volume').value=p.volume??100;$('#volume-label').textContent=($('#volume').value)+'%';const loop=$('#loop-btn');loop.textContent='Loop: '+p.loop;loop.classList.toggle('on',p.loop!=='off');count.textContent=p.queueLength+' queued';list.innerHTML='';if(!p.upcoming||!p.upcoming.length){list.innerHTML='<div class="small">Nothing queued.</div>';return}for(const t of p.upcoming){const row=document.createElement('div');row.className='queue-item';const pos=document.createElement('span');pos.className='qpos';pos.textContent=t.position;const name=document.createElement('span');name.className='qtitle';name.textContent=t.title;const meta2=document.createElement('span');meta2.className='qmeta';meta2.textContent=(t.author||'')+(t.duration?' · '+formatMs(t.duration):'');row.append(pos,name,meta2);row.title='Skip to '+t.title;row.tabIndex=0;row.role='button';row.onclick=()=>playerAction('jump',t.position);row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();playerAction('jump',t.position)}};list.appendChild(row)}}
 function formatMs(ms){const s=Math.max(0,Math.floor(ms/1000));const m=Math.floor(s/60);const h=Math.floor(m/60);return h?h+':'+String(m%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):m+':'+String(s%60).padStart(2,'0')}
 function render(){const d=state.data;renderPlayer(d);
  const wrap=$('#filters');wrap.innerHTML='';for(const f of d.filters){const row=document.createElement('div');row.className='filter';const active=f.active;const label=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.checked=active;cb.onchange=()=>toggleFilter(f.id,cb.checked,row);label.appendChild(cb);const span=document.createElement('span');span.textContent=f.label;label.appendChild(span);row.appendChild(label);if(f.value){const input=document.createElement('input');input.type='number';input.className='value';input.min=f.value.min;input.max=f.value.max;input.step=f.value.step;input.value=f.current??f.value.fallback;input.onchange=()=>{if(cb.checked)toggleFilter(f.id,true,row,input.value)};row.appendChild(input)}wrap.appendChild(row)}
@@ -481,12 +483,12 @@ export function startDashboard(client: BootstrapClient): void {
                 return;
             }
             if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
-                res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+                res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
                 res.end(HTML);
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/api/guilds') {
-                res.writeHead(200, { 'content-type': 'application/json' });
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(
                     JSON.stringify({
                         guilds: [...client.guilds.cache.values()].map(guild => ({
@@ -501,7 +503,7 @@ export function startDashboard(client: BootstrapClient): void {
                 const guildId = url.searchParams.get('guildId') ?? '';
                 const data = state(client, guildId);
                 data.settings = await settingsState(client, guildId);
-                res.writeHead(200, { 'content-type': 'application/json' });
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify(data));
                 return;
             }
@@ -511,7 +513,7 @@ export function startDashboard(client: BootstrapClient): void {
                 const key = bodyText(body.key);
                 const value = bodyText(body.value);
                 await updateSetting(client, guildId, key, value);
-                res.writeHead(200, { 'content-type': 'application/json' });
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, settings: await settingsState(client, guildId) }));
                 return;
             }
@@ -522,7 +524,7 @@ export function startDashboard(client: BootstrapClient): void {
                 const enabled = Boolean(body.enabled);
                 const value = body.value === undefined ? undefined : Number(body.value);
                 applyFilter(client, guildId, filter, enabled, value);
-                res.writeHead(200, { 'content-type': 'application/json' });
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, filters: filterState(client, guildId) }));
                 return;
             }
@@ -532,7 +534,7 @@ export function startDashboard(client: BootstrapClient): void {
                 const action = bodyText(body.action);
                 const value = Number(body.value ?? 0);
                 await playerAction(client, guildId, action, value);
-                res.writeHead(200, { 'content-type': 'application/json' });
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, player: state(client, guildId).player }));
                 return;
             }
