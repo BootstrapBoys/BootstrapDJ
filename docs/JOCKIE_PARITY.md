@@ -68,7 +68,7 @@ being completed first; external-service features are listed explicitly.
 - **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count, auto-delete, prefix combine, per-guild search type, session lock, and autocorrect suggestions are implemented; timeout confirmation, preferred bots, and volume automation remain.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** dev-only `restart` is implemented; broader reload/shutdown tooling remains.
-- **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with filter toggles and a full settings editor. Bot-list votes/clones still require external services.
+- **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, and a categorized settings editor. Bot-list votes/clones still require external services.
 
 ## Known limitations
 
