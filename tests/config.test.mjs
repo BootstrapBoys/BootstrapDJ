@@ -47,6 +47,18 @@ test.before(async () => {
     await prisma.$executeRawUnsafe(
         `CREATE TABLE "CollectionShare" ("code" TEXT NOT NULL PRIMARY KEY, "ownerId" TEXT NOT NULL, "name" TEXT NOT NULL, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`
     );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "StatsDaily" ("guildId" TEXT NOT NULL, "day" TEXT NOT NULL, "seconds" INTEGER NOT NULL DEFAULT 0, "sessions" INTEGER NOT NULL DEFAULT 0, "gameSessions" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY ("guildId", "day"))`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "StatsTrack" ("guildId" TEXT NOT NULL, "trackId" TEXT NOT NULL, "title" TEXT NOT NULL, "author" TEXT NOT NULL, "source" TEXT NOT NULL, "uri" TEXT, "seconds" INTEGER NOT NULL DEFAULT 0, "plays" INTEGER NOT NULL DEFAULT 0, "lastPlayed" DATETIME NOT NULL, PRIMARY KEY ("guildId", "trackId"))`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "StatsListener" ("guildId" TEXT NOT NULL, "userId" TEXT NOT NULL, "seconds" INTEGER NOT NULL DEFAULT 0, "deafSeconds" INTEGER NOT NULL DEFAULT 0, "lastSeen" DATETIME NOT NULL, PRIMARY KEY ("guildId", "userId"))`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "SessionLease" ("guildId" TEXT NOT NULL PRIMARY KEY, "botId" TEXT NOT NULL, "botName" TEXT NOT NULL, "expiresAt" DATETIME NOT NULL, "updatedAt" DATETIME NOT NULL)`
+    );
 });
 
 test.after(async () => {
@@ -120,4 +132,45 @@ test('game scores increment and rank by wins', async () => {
     assert.equal(board[0].userId, 'u2');
     assert.equal(board[0].wins, 1);
     assert.equal(board[0].plays, 1);
+});
+
+
+test('SQLite initialization enables WAL', async () => {
+    await db.initialize();
+    const rows = await prisma.$queryRawUnsafe('PRAGMA journal_mode');
+    assert.equal(String(rows[0].journal_mode).toLowerCase(), 'wal');
+});
+
+test('stats retention keeps recent rows and each guild top 100', async () => {
+    const now = new Date('2026-06-01T12:00:00Z');
+    const old = new Date('2025-01-01T00:00:00Z');
+    const recent = new Date('2026-05-30T00:00:00Z');
+    await prisma.statsDaily.create({ data: { guildId: 'g1', day: '2025-01-01', seconds: 10 } });
+    await prisma.statsDaily.create({ data: { guildId: 'g1', day: '2026-05-30', seconds: 20 } });
+    await prisma.statsTrack.create({ data: { guildId: 'g1', trackId: 'top', title: 'Top', author: 'A', source: 'deezer', seconds: 1000, plays: 1, lastPlayed: old } });
+    await prisma.statsTrack.create({ data: { guildId: 'g1', trackId: 'tail', title: 'Tail', author: 'A', source: 'deezer', seconds: 1, plays: 1, lastPlayed: old } });
+    await prisma.statsTrack.create({ data: { guildId: 'g1', trackId: 'new', title: 'New', author: 'A', source: 'deezer', seconds: 5, plays: 1, lastPlayed: recent } });
+    // 100 old, low-play rows fill the retained top-100 slot with 99 of them,
+    // so exactly one old row falls outside the protection.
+    for (let index = 0; index < 100; index++) {
+        await prisma.statsTrack.create({
+            data: { guildId: 'g1', trackId: `old-${index}`, title: `Old ${index}`, author: 'A', source: 'deezer', seconds: 1, plays: 1, lastPlayed: old },
+        });
+    }
+    await prisma.statsListener.create({ data: { guildId: 'g1', userId: 'top', seconds: 500, lastSeen: old } });
+    await prisma.statsListener.create({ data: { guildId: 'g1', userId: 'new', seconds: 2, lastSeen: recent } });
+    for (let index = 0; index < 100; index++) {
+        await prisma.statsListener.create({
+            data: { guildId: 'g1', userId: `old-${index}`, seconds: 1, lastSeen: old },
+        });
+    }
+    await prisma.sessionLease.create({ data: { guildId: 'expired', botId: 'b', botName: 'B', expiresAt: old, updatedAt: old } });
+    await prisma.sessionLease.create({ data: { guildId: 'live', botId: 'b', botName: 'B', expiresAt: new Date('2026-06-01T13:00:00Z'), updatedAt: now } });
+
+    const result = await db.pruneStats({ now, retentionDays: 90, inactiveDays: 180 });
+    assert.deepEqual(result, { daily: 1, tracks: 3, listeners: 2, leases: 1 });
+    assert.equal((await prisma.statsDaily.count()), 1);
+    assert.equal((await prisma.statsTrack.count()), 100);
+    assert.equal((await prisma.statsListener.count()), 100);
+    assert.equal((await prisma.sessionLease.count()), 1);
 });

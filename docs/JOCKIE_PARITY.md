@@ -84,7 +84,9 @@ being completed first; public listing/clone services are explicitly out of scope
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 95 tests at the latest branch commit.
+- `npm test` — 97 tests at the latest branch commit.
+
+Storage: WAL mode and bounded stats retention are documented in [`docs/STORAGE.md`](STORAGE.md).
 
 Dashboard: `DASHBOARD_PORT=8795` on the bot host, loopback-bound by default; set `DASHBOARD_TOKEN` before binding non-loopback.
 

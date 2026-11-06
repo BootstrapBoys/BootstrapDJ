@@ -44,6 +44,7 @@ export default class BootstrapClient extends Client {
     public queue = new Queue(this);
     /** True while the process is doing a graceful shutdown; don't erase saved sessions. */
     public shuttingDown = false;
+    private statsMaintenanceStarted = false;
     public constructor(options: ClientOptions) {
         super(options);
     }
@@ -59,6 +60,10 @@ export default class BootstrapClient extends Client {
         } else {
             this.shoukaku = new ShoukakuClient(this, []);
         }
+        await this.db
+            .initialize()
+            .catch(error => this.logger.warn(`[db] SQLite initialization failed: ${error}`));
+        this.startStatsMaintenance();
         await this.loadCommands();
         this.logger.info(`Successfully loaded commands!`);
         await this.loadEvents();
@@ -122,6 +127,29 @@ export default class BootstrapClient extends Client {
             return { allowed: false, name: bot.name };
         }
         return { allowed: true, name: null };
+    }
+
+    private startStatsMaintenance(): void {
+        if (this.statsMaintenanceStarted || this.config.botPriority > 0) return;
+        const intervalHours = this.config.statsPruneIntervalHours;
+        if (!Number.isFinite(intervalHours) || intervalHours <= 0) return;
+        this.statsMaintenanceStarted = true;
+        const run = (): void => {
+            void this.db
+                .pruneStats()
+                .then(result => {
+                    const removed = result.daily + result.tracks + result.listeners + result.leases;
+                    if (removed > 0) {
+                        this.logger.info(
+                            `[stats] pruned ${result.daily} daily, ${result.tracks} tracks, ${result.listeners} listeners, ${result.leases} expired leases`
+                        );
+                    }
+                })
+                .catch(error => this.logger.warn(`[stats] retention job failed: ${error}`));
+        };
+        run();
+        const timer = setInterval(run, intervalHours * 60 * 60 * 1000);
+        (timer as unknown as { unref?: () => void }).unref?.();
     }
 
     private async loadCommands(): Promise<void> {

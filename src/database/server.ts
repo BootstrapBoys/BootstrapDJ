@@ -52,8 +52,17 @@ function createPrismaClient(): PrismaClient {
     return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
 }
 
+export interface StatsPruneResult {
+    daily: number;
+    tracks: number;
+    listeners: number;
+    leases: number;
+}
+
 export default class ServerData {
     private prisma: PrismaClient;
+    /** PRAGMAs are connection/file scoped; every bot process runs this once. */
+    private initPromise: Promise<void> | null = null;
     /** Guild rows are read for every message and every command; cache them and
      * invalidate on write (single-process bot, so no cross-process staleness). */
     private guildCache = new Map<string, Guild>();
@@ -67,6 +76,111 @@ export default class ServerData {
         // Injectable so tests can pass a client wired to a throwaway SQLite
         // file instead of the tracked database file.
         this.prisma = prisma ?? createPrismaClient();
+    }
+
+    /**
+     * Enable SQLite's concurrent-reader mode. WAL is stored in the database
+     * file, so setting it once is enough; busy_timeout and synchronous are
+     * per-connection and must be set by every bot process.
+     */
+    public async initialize(): Promise<void> {
+        if (!this.initPromise) {
+            this.initPromise = (async () => {
+                await this.prisma.$queryRawUnsafe('PRAGMA busy_timeout = 10000');
+                await this.prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL');
+                await this.prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL');
+            })().catch(error => {
+                this.initPromise = null;
+                throw error;
+            });
+        }
+        await this.initPromise;
+    }
+
+    /**
+     * Bound statistics growth. Daily rollups are pruned to the dashboard's
+     * maximum range. Inactive track/listener rows are pruned, but the top 100
+     * per guild are always kept so all-time leaderboards survive.
+     */
+    public async pruneStats(options: {
+        now?: Date;
+        retentionDays?: number;
+        inactiveDays?: number;
+    } = {}): Promise<StatsPruneResult> {
+        const now = options.now ?? new Date();
+        const retentionDays = options.retentionDays ?? config.statsRetentionDays;
+        const inactiveDays = options.inactiveDays ?? config.statsInactiveDays;
+        const result: StatsPruneResult = { daily: 0, tracks: 0, listeners: 0, leases: 0 };
+
+        if (retentionDays > 0) {
+            const cutoffDay = new Date(
+                Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - retentionDays)
+            )
+                .toISOString()
+                .slice(0, 10);
+            result.daily = (await this.prisma.statsDaily.deleteMany({ where: { day: { lt: cutoffDay } } })).count;
+        }
+
+        if (inactiveDays > 0) {
+            const cutoff = new Date(now.getTime() - inactiveDays * 86_400_000);
+            result.tracks = await this.pruneInactiveTracks(cutoff);
+            result.listeners = await this.pruneInactiveListeners(cutoff);
+        }
+
+        result.leases = (
+            await this.prisma.sessionLease.deleteMany({ where: { expiresAt: { lt: now } } })
+        ).count;
+        return result;
+    }
+
+    private async pruneInactiveTracks(cutoff: Date): Promise<number> {
+        const guilds = await this.prisma.statsTrack.findMany({
+            select: { guildId: true },
+            distinct: ['guildId'],
+        });
+        let removed = 0;
+        for (const { guildId } of guilds) {
+            const keep = await this.prisma.statsTrack.findMany({
+                where: { guildId },
+                orderBy: { seconds: 'desc' },
+                take: 100,
+                select: { trackId: true },
+            });
+            const removedForGuild = await this.prisma.statsTrack.deleteMany({
+                where: {
+                    guildId,
+                    lastPlayed: { lt: cutoff },
+                    ...(keep.length ? { trackId: { notIn: keep.map(row => row.trackId) } } : {}),
+                },
+            });
+            removed += removedForGuild.count;
+        }
+        return removed;
+    }
+
+    private async pruneInactiveListeners(cutoff: Date): Promise<number> {
+        const guilds = await this.prisma.statsListener.findMany({
+            select: { guildId: true },
+            distinct: ['guildId'],
+        });
+        let removed = 0;
+        for (const { guildId } of guilds) {
+            const keep = await this.prisma.statsListener.findMany({
+                where: { guildId },
+                orderBy: { seconds: 'desc' },
+                take: 100,
+                select: { userId: true },
+            });
+            const removedForGuild = await this.prisma.statsListener.deleteMany({
+                where: {
+                    guildId,
+                    lastSeen: { lt: cutoff },
+                    ...(keep.length ? { userId: { notIn: keep.map(row => row.userId) } } : {}),
+                },
+            });
+            removed += removedForGuild.count;
+        }
+        return removed;
     }
 
     public async get(guildId: string): Promise<Guild | null> {

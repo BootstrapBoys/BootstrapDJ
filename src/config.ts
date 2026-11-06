@@ -49,6 +49,12 @@ export default {
         ? parseInt(process.env.NODE_ALERT_REMINDER_MINUTES)
         : 15, // minutes between 'still down' notices during a node outage (0 disables)
     sessionEmptyWait: process.env.SESSION_EMPTY_WAIT ? parseInt(process.env.SESSION_EMPTY_WAIT) : 30, // seconds to wait for a listener before discarding the queue (0 = no wait)
+    // Stats retention. Daily history backs the dashboard's 90-day maximum;
+    // inactive track/listener aggregates are trimmed after this many days but
+    // each guild's top 100 rows are preserved. 0 disables that half of the job.
+    statsRetentionDays: process.env.STATS_RETENTION_DAYS ? parseInt(process.env.STATS_RETENTION_DAYS) : 90,
+    statsInactiveDays: process.env.STATS_INACTIVE_DAYS ? parseInt(process.env.STATS_INACTIVE_DAYS) : 180,
+    statsPruneIntervalHours: process.env.STATS_PRUNE_INTERVAL_HOURS ? parseInt(process.env.STATS_PRUNE_INTERVAL_HOURS) : 24,
     owners: (process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : []) as string[], // bot owners
     clientId: process.env.CLIENT_ID ?? '', // bot client id
     guildId: process.env.GUILD_ID ?? '', // guild id
