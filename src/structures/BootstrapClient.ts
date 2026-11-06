@@ -129,10 +129,13 @@ export default class BootstrapClient extends Client {
         this.once(Events.ClientReady, async () => {
             const userId = this.user?.id;
             if (!userId) return;
-            const applicationCommands =
+            const registrationRoutes =
                 this.config.production === true
-                    ? Routes.applicationCommands(userId)
-                    : Routes.applicationGuildCommands(userId, this.config.guildId);
+                    ? [Routes.applicationCommands(userId)]
+                    : [...this.guilds.cache.keys()].map(guildId => Routes.applicationGuildCommands(userId, guildId));
+            if (!this.config.production && !registrationRoutes.length) {
+                registrationRoutes.push(Routes.applicationGuildCommands(userId, this.config.guildId));
+            }
             try {
                 // Discord accepts at most 100 top-level chat-input commands.
                 // Group related commands or mark them prefix-only before this
@@ -155,8 +158,10 @@ export default class BootstrapClient extends Client {
                         this.logger.info(`[slash] cleared ${existing.length} stale global commands`);
                     }
                 }
-                await rest.put(applicationCommands, { body: this.body });
-                this.logger.info(`Successfully loaded slash commands!`);
+                for (const route of registrationRoutes) {
+                    await rest.put(route, { body: this.body });
+                }
+                this.logger.info(`Successfully loaded slash commands in ${registrationRoutes.length} guild(s)!`);
             } catch (error) {
                 this.logger.error(error);
             }
