@@ -174,6 +174,39 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 .modal-card{width:min(980px,100%);background:var(--panel);border:1px solid #394556;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:18px}
 .modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.modal-head h2{margin:0;color:var(--text);font-size:16px;text-transform:none;letter-spacing:0}
 .icon-btn{background:var(--panel2);border:1px solid #394556;color:var(--text);border-radius:8px;padding:7px 10px;cursor:pointer}
+
+@media (max-width: 680px){
+  body{font-size:14px}
+  header{flex-direction:column;align-items:stretch;padding:14px 14px 12px;gap:10px}
+  header > div{width:100%;flex-wrap:wrap}
+  header h1{font-size:17px}
+  #guild{flex:1;min-width:0}
+  .gear{font-size:24px;padding:8px 11px;min-height:44px}
+  main{padding:12px;gap:12px}
+  .panel{padding:13px;border-radius:10px}
+  .now{font-size:16px;margin-top:8px}
+  .controls{gap:6px}
+  .ctrl{min-width:44px;min-height:44px;padding:8px}
+  .volume{margin-left:0;width:100%;justify-content:space-between;order:10;margin-top:3px}
+  .volume input{flex:1;width:auto}
+  .queue-list{max-height:220px}
+  .queue-item{font-size:12px;padding:7px}
+  .queue-item .qmeta{display:none}
+  .filters{grid-template-columns:1fr}
+  .settings{display:block}
+  .settings-group{margin-bottom:16px}
+  .settings-grid{grid-template-columns:1fr}
+  .setting.wide{grid-column:auto}
+  .modal{padding:0;align-items:flex-end}
+  .modal-card{width:100%;max-height:94vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px 20px}
+  .modal-head{position:sticky;top:0;background:var(--panel);z-index:2;padding-bottom:10px}
+  .icon-btn,.primary{min-height:42px}
+}
+@media (max-width: 380px){
+  header h1{font-size:16px}
+  .ctrl{min-width:40px}
+  .now{font-size:15px}
+}
 </style>
 </head>
 <body>
