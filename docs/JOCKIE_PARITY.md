@@ -66,6 +66,7 @@ being completed first; external-service features are listed explicitly.
 - **Permission modes:** claim/transfer ownership and per-command allow/deny rules are implemented; rebind/session/property modes are intentionally simplified away.
 - **Command routing:** text/voice gates, thread policy (`settings allowthreads`), disabled-command filtering, session lock, autocorrect execution, vote-skip percentages, and `/utility commands` status listing are implemented.
 - **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count and duration, listener/pause/idle timeouts, timeout confirmation prompt, auto-delete, prefix combine, per-guild search type, session lock, thread policy, and autocorrect execution are implemented; adaptive loudness and preferred bots remain.
+- **24/7 mode:** bypasses listener, pause, idle, and confirmation timeouts. An explicit `/playleave` still leaves.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** dev-only restart, shutdown, and command reload are implemented.
 - **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, and a categorized settings editor. Bot-list votes/clones still require external services.
