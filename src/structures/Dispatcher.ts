@@ -596,7 +596,13 @@ export default class Dispatcher {
     public enqueueNext(song: Song, remember = true, persist = true): void {
         this.clearIdleTimeout();
         if (this.autoplay) this.purgeAutoplay();
+        this.client.logger.debug(
+            `[queue] enqueueNext "${song.info.title}" before=${this.queue.length} first=${this.queue[0]?.info.title ?? '-'}`
+        );
         this.queue.unshift(song);
+        this.client.logger.debug(
+            `[queue] enqueueNext "${song.info.title}" after=${this.queue.length} first=${this.queue[0]?.info.title ?? '-'}`
+        );
         if (remember) this.rememberSeed(song);
         if (persist) void this.persist();
         void this.ensureLookahead().catch(() => {});

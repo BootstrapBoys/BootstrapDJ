@@ -216,3 +216,16 @@ test('slash play keeps the configured engine while prefix uses ytsearch', async 
     await runPlayRequest(client, ctx, ['query'], 'queue');
     assert.equal(client.stats().lastEngine, 'dzsearch');
 });
+
+test('playnext inserts ahead of an existing queue in both prefix and slash contexts', async () => {
+    const player = makePlayer([rawTrack('existing-1'), rawTrack('existing-2')]);
+    const client = makeClient(player, { loadType: LoadType.TRACK, data: rawTrack('new') });
+    const ctx = makeCtx(false);
+
+    await runPlayRequest(client, ctx, ['query'], 'next');
+    assert.deepEqual(player.queue.map(track => track.info.title), [
+        'new',
+        'existing-1',
+        'existing-2',
+    ]);
+});
