@@ -34,6 +34,7 @@ export default class Reset extends Command {
 
         player.player.clearFilters();
         player.filters = [];
+        player.filterValues = {};
         return await ctx.sendMessage({
             embeds: [
                 {

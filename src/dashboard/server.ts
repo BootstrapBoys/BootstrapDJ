@@ -393,7 +393,7 @@ function state(client: BootstrapClient, guildId: string): Record<string, unknown
             label: filter.label,
             description: filter.description,
             value: filter.value,
-            current: undefined,
+            current: player?.filterValues?.[filter.id],
             active: active.has((filter.activeName ?? filter.id).toLowerCase()),
         })),
         settings: DEFAULTS,
@@ -451,10 +451,13 @@ function applyFilter(client: BootstrapClient, guildId: string, id: string, enabl
     const def = FILTERS.find(filter => filter.id === id);
     if (!def) throw new Error('Unknown filter');
     if (enabled) {
-        def.enable(player, value ?? def.value?.fallback ?? 1);
+        const applied = value ?? def.value?.fallback ?? 1;
+        def.enable(player, applied);
+        if (def.value) player.filterValues[def.id] = applied;
         if (def.activeName && !player.filters.includes(def.activeName)) player.filters.push(def.activeName);
     } else {
         def.disable(player);
+        delete player.filterValues[def.id];
         if (def.activeName) player.filters = player.filters.filter(name => name !== def.activeName);
     }
 }

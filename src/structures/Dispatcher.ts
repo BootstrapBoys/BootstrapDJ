@@ -166,6 +166,8 @@ export default class Dispatcher {
      * node resumes at that instant rather than after the switch delay. */
     public resumePosition: number | null = null;
     public filters: Array<string>;
+    /** Last applied values for parametric filters (pitch/rate/speed). */
+    public filterValues: Record<string, number> = {};
     public autoplay: boolean;
     /** Last track a user asked for; the newest lane in `seeds`. */
     public seed: Song | null;
@@ -448,6 +450,13 @@ export default class Dispatcher {
     }
 
     public destroy(): void {
+        if (this.client.shuttingDown) {
+            if (this.persistTimer) clearInterval(this.persistTimer);
+            this.persistTimer = null;
+            if (this.statsTimer) clearInterval(this.statsTimer);
+            this.statsTimer = null;
+            return;
+        }
         if (this.persistTimer) clearInterval(this.persistTimer);
         this.persistTimer = null;
         if (this.statsTimer) clearInterval(this.statsTimer);

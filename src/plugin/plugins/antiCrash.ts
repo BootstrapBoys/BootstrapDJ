@@ -20,6 +20,7 @@ const antiCrash: BotPlugin = {
             if (client) {
                 // Positions are written on a 10s timer; flush them so a restart
                 // resumes exactly where playback stopped instead of up to 10s back.
+                client.shuttingDown = true;
                 client.logger.star('Saving playback state...');
                 await Promise.all(
                     [...client.queue.values()].map(dispatcher =>

@@ -61,6 +61,8 @@ export default class Pitch extends Command {
                 ],
             });
         player.player.setTimescale({ pitch: number, rate: 1, speed: 1 });
+        if (!player.filters.includes('pitch')) player.filters.push('pitch');
+        player.filterValues.pitch = number;
 
         return await ctx.sendMessage({
             embeds: [

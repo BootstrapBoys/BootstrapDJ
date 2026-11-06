@@ -10,6 +10,7 @@ export default {
     botsFile: process.env.BOTS_FILE || '',
     botId: process.env.BOT_ID || '',
     botName: process.env.BOT_NAME || '',
+    botPriority: process.env.BOT_PRIORITY ? parseInt(process.env.BOT_PRIORITY) : -1,
     prefix: process.env.PREFIX || '!',
     color: {
         red: 0xff0000,

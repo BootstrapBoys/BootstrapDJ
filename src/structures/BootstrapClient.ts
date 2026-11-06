@@ -42,6 +42,8 @@ export default class BootstrapClient extends Client {
     public shoukaku!: ShoukakuClient;
     public utils = Utils;
     public queue = new Queue(this);
+    /** True while the process is doing a graceful shutdown; don't erase saved sessions. */
+    public shuttingDown = false;
     public constructor(options: ClientOptions) {
         super(options);
     }

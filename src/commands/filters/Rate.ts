@@ -47,6 +47,7 @@ export default class Rate extends Command {
             });
         }
         player.player.setTimescale({ rate, pitch: rate, speed: 1 });
+        player.filterValues.rate = rate;
         if (!player.filters.includes('rate')) player.filters.push('rate');
         return await ctx.sendMessage({
             embeds: [

@@ -97,6 +97,9 @@ export async function waitForListeners(
  * saved position and re-queue the rest. Unresolvable sessions are dropped.
  */
 export async function restoreSessions(client: BootstrapClient): Promise<void> {
+    // In a multi-bot deployment only the first preferred bot restores; the
+    // others would otherwise race to claim the same voice session.
+    if (client.config.botPriority >= 0 && client.config.botPriority !== 0) return;
     const sessions = await client.db.getSessions();
     if (!sessions.length) return;
     const botUser = client.user;

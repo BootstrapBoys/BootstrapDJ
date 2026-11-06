@@ -12,7 +12,7 @@ export default class VoiceStateUpdate extends Event {
         const guildId = newState.guild.id;
         const botId = this.client.user?.id;
         const me = newState.guild.members.me;
-        if (!guildId || !botId || !me) return;
+        if (!guildId || !botId || !me || this.client.shuttingDown) return;
         const player = this.client.queue.get(guildId);
         if (!player) return;
         const settings = await this.client.db.getGuildSettings(guildId);

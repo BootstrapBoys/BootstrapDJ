@@ -62,7 +62,9 @@ export default class Speed extends Command {
                 ],
             });
 
-        player.player.setTimescale({ speed: speed });
+        player.player.setTimescale({ speed });
+        if (!player.filters.includes('speed')) player.filters.push('speed');
+        player.filterValues.speed = speed;
 
         return await ctx.sendMessage({
             embeds: [
