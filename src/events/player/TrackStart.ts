@@ -35,6 +35,12 @@ export default class TrackStart extends Event {
         // existing now-playing message stays untouched for guilds that do not
         // configure one.
         const settings = await this.client.db.getGuildSettings(guild.id);
+        if (settings.volumeautomatic === 'true') {
+            const targetVolume = Number(settings.defaultvolume ?? 100);
+            if (Number.isFinite(targetVolume) && targetVolume >= 0 && targetVolume <= 200) {
+                player.setGlobalVolume(targetVolume);
+            }
+        }
         if (settings.announcechannel && settings.announce !== 'false') {
             const announceChannel = guild.channels.cache.get(settings.announcechannel);
             if (announceChannel?.isTextBased()) {
