@@ -72,6 +72,7 @@ export default class SetupButtons extends Event {
             return;
         }
         if (message) {
+            const isCommandResponse = player.hasTrackScopedNowPlayingMessage(message.id);
             switch (interaction.customId) {
                 case 'LOW_VOL_BUT': {
                     const vol = player.player.volume - 10;
@@ -109,14 +110,18 @@ export default class SetupButtons extends Event {
                     const name = player.player.paused ? `Resumed` : `Paused`;
                     player.pause();
                     await buttonReply(interaction, `${name} the music.`, this.client.color.main);
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `${name} by ${interaction.member.displayName}`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
+                    // A /nowplaying reply has its own compact embed; never
+                    // replace it with the setup-mock layout.
+                    if (!isCommandResponse) {
+                        await message.edit({
+                            embeds: [
+                                embed.setFooter({
+                                    text: `${name} by ${interaction.member.displayName}`,
+                                    iconURL: interaction.member.displayAvatarURL({}),
+                                }),
+                            ],
+                        });
+                    }
                     break;
                 }
                 case 'SKIP_BUT':
