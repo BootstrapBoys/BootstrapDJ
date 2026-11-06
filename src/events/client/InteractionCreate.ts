@@ -194,8 +194,13 @@ export default class InteractionCreate extends Event {
         } else if (interaction.type == InteractionType.ApplicationCommandAutocomplete) {
             const focused = interaction.options.getFocused(true);
 
-            // Playlist name suggestions for /add, /load and /delete.
-            if (focused.name === 'playlist') {
+            // Playlist name suggestions for /collection (and legacy prefix-only
+            // helpers when they are invoked through a slash option).
+            if (
+                focused.name === 'playlist' ||
+                (interaction.commandName === 'collection' &&
+                    (focused.name === 'name' || focused.name === 'target'))
+            ) {
                 const query = String(focused.value ?? '').toLowerCase();
                 const playlists = await this.playlistChoices(interaction.user.id);
                 const choices = playlists
