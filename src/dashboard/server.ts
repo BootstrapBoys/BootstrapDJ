@@ -151,6 +151,14 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 .filter{display:flex;gap:10px;align-items:flex-start;background:var(--panel2);border:1px solid #2f3948;border-radius:10px;padding:11px}
 .filter label{display:flex;gap:9px;align-items:center;flex:1;cursor:pointer}.filter input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 .small{font-size:12px;color:var(--muted)}.filter .value{width:84px;padding:6px;margin-top:6px}
+.player-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.player-top h2{margin:0}
+.now{font-size:18px;font-weight:650;margin:10px 0 2px}.now-meta{color:var(--muted);font-size:13px}
+.progress{height:6px;background:#2b3340;border-radius:99px;overflow:hidden;margin:12px 0}.progress>div{height:100%;width:0;background:var(--accent);transition:width .5s}
+.controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:12px 0 16px}
+.ctrl{background:var(--panel2);border:1px solid #394556;color:var(--text);border-radius:9px;min-width:38px;padding:8px 10px;font-size:15px}.ctrl:hover{border-color:var(--accent)}.ctrl.on{border-color:var(--accent);color:var(--accent)}
+.volume{display:flex;gap:7px;align-items:center;color:var(--muted);font-size:12px;margin-left:auto}.volume input{width:110px;accent-color:var(--accent)}
+.queue-block{border-top:1px solid #2f3948;padding-top:12px}.queue-head{display:flex;justify-content:space-between;align-items:baseline}.queue-head h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px}
+.queue-list{display:grid;gap:5px;max-height:260px;overflow:auto}.queue-item{display:flex;gap:10px;align-items:baseline;padding:7px 9px;background:var(--panel2);border-radius:7px;font-size:13px}.queue-item .qpos{color:var(--muted);width:20px;flex:none}.queue-item .qtitle{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.queue-item .qmeta{color:var(--muted);font-size:12px;flex:none}
 .settings{display:grid;gap:18px}
 .settings-group{border-top:1px solid #2f3948;padding-top:13px}.settings-group:first-child{border-top:0;padding-top:0}
 .settings-group h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);margin:0 0 9px}
@@ -171,7 +179,22 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 <body>
 <header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings">⚙</button></div></header>
 <main>
-<section class="panel"><h2>Player</h2><div id="player" class="status"></div></section>
+<section class="panel">
+<div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span></div>
+<div id="now-title" class="now">Nothing playing</div>
+<div id="now-meta" class="now-meta"></div>
+<div class="progress"><div id="progress-bar"></div></div>
+<div class="controls">
+<button class="ctrl" data-player="previous" title="Previous">⏮</button>
+<button class="ctrl" data-player="toggle" title="Pause or resume">⏯</button>
+<button class="ctrl" data-player="next" title="Skip">⏭</button>
+<button class="ctrl" data-player="stop" title="Stop">⏹</button>
+<button class="ctrl" data-player="shuffle" title="Shuffle queue">🔀</button>
+<button class="ctrl" id="loop-btn" data-player="loop" title="Cycle loop">Loop: off</button>
+<label class="volume">🔊 <input id="volume" type="range" min="0" max="200" step="1" value="100"><span id="volume-label">100%</span></label>
+</div>
+<div class="queue-block"><div class="queue-head"><h3>Queue</h3><span id="queue-count" class="small"></span></div><div id="queue-list" class="queue-list"><div class="small">Nothing queued.</div></div></div>
+</section>
 <section class="panel"><h2>Filters</h2><div id="filters" class="filters"></div></section>
 </main>
 <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -202,7 +225,9 @@ const LABELS={defaultvolume:'Default volume',defaultautoplay:'Default autoplay',
 const BOOLS=new Set(['defaultautoplay','defaultshuffle','voteskip','announce','autocorrect','volumeautomatic','locked']);
 const LONG=new Set(['autoplayseeds','disabledcommands','announcechannel','commandchannel','voicechannel']);
 function field(key,value){const box=document.createElement('label');box.className='setting'+(LONG.has(key)?' wide':'');const title=document.createElement('span');title.className='small';title.textContent=LABELS[key]||key;box.appendChild(title);let input;if(key==='autoplaysource'){input=document.createElement('select');for(const v of ['chart','curated','legacy']){const o=document.createElement('option');o.value=v;o.textContent=v;input.appendChild(o)}input.value=value||'chart'}else if(BOOLS.has(key)){input=document.createElement('select');for(const v of ['true','false']){const o=document.createElement('option');o.value=v;o.textContent=v;input.appendChild(o)}input.value=value==='true'?'true':'false'}else{input=document.createElement('input');input.value=value;input.type=['defaultvolume','maxqueue','maxuserqueue','voteskippercent','deleteafter','maxtracklength','mintracklength','maxusertracks','maxusertrackslength','maxplaylisttracks','maxplaylistlength'].includes(key)?'number':'text'}input.dataset.key=key;box.appendChild(input);return box}
-function render(){const d=state.data;const p=d.player||{};$('#player').innerHTML='<span><b>Track:</b> '+(p.title?escapeHtml(p.title):'Nothing playing')+'</span><span><b>Queue:</b> '+(p.queue||0)+'</span><span><b>Volume:</b> '+(p.volume??'—')+'%</span><span><b>Paused:</b> '+(p.paused?'yes':'no')+'</span>';
+function renderPlayer(d){const p=d.player;const title=$('#now-title'),meta=$('#now-meta'),bar=$('#progress-bar'),stateEl=$('#player-state'),list=$('#queue-list'),count=$('#queue-count');if(!p){title.textContent='Nothing playing';meta.textContent='';bar.style.width='0';stateEl.textContent='idle';list.innerHTML='<div class="small">Nothing queued.</div>';count.textContent='';$('#volume').value=100;$('#volume-label').textContent='100%';$('#loop-btn').textContent='Loop: off';return}title.textContent=p.title||'Nothing playing';meta.textContent=(p.author||'')+(p.duration?' · '+formatMs(p.duration):'')+(p.position?' · '+formatMs(p.position):'');bar.style.width=(p.duration?Math.min(100,Math.round((p.position/p.duration)*100)):0)+'%';stateEl.textContent=(p.paused?'paused':'playing')+(p.autoplay?' · autoplay':'');$('#volume').value=p.volume??100;$('#volume-label').textContent=($('#volume').value)+'%';const loop=$('#loop-btn');loop.textContent='Loop: '+p.loop;loop.classList.toggle('on',p.loop!=='off');count.textContent=p.queueLength+' queued';list.innerHTML='';if(!p.upcoming||!p.upcoming.length){list.innerHTML='<div class="small">Nothing queued.</div>';return}for(const t of p.upcoming){const row=document.createElement('div');row.className='queue-item';const pos=document.createElement('span');pos.className='qpos';pos.textContent=t.position;const name=document.createElement('span');name.className='qtitle';name.textContent=t.title;const meta2=document.createElement('span');meta2.className='qmeta';meta2.textContent=(t.author||'')+(t.duration?' · '+formatMs(t.duration):'');row.append(pos,name,meta2);list.appendChild(row)}}
+function formatMs(ms){const s=Math.max(0,Math.floor(ms/1000));const m=Math.floor(s/60);const h=Math.floor(m/60);return h?h+':'+String(m%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):m+':'+String(s%60).padStart(2,'0')}
+function render(){const d=state.data;renderPlayer(d);
  const wrap=$('#filters');wrap.innerHTML='';for(const f of d.filters){const row=document.createElement('div');row.className='filter';const active=f.active;const label=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.checked=active;cb.onchange=()=>toggleFilter(f.id,cb.checked,row);label.appendChild(cb);const span=document.createElement('span');span.textContent=f.label;label.appendChild(span);row.appendChild(label);if(f.value){const input=document.createElement('input');input.type='number';input.className='value';input.min=f.value.min;input.max=f.value.max;input.step=f.value.step;input.value=f.current??f.value.fallback;input.onchange=()=>{if(cb.checked)toggleFilter(f.id,true,row,input.value)};row.appendChild(input)}wrap.appendChild(row)}
  const s=$('#settings');s.innerHTML='';const seen=new Set();for(const group of GROUPS){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent=group.title;section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of group.keys){if(!(key in d.settings))continue;seen.add(key);grid.appendChild(field(key,d.settings[key]))}section.appendChild(grid);if(group.title==='Autoplay'){const reset=document.createElement('button');reset.className='autoplay-reset';reset.textContent='Reset autoplay override';reset.onclick=async()=>{try{await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key:'autoplayreset',value:'true'})});await load();toast('Autoplay override reset')}catch(e){toast(e.message,true)}};section.appendChild(reset)}s.appendChild(section)}const rest=Object.keys(d.settings).filter(key=>!seen.has(key));if(rest.length){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent='Other';section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of rest)grid.appendChild(field(key,d.settings[key]));section.appendChild(grid);s.appendChild(section)}}
 function escapeHtml(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML}
@@ -215,6 +240,10 @@ $('#settings-close').onclick=closeSettings;
 $('#settings-cancel').onclick=closeSettings;
 modal.addEventListener('click',e=>{if(e.target===modal)closeSettings()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings()});
+async function playerAction(action,value){try{await api('/api/player',{method:'POST',body:JSON.stringify({guildId:state.guildId,action,value})});await load()}catch(e){toast(e.message,true)}}
+document.querySelectorAll('[data-player]').forEach(button=>button.onclick=()=>playerAction(button.dataset.player));
+$('#volume').onchange=()=>{const value=Number($('#volume').value);$('#volume-label').textContent=value+'%';playerAction('volume',value)};
+$('#volume').oninput=()=>{$('#volume-label').textContent=$('#volume').value+'%'};
 $('#save').onclick=async()=>{const values={};for(const el of document.querySelectorAll('#settings input, #settings select'))values[el.dataset.key]=el.value;try{for(const [key,value] of Object.entries(values))await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key,value})});await load();toast('Settings saved')}catch(e){toast(e.message,true)}};
 boot().catch(e=>{$('#status').textContent='Error';toast(e.message,true)});
 </script>
@@ -264,9 +293,20 @@ function state(client: BootstrapClient, guildId: string): Record<string, unknown
         player: player
             ? {
                   title: player.current?.info.title ?? null,
-                  queue: player.queue.length,
+                  author: player.current?.info.author ?? null,
+                  duration: player.current?.info.length ?? 0,
+                  position: player.player.position,
+                  queueLength: player.queue.length,
+                  upcoming: player.queue.slice(0, 20).map((track, index) => ({
+                      position: index + 1,
+                      title: track.info.title,
+                      author: track.info.author,
+                      duration: track.info.isStream ? 0 : track.info.length,
+                  })),
                   volume: player.volume,
                   paused: player.paused,
+                  loop: player.loop,
+                  autoplay: player.autoplay,
               }
             : null,
         filters: FILTERS.map(filter => ({
@@ -340,6 +380,45 @@ function applyFilter(client: BootstrapClient, guildId: string, id: string, enabl
     }
 }
 
+async function playerAction(client: BootstrapClient, guildId: string, action: string, value: number): Promise<void> {
+    const player = client.queue.get(guildId);
+    if (!player) throw new Error('No active player');
+    switch (action) {
+        case 'toggle':
+            player.pause();
+            break;
+        case 'next':
+            await player.skip();
+            break;
+        case 'previous':
+            player.previousTrack();
+            break;
+        case 'stop':
+            player.stop();
+            break;
+        case 'leave':
+            player.destroy();
+            break;
+        case 'shuffle':
+            player.setShuffle();
+            await player.persist();
+            break;
+        case 'loop': {
+            const loops: Array<'off' | 'repeat' | 'queue'> = ['off', 'repeat', 'queue'];
+            const index = loops.indexOf(player.loop);
+            player.setLoop(loops[(index + 1) % loops.length]);
+            break;
+        }
+        case 'volume': {
+            if (!Number.isFinite(value) || value < 0 || value > 200) throw new Error('Volume must be 0–200');
+            player.player.setGlobalVolume(value);
+            break;
+        }
+        default:
+            throw new Error('Unknown player action');
+    }
+}
+
 export function startDashboard(client: BootstrapClient): void {
     if (!config.dashboardPort) return;
     const host = config.dashboardHost;
@@ -400,6 +479,16 @@ export function startDashboard(client: BootstrapClient): void {
                 applyFilter(client, guildId, filter, enabled, value);
                 res.writeHead(200, { 'content-type': 'application/json' });
                 res.end(JSON.stringify({ ok: true, filters: filterState(client, guildId) }));
+                return;
+            }
+            if (req.method === 'POST' && url.pathname === '/api/player') {
+                const body = await readBody(req);
+                const guildId = bodyText(body.guildId);
+                const action = bodyText(body.action);
+                const value = Number(body.value ?? 0);
+                await playerAction(client, guildId, action, value);
+                res.writeHead(200, { 'content-type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, player: state(client, guildId).player }));
                 return;
             }
             res.writeHead(404, { 'content-type': 'text/plain' });
