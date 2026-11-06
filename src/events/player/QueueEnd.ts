@@ -23,6 +23,8 @@ export default class QueueEnd extends Event {
             return;
         }
         if (!dispatcher.autoplay && !dispatcher.queue.length) {
+            const stay = await this.client.db.get_247(guild.id).catch(() => null);
+            if (stay) return;
             const settings = await this.client.db.getGuildSettings(guild.id);
             const confirmSeconds = Number(settings.timeoutconfirmation ?? 0);
             const channel = guild.channels.cache.get(dispatcher.channelId);

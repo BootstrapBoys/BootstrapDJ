@@ -345,14 +345,17 @@ export default class Dispatcher {
         }
         if (this.paused) {
             void this.client.db
-                .getGuildSettings(this.guildId)
-                .then(settings => {
-                    const seconds = Number(settings.timeoutpause ?? 0);
-                    if (!Number.isFinite(seconds) || seconds <= 0 || !this.paused) return;
-                    this.pauseTimer = setTimeout(() => {
-                        if (this.paused) this.destroy();
-                    }, seconds * 1000);
-                    (this.pauseTimer as unknown as { unref?: () => void }).unref?.();
+                .get_247(this.guildId)
+                .then(stay => {
+                    if (stay) return;
+                    return this.client.db.getGuildSettings(this.guildId).then(settings => {
+                        const seconds = Number(settings.timeoutpause ?? 0);
+                        if (!Number.isFinite(seconds) || seconds <= 0 || !this.paused) return;
+                        this.pauseTimer = setTimeout(() => {
+                            if (this.paused) this.destroy();
+                        }, seconds * 1000);
+                        (this.pauseTimer as unknown as { unref?: () => void }).unref?.();
+                    });
                 })
                 .catch(() => {});
         }
