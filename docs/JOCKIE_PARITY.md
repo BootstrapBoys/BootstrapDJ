@@ -57,7 +57,7 @@ This branch is additive and experimental. It does **not** change `main`.
 ## Remaining parity families
 
 These are the remaining implementation items. Locally reproducible features are
-being completed first; external-service features are listed explicitly.
+being completed first; public listing/clone services are explicitly out of scope for a self-hosted deployment.
 
 - **Profile:** color, bio, background, avatar shape/border, privacy, visibility, and server visibility are implemented.
 - **Games:** guess-the-song with persistent wins/plays and leaderboard is implemented.
@@ -69,7 +69,7 @@ being completed first; external-service features are listed explicitly.
 - **24/7 mode:** stays connected and bypasses listener, pause, idle, and confirmation timeouts. If the channel empties, it pauses at the current track end and resumes/restarts when a listener joins; an explicit `/playleave` still leaves.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** dev-only restart, shutdown, and command reload are implemented.
-- **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, a categorized settings editor, and a statistics page (sessions, listen time, track types, hourly/weekday activity, most played, most listened, top commands). Bot-list votes/clones still require external services.
+- **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, a categorized settings editor, and a statistics page (sessions, listen time, track types, hourly/weekday activity, most played, most listened, top commands).
 - **Multi-bot:** `BOTS_FILE` launches one client per token, heartbeats bots, routes voice commands to the first active bot in `preferredOrder`, and uses a durable `SessionLease` for automatic session handoff after the owner stops heartbeating. The lease is atomically claimed, refreshed every 10 s, and expires after 60 s.
 
 ## Known limitations
@@ -88,3 +88,11 @@ being completed first; external-service features are listed explicitly.
 Dashboard: `DASHBOARD_PORT=8795` on the bot host, loopback-bound by default; set `DASHBOARD_TOKEN` before binding non-loopback.
 
 Slash registration: **84 top-level commands** after grouping (`/utility`, `/filter`); child info/filter names remain prefix commands.
+
+## Out of scope
+
+This branch is for a self-hosted bot, not a public bot network.
+
+- Bot-list voting, vote webhooks, and vote leaderboards
+- Public clone services and dynamic clone assignment
+- Any external control plane for preferred-bot routing; the local `BOTS_FILE`, session leases, and preferred order are sufficient
