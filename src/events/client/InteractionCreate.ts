@@ -105,15 +105,7 @@ export default class InteractionCreate extends Event {
             const member = interaction.member;
             if (!me || !member) return;
             await this.client.db.get(interaction.guildId); // get or create guild data
-            let command = this.client.commands.get(interaction.commandName);
-            if (!command) {
-                const alias = await this.client.db
-                    .getCommandAlias(interaction.guildId, interaction.commandName, '')
-                    .catch(() => null);
-                if (alias?.scope === 'server') {
-                    command = this.client.commands.get(alias.command);
-                }
-            }
+            const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
             if (command.player?.voice) {
                 const preferred = await this.client.preferredBotStatus(interaction.guildId);
@@ -398,14 +390,7 @@ export default class InteractionCreate extends Event {
                 return;
             }
 
-            let autocompleteTarget = interaction.commandName;
-            if (interaction.guildId) {
-                const alias = await this.client.db
-                    .getCommandAlias(interaction.guildId, interaction.commandName, '')
-                    .catch(() => null);
-                if (alias?.scope === 'server') autocompleteTarget = alias.command;
-            }
-            if (autocompleteTarget == 'play' || autocompleteTarget == 'playnext') {
+            if (interaction.commandName == 'play' || interaction.commandName == 'playnext') {
                 const song = interaction.options.getString('song');
                 if (!song) return await interaction.respond([]).catch(() => {});
                 return await interaction

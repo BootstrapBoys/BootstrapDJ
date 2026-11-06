@@ -138,18 +138,12 @@ export default class BootstrapClient extends Client {
         this.once(Events.ClientReady, async () => {
             const userId = this.user?.id;
             if (!userId) return;
-            const targets =
+            const registrationRoutes =
                 this.config.production === true
-                    ? [{ guildId: this.config.guildId, route: Routes.applicationCommands(userId) }]
-                    : [...this.guilds.cache.keys()].map(guildId => ({
-                          guildId,
-                          route: Routes.applicationGuildCommands(userId, guildId),
-                      }));
-            if (!this.config.production && !targets.length) {
-                targets.push({
-                    guildId: this.config.guildId,
-                    route: Routes.applicationGuildCommands(userId, this.config.guildId),
-                });
+                    ? [Routes.applicationCommands(userId)]
+                    : [...this.guilds.cache.keys()].map(guildId => Routes.applicationGuildCommands(userId, guildId));
+            if (!this.config.production && !registrationRoutes.length) {
+                registrationRoutes.push(Routes.applicationGuildCommands(userId, this.config.guildId));
             }
             try {
                 // Discord accepts at most 100 top-level chat-input commands.
@@ -173,55 +167,14 @@ export default class BootstrapClient extends Client {
                         this.logger.info(`[slash] cleared ${existing.length} stale global commands`);
                     }
                 }
-                for (const target of targets) {
-                    const body = await this.withServerAliases(target.guildId);
-                    await rest.put(target.route, { body });
+                for (const route of registrationRoutes) {
+                    await rest.put(route, { body: this.body });
                 }
-                this.logger.info(`Successfully loaded slash commands in ${targets.length} guild(s)!`);
+                this.logger.info(`Successfully loaded slash commands in ${registrationRoutes.length} guild(s)!`);
             } catch (error) {
                 this.logger.error(error);
             }
         });
-    }
-
-    /** Add server-scoped custom aliases as top-level slash commands. Discord
-     * registers names statically, so aliases are rebuilt at each command sync;
-     * user-scoped aliases stay prefix-only because command metadata is shared
-     * by everyone in a guild. */
-    private async withServerAliases(guildId: string): Promise<RESTPostAPIChatInputApplicationCommandsJSONBody[]> {
-        if (!guildId) return this.body;
-        let aliases;
-        try {
-            aliases = await this.db.listCommandAliases(guildId, '');
-        } catch {
-            return this.body;
-        }
-        const body = [...this.body];
-        const names = new Set(body.map(entry => entry.name));
-        const targets = new Map(body.map(entry => [entry.name, entry]));
-        let added = 0;
-        for (const alias of aliases) {
-            if (alias.scope !== 'server') continue;
-            if (!/^[a-z0-9_-]{1,32}$/.test(alias.alias)) continue;
-            if (names.has(alias.alias)) continue;
-            const target = targets.get(alias.command);
-            if (!target) continue;
-            if (body.length >= 100) {
-                this.logger.warn(
-                    `[slash] alias ${alias.alias} skipped for guild ${guildId}: command limit reached`
-                );
-                break;
-            }
-            const copy = JSON.parse(JSON.stringify(target)) as RESTPostAPIChatInputApplicationCommandsJSONBody;
-            copy.name = alias.alias;
-            body.push(copy);
-            names.add(alias.alias);
-            added++;
-        }
-        if (added > 0) {
-            this.logger.info(`[slash] registered ${added} server alias command(s) in guild ${guildId}`);
-        }
-        return body;
     }
 
     private async registerCommand(dir: string, file: string, cacheBust: boolean = false): Promise<void> {
