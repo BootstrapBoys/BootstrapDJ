@@ -185,6 +185,8 @@ export default class Dispatcher {
     public pauseWhenEmpty = false;
     public paused247 = false;
     public history: Song[] = [];
+    /** Suppresses the periodic persist while a session restore is populating it. */
+    public restoring = false;
 
     constructor(options: DispatcherOptions) {
         this.client = options.client;
@@ -449,7 +451,7 @@ export default class Dispatcher {
         this.idleTimer = null;
     }
 
-    public destroy(): void {
+    public destroy(preserveSession: boolean = false): void {
         if (this.client.shuttingDown) {
             if (this.persistTimer) clearInterval(this.persistTimer);
             this.persistTimer = null;
@@ -464,7 +466,7 @@ export default class Dispatcher {
         if (this.pauseTimer) clearTimeout(this.pauseTimer);
         this.pauseTimer = null;
         this.clearIdleTimeout();
-        void this.client.db.deleteSession(this.guildId).catch(() => {});
+        if (!preserveSession) void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.queue.length = 0;
         this.history = [];
         this.pauseWhenEmpty = false;
@@ -517,7 +519,7 @@ export default class Dispatcher {
      * deleted when playback ends normally, so a later boot has nothing stale.
      */
     public async persist(): Promise<void> {
-        if (!this.voiceId) return;
+        if (!this.voiceId || this.restoring) return;
         try {
             if (!this.current && !this.queue.length) {
                 await this.client.db.deleteSession(this.guildId);

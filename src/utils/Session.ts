@@ -2,7 +2,7 @@ import { ChannelType, User } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { Session } from '../generated/prisma/client.js';
-import { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
+import Dispatcher, { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
 import { BootstrapClient } from '../structures/index.js';
 
 /** True when at least one human is connected; bots do not count as listeners. */
@@ -160,7 +160,11 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
         if (client.queue.has(session.guildId)) continue;
         const now = Date.now();
         const lease = await client.db.getSessionLease(session.guildId).catch(() => null);
-        if (lease && lease.expiresAt.getTime() > now && lease.botId !== botUser.id) continue;
+        if (lease && lease.expiresAt.getTime() > now) {
+            // This includes our own lease: a restore in progress already owns
+            // the guild before its dispatcher appears in the queue map.
+            continue;
+        }
 
         // When there is no lease at all, preserve preferred-bot ordering. An
         // expired lease means the owner is gone, so any standby may race for it
@@ -234,12 +238,14 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
         }
     }
 
+    let dispatcher: Dispatcher | null = null;
     try {
-        const dispatcher = await client.queue.create(
+        dispatcher = await client.queue.create(
             guild,
             voiceChannel,
             textChannel
         );
+        dispatcher.restoring = true;
         dispatcher.loop =
             session.loop === 'repeat' || session.loop === 'queue' ? session.loop : 'off';
         dispatcher.autoplay = session.autoplay;
@@ -253,6 +259,7 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
 
         if (!savedCurrent) {
             await dispatcher.play();
+            dispatcher.restoring = false;
             client.logger.info(
                 `[session] restored ${queued.length} queued track(s) in ${guild.name}`
             );
@@ -271,12 +278,19 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
             paused: session.paused,
         });
         dispatcher.paused = session.paused;
+        dispatcher.restoring = false;
         client.logger.info(
             `[session] resumed "${track.info.title}" at ${Math.round(
                 savedCurrent.position / 1000
             )}s with ${queued.length} queued in ${guild.name}`
         );
     } catch (error) {
+        if (dispatcher) {
+            dispatcher.restoring = false;
+            dispatcher.destroy(true);
+        }
         client.logger.error(`[session] restore failed for ${guildId}: ${error}`);
+    } finally {
+        if (dispatcher) dispatcher.restoring = false;
     }
 }
