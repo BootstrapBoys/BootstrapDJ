@@ -14,6 +14,9 @@ export default class Ready extends Event {
     }
     public async run(): Promise<void> {
         this.client.logger.success(`${this.client.user?.tag} is ready!`);
+        this.client.logger.info(
+            `[boot] ${this.client.user?.tag} priority=${this.client.config.botPriority} botsFile=${Boolean(this.client.config.botsFile)}`
+        );
 
         this.client.user?.setPresence({
             activities: [
