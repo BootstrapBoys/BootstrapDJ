@@ -279,6 +279,7 @@ export default class MessageCreate extends Event {
                 content: 'You can\'t use this command with everyone or here.',
             });
 
+        void this.client.db.recordCommand(message.guildId, command.name).catch(() => {});
         try {
             // `return command.run(...)` without await lets async rejections skip
             // this catch and surface as unhandled rejections instead.

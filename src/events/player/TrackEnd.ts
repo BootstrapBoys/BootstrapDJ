@@ -12,6 +12,16 @@ export default class TrackEnd extends Event {
         });
     }
     public async run(player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
+        if (track) {
+            void this.client.db.recordTrackPlay(
+                dispatcher.guildId,
+                track.info.uri ?? track.encoded,
+                track.info.title,
+                track.info.author,
+                track.info.sourceName,
+                Math.round(track.info.length / 1000)
+            ).catch(() => {});
+        }
         dispatcher.previous = dispatcher.current;
         dispatcher.current = null;
         const m = await dispatcher.nowPlayingMessage?.fetch().catch(() => {});

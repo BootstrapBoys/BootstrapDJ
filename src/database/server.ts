@@ -370,6 +370,129 @@ export default class ServerData {
         });
     }
 
+    public async recordTrackPlay(
+        guildId: string,
+        trackId: string,
+        title: string,
+        author: string,
+        source: string,
+        seconds: number
+    ): Promise<void> {
+        const value = Math.max(0, Math.round(seconds));
+        const now = new Date();
+        const day = now.toISOString().slice(0, 10);
+        await this.prisma.$transaction([
+            this.prisma.statsTrack.upsert({
+                where: { guildId_trackId: { guildId, trackId } },
+                create: { guildId, trackId, title, author, source, seconds: value, plays: 1 },
+                update: { title, author, source, seconds: { increment: value }, plays: { increment: 1 } },
+            }),
+            this.prisma.statsDaily.upsert({
+                where: { guildId_day: { guildId, day } },
+                create: { guildId, day, seconds: value, sessions: 1 },
+                update: { seconds: { increment: value }, sessions: { increment: 1 } },
+            }),
+            this.prisma.statsHour.upsert({
+                where: { guildId_hour: { guildId, hour: now.getUTCHours() } },
+                create: { guildId, hour: now.getUTCHours(), seconds: value },
+                update: { seconds: { increment: value } },
+            }),
+            this.prisma.statsWeekday.upsert({
+                where: { guildId_weekday: { guildId, weekday: now.getUTCDay() } },
+                create: { guildId, weekday: now.getUTCDay(), seconds: value },
+                update: { seconds: { increment: value } },
+            }),
+        ]);
+    }
+
+    public async recordListenerStats(
+        guildId: string,
+        userId: string,
+        seconds: number,
+        deafSeconds: number
+    ): Promise<void> {
+        await this.prisma.statsListener.upsert({
+            where: { guildId_userId: { guildId, userId } },
+            create: { guildId, userId, seconds, deafSeconds },
+            update: { seconds: { increment: seconds }, deafSeconds: { increment: deafSeconds } },
+        });
+    }
+
+    public async recordCommand(guildId: string, command: string): Promise<void> {
+        await this.prisma.statsCommand.upsert({
+            where: { guildId_command: { guildId, command } },
+            create: { guildId, command, count: 1 },
+            update: { count: { increment: 1 } },
+        });
+    }
+
+    public async recordGameSession(guildId: string): Promise<void> {
+        const day = new Date().toISOString().slice(0, 10);
+        await this.prisma.statsDaily.upsert({
+            where: { guildId_day: { guildId, day } },
+            create: { guildId, day, gameSessions: 1 },
+            update: { gameSessions: { increment: 1 } },
+        });
+    }
+
+    public async getStats(guildId: string, days: number = 7): Promise<Record<string, unknown>> {
+        const dayKeys: string[] = [];
+        const now = new Date();
+        for (let offset = days - 1; offset >= 0; offset--) {
+            const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - offset));
+            dayKeys.push(date.toISOString().slice(0, 10));
+        }
+        const [daily, topTracks, topListeners, topCommands, sources, hours, weekdays] = await Promise.all([
+            this.prisma.statsDaily.findMany({ where: { guildId, day: { in: dayKeys } } }),
+            this.prisma.statsTrack.findMany({ where: { guildId }, orderBy: { seconds: 'desc' }, take: 5 }),
+            this.prisma.statsListener.findMany({ where: { guildId }, orderBy: { seconds: 'desc' }, take: 5 }),
+            this.prisma.statsCommand.findMany({ where: { guildId }, orderBy: { count: 'desc' }, take: 5 }),
+            this.prisma.statsTrack.groupBy({ by: ['source'], where: { guildId }, _sum: { seconds: true, plays: true } }),
+            this.prisma.statsHour.findMany({ where: { guildId }, orderBy: { hour: 'asc' } }),
+            this.prisma.statsWeekday.findMany({ where: { guildId }, orderBy: { weekday: 'asc' } }),
+        ]);
+        const dailyMap = new Map(daily.map(entry => [entry.day, entry]));
+        return {
+            days: dayKeys.map(day => ({
+                day,
+                seconds: dailyMap.get(day)?.seconds ?? 0,
+                sessions: dailyMap.get(day)?.sessions ?? 0,
+                gameSessions: dailyMap.get(day)?.gameSessions ?? 0,
+            })),
+            totals: {
+                seconds: daily.reduce((sum, entry) => sum + entry.seconds, 0),
+                sessions: daily.reduce((sum, entry) => sum + entry.sessions, 0),
+                gameSessions: daily.reduce((sum, entry) => sum + entry.gameSessions, 0),
+            },
+            sources: sources.map(entry => ({
+                source: entry.source,
+                seconds: entry._sum.seconds ?? 0,
+                plays: entry._sum.plays ?? 0,
+            })),
+            topTracks: topTracks.map(entry => ({
+                title: entry.title,
+                author: entry.author,
+                source: entry.source,
+                seconds: entry.seconds,
+                plays: entry.plays,
+            })),
+            topListeners: topListeners.map(entry => ({
+                userId: entry.userId,
+                seconds: entry.seconds,
+                deafSeconds: entry.deafSeconds,
+            })),
+            topCommands: topCommands.map(entry => ({ command: entry.command, count: entry.count })),
+            hours: Array.from({ length: 24 }, (_, hour) => ({
+                hour,
+                seconds: hours.find(entry => entry.hour === hour)?.seconds ?? 0,
+            })),
+            weekdays: Array.from({ length: 7 }, (_, weekday) => ({
+                weekday,
+                seconds: weekdays.find(entry => entry.weekday === weekday)?.seconds ?? 0,
+            })),
+        };
+    }
+
     public async getGuildSettings(guildId: string): Promise<Record<string, string>> {
         const rows = await this.prisma.guildSetting.findMany({ where: { guildId } });
         return Object.fromEntries(rows.map((row: GuildSetting) => [row.key, row.value]));

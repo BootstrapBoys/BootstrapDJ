@@ -340,6 +340,7 @@ export default class InteractionCreate extends Event {
                     return;
                 }
             }
+            void this.client.db.recordCommand(interaction.guildId, command.name).catch(() => {});
             try {
                 await command.run(this.client, ctx, ctx.args);
             } catch (error) {

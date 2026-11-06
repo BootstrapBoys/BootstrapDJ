@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/typedef */
-import { Message, User } from 'discord.js';
+import { ChannelType, Message, User } from 'discord.js';
 import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
 
 import { BootstrapClient } from './index.js';
@@ -175,6 +175,7 @@ export default class Dispatcher {
     private persistTimer: ReturnType<typeof setInterval> | null = null;
     private pauseTimer: ReturnType<typeof setTimeout> | null = null;
     private idleTimer: ReturnType<typeof setTimeout> | null = null;
+    private statsTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
     /** Set by /playleave: tear down the player when the queue drains. */
     public leaveOnEnd = false;
@@ -208,7 +209,9 @@ export default class Dispatcher {
             // the state, so the periodic write would only duplicate the row.
             if (!this.paused) void this.persist();
         }, 10_000);
+        this.statsTimer = setInterval(() => void this.sampleListeners(), 60_000);
         (this.persistTimer as unknown as { unref?: () => void }).unref?.();
+        (this.statsTimer as unknown as { unref?: () => void }).unref?.();
 
         this.player
             .on('start', () =>
@@ -417,6 +420,18 @@ export default class Dispatcher {
         if (this.queue.length) void this.play();
     }
 
+    /** Sample voice membership once a minute for listener-time statistics. */
+    private async sampleListeners(): Promise<void> {
+        const guild = this.client.guilds.cache.get(this.guildId);
+        const channel = guild && this.voiceId ? guild.channels.cache.get(this.voiceId) : null;
+        if (!guild || !channel || (channel.type !== ChannelType.GuildVoice && channel.type !== ChannelType.GuildStageVoice)) return;
+        const members = channel.members.filter(member => !member.user.bot);
+        for (const member of members.values()) {
+            const deaf = member.voice.deaf || member.voice.selfDeaf ? 60 : 0;
+            await this.client.db.recordListenerStats(this.guildId, member.id, 60, deaf).catch(() => {});
+        }
+    }
+
     public armIdleTimeout(seconds: number): void {
         this.clearIdleTimeout();
         if (!Number.isFinite(seconds) || seconds <= 0) return;
@@ -435,6 +450,8 @@ export default class Dispatcher {
     public destroy(): void {
         if (this.persistTimer) clearInterval(this.persistTimer);
         this.persistTimer = null;
+        if (this.statsTimer) clearInterval(this.statsTimer);
+        this.statsTimer = null;
         if (this.pauseTimer) clearTimeout(this.pauseTimer);
         this.pauseTimer = null;
         this.clearIdleTimeout();

@@ -52,6 +52,7 @@ export default class Guess extends Command {
                     .setStyle(ButtonStyle.Secondary)
             )
         );
+        void client.db.recordGameSession(guild.id).catch(() => {});
         const message = await ctx.sendMessage({
             embeds: [
                 client

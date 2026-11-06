@@ -105,6 +105,65 @@ model BotPresence {
   lastSeen DateTime @default(now())
 }
 
+model StatsTrack {
+  guildId    String
+  trackId    String
+  title      String
+  author     String
+  source     String
+  seconds    Int      @default(0)
+  plays      Int      @default(0)
+  lastPlayed DateTime @updatedAt
+
+  @@id([guildId, trackId])
+  @@index([guildId, seconds])
+}
+
+model StatsListener {
+  guildId    String
+  userId     String
+  seconds    Int      @default(0)
+  deafSeconds Int     @default(0)
+  lastSeen   DateTime @updatedAt
+
+  @@id([guildId, userId])
+  @@index([guildId, seconds])
+}
+
+model StatsCommand {
+  guildId String
+  command String
+  count   Int    @default(0)
+
+  @@id([guildId, command])
+}
+
+model StatsDaily {
+  guildId      String
+  day          String
+  seconds      Int @default(0)
+  sessions     Int @default(0)
+  gameSessions Int @default(0)
+
+  @@id([guildId, day])
+}
+
+model StatsHour {
+  guildId String
+  hour    Int
+  seconds Int @default(0)
+
+  @@id([guildId, hour])
+}
+
+model StatsWeekday {
+  guildId String
+  weekday Int
+  seconds Int @default(0)
+
+  @@id([guildId, weekday])
+}
+
 model Guild {
   guildId    String      @id
   prefix     String

@@ -207,10 +207,19 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
   .ctrl{min-width:40px}
   .now{font-size:15px}
 }
+.gear svg{width:22px;height:22px;display:block;fill:currentColor}
+.stats-card{width:min(1120px,100%)}.stats-toolbar{display:flex;gap:8px;align-items:center}.stats-toolbar select{padding:7px 9px}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.stat-card{background:var(--panel2);border:1px solid #2f3948;border-radius:10px;padding:12px}.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.stat-value{font-size:24px;font-weight:700;margin-top:5px;font-variant-numeric:tabular-nums}
+.stats-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}.stats-grid.two{grid-template-columns:1fr 1fr}.stats-block{background:var(--panel2);border:1px solid #2f3948;border-radius:10px;padding:12px;min-width:0}.stats-block h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:150px}.bar-wrap{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;flex:1;height:100%;min-width:0}.bar{width:100%;max-width:28px;background:linear-gradient(180deg,var(--accent),#4d6bd6);border-radius:4px 4px 0 0;min-height:2px}.bar-label{font-size:10px;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.pie{width:170px;height:170px;border-radius:50%;margin:6px auto 12px;position:relative}.pie.empty{background:var(--panel);border:1px dashed #394556}.legend{display:grid;gap:5px;font-size:12px;color:var(--muted)}.legend span{display:flex;align-items:center;gap:7px}.dot{width:9px;height:9px;border-radius:3px;display:inline-block;flex:none}
+.stat-list{display:grid;gap:5px}.stat-row{display:flex;gap:9px;align-items:center;background:var(--panel);border-radius:7px;padding:8px 9px;font-size:13px;min-width:0}.stat-index{color:var(--muted);width:18px;flex:none}.stat-main{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stat-sub{color:var(--muted);font-size:11px}.stat-avatar{width:22px;height:22px;border-radius:50%;background:var(--panel2);flex:none;object-fit:cover}
+@media (max-width: 680px){.stats-grid,.stats-grid.two{grid-template-columns:1fr}.stats-card{max-height:94vh;overflow:auto}.stat-value{font-size:20px}.bar-label{display:none}}
 </style>
 </head>
 <body>
-<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings">⚙</button></div></header>
+<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings">⚙</button></div></header>
 <main>
 <section class="panel">
 <div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span></div>
@@ -236,6 +245,12 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
     <div class="modal-head"><h2 id="settings-title">Settings</h2><button class="icon-btn" id="settings-close" aria-label="Close settings">✕</button></div>
     <div id="settings" class="settings"></div>
     <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end"><button class="icon-btn" id="settings-cancel">Cancel</button><button class="primary" id="save">Save settings</button></div>
+  </div>
+</div>
+<div id="stats-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+  <div class="modal-card stats-card">
+    <div class="modal-head"><h2 id="stats-title">Statistics</h2><div class="stats-toolbar"><select id="stats-range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select><button class="icon-btn" id="stats-close" aria-label="Close statistics">✕</button></div></div>
+    <div id="stats-content"></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -284,11 +299,28 @@ $('#settings-btn').onclick=openSettings;
 $('#settings-close').onclick=closeSettings;
 $('#settings-cancel').onclick=closeSettings;
 modal.addEventListener('click',e=>{if(e.target===modal)closeSettings()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSettings();closeStats()}});
 async function playerAction(action,value){try{await api('/api/player',{method:'POST',body:JSON.stringify({guildId:state.guildId,action,value})});await load()}catch(e){toast(e.message,true)}}
 document.querySelectorAll('[data-player]').forEach(button=>button.onclick=()=>playerAction(button.dataset.player));
 $('#volume').onchange=()=>{const value=Number($('#volume').value);$('#volume-label').textContent=value+'%';playerAction('volume',value)};
 $('#volume').oninput=()=>{$('#volume-label').textContent=$('#volume').value+'%'};
+const statsModal=$('#stats-modal');
+function fmtSeconds(value){const s=Math.max(0,Math.round(value));const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=s%60;return h?h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'):m+':'+String(sec).padStart(2,'0')}
+function bars(values,labels,unit){const max=Math.max(1,...values);return '<div class="bars">'+values.map((value,index)=>'<div class="bar-wrap"><div class="bar" style="height:'+Math.max(2,Math.round((value/max)*100))+'%" title="'+escapeHtml(labels[index])+': '+escapeHtml(unit?fmtSeconds(value):String(value))+'"></div><span class="bar-label">'+escapeHtml(labels[index])+'</span></div>').join('')+'</div>'}
+function statList(rows){return '<div class="stat-list">'+(rows.length?rows.map((row,index)=>'<div class="stat-row"><span class="stat-index">'+(index+1)+'</span>'+row+'</div>').join(''):'<div class="small">No data yet.</div>')+'</div>'}
+function renderStats(d){const el=$('#stats-content');const totalSeconds=d.totals.seconds;const sourceTotal=d.sources.reduce((sum,item)=>sum+item.seconds,0);const colors=['#55d68b','#7c9cff','#ffb454','#ff7272','#c084fc','#5eead4'];const pie=d.sources.length&&sourceTotal?('conic-gradient('+d.sources.map((item,index)=>{const start=d.sources.slice(0,index).reduce((sum,x)=>sum+x.seconds,0)/sourceTotal*100;const end=(d.sources.slice(0,index+1).reduce((sum,x)=>sum+x.seconds,0)/sourceTotal*100);return colors[index%colors.length]+' '+start+'% '+end+'%'}).join(',')+')'):'';
+el.innerHTML='<div class="stat-cards"><div class="stat-card"><div class="stat-label">Listening time</div><div class="stat-value">'+fmtSeconds(totalSeconds)+'</div></div><div class="stat-card"><div class="stat-label">Sessions</div><div class="stat-value">'+d.totals.sessions+'</div></div><div class="stat-card"><div class="stat-label">Game sessions</div><div class="stat-value">'+d.totals.gameSessions+'</div></div><div class="stat-card"><div class="stat-label">Sources</div><div class="stat-value">'+d.sources.length+'</div></div></div>'+
+'<div class="stats-grid"><div class="stats-block"><h3>Listening time by day</h3>'+bars(d.days.map(x=>x.seconds),d.days.map(x=>x.day.slice(5)),true)+'</div><div class="stats-block"><h3>Track types</h3><div class="pie '+(pie?'':'empty')+'" style="'+(pie?'background:'+pie:'')+'"></div><div class="legend">'+(d.sources.length?d.sources.map((item,index)=>'<span><i class="dot" style="background:'+colors[index%colors.length]+'"></i>'+escapeHtml(item.source)+' — '+fmtSeconds(item.seconds)+'</span>').join(''):'<span>No tracks yet.</span>')+'</div></div></div>'+
+'<div class="stats-grid two"><div class="stats-block"><h3>Listening time by hour</h3>'+bars(d.hours.map(x=>x.seconds),d.hours.map(x=>String(x.hour).padStart(2,'0')+':00'),true)+'</div><div class="stats-block"><h3>Listening time by weekday</h3>'+bars(d.weekdays.map(x=>x.seconds),['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],true)+'</div></div>'+
+'<div class="stats-grid two"><div class="stats-block"><h3>Most time played</h3>'+statList(d.topTracks.map(item=>'<span class="stat-main">'+escapeHtml(item.title)+'<br><span class="stat-sub">'+escapeHtml(item.author)+' · '+fmtSeconds(item.seconds)+'</span></span>'))+'</div><div class="stats-block"><h3>Most time listened</h3>'+statList(d.topListeners.map(item=>'<img class="stat-avatar" src="'+escapeHtml(item.avatar||'')+'" alt="">'+'<span class="stat-main">'+escapeHtml(item.name||item.userId)+'<br><span class="stat-sub">'+fmtSeconds(item.seconds)+'</span></span>'))+'</div></div>'+
+'<div class="stats-block"><h3>Top commands</h3>'+statList(d.topCommands.map(item=>'<span class="stat-main">'+escapeHtml(item.command)+'<br><span class="stat-sub">'+item.count+' uses</span></span>'))+'</div>'}
+async function loadStats(){if(!state.guildId)return;const content=$('#stats-content');content.innerHTML='<div class="small">Loading statistics…</div>';try{const days=$('#stats-range').value;const d=await api('/api/stats?guildId='+encodeURIComponent(state.guildId)+'&days='+days);renderStats(d)}catch(e){content.innerHTML='<div class="error">'+escapeHtml(e.message)+'</div>'}}
+function openStats(){statsModal.classList.add('open');loadStats()}
+function closeStats(){statsModal.classList.remove('open')}
+$('#stats-btn').onclick=openStats;
+$('#stats-close').onclick=closeStats;
+$('#stats-range').onchange=loadStats;
+statsModal.addEventListener('click',e=>{if(e.target===statsModal)closeStats()});
 $('#save').onclick=async()=>{const values={};for(const el of document.querySelectorAll('#settings input, #settings select'))values[el.dataset.key]=el.value;try{for(const [key,value] of Object.entries(values))await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key,value})});await load();toast('Settings saved')}catch(e){toast(e.message,true)}};
 boot().catch(e=>{$('#status').textContent='Error';toast(e.message,true)});
 setInterval(refreshPlayer,1000);
@@ -533,6 +565,22 @@ export function startDashboard(client: BootstrapClient): void {
                 applyFilter(client, guildId, filter, enabled, value);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, filters: filterState(client, guildId) }));
+                return;
+            }
+            if (req.method === 'GET' && url.pathname === '/api/stats') {
+                const guildId = url.searchParams.get('guildId') ?? '';
+                const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days') ?? 7)));
+                const data = await client.db.getStats(guildId, days);
+                const listeners = data.topListeners as Array<{ userId: string; seconds: number; deafSeconds: number }>;
+                for (const listener of listeners) {
+                    const user = client.users.cache.get(listener.userId);
+                    Object.assign(listener, {
+                        name: user?.username ?? 'Unknown user',
+                        avatar: user?.displayAvatarURL() ?? null,
+                    });
+                }
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+                res.end(JSON.stringify(data));
                 return;
             }
             if (req.method === 'POST' && url.pathname === '/api/player') {
