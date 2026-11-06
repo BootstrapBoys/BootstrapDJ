@@ -494,6 +494,7 @@ export function startSetupJanitor(client: BootstrapClient, guildId: string): voi
             const stale = messages.filter(
                 message =>
                     message.id !== setup.messageId &&
+                    !message.author.bot &&
                     !message.pinned &&
                     !player?.hasTrackScopedNowPlayingMessage(message.id) &&
                     Date.now() - message.createdTimestamp > Math.max(5000, (client.config.deleteAfter || 0) * 1000)

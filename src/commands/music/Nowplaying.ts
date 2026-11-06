@@ -49,23 +49,18 @@ export default class Nowplaying extends Command {
         const duration = track.info.length;
         const bar = track.info.isStream
             ? '🔴 LIVE'
-            : client.utils.progressBar(position, duration, 20);
+            : client.utils.progressBar(position, duration, 14);
+        const timing = track.info.isStream
+            ? '`🔴 LIVE`'
+            : `\`${client.utils.formatTime(position)} / ${client.utils.formatTime(duration)}\``;
         const embed1 = this.client
             .embed()
             .setColor(this.client.color.main)
             .setAuthor({ name: 'Now Playing', iconURL: guild.iconURL({}) ?? undefined })
             .setThumbnail(track.info.artworkUrl ?? null)
             .setDescription(
-                `[${track.info.title}](${track.info.uri}) - Request By: ${track.info.requester}\n\n\`${bar}\``
-            )
-            .addFields({
-                name: '\u200b',
-                value: track.info.isStream
-                    ? '`🔴 LIVE`'
-                    : `\`${client.utils.formatTime(position)} / ${client.utils.formatTime(
-                          duration
-                      )}\``,
-            });
+                `[${track.info.title}](${track.info.uri}) · Requested by ${track.info.requester}\n\n\`${bar}\` ${timing}`
+            );
         const message = await ctx.sendMessage({ embeds: [embed1], components: getNowPlayingButtons() });
         player.registerNowPlayingMessage(message, track.info.isStream ? null : track.info.length);
         return message;
