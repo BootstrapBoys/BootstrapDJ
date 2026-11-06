@@ -72,7 +72,13 @@ export default class SetupButtons extends Event {
             return;
         }
         if (message) {
-            const isCommandResponse = player.hasTrackScopedNowPlayingMessage(message.id);
+            // The setup mock is persisted by ID. Every other message using these
+            // control IDs is a /nowplaying reply, even when another bot process
+            // handled the interaction and cannot see the local dispatcher map.
+            const setup = await this.client.db.getSetup(interaction.guildId);
+            const isCommandResponse =
+                setup?.messageId !== message.id ||
+                player.hasTrackScopedNowPlayingMessage(message.id);
             switch (interaction.customId) {
                 case 'LOW_VOL_BUT': {
                     const vol = player.player.volume - 10;
