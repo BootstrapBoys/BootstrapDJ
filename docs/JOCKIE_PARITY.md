@@ -63,11 +63,11 @@ being completed first; external-service features are listed explicitly.
 - **Games:** guess-the-song with persistent wins/plays and leaderboard is implemented.
 - **Announcements:** opt-in text announcements are implemented. Voice/TTS announcements are intentionally out of scope.
 - **Prefix modes:** personal prefix set/reset/list and comma-combined server prefixes are implemented.
-- **Permission modes:** claim and transfer ownership and per-command allow/deny rules are implemented; rebind/session/property modes remain.
-- **Command routing:** text/voice gates, disabled-command filtering, session lock, typo suggestions (`settings autocorrect`), vote-skip percentages, and `/utility commands` status listing are implemented; message/thread policies remain.
-- **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count, auto-delete, prefix combine, per-guild search type, session lock, and autocorrect suggestions are implemented; timeout confirmation, preferred bots, and volume automation remain.
+- **Permission modes:** claim/transfer ownership and per-command allow/deny rules are implemented; rebind/session/property modes are intentionally simplified away.
+- **Command routing:** text/voice gates, thread policy (`settings allowthreads`), disabled-command filtering, session lock, autocorrect execution, vote-skip percentages, and `/utility commands` status listing are implemented.
+- **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count and duration, listener/pause/idle timeouts, auto-delete, prefix combine, per-guild search type, session lock, thread policy, and autocorrect execution are implemented; timeout confirmation, preferred bots, and volume automation remain.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
-- **Owner tools:** dev-only `restart` is implemented; broader reload/shutdown tooling remains.
+- **Owner tools:** dev-only `restart` and process-stop command are implemented; safe command reload remains.
 - **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, and a categorized settings editor. Bot-list votes/clones still require external services.
 
 ## Known limitations
