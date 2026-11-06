@@ -159,7 +159,16 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
         const refreshed = await client.db
             .claimSessionLease(guildId, botUser.id, botName, LEASE_TTL_MS)
             .catch(() => false);
-        if (!refreshed) client.logger.warn(`[lease] could not refresh ${guildId}`);
+        if (refreshed) continue;
+        const lease = await client.db.getSessionLease(guildId).catch(() => null);
+        if (lease && lease.expiresAt.getTime() > Date.now() && lease.botId !== botUser.id) {
+            // Another process won the guild. Stop the local player without
+            // deleting the saved session so exactly one bot produces audio.
+            client.logger.warn(`[lease] ${guildId} owned by ${lease.botName}; yielding local player`);
+            client.queue.get(guildId)?.destroy(true);
+        } else {
+            client.logger.warn(`[lease] could not refresh ${guildId}`);
+        }
     }
 
     const sessionGuildIds = await client.db.getSessionGuildIds();

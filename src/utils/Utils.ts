@@ -52,7 +52,7 @@ export class Utils {
             const player = client.queue.get(config.guildId);
             if (player?.current) {
                 client.user.setActivity({
-                    name: `🎶 | ${player.current.info.title}`,
+                    name: `🎶 | ${player.current.info.title}`.slice(0, 128),
                     type: ActivityType.Listening,
                 });
             } else {
@@ -65,7 +65,7 @@ export class Utils {
             const active = [...client.queue.values()].filter(player => Boolean(player.current)).length;
             if (active > 0) {
                 client.user.setActivity({
-                    name: `music in ${active} server${active === 1 ? '' : 's'}`,
+                    name: `music in ${active} server${active === 1 ? '' : 's'}`.slice(0, 128),
                     type: ActivityType.Listening,
                 });
             } else {

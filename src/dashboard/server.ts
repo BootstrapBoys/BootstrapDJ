@@ -717,7 +717,7 @@ async function playerAction(client: BootstrapClient, guildId: string, action: st
         }
         case 'volume': {
             if (!Number.isFinite(value) || value < 0 || value > 200) throw new Error('Volume must be 0–200');
-            player.player.setGlobalVolume(value);
+            void player.player.setGlobalVolume(value).catch(error => client.logger.warn(`[dashboard] volume failed: ${error}`));
             break;
         }
         case 'jump': {
