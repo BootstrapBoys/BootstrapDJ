@@ -156,15 +156,26 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 .status{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:13px}.status b{color:var(--text)}
 #toast{position:fixed;right:18px;bottom:18px;padding:10px 14px;border-radius:9px;background:var(--panel2);border:1px solid #394556;opacity:0;transition:.2s}
 #toast.show{opacity:1}.error{color:var(--bad)}.ok{color:var(--ok)}
+.gear{background:transparent;border-color:transparent;color:var(--muted);font-size:22px;line-height:1;padding:6px 9px;border-radius:8px}.gear:hover{color:var(--text);background:var(--panel2);border-color:#394556}
+.modal{position:fixed;inset:0;background:rgba(5,8,14,.72);display:none;align-items:flex-start;justify-content:center;padding:32px 16px;overflow:auto;z-index:20}.modal.open{display:flex}
+.modal-card{width:min(980px,100%);background:var(--panel);border:1px solid #394556;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:18px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.modal-head h2{margin:0;color:var(--text);font-size:16px;text-transform:none;letter-spacing:0}
+.icon-btn{background:var(--panel2);border:1px solid #394556;color:var(--text);border-radius:8px;padding:7px 10px;cursor:pointer}
 </style>
 </head>
 <body>
-<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select></div></header>
+<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings">⚙</button></div></header>
 <main>
 <section class="panel"><h2>Player</h2><div id="player" class="status"></div></section>
 <section class="panel"><h2>Filters</h2><div id="filters" class="filters"></div></section>
-<section class="panel"><h2>Settings</h2><div id="settings" class="settings"></div><div style="margin-top:12px"><button class="primary" id="save">Save settings</button></div></section>
 </main>
+<div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div class="modal-card">
+    <div class="modal-head"><h2 id="settings-title">Settings</h2><button class="icon-btn" id="settings-close" aria-label="Close settings">✕</button></div>
+    <div id="settings" class="settings"></div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end"><button class="icon-btn" id="settings-cancel">Cancel</button><button class="primary" id="save">Save settings</button></div>
+  </div>
+</div>
 <div id="toast"></div>
 <script>
 const state={guildId:null,data:null};
@@ -180,6 +191,14 @@ function render(){const d=state.data;const p=d.player||{};$('#player').innerHTML
  const s=$('#settings');s.innerHTML='';for(const [key,value] of Object.entries(d.settings)){const box=document.createElement('label');box.className='setting';const title=document.createElement('span');title.className='small';title.textContent=key;const input=document.createElement('input');input.value=value;input.dataset.key=key;box.appendChild(title);box.appendChild(input);s.appendChild(box)}}
 function escapeHtml(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML}
 async function toggleFilter(id,enabled,row,value){try{await api('/api/filter',{method:'POST',body:JSON.stringify({guildId:state.guildId,filter:id,enabled,value:value===undefined?undefined:Number(value)})});await load();toast((enabled?'Enabled ':'Disabled ')+id)}catch(e){toast(e.message,true);if(row)row.classList.add('error')}}
+const modal=$('#settings-modal');
+function openSettings(){modal.classList.add('open')}
+function closeSettings(){modal.classList.remove('open')}
+$('#settings-btn').onclick=openSettings;
+$('#settings-close').onclick=closeSettings;
+$('#settings-cancel').onclick=closeSettings;
+modal.addEventListener('click',e=>{if(e.target===modal)closeSettings()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings()});
 $('#save').onclick=async()=>{const values={};for(const el of document.querySelectorAll('#settings input'))values[el.dataset.key]=el.value;try{for(const [key,value] of Object.entries(values))await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key,value})});await load();toast('Settings saved')}catch(e){toast(e.message,true)}};
 boot().catch(e=>{$('#status').textContent='Error';toast(e.message,true)});
 </script>
