@@ -70,6 +70,7 @@ being completed first; external-service features are listed explicitly.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** dev-only restart, shutdown, and command reload are implemented.
 - **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, and a categorized settings editor. Bot-list votes/clones still require external services.
+- **Multi-bot:** `BOTS_FILE` launches one client per token, heartbeats bots, and routes voice commands to the first active bot in `preferredOrder`. Automatic session handoff after a crash is not yet a lease-based transfer.
 
 ## Known limitations
 
