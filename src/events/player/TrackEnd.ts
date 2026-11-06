@@ -19,7 +19,8 @@ export default class TrackEnd extends Event {
                 track.info.title,
                 track.info.author,
                 track.info.sourceName,
-                Math.round(track.info.length / 1000)
+                Math.round(track.info.length / 1000),
+                track.info.uri ?? null
             ).catch(() => {});
         }
         dispatcher.previous = dispatcher.current;

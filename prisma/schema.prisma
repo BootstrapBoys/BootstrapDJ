@@ -111,6 +111,7 @@ model StatsTrack {
   title      String
   author     String
   source     String
+  uri        String?
   seconds    Int      @default(0)
   plays      Int      @default(0)
   lastPlayed DateTime @updatedAt

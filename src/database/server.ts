@@ -376,7 +376,8 @@ export default class ServerData {
         title: string,
         author: string,
         source: string,
-        seconds: number
+        seconds: number,
+        uri: string | null = null
     ): Promise<void> {
         const value = Math.max(0, Math.round(seconds));
         const now = new Date();
@@ -384,8 +385,8 @@ export default class ServerData {
         await this.prisma.$transaction([
             this.prisma.statsTrack.upsert({
                 where: { guildId_trackId: { guildId, trackId } },
-                create: { guildId, trackId, title, author, source, seconds: value, plays: 1 },
-                update: { title, author, source, seconds: { increment: value }, plays: { increment: 1 } },
+                create: { guildId, trackId, title, author, source, uri, seconds: value, plays: 1 },
+                update: { title, author, source, uri, seconds: { increment: value }, plays: { increment: 1 } },
             }),
             this.prisma.statsDaily.upsert({
                 where: { guildId_day: { guildId, day } },
@@ -473,6 +474,7 @@ export default class ServerData {
                 title: entry.title,
                 author: entry.author,
                 source: entry.source,
+                uri: entry.uri,
                 seconds: entry.seconds,
                 plays: entry.plays,
             })),
