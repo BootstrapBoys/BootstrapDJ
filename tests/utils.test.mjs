@@ -22,6 +22,7 @@ test('position past the end is clamped to 100%', () => {
 test('formatTime renders seconds, minutes and hours', () => {
     assert.equal(Utils.formatTime(0), '0s');
     assert.equal(Utils.formatTime(1000), '1s');
+    assert.equal(Utils.formatTime(9_620), '9s');
     assert.equal(Utils.formatTime(65_000), '1m 5s');
     assert.equal(Utils.formatTime(3_725_000), '1h 2m');
     assert.equal(Utils.formatTime(90_000_000), '1d 1h');

@@ -28,7 +28,7 @@ export class Utils {
         const hourMs = 60 * minuteMs;
         const dayMs = 24 * hourMs;
         if (ms < minuteMs) {
-            return `${ms / 1000}s`;
+            return `${Math.floor(ms / 1000)}s`;
         } else if (ms < hourMs) {
             return `${Math.floor(ms / minuteMs)}m ${Math.floor((ms % minuteMs) / 1000)}s`;
         } else if (ms < dayMs) {

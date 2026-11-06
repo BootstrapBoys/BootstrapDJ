@@ -74,14 +74,17 @@ function getNowPlayingButtons(): ActionRowBuilder<ButtonBuilder>[] {
     const previous = new ButtonBuilder()
         .setCustomId('PREV_BUT')
         .setEmoji({ name: '⏮️' })
+        .setLabel('Previous')
         .setStyle(ButtonStyle.Secondary);
     const playPause = new ButtonBuilder()
         .setCustomId('PAUSE_BUT')
         .setEmoji({ name: '⏯️' })
+        .setLabel('Play/Pause')
         .setStyle(ButtonStyle.Secondary);
     const skip = new ButtonBuilder()
         .setCustomId('SKIP_BUT')
         .setEmoji({ name: '⏭️' })
+        .setLabel('Skip')
         .setStyle(ButtonStyle.Secondary);
     return [new ActionRowBuilder<ButtonBuilder>().addComponents(previous, playPause, skip)];
 }
