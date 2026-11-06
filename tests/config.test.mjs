@@ -172,5 +172,9 @@ test('stats retention keeps recent rows and each guild top 100', async () => {
     assert.equal((await prisma.statsDaily.count()), 1);
     assert.equal((await prisma.statsTrack.count()), 100);
     assert.equal((await prisma.statsListener.count()), 100);
+    assert.equal((await prisma.statsTrack.findUnique({ where: { guildId_trackId: { guildId: 'g1', trackId: 'top' } } }))?.seconds, 1000);
+    assert.equal((await prisma.statsTrack.findUnique({ where: { guildId_trackId: { guildId: 'g1', trackId: 'new' } } }))?.seconds, 5);
+    assert.equal((await prisma.statsListener.findUnique({ where: { guildId_userId: { guildId: 'g1', userId: 'top' } } }))?.seconds, 500);
+    assert.equal((await prisma.statsListener.findUnique({ where: { guildId_userId: { guildId: 'g1', userId: 'new' } } }))?.seconds, 2);
     assert.equal((await prisma.sessionLease.count()), 1);
 });
