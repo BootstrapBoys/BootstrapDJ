@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 
 import { fromSaved, SavedTrack } from '../../structures/Dispatcher.js';
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { trackIdentity } from '../../utils/QueueTools.js';
 
 export default class PlayRecent extends Command {
     constructor(client: BootstrapClient) {
@@ -41,10 +42,13 @@ export default class PlayRecent extends Command {
         const vc = ctx.voiceChannel;
         if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
         const count = Math.min(20, Math.max(1, Number(args[0]) || 5));
+        // Fetch one extra row because the currently playing track is recorded
+        // as recent when it starts, but should not be re-queued behind itself.
         // Prefer the durable table; fall back to the in-memory dispatcher
         // history for rows written before the table existed.
-        const stored = await client.db.getRecentTracks(guild.id, count).catch(() => []);
-        const recent = stored.length
+        const stored = await client.db.getRecentTracks(guild.id, count + 1).catch(() => []);
+        const currentId = player.current ? trackIdentity(player.current) : null;
+        const recent = (stored.length
             ? stored
                   .map(row => {
                       try {
@@ -55,10 +59,18 @@ export default class PlayRecent extends Command {
                   })
                   .filter((track): track is NonNullable<typeof track> => Boolean(track))
                   .reverse()
-            : player.history.slice(-count);
+            : player.history.slice(-(count + 1))
+        )
+            .filter(track => !currentId || trackIdentity(track) !== currentId)
+            .slice(-count);
         if (!recent.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No playback history yet.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('No playback history yet, or only the current track is available.'),
+                ],
             });
         }
         for (const track of recent) player.enqueue(track);
