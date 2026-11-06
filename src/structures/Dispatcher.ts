@@ -158,7 +158,6 @@ export default class Dispatcher {
     public previous: Song | null;
     public current: Song | null;
     public loop: 'off' | 'repeat' | 'queue';
-    public repeat: number;
     public node: Node;
     private readonly nodeSession: string | null;
     public paused: boolean;
@@ -174,6 +173,8 @@ export default class Dispatcher {
     /** Recent explicit requests, newest first (max AUTOPLAY_SEEDS). */
     public seeds: Song[];
     private toppingUp = false;
+    /** Failed final attempts per track, so an unplayable track is skipped. */
+    private failedTracks = new Map<string, number>();
     private persistTimer: ReturnType<typeof setInterval> | null = null;
     private pauseTimer: ReturnType<typeof setTimeout> | null = null;
     private idleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -204,7 +205,6 @@ export default class Dispatcher {
         this.previous = null;
         this.current = null;
         this.loop = 'off';
-        this.repeat = 0;
         this.node = options.node;
         this.nodeSession = options.node.sessionId;
         this.paused = false;
@@ -239,7 +239,7 @@ export default class Dispatcher {
                     );
                 if (!this.queue.length)
                     this.client.shoukaku.emitPlayerEvent('queueEnd', this.player, this.current, this);
-                this.client.shoukaku.emitPlayerEvent('trackEnd', this.player, this.current, this);
+                this.client.shoukaku.emitPlayerEvent('trackEnd', this.player, this.current, this, data?.reason);
             })
             .on('stuck', () => this.client.shoukaku.emitPlayerEvent('trackStuck', this.player, this.current))
             .on('exception', (data: TrackExceptionEvent) => {
@@ -297,6 +297,8 @@ export default class Dispatcher {
 
         try {
             await this.player.playTrack({ track: { encoded: this.current.encoded } });
+            const startedKey = this.current.info?.uri ?? this.current.encoded;
+            this.failedTracks.delete(startedKey);
             void this.persist();
             this.history.push(this.current);
             if (this.history.length > 100) this.history.shift();
@@ -325,8 +327,19 @@ export default class Dispatcher {
                 return;
             }
 
-            // Give up on this track but do not strand it as `current`.
-            if (this.current) this.queue.unshift(this.current);
+            // Retry a failed track a bounded number of times, then drop it.
+            // Requeueing an unplayable track forever blocks the whole queue.
+            if (this.current) {
+                const key = this.current.info?.uri ?? this.current.encoded;
+                const failures = (this.failedTracks.get(key) ?? 0) + 1;
+                if (failures >= 3) {
+                    this.failedTracks.delete(key);
+                    this.client.logger.warn(`[queue] skipping unplayable track in ${this.guildId}: ${key}`);
+                } else {
+                    this.failedTracks.set(key, failures);
+                    this.queue.unshift(this.current);
+                }
+            }
             this.current = null;
             void this.persist();
             if (this.queue.length) setTimeout(() => void this.isPlaying(), 3000);
@@ -563,7 +576,6 @@ export default class Dispatcher {
                 this.queue.splice(0, skipto - 1);
             }
         }
-        this.repeat = this.repeat == 1 ? 0 : this.repeat;
         this.callPlayer('stop', () => this.player.stopTrack());
     }
     public seek(time: number): void {
@@ -578,7 +590,6 @@ export default class Dispatcher {
         this.autoplay = false;
         this.seed = null;
         this.seeds = [];
-        this.repeat = 0;
         this.stopped = true;
         void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.callPlayer('stop', () => this.player.stopTrack());

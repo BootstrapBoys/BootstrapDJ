@@ -48,6 +48,12 @@ export default class QueueEnd extends Event {
                 });
                 const collector = prompt.createMessageComponentCollector({ time: confirmSeconds * 1000, max: 1 });
                 collector.on('collect', async interaction => {
+                    if (interaction.customId === 'timeout-leave') {
+                        await interaction.reply({ content: 'Leaving the voice channel.', ephemeral: true });
+                        collector.stop('leave');
+                        dispatcher.destroy();
+                        return;
+                    }
                     await interaction.reply({ content: 'Staying connected.', ephemeral: true });
                     collector.stop('confirmed');
                 });

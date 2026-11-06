@@ -204,7 +204,7 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
         client.cooldown.set(input.commandKey, timestamps);
     }
     const now = Date.now();
-    const cooldownAmount = Math.floor(command.cooldown || 5) * 1000;
+    const cooldownAmount = Math.floor(command.cooldown ?? 3) * 1000;
     if (!timestamps.has(member.id)) {
         timestamps.set(member.id, now);
         setTimeout(() => timestamps?.delete(member.id), cooldownAmount);

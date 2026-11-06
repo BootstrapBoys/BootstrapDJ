@@ -1,4 +1,4 @@
-import { EmbedBuilder, Guild, GuildMember, TextChannel } from 'discord.js';
+import { EmbedBuilder, Guild, TextChannel } from 'discord.js';
 
 import { BootstrapClient, Event } from '../../structures/index.js';
 
@@ -9,26 +9,14 @@ export default class GuildCreate extends Event {
         });
     }
     public async run(guild: Guild): Promise<unknown> {
-        let owner: GuildMember | undefined;
-        try {
-            owner = guild.members.cache.get(guild?.ownerId);
-        } catch {
-            owner = await guild.fetchOwner();
-        }
-        if (!owner) {
-            owner = {
-                user: {
-                    tag: 'Unknown#0000',
-                },
-            } as GuildMember;
-        }
+        const owner = await guild.fetchOwner().catch(() => null);
         const embed = new EmbedBuilder()
             .setColor(this.client.config.color.green)
             .setAuthor({ name: guild.name, iconURL: guild.iconURL({ extension: 'jpeg' }) ?? undefined })
             .setDescription(`**${guild.name}** has been added to my guilds!`)
             .setThumbnail(guild.iconURL({ extension: 'jpeg' }) ?? null)
             .addFields(
-                { name: 'Owner', value: owner.user.tag, inline: true },
+                { name: 'Owner', value: owner?.user.tag ?? 'Unknown', inline: true },
                 { name: 'Members', value: guild.memberCount.toString(), inline: true },
                 {
                     name: 'Created At',
@@ -43,9 +31,10 @@ export default class GuildCreate extends Event {
                 { name: 'ID', value: guild.id, inline: true }
             )
             .setTimestamp();
-        const channel = (await this.client.channels.fetch(
-            this.client.config.logChannelId
-        )) as TextChannel;
+        if (!this.client.config.logChannelId) return;
+        const channel = (await this.client.channels
+            .fetch(this.client.config.logChannelId)
+            .catch(() => null)) as TextChannel | null;
         if (!channel) return;
         return await channel.send({ embeds: [embed] });
     }

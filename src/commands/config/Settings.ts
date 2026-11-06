@@ -6,12 +6,6 @@ import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../../utils/SettingsS
 function isKnown(key: string): key is keyof typeof DEFAULTS {
     return isKnownSetting(key);
 }
-const SETTING_CHOICES = [...new Set([...Object.keys(DEFAULTS), 'autoplayreset'])]
-    .filter(key => key !== 'volumeautomatic' && key !== 'maxplaylistlength')
-    .slice(0, 25)
-    .map(key => ({ name: key, value: key }));
-
-
 export default class Settings extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
@@ -34,7 +28,6 @@ export default class Settings extends Command {
                     description: 'Setting name; omit to list all',
                     type: ApplicationCommandOptionType.String,
                     required: false,
-                    choices: SETTING_CHOICES,
                 },
                 {
                     name: 'value',

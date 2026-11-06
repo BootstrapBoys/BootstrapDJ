@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { parseTime } from '../../utils/QueueTools.js';
 
 export default class Seek extends Command {
     constructor(client: BootstrapClient) {
@@ -41,8 +42,8 @@ export default class Seek extends Command {
         const player = client.queue.get(guild.id);
         const embed = this.client.embed();
 
-        const time = client.utils.parseTime(args[0]);
-        if (!time)
+        const time = parseTime(args.join(' '));
+        if (time === null)
             return await ctx.sendMessage({
                 embeds: [
                     embed.setColor(this.client.color.red).setDescription('Invalid time format.'),

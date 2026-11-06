@@ -94,20 +94,6 @@ export class Utils {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
 
-    public static parseTime(string: string): number {
-        const time = string.match(/([0-9]+[d,h,m,s])/g);
-        if (!time) return 0;
-        let ms = 0;
-        for (const t of time) {
-            const unit = t[t.length - 1];
-            const amount = Number(t.slice(0, -1));
-            if (unit === 'd') ms += amount * 24 * 60 * 60 * 1000;
-            else if (unit === 'h') ms += amount * 60 * 60 * 1000;
-            else if (unit === 'm') ms += amount * 60 * 1000;
-            else if (unit === 's') ms += amount * 1000;
-        }
-        return ms;
-    }
     public static progressBar(current: number, total: number, size = 20): string {
         // Livestreams report length 0; dividing by it produced Infinity and
         // '▓'.repeat(Infinity) threw RangeError inside /nowplaying.

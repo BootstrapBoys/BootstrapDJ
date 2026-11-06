@@ -324,6 +324,9 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
             dispatcher.destroy(true);
         }
         client.logger.error(`[session] restore failed for ${guildId}: ${error}`);
+        // A rejected saved payload would otherwise be reclaimed and retried
+        // every handoff tick, joining and leaving voice forever.
+        await client.db.deleteSession(guildId).catch(() => {});
     } finally {
         if (dispatcher) dispatcher.restoring = false;
     }

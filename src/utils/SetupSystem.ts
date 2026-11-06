@@ -1,5 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { AttachmentBuilder, ColorResolvable, EmbedBuilder, Message, TextChannel } from 'discord.js';
+import { existsSync } from 'node:fs';
 import { LoadType } from 'shoukaku';
 
 import { getButtons } from './Buttons.js';
@@ -15,7 +16,8 @@ async function listeningActive(client: BootstrapClient, guildId: string): Promis
     return state?.enabled === true;
 }
 
-function badgeFile(): AttachmentBuilder {
+function badgeFile(): AttachmentBuilder | null {
+    if (!existsSync(LIVE_BADGE_PATH)) return null;
     return new AttachmentBuilder(LIVE_BADGE_PATH, { name: 'earl-live.png' });
 }
 
@@ -28,9 +30,11 @@ function withLiveBadge(client: BootstrapClient, embed: EmbedBuilder): {
 } {
     const url = client.config.earlLiveBadgeUrl;
     if (url) return { embeds: [embed.setThumbnail(url)] };
+    const file = badgeFile();
+    if (!file) return { embeds: [embed] };
     return {
         embeds: [embed.setThumbnail('attachment://earl-live.png')],
-        files: [badgeFile()],
+        files: [file],
         attachments: [],
     };
 }

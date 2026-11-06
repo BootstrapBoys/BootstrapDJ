@@ -170,11 +170,7 @@ export default class TrackStart extends Event {
                 );
                 return;
             }
-            if (channel && textChannel && channel.id === textChannel.id) {
-                await trackStart(id, textChannel, dispatcher, track, this.client);
-            } else {
-                await trackStart(id, textChannel, dispatcher, track, this.client);
-            }
+            await trackStart(id, textChannel, dispatcher, track, this.client);
         } else {
             const message = await channel.send({
                 embeds: [embed],

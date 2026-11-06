@@ -35,7 +35,7 @@ export default class Faq extends Command {
                             'Use `/volume <0-200>`.',
                             '',
                             '**Why did a track stop?**',
-                            'Check `/nodestatus` if playback failed; the bot fails over to its backup node when possible.',
+                            'Check `/lavalink` if playback failed; the bot fails over to its backup node when possible.',
                             '',
                             '**Are there premium commands?**',
                             'No. Every BootstrapDJ command is free.',

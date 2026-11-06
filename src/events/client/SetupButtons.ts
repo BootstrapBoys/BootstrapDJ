@@ -34,12 +34,6 @@ export default class SetupButtons extends Event {
                 `There is no music playing in this server.`,
                 this.client.color.red
             );
-        if (!player.queue)
-            return await buttonReply(
-                interaction,
-                `There is no music playing in this server.`,
-                this.client.color.red
-            );
         if (!player.current)
             return await buttonReply(
                 interaction,
@@ -81,8 +75,8 @@ export default class SetupButtons extends Event {
                 player.hasTrackScopedNowPlayingMessage(message.id);
             switch (interaction.customId) {
                 case 'LOW_VOL_BUT': {
-                    const vol = player.player.volume - 10;
-                    player.player.setGlobalVolume(vol);
+                    const vol = Math.max(0, Math.min(200, player.player.volume - 10));
+                    void player.player.setGlobalVolume(vol).catch(() => {});
                     await buttonReply(interaction, `Volume set to ${vol}%`, this.client.color.main);
                     await message.edit({
                         embeds: [
@@ -95,8 +89,8 @@ export default class SetupButtons extends Event {
                     break;
                 }
                 case 'HIGH_VOL_BUT': {
-                    const vol2 = player.player.volume + 10;
-                    player.player.setGlobalVolume(vol2);
+                    const vol2 = Math.max(0, Math.min(200, player.player.volume + 10));
+                    void player.player.setGlobalVolume(vol2).catch(() => {});
                     await buttonReply(
                         interaction,
                         `Volume set to ${vol2}%`,

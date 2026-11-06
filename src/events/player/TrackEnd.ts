@@ -11,7 +11,12 @@ export default class TrackEnd extends Event {
             name: 'trackEnd',
         });
     }
-    public async run(_player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
+    public async run(
+        _player: Player,
+        track: Song,
+        dispatcher: Dispatcher,
+        reason?: string
+    ): Promise<void> {
         if (track) {
             void this.client.db.recordTrackPlay(
                 dispatcher.guildId,
@@ -33,8 +38,12 @@ export default class TrackEnd extends Event {
         dispatcher.nowPlayingCollector = null;
         dispatcher.clearNowPlayingCommandMessages();
         const m = await dispatcher.nowPlayingMessage?.fetch().catch(() => {});
-        if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
-        if (dispatcher.loop === 'queue') dispatcher.queue.push(track);
+        // Only a natural end repeats; STOPPED (skip/stop/previous) must not
+        // requeue the track it was asked to leave.
+        if (reason === 'FINISHED') {
+            if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
+            if (dispatcher.loop === 'queue') dispatcher.queue.push(track);
+        }
         if (dispatcher.pauseWhenEmpty) {
             const guild = this.client.guilds.cache.get(dispatcher.guildId);
             const stay = guild ? await this.client.db.get_247(guild.id).catch(() => null) : null;

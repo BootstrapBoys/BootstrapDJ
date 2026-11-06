@@ -185,19 +185,14 @@ export default class ServerData {
     public async get(guildId: string): Promise<Guild | null> {
         const cached = this.guildCache.get(guildId);
         if (cached) return cached;
-        let data = await this.prisma.guild.findUnique({
-            where: {
+        const data = await this.prisma.guild.upsert({
+            where: { guildId },
+            update: {},
+            create: {
                 guildId,
+                prefix: config.prefix,
             },
         });
-        if (!data) {
-            data = await this.prisma.guild.create({
-                data: {
-                    guildId,
-                    prefix: config.prefix,
-                },
-            });
-        }
         this.guildCache.set(guildId, data);
         return data;
     }

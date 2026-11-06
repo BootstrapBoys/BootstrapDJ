@@ -84,21 +84,12 @@ export default class Prefix extends Command {
                         ],
                     });
 
-                if (!guild) {
-                    client.db.setPrefix(guildId, pre);
-                    return await ctx.sendMessage({
-                        embeds: [
-                            embed.setDescription(`The prefix for this server is now \`${pre}\``),
-                        ],
-                    });
-                } else {
-                    client.db.setPrefix(guildId, pre);
-                    return await ctx.sendMessage({
-                        embeds: [
-                            embed.setDescription(`The prefix for this server is now \`${pre}\``),
-                        ],
-                    });
-                }
+                await client.db.setPrefix(guildId, pre);
+                return await ctx.sendMessage({
+                    embeds: [
+                        embed.setDescription(`The prefix for this server is now \`${pre}\``),
+                    ],
+                });
             }
             case 'reset':
                 if (!guild)
@@ -109,7 +100,7 @@ export default class Prefix extends Command {
                             ),
                         ],
                     });
-                client.db.setPrefix(guildId, client.config.prefix);
+                await client.db.setPrefix(guildId, client.config.prefix);
                 return await ctx.sendMessage({
                     embeds: [
                         embed.setDescription(

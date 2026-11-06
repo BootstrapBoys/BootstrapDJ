@@ -274,7 +274,8 @@ export class Queue extends Map {
             }
         };
 
-        const identifier = isUrl ? query : `${engine}:${query}`;
+        const hasEnginePrefix = /^[a-z]+search:/i.test(query);
+        const identifier = isUrl || hasEnginePrefix ? query : `${engine}:${query}`;
         let result = await resolve(identifier);
 
         // A public fallback usually has no LavaSrc, so dzsearch comes back empty;

@@ -627,12 +627,18 @@ function state(client: BootstrapClient, guildId: string): Record<string, unknown
 async function settingsState(client: BootstrapClient, guildId: string): Promise<Record<string, string>> {
     const stored = await client.db.getGuildSettings(guildId);
     const autoplay = await client.db.getAutoplaySetting(guildId).catch(() => null);
-    return {
+    const merged: Record<string, string> = {
         ...DEFAULTS,
         ...stored,
         autoplaysource: autoplay?.source ?? DEFAULTS.autoplaysource,
         autoplayseeds: autoplay?.seeds ?? DEFAULTS.autoplayseeds,
     };
+    // ownerid is managed by the permission claim flow, not the settings form.
+    return Object.fromEntries(
+        Object.entries(merged).filter(
+            ([key]) => Object.prototype.hasOwnProperty.call(DEFAULTS, key) || AUTOPLAY_FIELDS.has(key)
+        )
+    );
 }
 
 async function updateSetting(
@@ -768,6 +774,16 @@ export function startDashboard(client: BootstrapClient): void {
         );
         try {
             const url = new URL(req.url ?? '/', 'http://localhost');
+            // JSON-only mutations force a CORS preflight; SameSite=Lax alone
+            // is not a complete CSRF boundary for sibling subdomains.
+            if (
+                !['GET', 'HEAD'].includes(req.method ?? '') &&
+                !/^application\/json(?:;|$)/i.test(req.headers['content-type'] ?? '')
+            ) {
+                res.writeHead(415, { 'content-type': 'text/plain' });
+                res.end('content-type must be application/json');
+                return;
+            }
             if (req.method === 'GET' && url.pathname === '/auth/discord' && oauthEnabled()) {
                 const state = randomBytes(24).toString('hex');
                 setCookie(res, 'bdj_oauth_state', state, 600);

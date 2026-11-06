@@ -52,8 +52,11 @@ export default class MessageCreate extends Event {
         const serverPrefixes = guild.prefix
             .split(',')
             .map(prefix => prefix.trim())
-            .filter(Boolean);
-        const prefixes = userPrefix ? [...new Set([...serverPrefixes, userPrefix])] : serverPrefixes;
+            .filter(Boolean)
+            .sort((left, right) => right.length - left.length);
+        const prefixes = (userPrefix ? [...new Set([...serverPrefixes, userPrefix])] : serverPrefixes).sort(
+            (left, right) => right.length - left.length
+        );
         const prefixRegex = new RegExp(
             `^(<@!?${botId}>|${prefixes.map(prefix => escapeRegex(prefix)).join('|')})\\s*`
         );
