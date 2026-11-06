@@ -113,8 +113,8 @@ export default class BootstrapClient extends Client {
         });
     }
 
-    private async registerCommand(dir: string, file: string): Promise<void> {
-        const cmd = (await import(`../commands/${dir}/${file}`)).default;
+    private async registerCommand(dir: string, file: string, cacheBust: boolean = false): Promise<void> {
+        const cmd = (await import(`../commands/${dir}/${file}${cacheBust ? `?update=${Date.now()}` : ''}`)).default;
         const command = new cmd(this);
         command.category = dir;
         this.commands.set(command.name, command);
@@ -143,6 +143,23 @@ export default class BootstrapClient extends Client {
         }
         // Round-trip through JSON to drop undefined values Discord rejects.
         this.body.push(JSON.parse(JSON.stringify(data)));
+    }
+
+    /** Reload command modules without restarting the process. Slash metadata is
+     * not re-registered here; restart the process if option schemas changed. */
+    public async reloadCommands(): Promise<number> {
+        this.commands.clear();
+        this.aliases.clear();
+        const commandsPath = fs.readdirSync(path.join(__dirname, '../commands'));
+        const pending: Array<Promise<void>> = [];
+        for (const dir of commandsPath) {
+            const commandFiles = fs
+                .readdirSync(path.join(__dirname, `../commands/${dir}`))
+                .filter(file => file.endsWith('.js'));
+            for (const file of commandFiles) pending.push(this.registerCommand(dir, file, true));
+        }
+        await Promise.all(pending);
+        return this.commands.size;
     }
 
     private async getNodes(): Promise<NodeOption[]> {

@@ -31,6 +31,7 @@ export const DEFAULTS: Record<string, string> = {
     timeoutlisteners: '5',
     timeoutpause: '0',
     timeoutplaying: '0',
+    timeoutconfirmation: '0',
 };
 
 export function isKnownSetting(key: string): key is keyof typeof DEFAULTS {
