@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class Song extends Command {
     constructor(client: BootstrapClient) {
@@ -42,7 +43,7 @@ export default class Song extends Command {
                     embeds: [client.embed().setColor(client.color.red).setDescription('No Lavalink node is available.')],
                 });
             }
-            track = client.utils.firstTrack(await client.queue.search(query));
+            track = client.utils.firstTrack(await client.queue.search(query, await resolveSearchEngine(client, ctx)));
         }
         if (!track) {
             return await ctx.sendMessage({

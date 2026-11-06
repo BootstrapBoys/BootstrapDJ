@@ -52,6 +52,7 @@ function makePlayer(initial = []) {
 function makeClient(player, response, overrides = {}) {
     let created = 0;
     let searched = 0;
+    let lastEngine = null;
     return {
         queue: {
             get: () => player,
@@ -60,25 +61,27 @@ function makeClient(player, response, overrides = {}) {
                 created += 1;
                 return player;
             },
-            search: async () => {
+            search: async (_query, engine) => {
                 searched += 1;
+                lastEngine = engine;
                 return response;
             },
         },
         db: { getGuildSettings: async () => ({}) },
-        config: { searchEngine: 'dzsearch', maxQueueSize: 100, maxPlaylistSize: 100 },
+        config: { searchEngine: 'dzsearch', prefixSearchEngine: 'ytsearch', maxQueueSize: 100, maxPlaylistSize: 100 },
         embed: () => new EmbedBuilder(),
         color: { red: 0xff0000, main: 0x00ff00 },
         logger: { error: () => {} },
-        stats: () => ({ created, searched }),
+        stats: () => ({ created, searched, lastEngine }),
         ...overrides,
     };
 }
 
-function makeCtx() {
+function makeCtx(isInteraction = false) {
     const replies = [];
     return {
         replies,
+        isInteraction,
         guild: { id: 'guild' },
         author: { id: 'user' },
         voiceChannel: { id: 'vc' },
@@ -96,11 +99,13 @@ test('track requests enqueue at the end for play and at the front for playnext',
 
     await runPlayRequest(client, ctx, ['query'], 'queue');
     assert.deepEqual(player.queue.map(track => track.info.title), ['A']);
+    assert.equal(client.stats().lastEngine, 'ytsearch');
     assert.match(ctx.replies[0].embeds[0].data.description, /to the queue/);
 
     player.queue.length = 0;
     await runPlayRequest(client, ctx, ['query'], 'next');
     assert.deepEqual(player.queue.map(track => track.info.title), ['A']);
+    assert.equal(client.stats().lastEngine, 'ytsearch');
     assert.match(ctx.replies[1].embeds[0].data.description, /play next/);
 });
 
@@ -200,4 +205,14 @@ test('playlist limits and rejected tracks are reflected in the reply count', asy
     const oversizedCtx = makeCtx();
     await runPlayRequest(oversized, oversizedCtx, ['query'], 'queue');
     assert.match(oversizedCtx.replies[0].embeds[0].data.description, /playlist is too long/);
+});
+
+
+test('slash play keeps the configured engine while prefix uses ytsearch', async () => {
+    const player = makePlayer();
+    const client = makeClient(player, { loadType: LoadType.TRACK, data: rawTrack('A') });
+    const ctx = makeCtx(true);
+
+    await runPlayRequest(client, ctx, ['query'], 'queue');
+    assert.equal(client.stats().lastEngine, 'dzsearch');
 });

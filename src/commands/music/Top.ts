@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class Top extends Command {
     constructor(client: BootstrapClient) {
@@ -24,7 +25,7 @@ export default class Top extends Command {
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const query = args.join(' ').trim() || 'top hits';
-        const res = await client.queue.search(query);
+        const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         if (!res || res.loadType !== LoadType.SEARCH) {
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.red).setDescription(`No results for **${query}**.`)],

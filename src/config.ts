@@ -20,7 +20,10 @@ export default {
         main: 0x2f3136,
     },
     autoNode: process.env.AUTO_NODE ? parseBoolean(process.env.AUTO_NODE) : true, // auto node: node details are fetched from lavainfo-api (https://lavainfo-api.freedback-dip.workers.dev)
-    searchEngine: process.env.SEARCH_ENGINE || SearchEngine.YouTube, // search engine for music
+    searchEngine: process.env.SEARCH_ENGINE || SearchEngine.YouTube, // slash/default search engine
+    // Prefix commands use YouTube by default so the Deezer-backed default does
+    // not constrain them; slash commands keep the per-guild searchtype.
+    prefixSearchEngine: process.env.PREFIX_SEARCH_ENGINE || SearchEngine.YouTube,
     maxPlaylistSize: process.env.MAX_PLAYLIST_SIZE ? parseInt(process.env.MAX_PLAYLIST_SIZE) : 100, // max playlist size
     botStatus: (process.env.BOT_STATUS || 'online') as 'online' | 'idle' | 'dnd' | 'invisible', // online, idle, dnd, invisible
     botActivity: process.env.BOT_ACTIVITY || 'Bootstrap DJ', // set the bot activity

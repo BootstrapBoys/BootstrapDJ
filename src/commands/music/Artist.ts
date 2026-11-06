@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class Artist extends Command {
     constructor(client: BootstrapClient) {
@@ -28,7 +29,7 @@ export default class Artist extends Command {
                 embeds: [client.embed().setColor(client.color.red).setDescription('Provide an artist name.')],
             });
         }
-        const res = await client.queue.search(query);
+        const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         const track = client.utils.firstTrack(res);
         if (!track) {
             return await ctx.sendMessage({

@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class Album extends Command {
     constructor(client: BootstrapClient) {
@@ -28,7 +29,7 @@ export default class Album extends Command {
                 embeds: [client.embed().setColor(client.color.red).setDescription('Provide an album name.')],
             });
         }
-        const res = await client.queue.search(`album ${query}`);
+        const res = await client.queue.search(`album ${query}`, await resolveSearchEngine(client, ctx));
         const track = client.utils.firstTrack(res);
         if (!track) {
             return await ctx.sendMessage({

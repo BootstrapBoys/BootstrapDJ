@@ -143,6 +143,7 @@ OWNER_IDS=["859640640640640640","859640640640640640"] # Your discord id, you can
 GUILD_ID= "859640640640640640" # Your server Id if you want to use the for single server
 PRODUCTION="true" # true for production
 SEARCH_ENGINE= "ytsearch" # ytsearch, scsearch or ytmsearch
+PREFIX_SEARCH_ENGINE="ytsearch" # Prefix commands default here; slash commands use SEARCH_ENGINE/searchtype
 MAX_PLAYLIST_SIZE= "100" # Max playlist size
 MAX_QUEUE_SIZE= "100" # Max queue size
 COMMAND_DELETE_AFTER= "10" # Seconds before a command reply is deleted (0 disables)

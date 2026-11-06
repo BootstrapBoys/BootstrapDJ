@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class PlaylistSearch extends Command {
     constructor(client: BootstrapClient) {
@@ -29,7 +30,7 @@ export default class PlaylistSearch extends Command {
                 embeds: [client.embed().setColor(client.color.red).setDescription('Provide a playlist query or URL.')],
             });
         }
-        const res = await client.queue.search(query);
+        const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         if (!res) {
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.red).setDescription('No results found.')],

@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 type LyricsProviderResult = {
     text: string;
@@ -179,7 +180,7 @@ export default class Lyrics extends Command {
                     ],
                 });
             }
-            track = client.utils.firstTrack(await client.queue.search(query));
+            track = client.utils.firstTrack(await client.queue.search(query, await resolveSearchEngine(client, ctx)));
             if (!track) {
                 return await ctx.sendMessage({
                     embeds: [

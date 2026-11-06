@@ -284,7 +284,7 @@ defaultvolume:'Base volume for new tracks. Adaptive loudness uses this as the ga
 defaultautoplay:'Start autoplay automatically when a queue ends.',
 defaultrepeat:'Default loop mode for new sessions: off, repeat current, or queue.',
 defaultshuffle:'Shuffle the queue when a new session starts.',
-searchtype:'Lavalink search prefix, such as dzsearch, ytsearch, ytmsearch, or scsearch.',
+searchtype:'Lavalink search prefix for slash commands, such as dzsearch, ytsearch, ytmsearch, or scsearch. Prefix commands use PREFIX_SEARCH_ENGINE.',
 maxqueue:'Maximum number of tracks allowed in the queue.',
 maxuserqueue:'Maximum queue slots reserved per user.',
 voteskip:'Allow members to start a vote-skip.',

@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class Add extends Command {
     constructor(client: BootstrapClient) {
@@ -84,7 +85,7 @@ export default class Add extends Command {
                 ],
             });
 
-        const res = await client.queue.search(song);
+        const res = await client.queue.search(song, await resolveSearchEngine(client, ctx));
         if (!res)
             return await ctx.sendMessage({
                 embeds: [

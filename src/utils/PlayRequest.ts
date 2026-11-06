@@ -3,6 +3,7 @@ import type { BootstrapClient, Context } from '../structures/index.js';
 import { LoadType } from 'shoukaku';
 
 import { checkTrack, getPlayLimits } from './PlayLimits.js';
+import { resolveSearchEngine } from './SearchEngine.js';
 
 export type PlayMode = 'queue' | 'next';
 
@@ -43,7 +44,7 @@ export async function runPlayRequest(
     const guildSettings: Record<string, string> = await client.db
         .getGuildSettings(guild.id)
         .catch(() => ({}));
-    const searchEngine = guildSettings.searchtype || client.config.searchEngine;
+    const searchEngine = await resolveSearchEngine(client, ctx, guildSettings);
     const res = await client.queue.search(query, searchEngine);
     const embed = client.embed();
     const destination = mode === 'next' ? 'to play next in the queue' : 'to the queue';

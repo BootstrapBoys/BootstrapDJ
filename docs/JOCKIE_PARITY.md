@@ -86,7 +86,7 @@ being completed first; public listing/clone services are explicitly out of scope
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 114 tests at the latest branch commit.
+- `npm test` — 117 tests at the latest branch commit.
 
 Storage: WAL mode and bounded stats retention are documented in [`docs/STORAGE.md`](STORAGE.md).
 
@@ -105,3 +105,7 @@ This branch is for a self-hosted bot, not a public bot network.
 - Bot-list voting, vote webhooks, and vote leaderboards
 - Public clone services and dynamic clone assignment
 - Any external control plane for preferred-bot routing; the local `BOTS_FILE`, session leases, and preferred order are sufficient
+
+## Search engines
+
+Prefix commands default to `PREFIX_SEARCH_ENGINE` (`ytsearch`) while slash commands keep the per-guild `searchtype`/`SEARCH_ENGINE` value. URLs are resolved directly and ignore the search engine.

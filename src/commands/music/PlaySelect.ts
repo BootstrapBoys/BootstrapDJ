@@ -2,6 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder }
 import { LoadType, Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 const PAGE_SIZE = 25;
 
@@ -47,7 +48,7 @@ export default class PlaySelect extends Command {
         let player = client.queue.get(guild.id);
         if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
 
-        const res = await client.queue.search(query);
+        const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         if (!res) {
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.red).setDescription('No results found.')],

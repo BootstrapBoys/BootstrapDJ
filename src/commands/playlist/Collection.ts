@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class Collection extends Command {
     constructor(client: BootstrapClient) {
@@ -309,7 +310,7 @@ export default class Collection extends Command {
                     embeds: [client.embed().setColor(client.color.red).setDescription('No Lavalink node is available right now.')],
                 });
             }
-            const track = client.utils.firstTrack(await client.queue.search(query));
+            const track = client.utils.firstTrack(await client.queue.search(query, await resolveSearchEngine(client, ctx)));
             if (!track) {
                 return await ctx.sendMessage({
                     embeds: [client.embed().setColor(client.color.red).setDescription(`No results found for **${query}**.`)],
@@ -358,7 +359,7 @@ export default class Collection extends Command {
                     embeds: [client.embed().setColor(client.color.red).setDescription('Provide a track, search term, or playlist URL.')],
                 });
             }
-            const res = await client.queue.search(query);
+            const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
             if (!res) {
                 return await ctx.sendMessage({
                     embeds: [client.embed().setColor(client.color.red).setDescription('No results found.')],

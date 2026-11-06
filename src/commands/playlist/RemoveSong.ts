@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class RemoveSong extends Command {
     constructor(client: BootstrapClient) {
@@ -77,7 +78,7 @@ export default class RemoveSong extends Command {
             });
         }
 
-        const track: Track | null = client.utils.firstTrack(await client.queue.search(query));
+        const track: Track | null = client.utils.firstTrack(await client.queue.search(query, await resolveSearchEngine(client, ctx)));
         if (!track) {
             return await ctx.sendMessage({
                 embeds: [embed.setColor(client.color.red).setDescription(`No results found for **${query}**.`)],
