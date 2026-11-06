@@ -15,6 +15,7 @@ import { Player } from 'shoukaku';
 
 import { Song } from '../../structures/Dispatcher.js';
 import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
+import { loudnessOf, volumeForLoudness } from '../../utils/Loudness.js';
 import { trackStart } from '../../utils/SetupSystem.js';
 
 export default class TrackStart extends Event {
@@ -36,9 +37,25 @@ export default class TrackStart extends Event {
         // configure one.
         const settings = await this.client.db.getGuildSettings(guild.id);
         if (settings.volumeautomatic === 'true') {
-            const targetVolume = Number(settings.defaultvolume ?? 100);
-            if (Number.isFinite(targetVolume) && targetVolume >= 0 && targetVolume <= 200) {
-                player.setGlobalVolume(targetVolume);
+            const baseVolume = Number(settings.defaultvolume ?? 100);
+            const targetLufs = Number(settings.loudnesstarget ?? -16);
+            const fallbackVolume = Number.isFinite(baseVolume) && baseVolume >= 0 && baseVolume <= 200 ? baseVolume : 100;
+            const uri = track.info.uri;
+            if (uri && !track.info.isStream) {
+                void loudnessOf(uri)
+                    .then(result => {
+                        if (dispatcher.current?.info.uri !== uri) return;
+                        const volume = result
+                            ? volumeForLoudness(result.lufs, Number.isFinite(targetLufs) ? targetLufs : -16, fallbackVolume)
+                            : fallbackVolume;
+                        player.setGlobalVolume(volume);
+                        this.client.logger.info(
+                            `[loudness] ${track.info.title}: ${result ? `${result.lufs.toFixed(1)} LUFS -> volume ${volume}` : `no sample -> volume ${volume}`}`
+                        );
+                    })
+                    .catch(error => this.client.logger.warn(`[loudness] analysis failed: ${error}`));
+            } else {
+                player.setGlobalVolume(fallbackVolume);
             }
         }
         if (settings.announcechannel && settings.announce !== 'false') {

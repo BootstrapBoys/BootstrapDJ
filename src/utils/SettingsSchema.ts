@@ -26,6 +26,7 @@ export const DEFAULTS: Record<string, string> = {
     maxplaylistlength: '0',
     autocorrect: 'false',
     volumeautomatic: 'false',
+    loudnesstarget: '-16',
     locked: 'false',
     allowthreads: 'true',
     timeoutlisteners: '5',
