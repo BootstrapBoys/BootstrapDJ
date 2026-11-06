@@ -68,4 +68,22 @@ function getButtons(): ActionRowBuilder<ButtonBuilder>[] {
     return [row, row2];
 }
 
-export { getButtons };
+
+/** Compact controls for command responses; the setup mock keeps getButtons(). */
+function getNowPlayingButtons(): ActionRowBuilder<ButtonBuilder>[] {
+    const previous = new ButtonBuilder()
+        .setCustomId('PREV_BUT')
+        .setEmoji({ name: '⏮️' })
+        .setStyle(ButtonStyle.Secondary);
+    const playPause = new ButtonBuilder()
+        .setCustomId('PAUSE_BUT')
+        .setEmoji({ name: '⏯️' })
+        .setStyle(ButtonStyle.Secondary);
+    const skip = new ButtonBuilder()
+        .setCustomId('SKIP_BUT')
+        .setEmoji({ name: '⏭️' })
+        .setStyle(ButtonStyle.Secondary);
+    return [new ActionRowBuilder<ButtonBuilder>().addComponents(previous, playPause, skip)];
+}
+
+export { getButtons, getNowPlayingButtons };

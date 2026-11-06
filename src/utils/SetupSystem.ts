@@ -490,10 +490,12 @@ export function startSetupJanitor(client: BootstrapClient, guildId: string): voi
             const channel = guild?.channels.cache.get(setup.textId) as TextChannel | undefined;
             if (!channel) return;
             const messages = await channel.messages.fetch({ limit: 50 });
+            const player = client.queue.get(guildId);
             const stale = messages.filter(
                 message =>
                     message.id !== setup.messageId &&
                     !message.pinned &&
+                    !player?.hasTrackScopedNowPlayingMessage(message.id) &&
                     Date.now() - message.createdTimestamp > Math.max(5000, (client.config.deleteAfter || 0) * 1000)
             );
             if (!stale.size) return;

@@ -5,7 +5,7 @@ import { EmbedBuilder } from 'discord.js';
 
 import Nowplaying from '../dist/commands/music/Nowplaying.js';
 
-test('nowplaying replies with the shared control buttons', async () => {
+test('nowplaying replies with the compact control buttons', async () => {
     const player = {
         current: {
             info: {
@@ -40,10 +40,13 @@ test('nowplaying replies with the shared control buttons', async () => {
     };
 
     await command.run(client, ctx);
-    assert.equal(sent.components.length, 2);
+    assert.equal(sent.components.length, 1);
     assert.equal(player.registered.message.id, 'nowplaying-message');
     assert.equal(player.registered.duration, 120_000);
-    assert.equal(sent.components.flatMap(row => row.components).length, 10);
+    assert.deepEqual(
+        sent.components[0].components.map(component => component.data.custom_id),
+        ['PREV_BUT', 'PAUSE_BUT', 'SKIP_BUT']
+    );
 });
 
 import Dispatcher from '../dist/structures/Dispatcher.js';
@@ -52,10 +55,11 @@ test('track-scoped nowplaying messages are cleared on track end', () => {
     const dispatcher = Object.create(Dispatcher.prototype);
     dispatcher.nowPlayingCommandMessages = new Map();
     let deleted = 0;
-    const message = { delete: async () => { deleted += 1; } };
+    const message = { id: 'nowplaying-message', delete: async () => { deleted += 1; } };
 
     dispatcher.registerNowPlayingMessage(message, null);
     assert.equal(dispatcher.nowPlayingCommandMessages.size, 1);
+    assert.equal(dispatcher.hasTrackScopedNowPlayingMessage('nowplaying-message'), true);
     dispatcher.clearNowPlayingCommandMessages();
     assert.equal(dispatcher.nowPlayingCommandMessages.size, 0);
     assert.equal(deleted, 1);

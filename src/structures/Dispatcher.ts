@@ -488,6 +488,14 @@ export default class Dispatcher {
         void message.delete().catch(() => {});
     }
 
+    /** True when this message is a track-scoped /nowplaying reply. */
+    public hasTrackScopedNowPlayingMessage(messageId: string): boolean {
+        for (const message of this.nowPlayingCommandMessages.keys()) {
+            if (message.id === messageId) return true;
+        }
+        return false;
+    }
+
     /** Delete every track-scoped now-playing response (track end/skip/stop). */
     public clearNowPlayingCommandMessages(): void {
         for (const [message, timer] of [...this.nowPlayingCommandMessages]) {
