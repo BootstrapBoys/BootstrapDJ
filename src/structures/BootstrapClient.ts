@@ -144,6 +144,17 @@ export default class BootstrapClient extends Client {
                     this.body = this.body.slice(0, 100);
                 }
                 const rest = new REST({ version: '10' }).setToken(this.config.token ?? '');
+                if (this.config.production !== true) {
+                    // Commands registered globally by a previous deployment linger
+                    // in the guild command picker alongside guild commands. Clear
+                    // the global scope when running in test/guild mode.
+                    const globalCommands = Routes.applicationCommands(userId);
+                    const existing = (await rest.get(globalCommands)) as unknown[];
+                    if (Array.isArray(existing) && existing.length > 0) {
+                        await rest.put(globalCommands, { body: [] });
+                        this.logger.info(`[slash] cleared ${existing.length} stale global commands`);
+                    }
+                }
                 await rest.put(applicationCommands, { body: this.body });
                 this.logger.info(`Successfully loaded slash commands!`);
             } catch (error) {
