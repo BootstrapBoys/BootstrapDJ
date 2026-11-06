@@ -89,7 +89,7 @@ export default class Load extends Command {
                     continue;
                 }
                 const song = player.buildTrack(entry, author);
-                player.enqueue(song, false);
+                player.enqueue(song, false, false);
                 added.push(song);
                 loaded++;
             }

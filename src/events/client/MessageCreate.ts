@@ -34,7 +34,6 @@ export default class MessageCreate extends Event {
         }
         const guild = await this.client.db.get(message.guildId);
         if (!guild) return;
-        const guildSettings = await this.client.db.getGuildSettings(message.guildId);
 
         const mention = new RegExp(`^<@!?${botId}>( |)$`);
         if (message.content.match(mention)) {
@@ -55,6 +54,7 @@ export default class MessageCreate extends Event {
         );
         const match = message.content.match(prefixRegex);
         if (!match) return;
+        const guildSettings = await this.client.db.getGuildSettings(message.guildId);
         const [matchedPrefix] = match;
 
         const args = message.content.slice(matchedPrefix.length).trim().split(/ +/g);

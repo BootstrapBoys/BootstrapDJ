@@ -268,14 +268,14 @@ const $=s=>document.querySelector(s);
 function token(){return localStorage.getItem('bootstrapdj-dashboard-token')||''}
 function headers(json){const h={'x-dashboard-token':token()};if(json)h['content-type']='application/json';return h}
 function toast(text,isError){const el=$('#toast');el.textContent=text;el.className='show '+(isError?'error':'ok');setTimeout(()=>el.className='',2500)}
-async function api(path,options){const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body)),...(options&&options.headers)}});if(res.status===401){const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
+async function api(path,options){const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body)),...(options&&options.headers)}});if(res.status===401){if(document.body.dataset.oauth==='1'){location.href='/auth/discord';throw new Error('Login required')}const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
 async function boot(){const g=await api('/api/guilds');state.viewer=g.viewer||state.viewer;$('#stats-clear').style.display=state.viewer.owner?'':'none';const sel=$('#guild');sel.innerHTML='';for(const guild of g.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!g.guilds.length){$('#status').textContent='No guilds';return}state.guildId=g.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;load()};await load()}
 async function load(){try{state.data=await api('/api/state?guildId='+encodeURIComponent(state.guildId));render();$('#status').textContent='Connected'}catch(e){$('#status').textContent='Error';toast(e.message,true)}}
 const GROUPS=[
 {title:'Playback',keys:['defaultvolume','defaultautoplay','defaultrepeat','defaultshuffle','searchtype','maxqueue','maxuserqueue','voteskip','voteskippercent','autocorrect','volumeautomatic','loudnesstarget']},
 {title:'Autoplay',keys:['autoplaysource','autoplayseeds']},
 {title:'Announcements',keys:['announce','announcechannel','deleteafter']},
-{title:'Limits',keys:['maxtracklength','mintracklength','maxusertracks','maxusertrackslength','maxplaylisttracks','maxplaylistlength','loudnesstarget','timeoutlisteners','timeoutpause','timeoutplaying','timeoutconfirmation']},
+{title:'Limits',keys:['maxtracklength','mintracklength','maxusertracks','maxusertrackslength','maxplaylisttracks','maxplaylistlength','timeoutlisteners','timeoutpause','timeoutplaying','timeoutconfirmation']},
 {title:'Access and channels',keys:['locked','allowthreads','commandchannel','voicechannel','disabledcommands']}
 ];
 const LABELS={defaultvolume:'Default volume',defaultautoplay:'Default autoplay',defaultrepeat:'Default repeat',defaultshuffle:'Default shuffle',searchtype:'Search engine',maxqueue:'Max queue size',maxuserqueue:'Max per-user queue',voteskip:'Vote skip enabled',voteskippercent:'Vote skip percent',autocorrect:'Autocorrect suggestions',volumeautomatic:'Automatic volume',loudnesstarget:'Target loudness (LUFS)',autoplaysource:'Source',autoplayseeds:'Curated seeds',announce:'Text announcements',announcechannel:'Announcement channel ID',deleteafter:'Reply delete after (s)',maxtracklength:'Max track length (s)',mintracklength:'Min track length (s)',maxusertracks:'Max user tracks',maxusertrackslength:'Max user track length (s)',maxplaylisttracks:'Max playlist tracks',maxplaylistlength:'Max playlist length (s)',locked:'Session locked',allowthreads:'Commands in threads',timeoutlisteners:'Listener timeout (s)',timeoutpause:'Pause timeout (s)',timeoutplaying:'Idle playback timeout (s)',timeoutconfirmation:'Confirmation prompt (s)',commandchannel:'Command channel ID',voicechannel:'Required voice channel ID',disabledcommands:'Disabled commands'};
@@ -332,7 +332,7 @@ function formatMs(ms){const s=Math.max(0,Math.floor(ms/1000));const m=Math.floor
 function render(){const d=state.data;renderPlayer(d);
  const wrap=$('#filters');wrap.innerHTML='';for(const f of d.filters){const row=document.createElement('div');row.className='filter';const active=f.active;const label=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.checked=active;cb.onchange=()=>toggleFilter(f.id,cb.checked,row);label.appendChild(cb);const span=document.createElement('span');span.textContent=f.label;label.appendChild(span);row.appendChild(label);if(f.value){const input=document.createElement('input');input.type='number';input.className='value';input.min=f.value.min;input.max=f.value.max;input.step=f.value.step;input.value=f.current??f.value.fallback;input.onchange=()=>{if(cb.checked)toggleFilter(f.id,true,row,input.value)};row.appendChild(input)}wrap.appendChild(row)}
  const s=$('#settings');s.innerHTML='';const seen=new Set();for(const group of GROUPS){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent=group.title;section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of group.keys){if(!(key in d.settings))continue;seen.add(key);grid.appendChild(field(key,d.settings[key]))}section.appendChild(grid);if(group.title==='Autoplay'){const reset=document.createElement('button');reset.className='autoplay-reset';reset.textContent='Reset autoplay override';reset.onclick=async()=>{try{await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key:'autoplayreset',value:'true'})});await load();toast('Autoplay override reset')}catch(e){toast(e.message,true)}};section.appendChild(reset)}s.appendChild(section)}const rest=Object.keys(d.settings).filter(key=>!seen.has(key));if(rest.length){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent='Other';section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of rest)grid.appendChild(field(key,d.settings[key]));section.appendChild(grid);s.appendChild(section)}}
-function escapeHtml(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function toggleFilter(id,enabled,row,value){try{await api('/api/filter',{method:'POST',body:JSON.stringify({guildId:state.guildId,filter:id,enabled,value:value===undefined?undefined:Number(value)})});await load();toast((enabled?'Enabled ':'Disabled ')+id)}catch(e){toast(e.message,true);if(row)row.classList.add('error')}}
 const modal=$('#settings-modal');
 function openSettings(){modal.classList.add('open')}
@@ -371,7 +371,9 @@ function progressFrame(){drawProgress();requestAnimationFrame(progressFrame)}req
 </script>
 </body></html>`;
 
-type DashboardSession = { id: string; name: string; avatar: string | null; owner: boolean; exp: number };
+type DashboardSession = { id: string; name: string; avatar: string | null; owner: boolean; guildId: string; exp: number };
+
+const SESSION_TTL_SECONDS = 24 * 60 * 60;
 
 function oauthEnabled(): boolean {
     return Boolean(
@@ -415,9 +417,9 @@ function sessionSignature(payload: string): string {
     return createHmac('sha256', config.dashboardSessionSecret).update(payload).digest('base64url');
 }
 
-function createSession(user: { id: string; username: string; avatar: string | null }, owner: boolean): string {
+function createSession(user: { id: string; username: string; avatar: string | null }, owner: boolean, guildId: string): string {
     const payload = Buffer.from(
-        JSON.stringify({ id: user.id, name: user.username, avatar: user.avatar, owner, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })
+        JSON.stringify({ id: user.id, name: user.username, avatar: user.avatar, owner, guildId, exp: Date.now() + SESSION_TTL_SECONDS * 1000 })
     ).toString('base64url');
     return `${payload}.${sessionSignature(payload)}`;
 }
@@ -434,6 +436,9 @@ function readSession(req: http.IncomingMessage): DashboardSession | null {
         const session = JSON.parse(Buffer.from(payload, 'base64url').toString()) as DashboardSession;
         if (!session.id || !session.exp || session.exp < Date.now()) return null;
         session.owner = Boolean(session.owner);
+        // Cookies issued before the guild binding existed are still scoped to
+        // the configured dashboard guild, never to arbitrary guild ids.
+        session.guildId = session.guildId || config.dashboardOAuthGuildId;
         return session;
     } catch {
         return null;
@@ -446,12 +451,23 @@ function viewer(req: http.IncomingMessage): { name: string; owner: boolean; admi
     return { name: 'Local admin', owner: true, admin: true };
 }
 
-function authorized(req: http.IncomingMessage, url: URL): boolean {
+function guildAllowed(req: http.IncomingMessage, guildId: string): boolean {
+    if (!oauthEnabled()) return true;
+    const session = readSession(req);
+    return Boolean(session && guildId && session.guildId === guildId);
+}
+
+function authorized(req: http.IncomingMessage): boolean {
     if (oauthEnabled()) return Boolean(readSession(req));
     if (!config.dashboardToken) return true;
     const header = req.headers['x-dashboard-token'];
     const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-    return header === config.dashboardToken || bearer === config.dashboardToken || url.searchParams.get('token') === config.dashboardToken;
+    return header === config.dashboardToken || bearer === config.dashboardToken;
+}
+
+function guildDenied(res: http.ServerResponse): void {
+    res.writeHead(403, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Guild not permitted for this dashboard session' }));
 }
 
 function loginPage(): string {
@@ -520,7 +536,7 @@ async function handleOAuthCallback(req: http.IncomingMessage, res: http.ServerRe
         res.end('server administrator permission required');
         return;
     }
-    setCookie(res, 'bdj_session', createSession(user, guild.owner === true), 7 * 24 * 60 * 60);
+    setCookie(res, 'bdj_session', createSession(user, guild.owner === true, config.dashboardOAuthGuildId), SESSION_TTL_SECONDS);
     res.writeHead(302, { location: '/' });
     res.end();
 }
@@ -708,6 +724,8 @@ export function startDashboard(client: BootstrapClient): void {
     }
     const server = http.createServer(async (req, res) => {
         const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
         try {
             if (req.method === 'GET' && url.pathname === '/auth/discord' && oauthEnabled()) {
                 const state = randomBytes(24).toString('hex');
@@ -726,7 +744,7 @@ export function startDashboard(client: BootstrapClient): void {
                 res.end();
                 return;
             }
-            if (!authorized(req, url)) {
+            if (!authorized(req)) {
                 if (oauthEnabled() && req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
                     res.writeHead(401, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
                     res.end(loginPage());
@@ -738,17 +756,19 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
                 res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-                res.end(HTML);
+                res.end(oauthEnabled() ? HTML.replace('<body>', '<body data-oauth="1">') : HTML);
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/api/guilds') {
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(
                     JSON.stringify({
-                        guilds: [...client.guilds.cache.values()].map(guild => ({
-                            id: guild.id,
-                            name: guild.name,
-                        })),
+                        guilds: [...client.guilds.cache.values()]
+                            .filter(guild => !oauthEnabled() || guild.id === config.dashboardOAuthGuildId)
+                            .map(guild => ({
+                                id: guild.id,
+                                name: guild.name,
+                            })),
                         viewer: viewer(req),
                     })
                 );
@@ -756,6 +776,7 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/player-state') {
                 const guildId = url.searchParams.get('guildId') ?? '';
+                if (!guildAllowed(req, guildId)) return guildDenied(res);
                 const data = state(client, guildId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ player: data.player }));
@@ -763,6 +784,7 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/state') {
                 const guildId = url.searchParams.get('guildId') ?? '';
+                if (!guildAllowed(req, guildId)) return guildDenied(res);
                 const data = state(client, guildId);
                 data.settings = await settingsState(client, guildId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -772,6 +794,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/settings') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
+                if (!guildAllowed(req, guildId)) return guildDenied(res);
                 const key = bodyText(body.key);
                 const value = bodyText(body.value);
                 await updateSetting(client, guildId, key, value);
@@ -782,6 +805,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/filter') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
+                if (!guildAllowed(req, guildId)) return guildDenied(res);
                 const filter = bodyText(body.filter);
                 const enabled = Boolean(body.enabled);
                 const value = body.value === undefined ? undefined : Number(body.value);
@@ -792,7 +816,9 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/stats') {
                 const guildId = url.searchParams.get('guildId') ?? '';
-                const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days') ?? 7)));
+                if (!guildAllowed(req, guildId)) return guildDenied(res);
+                const requestedDays = Number(url.searchParams.get('days') ?? 7);
+                const days = Number.isFinite(requestedDays) ? Math.min(90, Math.max(1, requestedDays)) : 7;
                 const data = await client.db.getStats(guildId, days);
                 const iconFor = (source: string): string | null => client.config.icons[source.toLowerCase()] ?? null;
                 const tracks = data.topTracks as Array<{ source: string; icon?: string | null }>;
@@ -812,14 +838,15 @@ export function startDashboard(client: BootstrapClient): void {
                 return;
             }
             if (req.method === 'POST' && url.pathname === '/api/stats/clear') {
+                const clearBody = await readBody(req);
+                const clearGuildId = bodyText(clearBody.guildId);
+                if (!guildAllowed(req, clearGuildId)) return guildDenied(res);
                 if (!viewer(req).owner) {
                     res.writeHead(403, { 'content-type': 'application/json' });
                     res.end(JSON.stringify({ error: 'Only the server owner can clear statistics' }));
                     return;
                 }
-                const body = await readBody(req);
-                const guildId = bodyText(body.guildId);
-                const removed = await client.db.clearStats(guildId);
+                const removed = await client.db.clearStats(clearGuildId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, removed }));
                 return;
@@ -827,6 +854,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/player') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
+                if (!guildAllowed(req, guildId)) return guildDenied(res);
                 const action = bodyText(body.action);
                 const value = Number(body.value ?? 0);
                 await playerAction(client, guildId, action, value);

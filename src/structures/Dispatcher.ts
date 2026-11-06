@@ -187,6 +187,8 @@ export default class Dispatcher {
     public history: Song[] = [];
     /** Suppresses the periodic persist while a session restore is populating it. */
     public restoring = false;
+    /** Set for the first track start after a restore so it is not recorded twice. */
+    public skipRecentRecording = false;
 
     constructor(options: DispatcherOptions) {
         this.client = options.client;
@@ -283,7 +285,9 @@ export default class Dispatcher {
         }
 
         this.paused247 = false;
-        if (this.queue.length !== 0) this.current = this.queue.shift() ?? null;
+        // On a retry current is already the track that failed; shifting again
+        // would skip it and play the next queue entry instead.
+        if (!this.current && this.queue.length !== 0) this.current = this.queue.shift() ?? null;
         if (!this.current) return;
 
         try {
@@ -426,14 +430,16 @@ export default class Dispatcher {
 
     /** Sample voice membership once a minute for listener-time statistics. */
     private async sampleListeners(): Promise<void> {
+        if (this.paused || this.paused247) return;
         const guild = this.client.guilds.cache.get(this.guildId);
         const channel = guild && this.voiceId ? guild.channels.cache.get(this.voiceId) : null;
         if (!guild || !channel || (channel.type !== ChannelType.GuildVoice && channel.type !== ChannelType.GuildStageVoice)) return;
-        const members = channel.members.filter(member => !member.user.bot);
-        for (const member of members.values()) {
-            const deaf = member.voice.deaf || member.voice.selfDeaf ? 60 : 0;
-            await this.client.db.recordListenerStats(this.guildId, member.id, 60, deaf).catch(() => {});
-        }
+        const rows = [...channel.members.filter(member => !member.user.bot).values()].map(member => ({
+            userId: member.id,
+            seconds: 60,
+            deafSeconds: member.voice.deaf || member.voice.selfDeaf ? 60 : 0,
+        }));
+        await this.client.db.recordListenerStatsBulk(this.guildId, rows).catch(() => {});
     }
 
     public armIdleTimeout(seconds: number): void {
@@ -441,7 +447,7 @@ export default class Dispatcher {
         if (!Number.isFinite(seconds) || seconds <= 0) return;
         this.idleTimer = setTimeout(() => {
             this.idleTimer = null;
-            if (!this.queue.length && !this.autoplay) this.destroy();
+            if (!this.queue.length && !this.autoplay && !this.current) this.destroy();
         }, seconds * 1000);
         (this.idleTimer as unknown as { unref?: () => void }).unref?.();
     }
@@ -452,6 +458,18 @@ export default class Dispatcher {
     }
 
     public destroy(preserveSession: boolean = false): void {
+        // A delayed timer or collector may still hold the old dispatcher after
+        // a rebuild installed a replacement; never tear down the live player.
+        if (this.client.queue.get(this.guildId) !== this) {
+            if (this.persistTimer) clearInterval(this.persistTimer);
+            this.persistTimer = null;
+            if (this.statsTimer) clearInterval(this.statsTimer);
+            this.statsTimer = null;
+            if (this.pauseTimer) clearTimeout(this.pauseTimer);
+            this.pauseTimer = null;
+            this.clearIdleTimeout();
+            return;
+        }
         if (this.client.shuttingDown) {
             if (this.persistTimer) clearInterval(this.persistTimer);
             this.persistTimer = null;
@@ -565,22 +583,22 @@ export default class Dispatcher {
      * first: once someone requests music, the bot's filler is obsolete, and the
      * request becomes the seed for future picks.
      */
-    public enqueue(song: Song, remember = true): void {
+    public enqueue(song: Song, remember = true, persist = true): void {
         this.clearIdleTimeout();
         if (this.autoplay) this.purgeAutoplay();
         this.queue.push(song);
         if (remember) this.rememberSeed(song);
-        void this.persist();
+        if (persist) void this.persist();
         void this.ensureLookahead().catch(() => {});
     }
 
     /** Same contract as enqueue(), but jumps the queue (used by /playnext). */
-    public enqueueNext(song: Song, remember = true): void {
+    public enqueueNext(song: Song, remember = true, persist = true): void {
         this.clearIdleTimeout();
         if (this.autoplay) this.purgeAutoplay();
         this.queue.unshift(song);
         if (remember) this.rememberSeed(song);
-        void this.persist();
+        if (persist) void this.persist();
         void this.ensureLookahead().catch(() => {});
     }
 

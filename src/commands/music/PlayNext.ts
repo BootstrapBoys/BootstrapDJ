@@ -1,6 +1,6 @@
 import { LoadType } from 'shoukaku';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
 import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
 
 export default class PlayNext extends Command {
@@ -126,6 +126,7 @@ export default class PlayNext extends Command {
                         ],
                     });
                 let playlistDuration = 0;
+                const accepted: Song[] = [];
                 for (const track of res.data.tracks.slice(0, limits.maxPlaylistTracks || undefined)) {
                     const trackLength = track.info.isStream ? 0 : track.info.length;
                     if (limits.maxPlaylistLength > 0 && playlistDuration + trackLength > limits.maxPlaylistLength * 1000) break;
@@ -143,8 +144,14 @@ export default class PlayNext extends Command {
                                     ),
                             ],
                         });
-                    player.enqueueNext(pl);
+                    accepted.push(pl);
                 }
+                // enqueueNext unshifts; reverse the batch so the playlist keeps
+                // its original order at the front of the queue.
+                for (let index = accepted.length - 1; index >= 0; index--) {
+                    player.enqueueNext(accepted[index], true, false);
+                }
+                void player.persist();
                 await player.isPlaying();
                 ctx.sendMessage({
                     embeds: [

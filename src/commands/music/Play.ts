@@ -165,10 +165,11 @@ export default class Play extends Command {
                                     ),
                             ],
                         });
-                    player.enqueue(pl, false);
+                    player.enqueue(pl, false, false);
                     added.push(pl);
                 }
                 player.seedPlaylist(added);
+                void player.persist();
                 await player.isPlaying();
                 await ctx.sendMessage({
                     embeds: [

@@ -150,13 +150,15 @@ export default class ServerData {
         trigger: string,
         userId: string
     ): Promise<CommandMapping | null> {
-        const server = await this.prisma.commandMapping.findUnique({
-            where: { guildId_scope_userId_trigger: { guildId, scope: 'server', userId: '', trigger } },
+        const rows = await this.prisma.commandMapping.findMany({
+            where: {
+                guildId,
+                trigger,
+                OR: [{ scope: 'server' }, { scope: 'user', userId }],
+            },
+            take: 2,
         });
-        if (server) return server;
-        return await this.prisma.commandMapping.findUnique({
-            where: { guildId_scope_userId_trigger: { guildId, scope: 'user', userId, trigger } },
-        });
+        return rows.find(row => row.scope === 'server') ?? rows[0] ?? null;
     }
 
     public async setCommandMapping(
@@ -206,13 +208,15 @@ export default class ServerData {
         alias: string,
         userId: string
     ): Promise<CommandAlias | null> {
-        const server = await this.prisma.commandAlias.findUnique({
-            where: { guildId_scope_userId_alias: { guildId, scope: 'server', userId: '', alias } },
+        const rows = await this.prisma.commandAlias.findMany({
+            where: {
+                guildId,
+                alias,
+                OR: [{ scope: 'server' }, { scope: 'user', userId }],
+            },
+            take: 2,
         });
-        if (server) return server;
-        return await this.prisma.commandAlias.findUnique({
-            where: { guildId_scope_userId_alias: { guildId, scope: 'user', userId, alias } },
-        });
+        return rows.find(row => row.scope === 'server') ?? rows[0] ?? null;
     }
 
     public async setCommandAlias(
@@ -497,6 +501,25 @@ export default class ServerData {
             create: { guildId, userId, seconds, deafSeconds },
             update: { seconds: { increment: seconds }, deafSeconds: { increment: deafSeconds } },
         });
+    }
+
+    public async recordListenerStatsBulk(
+        guildId: string,
+        rows: Array<{ userId: string; seconds: number; deafSeconds: number }>
+    ): Promise<void> {
+        if (!rows.length) return;
+        await this.prisma.$transaction(
+            rows.map(row =>
+                this.prisma.statsListener.upsert({
+                    where: { guildId_userId: { guildId, userId: row.userId } },
+                    create: { guildId, userId: row.userId, seconds: row.seconds, deafSeconds: row.deafSeconds },
+                    update: {
+                        seconds: { increment: row.seconds },
+                        deafSeconds: { increment: row.deafSeconds },
+                    },
+                })
+            )
+        );
     }
 
     public async recordCommand(guildId: string, command: string): Promise<void> {
@@ -840,6 +863,12 @@ export default class ServerData {
         return await this.prisma.session.findMany();
     }
 
+    /** Watchdog discovery only needs ids; avoid loading every saved queue JSON. */
+    public async getSessionGuildIds(): Promise<string[]> {
+        const rows = await this.prisma.session.findMany({ select: { guildId: true } });
+        return rows.map(row => row.guildId);
+    }
+
     public async getSession(guildId: string): Promise<Session | null> {
         return await this.prisma.session.findUnique({ where: { guildId } });
     }
@@ -894,12 +923,11 @@ export default class ServerData {
     }
 
     public async addSong(userId: string, name: string, track: unknown): Promise<boolean> {
-        let playlist = await this.getPLaylist(userId, name);
-        if (!playlist) {
-            await this.createPlaylist(userId, name);
-            playlist = await this.getPLaylist(userId, name);
-        }
-        if (!playlist) throw new Error(`Could not resolve playlist ${name} for ${userId}`);
+        const playlist = await this.prisma.playlist.upsert({
+            where: { userId_name: { userId, name } },
+            create: { userId, name },
+            update: {},
+        });
         // Compare on the canonical track identity; see trackKey().
         const key = trackKey(track);
         if (key) {

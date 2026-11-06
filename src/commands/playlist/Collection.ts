@@ -91,11 +91,17 @@ export default class Collection extends Command {
         const author = ctx.author;
         if (!author) return;
         const action = (this.get(ctx, 'action', 0) ?? 'list').toLowerCase();
-        const name = (this.get(ctx, 'name', 1) ?? '').trim();
+        let name = (this.get(ctx, 'name', 1) ?? '').trim();
         const query = (this.get(ctx, 'query', 2) ?? '').trim();
         const target = (this.get(ctx, 'target', 3) ?? '').trim();
         const index = Number(this.get(ctx, 'index', 4) ?? 0);
-        const code = (this.get(ctx, 'code', 5) ?? '').trim();
+        let code = (this.get(ctx, 'code', 5) ?? '').trim();
+        // Prefix syntax has no named slots: `collection import <code>` puts
+        // the code in args[1], not args[5].
+        if (!ctx.isInteraction && (action === 'import' || action === 'unshare')) {
+            code = (this.get(ctx, 'code', 1) ?? '').trim();
+            name = '';
+        }
 
         if (action === 'list') {
             const playlists = await client.db.getPlaylists(author.id);
@@ -440,7 +446,7 @@ export default class Collection extends Command {
                         continue;
                     }
                     const song = player.buildTrack(entry as Song, author);
-                    player.enqueue(song, false);
+                    player.enqueue(song, false, false);
                     added.push(song);
                 }
             }

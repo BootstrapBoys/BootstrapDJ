@@ -53,7 +53,8 @@ export default class PlayLeave extends Command {
         }
         let player = client.queue.get(guild.id);
         if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
-        for (const track of tracks) player.enqueue(player.buildTrack(track, author));
+        for (const track of tracks) player.enqueue(player.buildTrack(track, author), true, false);
+        void player.persist();
         player.leaveOnEnd = true;
         await player.isPlaying();
         return await ctx.sendMessage({

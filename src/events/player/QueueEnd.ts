@@ -14,7 +14,10 @@ export default class QueueEnd extends Event {
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         if (!guild) return;
         // TrackEnd owns loop modes, autoplay, previous/current bookkeeping and
-        // the status transition when current becomes null.
+        // the status transition when current becomes null. QueueEnd fires
+        // before TrackEnd requeues a loop iteration, so never treat that
+        // transient empty queue as the end of the session.
+        if (dispatcher.loop !== 'off') return;
         if (dispatcher.leaveOnEnd && !dispatcher.autoplay && !dispatcher.queue.length) {
             dispatcher.leaveOnEnd = false;
             dispatcher.destroy();
@@ -24,6 +27,9 @@ export default class QueueEnd extends Event {
             const stay = await this.client.db.get_247(guild.id).catch(() => null);
             if (stay) return;
             const settings = await this.client.db.getGuildSettings(guild.id);
+            // Re-check after the DB awaits: a loop iteration or a concurrent
+            // enqueue may have populated the player while we were waiting.
+            if (dispatcher.loop !== 'off' || dispatcher.current || dispatcher.autoplay || dispatcher.queue.length) return;
             const confirmSeconds = Number(settings.timeoutconfirmation ?? 0);
             const channel = guild.channels.cache.get(dispatcher.channelId);
             if (Number.isFinite(confirmSeconds) && confirmSeconds > 0 && channel?.isTextBased()) {

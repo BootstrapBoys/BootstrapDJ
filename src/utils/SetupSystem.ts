@@ -171,8 +171,9 @@ async function setupStart(
                                 .then(msg => scheduleExpire(client, msg));
                             return;
                         }
-                        player.enqueue(pl);
+                        player.enqueue(pl, true, false);
                     }
+                    void player.persist();
                     await player.isPlaying();
                     await message.channel
                         .send({

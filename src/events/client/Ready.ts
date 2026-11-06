@@ -28,25 +28,35 @@ export default class Ready extends Event {
             status: config.botStatus,
         });
 
-        try {
-            const setups = await this.client.db.getSetups();
-            for (const setup of setups) {
-                // Purge only on the first ready of this process; a reconnect fires
-                // ready again and must not wipe the channel each time.
-                if (!channelsPurged) await resetSetupChannel(this.client, setup);
-                startSetupJanitor(this.client, setup.guildId);
+        const firstReady = !channelsPurged;
+        channelsPurged = true;
+        if (firstReady) {
+            // A setup-channel failure must never prevent queue restore or the
+            // lease watchdog from starting.
+            try {
+                const setups = await this.client.db.getSetups();
+                for (const setup of setups) {
+                    try {
+                        await resetSetupChannel(this.client, setup);
+                        startSetupJanitor(this.client, setup.guildId);
+                    } catch (error) {
+                        this.client.logger.error(`[setup] ${setup.guildId} cleanup failed: ${error}`);
+                    }
+                }
+            } catch (error) {
+                this.client.logger.error(`[setup] could not load setup channels: ${error}`);
             }
-            // Resume whatever was playing when the process last died. Runs once
-            // per process, after a node is usable.
-            if (!channelsPurged) {
-                if (await waitForNode(this.client, 20_000)) await restoreSessions(this.client);
+
+            try {
+                // Use the full node wait: Lavalink can start well after the
+                // gateway, and a short timeout permanently drops the queue.
+                if (await waitForNode(this.client)) await restoreSessions(this.client);
                 else this.client.logger.error('[session] no node available after waiting; skipping restore');
+            } catch (error) {
+                this.client.logger.error(`[session] restore pass failed: ${error}`);
+            } finally {
                 startSessionHandoffs(this.client);
             }
-        } catch (error) {
-            this.client.logger.error(`[setup] startup cleanup failed: ${error}`);
-        } finally {
-            channelsPurged = true;
         }
     }
 }

@@ -81,7 +81,7 @@ export class Queue extends Map {
             const defaults: Record<string, string> = await this.client.db.getGuildSettings(guild.id).catch(() => ({}));
             const volume = Number(defaults.defaultvolume);
             if (Number.isFinite(volume) && volume >= 0 && volume <= 200) {
-                dispatcher.player.setGlobalVolume(volume);
+                void dispatcher.player.setGlobalVolume(volume).catch(() => {});
             }
             if (defaults.defaultrepeat === 'repeat' || defaults.defaultrepeat === 'queue') {
                 dispatcher.loop = defaults.defaultrepeat;
@@ -144,7 +144,7 @@ export class Queue extends Map {
         this.client.logger.info(
             `[queue] rebuilding ${dispatcher.guildId} on "${node.name}" (was "${dispatcher.player.node?.name}")`
         );
-        dispatcher.destroy();
+        dispatcher.destroy(true);
 
         try {
             const player = await this.client.shoukaku.joinVoiceChannel({
@@ -171,7 +171,7 @@ export class Queue extends Map {
             rebuilt.autoplay = saved.autoplay;
             rebuilt.seed = saved.seed;
             rebuilt.seeds = saved.seeds;
-            rebuilt.player.setGlobalVolume(saved.volume);
+            void rebuilt.player.setGlobalVolume(saved.volume).catch(() => {});
 
             this.set(guild.id, rebuilt);
             this.client.shoukaku.emitPlayerEvent('playerCreate', rebuilt.player);

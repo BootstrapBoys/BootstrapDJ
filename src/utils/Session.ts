@@ -114,6 +114,7 @@ export async function restoreSessions(client: BootstrapClient): Promise<void> {
     // same saved session twice.
     await Promise.all(
         sessions.map(async session => {
+            if (!client.guilds.cache.has(session.guildId)) return;
             const claimed = await client.db
                 .claimSessionLease(session.guildId, botUser.id, botName)
                 .catch(() => false);
@@ -155,14 +156,18 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
     const botName = client.config.botName || botUser.username;
 
     for (const guildId of [...client.queue.keys()]) {
-        await client.db.claimSessionLease(guildId, botUser.id, botName, LEASE_TTL_MS).catch(() => false);
+        const refreshed = await client.db
+            .claimSessionLease(guildId, botUser.id, botName, LEASE_TTL_MS)
+            .catch(() => false);
+        if (!refreshed) client.logger.warn(`[lease] could not refresh ${guildId}`);
     }
 
-    const sessions = await client.db.getSessions();
-    for (const session of sessions) {
-        if (client.queue.has(session.guildId)) continue;
+    const sessionGuildIds = await client.db.getSessionGuildIds();
+    for (const guildId of sessionGuildIds) {
+        if (!client.guilds.cache.has(guildId)) continue;
+        if (client.queue.has(guildId)) continue;
         const now = Date.now();
-        const lease = await client.db.getSessionLease(session.guildId).catch(() => null);
+        const lease = await client.db.getSessionLease(guildId).catch(() => null);
         if (lease && lease.expiresAt.getTime() > now) {
             // This includes our own lease: a restore in progress already owns
             // the guild before its dispatcher appears in the queue map.
@@ -178,27 +183,32 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
             // watchdogs start; those children must not steal the saved session
             // before the first restore claims it.
             if (client.config.botPriority > 0) continue;
-            const preferred = await client.preferredBotStatus(session.guildId);
+            const preferred = await client.preferredBotStatus(guildId);
             if (!preferred.allowed) continue;
         }
 
         const claimed = await client.db.claimSessionLease(
-            session.guildId,
+            guildId,
             botUser.id,
             botName,
             LEASE_TTL_MS
         );
         if (!claimed) continue;
         client.logger.info(
-            `[lease] ${botUser.username} claimed ${session.guildId} (priority ${client.config.botPriority})`
+            `[lease] ${botUser.username} claimed ${guildId} (priority ${client.config.botPriority})`
         );
+        const session = await client.db.getSession(guildId).catch(() => null);
+        if (!session) {
+            await client.db.releaseSessionLease(guildId, botUser.id).catch(() => {});
+            continue;
+        }
         try {
             await restoreSession(client, session, botUser);
         } catch (error) {
-            client.logger.error(`[lease] takeover failed for ${session.guildId}: ${error}`);
+            client.logger.error(`[lease] takeover failed for ${guildId}: ${error}`);
         } finally {
-            if (!client.queue.has(session.guildId)) {
-                await client.db.releaseSessionLease(session.guildId, botUser.id).catch(() => {});
+            if (!client.queue.has(guildId)) {
+                await client.db.releaseSessionLease(guildId, botUser.id).catch(() => {});
             }
         }
     }
@@ -246,6 +256,17 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
         }
     }
 
+    let queued: SavedTrack[];
+    let savedCurrent: (SavedTrack & { position: number }) | null;
+    try {
+        queued = JSON.parse(session.queue) as SavedTrack[];
+        savedCurrent = session.current
+            ? (JSON.parse(session.current) as SavedTrack & { position: number })
+            : null;
+    } catch {
+        return await drop(`guild ${guildId}: saved session contains invalid JSON`);
+    }
+
     let dispatcher: Dispatcher | null = null;
     try {
         dispatcher = await client.queue.create(
@@ -258,12 +279,7 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
             session.loop === 'repeat' || session.loop === 'queue' ? session.loop : 'off';
         dispatcher.autoplay = session.autoplay;
 
-        const queued = JSON.parse(session.queue) as SavedTrack[];
         for (const saved of queued) dispatcher.queue.push(fromSaved(saved, botUser));
-
-        const savedCurrent = session.current
-            ? (JSON.parse(session.current) as SavedTrack & { position: number })
-            : null;
 
         if (!savedCurrent) {
             await dispatcher.play();
@@ -278,6 +294,7 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
             (await resolveSaved(client, savedCurrent)) ?? fromSaved(savedCurrent, botUser);
         dispatcher.current = track;
         dispatcher.history.push(track);
+        dispatcher.skipRecentRecording = true;
         await dispatcher.player.setGlobalVolume(session.volume);
         await dispatcher.player.playTrack({
             track: { encoded: track.encoded },

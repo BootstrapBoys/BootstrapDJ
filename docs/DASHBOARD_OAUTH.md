@@ -57,4 +57,4 @@ Everyone else receives a 403 response.
 - `/auth/callback` — Discord callback
 - `/auth/logout` — clear the session
 
-Sessions are signed HTTP-only cookies and expire after seven days.
+Sessions are signed HTTP-only cookies, scoped to the configured guild, and expire after 24 hours.

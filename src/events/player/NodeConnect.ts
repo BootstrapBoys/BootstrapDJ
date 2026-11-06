@@ -51,8 +51,8 @@ export default class NodeConnect extends Event {
         if (!Array.isArray(data)) {
             data = [data];
         }
-        for (const main of data) {
-            const index = data.indexOf(main);
+        for (let index = 0; index < data.length; index++) {
+            const main = data[index];
             setTimeout(async () => {
                 const guild = this.client.guilds.cache.get(main.guildId);
                 if (!guild) return;

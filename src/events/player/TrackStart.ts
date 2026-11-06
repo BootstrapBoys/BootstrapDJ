@@ -32,9 +32,13 @@ export default class TrackStart extends Event {
         const channel = guild.channels.cache.get(dispatcher.channelId) as TextChannel;
         if (!channel) return;
         // Keep a durable recent-playback row: dispatcher history disappears on
-        // restart, and /playrecent should survive that.
-        void this.client.db
-            .recordRecentTrack(
+        // restart, and /playrecent should survive that. Restored tracks were
+        // already recorded before the restart.
+        if (dispatcher.skipRecentRecording) {
+            dispatcher.skipRecentRecording = false;
+        } else if (!dispatcher.restoring) {
+            void this.client.db
+                .recordRecentTrack(
                 guild.id,
                 JSON.stringify(toSaved(track)),
                 track.info.title,
@@ -43,6 +47,7 @@ export default class TrackStart extends Event {
                 track.info.requester?.id ?? null
             )
             .catch(() => {});
+        }
         this.client.utils.updateStatus(this.client, guild.id);
         // Text announcements are opt-in through a dedicated channel, so the
         // existing now-playing message stays untouched for guilds that do not

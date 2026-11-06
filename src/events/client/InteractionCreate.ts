@@ -136,7 +136,7 @@ export default class InteractionCreate extends Event {
                     ephemeral: true,
                 });
             }
-            const guildSettings = await this.client.db.getGuildSettings(interaction.guildId);
+            const guildSettings = lockedSettings;
             if (guildSettings.allowthreads === 'false' && interaction.channel?.isThread()) {
                 return await interaction.reply({ content: 'Commands are disabled in threads for this server.', ephemeral: true });
             }

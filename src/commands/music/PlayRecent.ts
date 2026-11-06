@@ -73,7 +73,8 @@ export default class PlayRecent extends Command {
                 ],
             });
         }
-        for (const track of recent) player.enqueue(track);
+        for (const track of recent) player.enqueue(track, true, false);
+        void player.persist();
         await player.isPlaying();
         return await ctx.sendMessage({
             embeds: [
