@@ -263,13 +263,13 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </div>
 <div id="toast"></div>
 <script>
-const state={guildId:null,data:null};
+const state={guildId:null,data:null,viewer:{owner:true,admin:true}};
 const $=s=>document.querySelector(s);
 function token(){return localStorage.getItem('bootstrapdj-dashboard-token')||''}
 function headers(json){const h={'x-dashboard-token':token()};if(json)h['content-type']='application/json';return h}
 function toast(text,isError){const el=$('#toast');el.textContent=text;el.className='show '+(isError?'error':'ok');setTimeout(()=>el.className='',2500)}
 async function api(path,options){const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body)),...(options&&options.headers)}});if(res.status===401){const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
-async function boot(){const g=await api('/api/guilds');const sel=$('#guild');sel.innerHTML='';for(const guild of g.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!g.guilds.length){$('#status').textContent='No guilds';return}state.guildId=g.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;load()};await load()}
+async function boot(){const g=await api('/api/guilds');state.viewer=g.viewer||state.viewer;$('#stats-clear').style.display=state.viewer.owner?'':'none';const sel=$('#guild');sel.innerHTML='';for(const guild of g.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!g.guilds.length){$('#status').textContent='No guilds';return}state.guildId=g.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;load()};await load()}
 async function load(){try{state.data=await api('/api/state?guildId='+encodeURIComponent(state.guildId));render();$('#status').textContent='Connected'}catch(e){$('#status').textContent='Error';toast(e.message,true)}}
 const GROUPS=[
 {title:'Playback',keys:['defaultvolume','defaultautoplay','defaultrepeat','defaultshuffle','searchtype','maxqueue','maxuserqueue','voteskip','voteskippercent','autocorrect','volumeautomatic','loudnesstarget']},
@@ -371,7 +371,7 @@ function progressFrame(){drawProgress();requestAnimationFrame(progressFrame)}req
 </script>
 </body></html>`;
 
-type DashboardSession = { id: string; name: string; avatar: string | null; exp: number };
+type DashboardSession = { id: string; name: string; avatar: string | null; owner: boolean; exp: number };
 
 function oauthEnabled(): boolean {
     return Boolean(
@@ -415,9 +415,9 @@ function sessionSignature(payload: string): string {
     return createHmac('sha256', config.dashboardSessionSecret).update(payload).digest('base64url');
 }
 
-function createSession(user: { id: string; username: string; avatar: string | null }): string {
+function createSession(user: { id: string; username: string; avatar: string | null }, owner: boolean): string {
     const payload = Buffer.from(
-        JSON.stringify({ id: user.id, name: user.username, avatar: user.avatar, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })
+        JSON.stringify({ id: user.id, name: user.username, avatar: user.avatar, owner, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })
     ).toString('base64url');
     return `${payload}.${sessionSignature(payload)}`;
 }
@@ -433,10 +433,17 @@ function readSession(req: http.IncomingMessage): DashboardSession | null {
     try {
         const session = JSON.parse(Buffer.from(payload, 'base64url').toString()) as DashboardSession;
         if (!session.id || !session.exp || session.exp < Date.now()) return null;
+        session.owner = Boolean(session.owner);
         return session;
     } catch {
         return null;
     }
+}
+
+function viewer(req: http.IncomingMessage): { name: string; owner: boolean; admin: boolean } {
+    const session = readSession(req);
+    if (session) return { name: session.name, owner: session.owner, admin: true };
+    return { name: 'Local admin', owner: true, admin: true };
 }
 
 function authorized(req: http.IncomingMessage, url: URL): boolean {
@@ -513,7 +520,7 @@ async function handleOAuthCallback(req: http.IncomingMessage, res: http.ServerRe
         res.end('server administrator permission required');
         return;
     }
-    setCookie(res, 'bdj_session', createSession(user), 7 * 24 * 60 * 60);
+    setCookie(res, 'bdj_session', createSession(user, guild.owner === true), 7 * 24 * 60 * 60);
     res.writeHead(302, { location: '/' });
     res.end();
 }
@@ -742,6 +749,7 @@ export function startDashboard(client: BootstrapClient): void {
                             id: guild.id,
                             name: guild.name,
                         })),
+                        viewer: viewer(req),
                     })
                 );
                 return;
@@ -797,6 +805,11 @@ export function startDashboard(client: BootstrapClient): void {
                 return;
             }
             if (req.method === 'POST' && url.pathname === '/api/stats/clear') {
+                if (!viewer(req).owner) {
+                    res.writeHead(403, { 'content-type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Only the server owner can clear statistics' }));
+                    return;
+                }
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
                 const removed = await client.db.clearStats(guildId);
