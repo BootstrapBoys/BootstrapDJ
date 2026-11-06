@@ -67,14 +67,12 @@ async function setupStart(
     client: BootstrapClient,
     query: string,
     player: Dispatcher,
-    message: Message<true>,
-    next: boolean = false
+    message: Message<true>
 ): Promise<void> {
     let m: Message | undefined;
     const embed = client.embed();
     let n = client.embed().setColor(client.color.main);
 
-    const destination = next ? 'to play next in the queue' : 'to the queue';
     const data = await client.db.getSetup(message.guild.id);
     try {
         if (data)
@@ -84,10 +82,7 @@ async function setupStart(
     }
     if (m) {
         try {
-            let res = await client.queue.search(
-                query,
-                next ? client.config.prefixSearchEngine : client.config.searchEngine
-            );
+            let res = await client.queue.search(query);
             if (!res) return;
             switch (res.loadType) {
                 case LoadType.ERROR:
@@ -129,8 +124,7 @@ async function setupStart(
                             .then(msg => scheduleExpire(client, msg));
                         return;
                     }
-                    if (next) player.enqueueNext(track);
-                    else player.enqueue(track);
+                    player.enqueue(track);
                     await player.isPlaying();
                     await message.channel
                         .send({
@@ -138,7 +132,7 @@ async function setupStart(
                                 embed
                                     .setColor(client.color.main)
                                     .setDescription(
-                                        `Added [${res.data.info.title}](${res.data.info.uri}) ${destination}.`
+                                        `Added [${res.data.info.title}](${res.data.info.uri}) to the queue.`
                                     ),
                             ],
                         })
@@ -161,7 +155,6 @@ async function setupStart(
                             .then(msg => scheduleExpire(client, msg));
                         return;
                     }
-                    const accepted: Song[] = [];
                     for (const track of res.data.tracks) {
                         const pl = player.buildTrack(track, message.author);
                         if (player.queue.length > client.config.maxQueueSize) {
@@ -178,13 +171,7 @@ async function setupStart(
                                 .then(msg => scheduleExpire(client, msg));
                             return;
                         }
-                        accepted.push(pl);
-                        if (!next) player.enqueue(pl, true, false);
-                    }
-                    if (next) {
-                        for (let index = accepted.length - 1; index >= 0; index--) {
-                            player.enqueueNext(accepted[index], true, false);
-                        }
+                        player.enqueue(pl, true, false);
                     }
                     void player.persist();
                     await player.isPlaying();
@@ -194,7 +181,7 @@ async function setupStart(
                                 embed
                                     .setColor(client.color.main)
                                     .setDescription(
-                                        `Added ${res.data.tracks.length} songs ${destination}.`
+                                        `Added [${res.data.tracks.length}](${res.data.tracks[0].info.uri}) to the queue.`
                                     ),
                             ],
                         })
@@ -218,8 +205,7 @@ async function setupStart(
                             .then(msg => scheduleExpire(client, msg));
                         return;
                     }
-                    if (next) player.enqueueNext(track2);
-                    else player.enqueue(track2);
+                    player.enqueue(track2);
                     await player.isPlaying();
                     await message.channel
                         .send({
@@ -227,7 +213,7 @@ async function setupStart(
                                 embed
                                     .setColor(client.color.main)
                                     .setDescription(
-                                        `Added [${res.data[0].info.title}](${res.data[0].info.uri}) ${destination}.`
+                                        `Added [${res.data[0].info.title}](${res.data[0].info.uri}) to the queue.`
                                     ),
                             ],
                         })

@@ -2,6 +2,7 @@ import { Message, PermissionFlagsBits } from 'discord.js';
 
 import { BootstrapClient, Context, Event } from '../../structures/index.js';
 import { evaluateCommand } from '../../utils/CommandGate.js';
+import { matchPrefixCommand } from '../../utils/PrefixCommand.js';
 
 export default class MessageCreate extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -27,14 +28,18 @@ export default class MessageCreate extends Event {
             return sent;
         };
 
+        const guild = await this.client.db.get(message.guildId);
+        if (!guild) return;
+        const userPrefix = await this.client.db.getUserPrefix(message.guildId, message.author.id);
         const setup = await this.client.db.getSetup(message.guildId);
-        if (setup && setup.textId) {
-            if (setup.textId === message.channelId) {
+        if (setup && setup.textId === message.channelId) {
+            // The request channel normally treats everything as a search query.
+            // Let known prefix commands fall through to the normal command path
+            // instead, so !playnext, !skip, !queue, etc. behave the same there.
+            if (!(await this.hasPrefixCommand(message, guild.prefix, userPrefix))) {
                 return this.client.emit('setupSystem', message);
             }
         }
-        const guild = await this.client.db.get(message.guildId);
-        if (!guild) return;
 
         const mention = new RegExp(`^<@!?${botId}>( |)$`);
         if (message.content.match(mention)) {
@@ -44,7 +49,6 @@ export default class MessageCreate extends Event {
             return;
         }
         const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const userPrefix = await this.client.db.getUserPrefix(message.guildId, message.author.id);
         const serverPrefixes = guild.prefix
             .split(',')
             .map(prefix => prefix.trim())
@@ -145,6 +149,33 @@ export default class MessageCreate extends Event {
             return;
         }
     }
+    /** Does this setup-channel message start with a real prefix command? */
+    private async hasPrefixCommand(
+        message: Message<true>,
+        guildPrefix: string,
+        userPrefix: string | null
+    ): Promise<boolean> {
+        const prefixes = [...guildPrefix.split(',').map(prefix => prefix.trim()).filter(Boolean)];
+        if (userPrefix) prefixes.push(userPrefix);
+        const match = matchPrefixCommand(message.content, prefixes);
+        if (!match) return false;
+        const { name } = match;
+        if (this.client.commands.has(name) || this.client.aliases.has(name)) return true;
+        const mapping = await this.client.db
+            .getCommandMapping(message.guildId, name, message.author.id)
+            .catch(() => null);
+        if (mapping) {
+            const mapped = mapping.expansion.trim().split(/ +/)[0]?.toLowerCase();
+            if (mapped && (this.client.commands.has(mapped) || this.client.aliases.has(mapped))) {
+                return true;
+            }
+        }
+        const custom = await this.client.db
+            .getCommandAlias(message.guildId, name, message.author.id)
+            .catch(() => null);
+        return Boolean(custom && this.client.commands.has(custom.command));
+    }
+
     private closestCommand(input: string): string | null {
         const distance = (a: string, b: string): number => {
             const rows = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);

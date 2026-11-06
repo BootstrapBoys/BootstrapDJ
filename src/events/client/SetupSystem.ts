@@ -1,7 +1,6 @@
 import { Message, PermissionsBitField, TextChannel } from 'discord.js';
 
 import { BootstrapClient, Event } from '../../structures/index.js';
-import { parseSetupRequest } from '../../utils/SetupRequest.js';
 import { oops, setupStart } from '../../utils/SetupSystem.js';
 
 export default class SetupSystem extends Event {
@@ -66,20 +65,7 @@ export default class SetupSystem extends Event {
                 this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes)
             );
         }
-        const guildData = await this.client.db.get(message.guildId).catch(() => null);
-        const userPrefix = await this.client.db
-            .getUserPrefix(message.guildId, message.author.id)
-            .catch(() => null);
-        const configured = guildData?.prefix ?? this.client.config.prefix;
-        const prefixes = configured
-            .split(',')
-            .map(prefix => prefix.trim())
-            .filter(Boolean);
-        if (userPrefix) prefixes.push(userPrefix);
-        const request = parseSetupRequest(message.content, prefixes, name =>
-            this.client.aliases.get(name)
-        );
-        await setupStart(this.client, request.query, player, message, request.next);
+        await setupStart(this.client, message.content, player, message);
         await message.delete().catch(() => {});
     }
 }

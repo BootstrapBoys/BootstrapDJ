@@ -86,7 +86,7 @@ being completed first; public listing/clone services are explicitly out of scope
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 117 tests at the latest branch commit.
+- `npm test` — 123 tests at the latest branch commit.
 
 Storage: WAL mode and bounded stats retention are documented in [`docs/STORAGE.md`](STORAGE.md).
 
@@ -108,4 +108,4 @@ This branch is for a self-hosted bot, not a public bot network.
 
 ## Search engines
 
-Prefix commands default to `PREFIX_SEARCH_ENGINE` (`ytsearch`) while slash commands keep the per-guild `searchtype`/`SEARCH_ENGINE` value. URLs are resolved directly and ignore the search engine. In the setup/song-request channel, `!playnext`/`!pn` is recognised as a next-queue request; ordinary setup messages remain append-only.
+Prefix commands default to `PREFIX_SEARCH_ENGINE` (`ytsearch`) while slash commands keep the per-guild `searchtype`/`SEARCH_ENGINE` value. URLs are resolved directly and ignore the search engine. In the setup/song-request channel, any known prefix command falls through to the normal command path; only ordinary messages remain append-only song requests.
