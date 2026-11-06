@@ -164,6 +164,11 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 .settings-group h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);margin:0 0 9px}
 .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
 .setting{display:grid;gap:5px}.setting input,.setting select{width:100%}
+.setting-label{display:flex;align-items:center;gap:6px;min-width:0}
+.help{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid #4b5a6e;border-radius:50%;color:var(--muted);font-size:10px;font-weight:700;cursor:help;flex:none;outline:none}
+.help:hover,.help:focus{color:var(--accent);border-color:var(--accent)}
+.help::after{content:attr(data-tip);position:absolute;left:0;top:22px;width:max-content;max-width:260px;white-space:normal;background:#0b0f17;border:1px solid #4b5a6e;color:var(--text);padding:8px 10px;border-radius:7px;font-size:12px;line-height:1.35;font-weight:400;z-index:30;opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .12s,transform .12s;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.help:hover::after,.help:focus::after{opacity:1;transform:translateY(0)}
 .setting.wide{grid-column:1/-1}
 .autoplay-reset{margin-top:9px;background:transparent;border-color:#394556;color:var(--muted);padding:6px 9px;font-size:12px}
 .status{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:13px}.status b{color:var(--text)}
@@ -271,9 +276,43 @@ const GROUPS=[
 {title:'Access and channels',keys:['locked','allowthreads','commandchannel','voicechannel','disabledcommands']}
 ];
 const LABELS={defaultvolume:'Default volume',defaultautoplay:'Default autoplay',defaultrepeat:'Default repeat',defaultshuffle:'Default shuffle',searchtype:'Search engine',maxqueue:'Max queue size',maxuserqueue:'Max per-user queue',voteskip:'Vote skip enabled',voteskippercent:'Vote skip percent',autocorrect:'Autocorrect suggestions',volumeautomatic:'Automatic volume',loudnesstarget:'Target loudness (LUFS)',autoplaysource:'Source',autoplayseeds:'Curated seeds',announce:'Text announcements',announcechannel:'Announcement channel ID',deleteafter:'Reply delete after (s)',maxtracklength:'Max track length (s)',mintracklength:'Min track length (s)',maxusertracks:'Max user tracks',maxusertrackslength:'Max user track length (s)',maxplaylisttracks:'Max playlist tracks',maxplaylistlength:'Max playlist length (s)',locked:'Session locked',allowthreads:'Commands in threads',timeoutlisteners:'Listener timeout (s)',timeoutpause:'Pause timeout (s)',timeoutplaying:'Idle playback timeout (s)',timeoutconfirmation:'Confirmation prompt (s)',commandchannel:'Command channel ID',voicechannel:'Required voice channel ID',disabledcommands:'Disabled commands'};
+const DESCRIPTIONS={
+defaultvolume:'Base volume for new tracks. Adaptive loudness uses this as the gain reference.',
+defaultautoplay:'Start autoplay automatically when a queue ends.',
+defaultrepeat:'Default loop mode for new sessions: off, repeat current, or queue.',
+defaultshuffle:'Shuffle the queue when a new session starts.',
+searchtype:'Lavalink search prefix, such as dzsearch, ytsearch, ytmsearch, or scsearch.',
+maxqueue:'Maximum number of tracks allowed in the queue.',
+maxuserqueue:'Maximum queue slots reserved per user.',
+voteskip:'Allow members to start a vote-skip.',
+voteskippercent:'Percentage of listeners required to pass a vote-skip.',
+autocorrect:'Correct a mistyped prefix command to the closest command and run it.',
+volumeautomatic:'Analyze track loudness and adjust volume toward the target LUFS.',
+loudnesstarget:'Target integrated loudness in LUFS. -16 is a common music target.',
+autoplaysource:'Cold-start source: Deezer chart, curated seeds, or the legacy seed value.',
+autoplayseeds:'Comma-separated search phrases used when the autoplay source is curated.',
+announce:'Post a text announcement when a track starts.',
+announcechannel:'Text channel ID for announcements. Leave blank to disable the extra message.',
+deleteafter:'Seconds before command replies are deleted. 0 disables auto-delete.',
+maxtracklength:'Reject tracks longer than this many seconds. 0 disables the limit.',
+mintracklength:'Reject tracks shorter than this many seconds. 0 disables the minimum.',
+maxusertracks:'Maximum queued tracks from one user. 0 disables the limit.',
+maxusertrackslength:'Maximum total seconds one user may have queued. 0 disables the limit.',
+maxplaylisttracks:'Maximum tracks accepted from one playlist. 0 disables the limit.',
+maxplaylistlength:'Maximum total duration accepted from one playlist, in seconds. 0 disables the limit.',
+timeoutlisteners:'Disconnect after this many seconds with no listeners. 0 disables.',
+timeoutpause:'Disconnect after this many seconds paused. 0 disables.',
+timeoutplaying:'Disconnect after this many seconds with an empty queue. 0 disables.',
+timeoutconfirmation:'Ask “Still listening?” after this many seconds. 0 disables the prompt.',
+locked:'Lock the session so only server managers can change settings or use commands.',
+allowthreads:'Allow commands inside threads.',
+commandchannel:'Restrict commands to this text channel ID. Blank allows all channels.',
+voicechannel:'Require command users to be in this voice channel ID. Blank disables the requirement.',
+disabledcommands:'Comma-separated command names that are disabled in this server.'
+};
 const BOOLS=new Set(['defaultautoplay','defaultshuffle','voteskip','announce','autocorrect','volumeautomatic','locked','allowthreads']);
 const LONG=new Set(['autoplayseeds','disabledcommands','announcechannel','commandchannel','voicechannel']);
-function field(key,value){const box=document.createElement('label');box.className='setting'+(LONG.has(key)?' wide':'');const title=document.createElement('span');title.className='small';title.textContent=LABELS[key]||key;box.appendChild(title);let input;if(key==='autoplaysource'){input=document.createElement('select');for(const v of ['chart','curated','legacy']){const o=document.createElement('option');o.value=v;o.textContent=v;input.appendChild(o)}input.value=value||'chart'}else if(BOOLS.has(key)){input=document.createElement('select');for(const v of ['true','false']){const o=document.createElement('option');o.value=v;o.textContent=v;input.appendChild(o)}input.value=value==='true'?'true':'false'}else{input=document.createElement('input');input.value=value;input.type=['defaultvolume','maxqueue','maxuserqueue','voteskippercent','deleteafter','maxtracklength','mintracklength','maxusertracks','maxusertrackslength','maxplaylisttracks','maxplaylistlength','loudnesstarget','timeoutlisteners','timeoutpause','timeoutplaying','timeoutconfirmation'].includes(key)?'number':'text'}input.dataset.key=key;box.appendChild(input);return box}
+function field(key,value){const box=document.createElement('label');box.className='setting'+(LONG.has(key)?' wide':'');const title=document.createElement('span');title.className='setting-label small';const titleText=document.createElement('span');titleText.textContent=LABELS[key]||key;title.appendChild(titleText);if(DESCRIPTIONS[key]){const help=document.createElement('span');help.className='help';help.textContent='?';help.tabIndex=0;help.setAttribute('role','note');help.setAttribute('aria-label',DESCRIPTIONS[key]);help.dataset.tip=DESCRIPTIONS[key];title.appendChild(help)}box.appendChild(title);let input;if(key==='autoplaysource'){input=document.createElement('select');for(const v of ['chart','curated','legacy']){const o=document.createElement('option');o.value=v;o.textContent=v;input.appendChild(o)}input.value=value||'chart'}else if(BOOLS.has(key)){input=document.createElement('select');for(const v of ['true','false']){const o=document.createElement('option');o.value=v;o.textContent=v;input.appendChild(o)}input.value=value==='true'?'true':'false'}else{input=document.createElement('input');input.value=value;input.type=['defaultvolume','maxqueue','maxuserqueue','voteskippercent','deleteafter','maxtracklength','mintracklength','maxusertracks','maxusertrackslength','maxplaylisttracks','maxplaylistlength','loudnesstarget','timeoutlisteners','timeoutpause','timeoutplaying','timeoutconfirmation'].includes(key)?'number':'text'}input.dataset.key=key;box.appendChild(input);return box}
 async function refreshPlayer(){const guildId=state.guildId;if(!guildId)return;try{const d=await api('/api/state?guildId='+encodeURIComponent(guildId));if(state.guildId!==guildId)return;state.data=d;renderPlayer(d)}catch(e){}}
 let progress={track:'',serverPosition:0,position:0,duration:0,at:0,paused:true};
 function drawProgress(){const p=state.data&&state.data.player;if(!p)return;const elapsed=progress.paused?0:Date.now()-progress.at;const position=progress.duration>0?Math.min(progress.duration,progress.position+elapsed):progress.position+elapsed;const percent=progress.duration>0?Math.max(0,Math.min(100,(position/progress.duration)*100)):0;$('#progress-bar').style.transform='scaleX('+(percent/100)+')';$('#now-time').textContent=formatMs(position)+' / '+(progress.duration?formatMs(progress.duration):'LIVE')}
