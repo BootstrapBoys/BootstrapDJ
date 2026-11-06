@@ -178,6 +178,9 @@ export default class Dispatcher {
     public nowPlayingMessage: Message | null;
     /** Set by /playleave: tear down the player when the queue drains. */
     public leaveOnEnd = false;
+    /** 24/7 mode: pause at the end of the current track when the channel is empty. */
+    public pauseWhenEmpty = false;
+    public paused247 = false;
     public history: Song[] = [];
 
     constructor(options: DispatcherOptions) {
@@ -272,6 +275,7 @@ export default class Dispatcher {
             return;
         }
 
+        this.paused247 = false;
         if (this.queue.length !== 0) this.current = this.queue.shift() ?? null;
         if (!this.current) return;
 
@@ -404,6 +408,15 @@ export default class Dispatcher {
         this.queue.unshift(this.previous);
         this.callPlayer('stop', () => this.player.stopTrack());
     }
+    /** A listener joined a 24/7 session after it paused at track end. */
+    public resume247(): void {
+        this.pauseWhenEmpty = false;
+        if (!this.paused247) return;
+        this.paused247 = false;
+        if (!this.queue.length && this.previous) this.queue.unshift(this.previous);
+        if (this.queue.length) void this.play();
+    }
+
     public armIdleTimeout(seconds: number): void {
         this.clearIdleTimeout();
         if (!Number.isFinite(seconds) || seconds <= 0) return;
@@ -428,6 +441,8 @@ export default class Dispatcher {
         void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.queue.length = 0;
         this.history = [];
+        this.pauseWhenEmpty = false;
+        this.paused247 = false;
         this.client.shoukaku.leaveVoiceChannel(this.guildId);
         this.client.queue.delete(this.guildId);
         if (this.stopped) return;

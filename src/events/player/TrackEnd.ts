@@ -1,3 +1,4 @@
+import { ChannelType } from 'discord.js';
 import { Player } from 'shoukaku';
 
 import { Song } from '../../structures/Dispatcher.js';
@@ -16,6 +17,24 @@ export default class TrackEnd extends Event {
         const m = await dispatcher.nowPlayingMessage?.fetch().catch(() => {});
         if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
         if (dispatcher.loop === 'queue') dispatcher.queue.push(track);
+        if (dispatcher.pauseWhenEmpty) {
+            const guild = this.client.guilds.cache.get(dispatcher.guildId);
+            const stay = guild ? await this.client.db.get_247(guild.id).catch(() => null) : null;
+            const channel = guild && dispatcher.voiceId ? guild.channels.cache.get(dispatcher.voiceId) : null;
+            const listeners =
+                channel && (channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice)
+                    ? channel.members.filter(member => !member.user.bot).size
+                    : 0;
+            if (stay && listeners === 0) {
+                if (!dispatcher.queue.length) dispatcher.queue.unshift(track);
+                dispatcher.paused247 = true;
+                dispatcher.pauseWhenEmpty = false;
+                if (m && m.deletable) await m.delete().catch(() => {});
+                if (guild) await updateSetup(this.client, guild);
+                return;
+            }
+            dispatcher.pauseWhenEmpty = false;
+        }
         await dispatcher.play();
         // Keep one bot pick waiting so /skip always has a target. The
         // ensureLookahead lock makes this safe alongside the TrackStart call.
