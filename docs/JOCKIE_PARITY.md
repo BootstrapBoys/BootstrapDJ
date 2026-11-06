@@ -68,7 +68,7 @@ being completed first; external-service features are listed explicitly.
 - **Settings families:** max/min track length, queue size, max user tracks, max user track length, playlist track count, auto-delete, prefix combine, per-guild search type, session lock, and autocorrect suggestions are implemented; timeout confirmation, preferred bots, and volume automation remain.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** dev-only `restart` is implemented; broader reload/shutdown tooling remains.
-- **Dashboard / hosted surfaces:** a local dashboard is not implemented; bot-list votes/clones require external services.
+- **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with filter toggles and a full settings editor. Bot-list votes/clones still require external services.
 
 ## Known limitations
 
@@ -82,5 +82,7 @@ being completed first; external-service features are listed explicitly.
 - `tsc --noEmit`
 - `eslint .`
 - `npm test` — 86 tests at the latest branch commit.
+
+Dashboard: `DASHBOARD_PORT=8795` on the bot host, loopback-bound by default; set `DASHBOARD_TOKEN` before binding non-loopback.
 
 Slash registration: **84 top-level commands** after grouping (`/utility`, `/filter`); child info/filter names remain prefix commands.
