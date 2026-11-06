@@ -18,6 +18,8 @@ import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
 import { loudnessOf, volumeForLoudness } from '../../utils/Loudness.js';
 import { trackStart } from '../../utils/SetupSystem.js';
 
+const NOW_PLAYING_COLLECTOR_MS = 12 * 60 * 60 * 1000;
+
 export default class TrackStart extends Event {
     constructor(client: BootstrapClient, file: string) {
         super(client, file, {
@@ -25,6 +27,10 @@ export default class TrackStart extends Event {
         });
     }
     public async run(player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
+        // A new track replaces the old now-playing message/collector. Stop the
+        // previous listener even if the new channel is missing from cache.
+        dispatcher.nowPlayingCollector?.stop('replaced');
+        dispatcher.nowPlayingCollector = null;
         // Top up the lookahead before any early return below can skip it.
         void dispatcher.ensureLookahead().catch(() => {});
         const guild = this.client.guilds.cache.get(player.guildId);
@@ -175,6 +181,7 @@ export default class TrackStart extends Event {
             });
             dispatcher.nowPlayingMessage = message;
             const collector = message.createMessageComponentCollector({
+                time: NOW_PLAYING_COLLECTOR_MS,
                 filter: async b => {
                     if (
                         b.guild.members.me?.voice.channel &&
@@ -182,15 +189,22 @@ export default class TrackStart extends Event {
                     )
                         return true;
                     else {
-                        b.reply({
-                            content: `You are not connected to <#${b.guild.members.me?.voice?.channelId ?? 'None'
-                                }> to use this buttons.`,
-                            ephemeral: true,
-                        });
+                        void b
+                            .reply({
+                                content: `You are not connected to <#${b.guild.members.me?.voice?.channelId ?? 'None'
+                                    }> to use this buttons.`,
+                                ephemeral: true,
+                            })
+                            .catch(() => {});
                         return false;
                     }
                 },
-                //time: track.info.isStream ? 86400000 : track.info.length,
+            });
+            dispatcher.nowPlayingCollector = collector;
+            collector.on('end', () => {
+                if (dispatcher.nowPlayingCollector === collector) {
+                    dispatcher.nowPlayingCollector = null;
+                }
             });
 
             collector.on('collect', async interaction => {

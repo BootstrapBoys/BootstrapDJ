@@ -146,6 +146,10 @@ export function fromSaved(saved: SavedTrack, user: User): Song {
     );
 }
 
+export interface NowPlayingCollector {
+    stop(reason?: string): void;
+}
+
 export default class Dispatcher {
     private client: BootstrapClient;
     public guildId: string;
@@ -179,6 +183,7 @@ export default class Dispatcher {
     private idleTimer: ReturnType<typeof setTimeout> | null = null;
     private statsTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
+    public nowPlayingCollector: NowPlayingCollector | null;
     /** Set by /playleave: tear down the player when the queue drains. */
     public leaveOnEnd = false;
     /** 24/7 mode: pause at the end of the current track when the channel is empty. */
@@ -210,6 +215,7 @@ export default class Dispatcher {
         this.seed = null;
         this.seeds = [];
         this.nowPlayingMessage = null;
+        this.nowPlayingCollector = null;
         this.persistTimer = setInterval(() => {
             // A paused player's position cannot change and pause() already wrote
             // the state, so the periodic write would only duplicate the row.
@@ -468,6 +474,8 @@ export default class Dispatcher {
             if (this.pauseTimer) clearTimeout(this.pauseTimer);
             this.pauseTimer = null;
             this.clearIdleTimeout();
+            this.nowPlayingCollector?.stop('destroy');
+            this.nowPlayingCollector = null;
             return;
         }
         if (this.client.shuttingDown) {
@@ -484,6 +492,8 @@ export default class Dispatcher {
         if (this.pauseTimer) clearTimeout(this.pauseTimer);
         this.pauseTimer = null;
         this.clearIdleTimeout();
+        this.nowPlayingCollector?.stop('destroy');
+        this.nowPlayingCollector = null;
         if (!preserveSession) void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.queue.length = 0;
         this.history = [];

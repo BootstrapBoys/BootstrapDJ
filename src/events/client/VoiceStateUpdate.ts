@@ -1,118 +1,134 @@
-import { ChannelType } from 'discord.js';
+import { ChannelType, PermissionFlagsBits, VoiceState } from 'discord.js';
 
 import { BootstrapClient, Event } from '../../structures/index.js';
 
 export default class VoiceStateUpdate extends Event {
+    /** One pending empty-channel teardown per guild. A second leave/rejoin must
+     * replace the timer instead of stacking another destroy call. */
+    private readonly emptyTimers = new Map<string, NodeJS.Timeout>();
+
     constructor(client: BootstrapClient, file: string) {
         super(client, file, {
             name: 'voiceStateUpdate',
         });
     }
-    public async run(oldState: any, newState: any): Promise<void> {
+
+    public async run(_oldState: VoiceState, newState: VoiceState): Promise<void> {
         const guildId = newState.guild.id;
         const botId = this.client.user?.id;
         const me = newState.guild.members.me;
         if (!guildId || !botId || !me || this.client.shuttingDown) return;
         const player = this.client.queue.get(guildId);
         if (!player) return;
+
         const settings = await this.client.db.getGuildSettings(guildId);
         const listenerWait = Number(settings.timeoutlisteners ?? 5);
-        const listenerWaitMs = (Number.isFinite(listenerWait) && listenerWait >= 0 ? listenerWait : 5) * 1000;
+        const listenerWaitMs =
+            (Number.isFinite(listenerWait) && listenerWait >= 0 ? listenerWait : 5) * 1000;
+        const isBot = newState.id === botId;
+        const botChannel = me.voice.channel;
+
+        // A real listener joining the bot's channel cancels a pending teardown
+        // and resumes a paused 24/7 session.
         if (
-            newState.id !== botId &&
+            !isBot &&
             newState.channelId &&
             newState.channelId === me.voice.channelId &&
             newState.member &&
             !newState.member.user.bot
         ) {
+            this.clearEmptyTimer(guildId);
             const stay = await this.client.db.get_247(guildId).catch(() => null);
             if (stay) {
                 player.pauseWhenEmpty = false;
                 player.resume247();
             }
         }
-        if (
-            newState.guild.members.cache.get(botId) &&
-            !newState.guild.members.cache.get(botId).voice.channelId
-        ) {
-            if (player) {
-                return player.destroy();
-            }
+
+        // The bot itself left voice; no channel teardown timer can help.
+        if (!me.voice.channelId) {
+            this.clearEmptyTimer(guildId);
+            player.destroy();
+            return;
         }
-        if (
-            newState.id === botId &&
-            newState.channelId &&
-            newState.channel.type == ChannelType.GuildStageVoice &&
-            me.voice.suppress
-        ) {
+
+        if (isBot) {
             if (
-                me.permissions.has(['Connect', 'Speak']) ||
-                newState.channel.permissionsFor(me).has('MuteMembers')
+                newState.channelId &&
+                newState.channel?.type === ChannelType.GuildStageVoice &&
+                me.voice.suppress &&
+                (me.permissions.has(['Connect', 'Speak']) ||
+                    newState.channel.permissionsFor(me)?.has(PermissionFlagsBits.MuteMembers))
             ) {
-                await me.voice.setSuppressed(false).catch(() => { });
+                await me.voice.setSuppressed(false).catch(() => {});
             }
+            return;
         }
-        if (newState.id == botId) return;
-        const vc = newState.guild.channels.cache.get(
-            player.node.manager.connections.get(newState.guild.id)?.channelId
-        );
-        if (
-            newState.id === botId &&
-            !newState.serverDeaf &&
-            vc &&
-            vc.permissionsFor(me).has('DeafenMembers')
-        )
-            await newState.setDeaf(true);
-        if (newState.id === botId && newState.serverMute && !player.paused)
-            player.pause();
-        if (newState.id === botId && !newState.serverMute && player.paused)
-            player.pause();
 
-        let voiceChannel = newState.guild.channels.cache.get(
-            player.node.manager.connections.get(newState.guild.id)?.channelId
-        );
+        if (!botChannel) return;
 
-        if (newState.id === botId && newState.channelId === null) return;
+        // A listener leaving is only relevant when nobody but bots remains.
+        const humans = botChannel.members.filter(member => !member.user.bot).size;
+        if (humans > 0) {
+            this.clearEmptyTimer(guildId);
+            return;
+        }
 
-        if (!voiceChannel) return;
-        if (voiceChannel.members.filter((x: any) => !x.user.bot).size <= 0) {
-            const server = await this.client.db.get_247(newState.guild.id);
-            if (server) {
-                player.pauseWhenEmpty = true;
+        const stay = await this.client.db.get_247(guildId).catch(() => null);
+        if (stay) {
+            this.clearEmptyTimer(guildId);
+            player.pauseWhenEmpty = true;
+            return;
+        }
+
+        if (listenerWaitMs <= 0) {
+            // timeoutlisteners=0 means "stay connected", not "destroy now".
+            this.clearEmptyTimer(guildId);
+            return;
+        }
+        this.scheduleEmptyTimeout(guildId, player, listenerWaitMs);
+    }
+
+    private clearEmptyTimer(guildId: string): void {
+        const timer = this.emptyTimers.get(guildId);
+        if (!timer) return;
+        clearTimeout(timer);
+        this.emptyTimers.delete(guildId);
+    }
+
+    private scheduleEmptyTimeout(
+        guildId: string,
+        player: NonNullable<ReturnType<BootstrapClient['queue']['get']>>,
+        delayMs: number
+    ): void {
+        this.clearEmptyTimer(guildId);
+        const timer = setTimeout(() => {
+            this.emptyTimers.delete(guildId);
+            const current = this.client.queue.get(guildId);
+            // A rebuilt/restored player has its own lifecycle; never destroy it
+            // from a stale timer belonging to the previous dispatcher.
+            if (current !== player) return;
+            const guild = this.client.guilds.cache.get(guildId);
+            const channelId = guild?.members.me?.voice.channelId;
+            if (!guild || !channelId) return;
+            const channel = guild.channels.cache.get(channelId);
+            if (
+                !channel ||
+                (channel.type !== ChannelType.GuildVoice &&
+                    channel.type !== ChannelType.GuildStageVoice)
+            ) {
                 return;
             }
-            if (!server) {
-                setTimeout(async () => {
-                    const vc = player.node.manager.connections.get(newState.guild.id);
-                    if (vc && !vc.channelId) return;
-                    const playerVoiceChannel = newState.guild.channels.cache.get(vc?.channelId ?? '');
-                    if (
-                        player &&
-                        playerVoiceChannel &&
-                        playerVoiceChannel.members.filter((x: any) => !x.user.bot).size <= 0
-                    ) {
-                        if (player) {
-                            player.destroy();
-                        }
-                    }
-                }, listenerWaitMs);
-            } else {
-                if (server) return;
-                setTimeout(async () => {
-                    const vc = player.node.manager.connections.get(newState.guild.id);
-                    if (vc && !vc.channelId) return;
-                    const playerVoiceChannel = newState.guild.channels.cache.get(vc?.channelId ?? '');
-                    if (
-                        player &&
-                        playerVoiceChannel &&
-                        playerVoiceChannel.members.filter((x: any) => !x.user.bot).size <= 0
-                    ) {
-                        if (player) {
-                            player.destroy();
-                        }
-                    }
-                }, listenerWaitMs);
-            }
-        }
+            if (channel.members.some(member => !member.user.bot)) return;
+            current.destroy();
+        }, delayMs);
+        this.emptyTimers.set(guildId, timer);
+        (timer as unknown as { unref?: () => void }).unref?.();
     }
 }
+
+/**
+ * Project: BootstrapDJ
+ * Author: Zebz213
+ * Company: BootstrapBoys
+ */

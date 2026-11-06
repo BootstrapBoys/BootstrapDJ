@@ -86,7 +86,7 @@ being completed first; public listing/clone services are explicitly out of scope
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 123 tests at the latest branch commit.
+- `npm test` — 129 tests at the latest branch commit.
 
 Storage: WAL mode and bounded stats retention are documented in [`docs/STORAGE.md`](STORAGE.md).
 
