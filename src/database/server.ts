@@ -18,8 +18,10 @@ import {
     Playlist,
     PrismaClient,
     Profile,
+    RecentTrack,
     Role,
     Session,
+    SessionLease,
     Setup,
     Song,
     Stay,
@@ -324,6 +326,80 @@ export default class ServerData {
 
     public async getBotPresence(botId: string): Promise<BotPresence | null> {
         return await this.prisma.botPresence.findUnique({ where: { botId } });
+    }
+
+    /** Atomically claim a guild's voice session for this bot. A live lease held
+     * by another bot is respected; an expired or same-bot lease is renewable. */
+    public async claimSessionLease(
+        guildId: string,
+        botId: string,
+        botName: string,
+        ttlMs: number = 60_000
+    ): Promise<boolean> {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + ttlMs);
+        try {
+            return await this.prisma.$transaction(async tx => {
+                const lease = await tx.sessionLease.findUnique({ where: { guildId } });
+                if (
+                    lease &&
+                    lease.botId !== botId &&
+                    lease.expiresAt.getTime() > now.getTime()
+                ) {
+                    return false;
+                }
+                await tx.sessionLease.upsert({
+                    where: { guildId },
+                    create: { guildId, botId, botName, expiresAt },
+                    update: { botId, botName, expiresAt },
+                });
+                return true;
+            });
+        } catch {
+            // SQLite can report a busy transaction under a simultaneous claim;
+            // the next heartbeat retries instead of crashing playback.
+            return false;
+        }
+    }
+
+    public async getSessionLease(guildId: string): Promise<SessionLease | null> {
+        return await this.prisma.sessionLease.findUnique({ where: { guildId } });
+    }
+
+    public async releaseSessionLease(guildId: string, botId: string): Promise<void> {
+        await this.prisma.sessionLease.deleteMany({ where: { guildId, botId } });
+    }
+
+    public async recordRecentTrack(
+        guildId: string,
+        payload: string,
+        title: string,
+        author: string,
+        uri: string | null,
+        requesterId: string | null
+    ): Promise<void> {
+        await this.prisma.recentTrack.create({
+            data: { guildId, payload, title, author, uri, requesterId },
+        });
+        const stale = await this.prisma.recentTrack.findMany({
+            where: { guildId },
+            orderBy: { playedAt: 'desc' },
+            skip: 100,
+            select: { id: true },
+        });
+        if (stale.length) {
+            await this.prisma.recentTrack.deleteMany({
+                where: { id: { in: stale.map(row => row.id) } },
+            });
+        }
+    }
+
+    public async getRecentTracks(guildId: string, limit: number): Promise<RecentTrack[]> {
+        return await this.prisma.recentTrack.findMany({
+            where: { guildId },
+            orderBy: { playedAt: 'desc' },
+            take: limit,
+        });
     }
 
     public async getUserPrefix(guildId: string, userId: string): Promise<string | null> {

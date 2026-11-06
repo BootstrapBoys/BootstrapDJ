@@ -97,17 +97,99 @@ export async function waitForListeners(
  * saved position and re-queue the rest. Unresolvable sessions are dropped.
  */
 export async function restoreSessions(client: BootstrapClient): Promise<void> {
-    // In a multi-bot deployment only the first preferred bot restores; the
-    // others would otherwise race to claim the same voice session.
+    // In a multi-bot deployment only the first preferred bot restores on boot;
+    // the others take over later through the lease watchdog.
     if (client.config.botPriority >= 0 && client.config.botPriority !== 0) return;
     const sessions = await client.db.getSessions();
     if (!sessions.length) return;
     const botUser = client.user;
     if (!botUser) return;
+    const botName = client.config.botName || botUser.username;
 
     // Per guild, in parallel: one guild waiting on an empty channel must not
-    // hold up the others.
-    await Promise.all(sessions.map(session => restoreSession(client, session, botUser)));
+    // hold up the others. Claim before joining so a fleet cannot restore the
+    // same saved session twice.
+    await Promise.all(
+        sessions.map(async session => {
+            const claimed = await client.db
+                .claimSessionLease(session.guildId, botUser.id, botName)
+                .catch(() => false);
+            if (!claimed) return;
+            await restoreSession(client, session, botUser);
+            if (!client.queue.has(session.guildId)) {
+                await client.db.releaseSessionLease(session.guildId, botUser.id).catch(() => {});
+            }
+        })
+    );
+}
+
+const LEASE_TTL_MS = 60_000;
+const HANDOFF_INTERVAL_MS = 10_000;
+const handoffStarted = new WeakSet<BootstrapClient>();
+
+/**
+ * Refresh the lease for every player this process owns, and adopt a saved
+ * session whose owner has stopped heartbeating. The database claim is atomic,
+ * so two standby bots cannot both take the same guild.
+ */
+export function startSessionHandoffs(client: BootstrapClient): void {
+    if (handoffStarted.has(client)) return;
+    handoffStarted.add(client);
+    const tick = (): void => {
+        void handoffTick(client).catch(error =>
+            client.logger.warn(`[lease] handoff check failed: ${error}`)
+        );
+    };
+    const initial = setTimeout(tick, 5_000);
+    const timer = setInterval(tick, HANDOFF_INTERVAL_MS);
+    (initial as unknown as { unref?: () => void }).unref?.();
+    (timer as unknown as { unref?: () => void }).unref?.();
+}
+
+async function handoffTick(client: BootstrapClient): Promise<void> {
+    const botUser = client.user;
+    if (!botUser) return;
+    const botName = client.config.botName || botUser.username;
+
+    for (const guildId of [...client.queue.keys()]) {
+        await client.db.claimSessionLease(guildId, botUser.id, botName, LEASE_TTL_MS).catch(() => false);
+    }
+
+    const sessions = await client.db.getSessions();
+    for (const session of sessions) {
+        if (client.queue.has(session.guildId)) continue;
+        const now = Date.now();
+        const lease = await client.db.getSessionLease(session.guildId).catch(() => null);
+        if (lease && lease.expiresAt.getTime() > now && lease.botId !== botUser.id) continue;
+
+        // When there is no lease at all, preserve preferred-bot ordering. An
+        // expired lease means the owner is gone, so any standby may race for it
+        // and the database transaction picks exactly one winner.
+        if (!lease) {
+            const preferred = await client.preferredBotStatus(session.guildId);
+            if (!preferred.allowed) continue;
+        }
+
+        const claimed = await client.db.claimSessionLease(
+            session.guildId,
+            botUser.id,
+            botName,
+            LEASE_TTL_MS
+        );
+        if (!claimed) continue;
+        client.logger.info(
+            `[lease] ${botUser.username} claimed ${session.guildId} after lease expiry`
+        );
+        try {
+            await restoreSession(client, session, botUser);
+        } catch (error) {
+            client.logger.error(`[lease] takeover failed for ${session.guildId}: ${error}`);
+        } finally {
+            if (!client.queue.has(session.guildId)) {
+                await client.db.releaseSessionLease(session.guildId, botUser.id).catch(() => {});
+            }
+        }
+    }
 }
 
 async function restoreSession(client: BootstrapClient, session: Session, botUser: User): Promise<void> {

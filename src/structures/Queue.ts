@@ -67,6 +67,15 @@ export class Queue extends Map {
             });
 
             this.set(guild.id, dispatcher);
+            // Own the guild immediately; the handoff watchdog refreshes this.
+            void this.client.db
+                .claimSessionLease(
+                    guild.id,
+                    this.client.user?.id ?? '',
+                    this.client.config.botName || this.client.user?.username || '',
+                    60_000
+                )
+                .catch(() => {});
             // Apply guild defaults once, at player creation. A session restore
             // overwrites volume/loop later, so this only affects fresh sessions.
             const defaults: Record<string, string> = await this.client.db.getGuildSettings(guild.id).catch(() => ({}));

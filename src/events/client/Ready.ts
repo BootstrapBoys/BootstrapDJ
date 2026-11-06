@@ -2,7 +2,7 @@ import { Events } from 'discord.js';
 
 import config from '../../config.js';
 import { BootstrapClient, Event } from '../../structures/index.js';
-import { restoreSessions, waitForNode } from '../../utils/Session.js';
+import { restoreSessions, startSessionHandoffs, waitForNode } from '../../utils/Session.js';
 import { resetSetupChannel, startSetupJanitor } from '../../utils/SetupSystem.js';
 
 let channelsPurged = false;
@@ -38,6 +38,7 @@ export default class Ready extends Event {
             if (!channelsPurged) {
                 if (await waitForNode(this.client, 20_000)) await restoreSessions(this.client);
                 else this.client.logger.error('[session] no node available after waiting; skipping restore');
+                startSessionHandoffs(this.client);
             }
         } catch (error) {
             this.client.logger.error(`[setup] startup cleanup failed: ${error}`);

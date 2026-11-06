@@ -30,6 +30,27 @@ before(async () => {
             "updatedAt" DATETIME NOT NULL
         )`
     );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "SessionLease" (
+            "guildId" TEXT NOT NULL PRIMARY KEY,
+            "botId" TEXT NOT NULL,
+            "botName" TEXT NOT NULL,
+            "expiresAt" DATETIME NOT NULL,
+            "updatedAt" DATETIME NOT NULL
+        )`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "RecentTrack" (
+            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            "guildId" TEXT NOT NULL,
+            "title" TEXT NOT NULL,
+            "author" TEXT NOT NULL,
+            "uri" TEXT,
+            "requesterId" TEXT,
+            "payload" TEXT NOT NULL,
+            "playedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`
+    );
 });
 
 after(async () => {
@@ -91,6 +112,44 @@ test('saveSession upserts one row per guild', async () => {
     assert.equal(rows[0].paused, true);
     assert.equal(rows[0].loop, 'queue');
     assert.equal(rows[0].autoplay, true);
+});
+
+test('session leases are exclusive and can be released', async () => {
+    assert.equal(await db.claimSessionLease('g1', 'bot-a', 'Bot A', 60_000), true);
+    assert.equal(await db.claimSessionLease('g1', 'bot-b', 'Bot B', 60_000), false);
+    assert.equal(await db.claimSessionLease('g1', 'bot-a', 'Bot A', 60_000), true);
+
+    await db.releaseSessionLease('g1', 'bot-b');
+    assert.equal(await db.claimSessionLease('g1', 'bot-b', 'Bot B', 60_000), false);
+    await db.releaseSessionLease('g1', 'bot-a');
+    assert.equal(await db.claimSessionLease('g1', 'bot-b', 'Bot B', 60_000), true);
+});
+
+test('session lease claims are atomic under a simultaneous takeover', async () => {
+    await db.releaseSessionLease('g1', 'bot-b');
+    const results = await Promise.all([
+        db.claimSessionLease('g1', 'bot-a', 'Bot A', 60_000),
+        db.claimSessionLease('g1', 'bot-b', 'Bot B', 60_000),
+    ]);
+    assert.equal(results.filter(Boolean).length, 1);
+});
+
+test('an expired session lease can be adopted by another bot', async () => {
+    await db.releaseSessionLease('g1', 'bot-a');
+    await db.releaseSessionLease('g1', 'bot-b');
+    assert.equal(await db.claimSessionLease('g1', 'bot-a', 'Bot A', 1), true);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(await db.claimSessionLease('g1', 'bot-b', 'Bot B', 60_000), true);
+});
+
+test('recent-track history survives dispatcher lifetime', async () => {
+    const song = makeSong('Hurt', { uri: 'https://x/1', author: 'NIN', encoded: 'ENC' });
+    await db.recordRecentTrack('g1', JSON.stringify(toSaved(song)), song.info.title, song.info.author, song.info.uri ?? null, 'u1');
+
+    const rows = await db.getRecentTracks('g1', 5);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].title, 'Hurt');
+    assert.equal(rows[0].uri, 'https://x/1');
 });
 
 test('deleteSession removes the row and tolerates a missing one', async () => {

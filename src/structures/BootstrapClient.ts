@@ -100,6 +100,15 @@ export default class BootstrapClient extends Client {
             return { allowed: true, name: null };
         }
         if (bots.length <= 1) return { allowed: true, name: null };
+        // A live session lease is authoritative across the fleet. Without this
+        // check the old preferred order keeps routing to a bot that has already
+        // handed the session off (or away from the bot that adopted it).
+        const lease = await this.db.getSessionLease(guildId).catch(() => null);
+        if (lease && lease.expiresAt.getTime() > Date.now()) {
+            return lease.botId === this.user.id
+                ? { allowed: true, name: lease.botName }
+                : { allowed: false, name: lease.botName };
+        }
         const guild = this.guilds.cache.get(guildId);
         if (!guild) return { allowed: true, name: null };
         for (const bot of bots) {

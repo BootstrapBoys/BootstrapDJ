@@ -232,6 +232,33 @@ model Session {
   updatedAt DateTime @updatedAt
 }
 
+/// Durable ownership lease for a guild's voice session. The owner refreshes
+/// it; a different bot may claim it only after it expires, which is what makes
+/// crash handoff safe without a service registry.
+model SessionLease {
+  guildId   String   @id
+  botId     String
+  botName   String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
+/// Persistent recent-playback history, independent of dispatcher lifetime.
+model RecentTrack {
+  id          Int      @id @default(autoincrement())
+  guildId     String
+  title       String
+  author      String
+  uri         String?
+  requesterId String?
+  payload     String
+  playedAt    DateTime @default(now())
+
+  @@index([guildId, playedAt])
+}
+
 model Botchannel {
   guildId String @id
   textId  String

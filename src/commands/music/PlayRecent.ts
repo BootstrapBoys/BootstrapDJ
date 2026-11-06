@@ -1,5 +1,6 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
+import { fromSaved, SavedTrack } from '../../structures/Dispatcher.js';
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
 export default class PlayRecent extends Command {
@@ -34,12 +35,27 @@ export default class PlayRecent extends Command {
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guild = ctx.guild;
-        if (!guild) return;
+        const author = ctx.author;
+        if (!guild || !author) return;
         let player = client.queue.get(guild.id);
         const vc = ctx.voiceChannel;
         if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
         const count = Math.min(20, Math.max(1, Number(args[0]) || 5));
-        const recent = player.history.slice(-count);
+        // Prefer the durable table; fall back to the in-memory dispatcher
+        // history for rows written before the table existed.
+        const stored = await client.db.getRecentTracks(guild.id, count).catch(() => []);
+        const recent = stored.length
+            ? stored
+                  .map(row => {
+                      try {
+                          return fromSaved(JSON.parse(row.payload) as SavedTrack, author);
+                      } catch {
+                          return null;
+                      }
+                  })
+                  .filter((track): track is NonNullable<typeof track> => Boolean(track))
+                  .reverse()
+            : player.history.slice(-count);
         if (!recent.length) {
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.red).setDescription('No playback history yet.')],

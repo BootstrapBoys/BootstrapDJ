@@ -13,7 +13,7 @@ import {
 } from 'discord.js';
 import { Player } from 'shoukaku';
 
-import { Song } from '../../structures/Dispatcher.js';
+import { Song, toSaved } from '../../structures/Dispatcher.js';
 import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
 import { loudnessOf, volumeForLoudness } from '../../utils/Loudness.js';
 import { trackStart } from '../../utils/SetupSystem.js';
@@ -31,6 +31,18 @@ export default class TrackStart extends Event {
         if (!guild) return;
         const channel = guild.channels.cache.get(dispatcher.channelId) as TextChannel;
         if (!channel) return;
+        // Keep a durable recent-playback row: dispatcher history disappears on
+        // restart, and /playrecent should survive that.
+        void this.client.db
+            .recordRecentTrack(
+                guild.id,
+                JSON.stringify(toSaved(track)),
+                track.info.title,
+                track.info.author,
+                track.info.uri ?? null,
+                track.info.requester?.id ?? null
+            )
+            .catch(() => {});
         this.client.utils.updateStatus(this.client, guild.id);
         // Text announcements are opt-in through a dedicated channel, so the
         // existing now-playing message stays untouched for guilds that do not
