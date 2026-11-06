@@ -20,6 +20,7 @@ import type { NodeOption } from 'shoukaku';
 import { Command, Queue, ShoukakuClient } from './index.js';
 import Logger from './Logger.js';
 import config from '../config.js';
+import { startDashboard } from '../dashboard/server.js';
 import ServerData from '../database/server.js';
 import loadPlugins from '../plugin/index.js';
 import { findBestPublicNode, toNodeOption } from '../utils/PublicNodes.js';
@@ -61,6 +62,7 @@ export default class BootstrapClient extends Client {
         this.logger.info(`Successfully loaded events!`);
         await loadPlugins(this);
         await this.login(token);
+        startDashboard(this);
         this.on(Events.InteractionCreate, async (interaction: Interaction): Promise<void> => {
             if (!interaction.isButton() || !interaction.guildId) return;
             const setup = await this.db.getSetup(interaction.guildId);

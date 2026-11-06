@@ -43,6 +43,10 @@ export default {
     clientId: process.env.CLIENT_ID ?? '', // bot client id
     guildId: process.env.GUILD_ID ?? '', // guild id
     logChannelId: process.env.LOG_CHANNEL_ID || '', // log channel id
+    // Local web dashboard: filter toggles and the /settings editor.
+    dashboardPort: process.env.DASHBOARD_PORT ? parseInt(process.env.DASHBOARD_PORT) : 0,
+    dashboardHost: process.env.DASHBOARD_HOST || '127.0.0.1',
+    dashboardToken: process.env.DASHBOARD_TOKEN || '',
     // Voice listener (Earl the Ear): localhost control API + bridge.
     earlControlUrl: process.env.EARL_CONTROL_URL || 'http://127.0.0.1:8791',
     earlBridgeSecret: process.env.EARL_BRIDGE_SECRET || '',
