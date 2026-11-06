@@ -831,6 +831,10 @@ export default class ServerData {
         return await this.prisma.session.findMany();
     }
 
+    public async getSession(guildId: string): Promise<Session | null> {
+        return await this.prisma.session.findUnique({ where: { guildId } });
+    }
+
     public async deleteSession(guildId: string): Promise<void> {
         // deleteMany: a missing row is not an error here.
         await this.prisma.session.deleteMany({ where: { guildId } });

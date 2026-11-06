@@ -60,9 +60,41 @@ export default class NodeConnect extends Event {
                 if (!channel) return;
                 const vc = guild.channels.cache.get(main.voiceId);
                 if (!vc) return;
+                const botUser = this.client.user;
+                if (!botUser) return;
+                const guildId = guild.id;
+                const now = Date.now();
+                const lease = await this.client.db.getSessionLease(guildId).catch(() => null);
+                if (lease && lease.expiresAt.getTime() > now && lease.botId !== botUser.id) return;
+                if (!lease) {
+                    const preferred = await this.client.preferredBotStatus(guildId);
+                    if (!preferred.allowed) return;
+                }
+                const claimed = await this.client.db
+                    .claimSessionLease(
+                        guildId,
+                        botUser.id,
+                        this.client.config.botName || botUser.username,
+                        60_000
+                    )
+                    .catch(() => false);
+                if (!claimed) return;
+                // A saved Session belongs to the restore/handoff path. Do not
+                // pre-create an empty 24/7 player and make its sole job to delete
+                // that saved row.
+                if (!this.client.queue.has(guildId)) {
+                    const saved = await this.client.db.getSession(guildId).catch(() => null);
+                    if (saved) {
+                        await this.client.db.releaseSessionLease(guildId, botUser.id).catch(() => {});
+                        return;
+                    }
+                }
                 try {
                     await this.client.queue.create(guild, vc, channel);
                 } catch (error) {
+                    if (!this.client.queue.has(guildId)) {
+                        await this.client.db.releaseSessionLease(guildId, botUser.id).catch(() => {});
+                    }
                     this.client.logger.warn(`[nodes] 24/7 rejoin failed for ${guild.id}: ${error}`);
                 }
             }, index * 1000);
