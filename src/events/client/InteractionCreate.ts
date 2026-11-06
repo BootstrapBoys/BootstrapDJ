@@ -1,8 +1,6 @@
 import {
     AutocompleteInteraction,
-    ChannelType,
     ChatInputCommandInteraction,
-    Collection,
     CommandInteraction,
     InteractionType,
     PermissionFlagsBits,
@@ -10,6 +8,7 @@ import {
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Context, Event } from '../../structures/index.js';
+import { evaluateCommand } from '../../utils/CommandGate.js';
 
 export default class InteractionCreate extends Event {
     private static readonly PLAYLIST_CACHE_MS = 5000;
@@ -107,229 +106,54 @@ export default class InteractionCreate extends Event {
             await this.client.db.get(interaction.guildId); // get or create guild data
             const command = this.client.commands.get(interaction.commandName);
             if (!command) return;
-            if (command.player?.voice) {
-                const preferred = await this.client.preferredBotStatus(interaction.guildId);
-                if (!preferred.allowed) {
-                    return await interaction.reply({
-                        content: `Voice commands are routed to **${preferred.name ?? 'the preferred bot'}** for this server. Use that bot.`,
-                        ephemeral: true,
-                    });
-                }
-            }
-            const lockedSettings = await this.client.db.getGuildSettings(interaction.guildId);
-            if (
-                lockedSettings.locked === 'true' &&
-                'permissions' in member &&
-                !member.permissions.has(PermissionFlagsBits.ManageGuild)
-            ) {
-                return await interaction.reply({ content: 'This session is locked. A server manager must unlock it.', ephemeral: true });
-            }
-            const permitted = await this.client.db.isCommandAllowed(
-                interaction.guildId,
-                command.name,
-                interaction.user.id,
-                [...member.roles.cache.keys()]
+            const guildSettings = await this.client.db.getGuildSettings(interaction.guildId);
+            const channel = interaction.channel;
+            if (!channel) return;
+            const gateArgs = [...interaction.options.data].map(option =>
+                String(option.value ?? '')
             );
-            if (!permitted) {
-                return await interaction.reply({
-                    content: 'You are not allowed to use this command.',
-                    ephemeral: true,
-                });
+            const gate = await evaluateCommand({
+                client: this.client,
+                command,
+                guildId: interaction.guildId,
+                guildName: interaction.guild.name,
+                member: {
+                    id: interaction.user.id,
+                    roleIds: [...member.roles.cache.keys()],
+                    hasPermission: permission => member.permissions.has(permission),
+                    voiceChannel: member.voice.channel
+                        ? { id: member.voice.channel.id, type: member.voice.channel.type }
+                        : null,
+                },
+                me: {
+                    id: me.id,
+                    roleIds: [...me.roles.cache.keys()],
+                    hasPermission: permission => me.permissions.has(permission),
+                    voiceChannel: me.voice.channel
+                        ? { id: me.voice.channel.id, type: me.voice.channel.type }
+                        : null,
+                },
+                channel,
+                canViewChannel:
+                    channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) === true,
+                settings: guildSettings,
+                args: gateArgs,
+                commandKey: commandName,
+                isPrefix: false,
+            });
+            if (!gate.ok) {
+                if (gate.silent || !gate.response) return;
+                if (gate.dm) {
+                    await member.send(gate.response).catch(() => {});
+                    return;
+                }
+                return await interaction.reply({ ...gate.response, ephemeral: true });
             }
-            const guildSettings = lockedSettings;
-            if (guildSettings.allowthreads === 'false' && interaction.channel?.isThread()) {
-                return await interaction.reply({ content: 'Commands are disabled in threads for this server.', ephemeral: true });
-            }
-            if (
-                (guildSettings.disabledcommands ?? '')
-                    .split(',')
-                    .map(name => name.trim().toLowerCase())
-                    .filter(Boolean)
-                    .includes(command.name)
-            ) {
-                return await interaction.reply({
-                    content: `**${command.name}** is disabled in this server.`,
-                    ephemeral: true,
-                });
-            }
-            if (guildSettings.commandchannel && guildSettings.commandchannel !== interaction.channelId) {
-                return await interaction.reply({
-                    content: `Commands are restricted to <#${guildSettings.commandchannel}>.`,
-                    ephemeral: true,
-                });
-            }
-            if (guildSettings.voicechannel && member.voice.channelId !== guildSettings.voicechannel) {
-                return await interaction.reply({
-                    content: `You must be in <#${guildSettings.voicechannel}> to use commands.`,
-                    ephemeral: true,
-                });
-            }
+
             const ctx = new Context(interaction, [...interaction.options.data], command.ephemeral);
             ctx.deleteAfter = Number(guildSettings.deleteafter) || null;
             ctx.setArgs(interaction.options.data);
-            const channel = interaction.channel;
-            if (!channel || channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) !== true)
-                return;
 
-            if (!me.permissions.has(PermissionFlagsBits.SendMessages)) {
-                return await member
-                    .send({
-                        content: `I don't have **\`SendMessage\`** permission in \`${interaction.guild.name}\`\nchannel: <#${interaction.channelId}>`,
-                    })
-                    .catch(() => { });
-            }
-
-            if (!me.permissions.has(PermissionFlagsBits.EmbedLinks))
-                return await interaction.reply({
-                    content: 'I don\'t have **`EmbedLinks`** permission.',
-                    ephemeral: true,
-                });
-
-            if (command.permissions) {
-                if (command.permissions.client) {
-                    if (!me.permissions.has(command.permissions.client))
-                        return await interaction.reply({
-                            content: 'I don\'t have enough permissions to execute this command.',
-                            ephemeral: true,
-                        });
-                }
-
-                if (command.permissions.user) {
-                    if (
-                        !member.permissions.has(
-                            command.permissions.user
-                        )
-                    ) {
-                        await interaction.reply({
-                            content: 'You don\'t have enough permissions to use this command.',
-                            ephemeral: true,
-                        });
-                        return;
-                    }
-                }
-                if (command.permissions.dev) {
-                    if (this.client.config.owners) {
-                        const findDev = this.client.config.owners.find(
-                            x => x === interaction.user.id
-                        );
-                        if (!findDev) return;
-                    }
-                }
-            }
-            if (command.player) {
-                if (command.player.voice) {
-                    if (!member.voice.channel)
-                        return await interaction.reply({
-                            content: `You must be connected to a voice channel to use this \`${command.name}\` command.`,
-                            ephemeral: true,
-                        });
-
-                    if (!me.permissions.has(PermissionFlagsBits.Connect))
-                        return await interaction.reply({
-                            content: `I don't have \`CONNECT\` permissions to execute this \`${command.name}\` command.`,
-                            ephemeral: true,
-                        });
-
-                    if (!me.permissions.has(PermissionFlagsBits.Speak))
-                        return await interaction.reply({
-                            content: `I don't have \`SPEAK\` permissions to execute this \`${command.name}\` command.`,
-                            ephemeral: true,
-                        });
-
-                    if (
-                        member.voice.channel.type ===
-                        ChannelType.GuildStageVoice &&
-                        !me.permissions.has(
-                            PermissionFlagsBits.RequestToSpeak
-                        )
-                    )
-                        return await interaction.reply({
-                            content: `I don't have \`REQUEST TO SPEAK\` permission to execute this \`${command.name}\` command.`,
-                            ephemeral: true,
-                        });
-                    if (me.voice.channel) {
-                        if (
-                            me.voice.channelId !==
-                            member.voice.channelId
-                        )
-                            return await interaction.reply({
-                                content: `You are not connected to <#${me.voice.channel.id}> to use this \`${command.name}\` command.`,
-                                ephemeral: true,
-                            });
-                    }
-                }
-                if (command.player.active) {
-                    const activePlayer = this.client.queue.get(interaction.guildId);
-                    if (!activePlayer || !activePlayer.current)
-                        return await interaction.reply({
-                            content: 'Nothing is playing right now.',
-                            ephemeral: true,
-                        });
-                }
-                if (command.player.dj) {
-                    const dj = await this.client.db.getDj(interaction.guildId);
-                    if (dj && dj.mode) {
-                        const djRole = await this.client.db.getRoles(interaction.guildId);
-                        if (!djRole)
-                            return await interaction.reply({
-                                content: 'DJ role is not set.',
-                                ephemeral: true,
-                            });
-                        const findDJRole = member.roles.cache.find(
-                            (x: any) => djRole.map((y: any) => y.roleId).includes(x.id)
-                        );
-                        if (!findDJRole) {
-                            if (
-                                !member.permissions.has(
-                                    PermissionFlagsBits.ManageGuild
-                                )
-                            ) {
-                                return await interaction.reply({
-                                    content: 'You need to have the DJ role to use this command.',
-                                    ephemeral: true,
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-            let timestamps = this.client.cooldown.get(commandName);
-            if (!timestamps) {
-                timestamps = new Collection<string, number>();
-                this.client.cooldown.set(commandName, timestamps);
-            }
-            const now = Date.now();
-
-            const cooldownAmount = Math.floor(command.cooldown || 5) * 1000;
-            if (!timestamps.has(interaction.user.id)) {
-                timestamps.set(interaction.user.id, now);
-                setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
-            } else {
-                const expirationTime = (timestamps.get(interaction.user.id) ?? now) + cooldownAmount;
-                const timeLeft = (expirationTime - now) / 1000;
-                if (now < expirationTime && timeLeft > 0.9) {
-                    return await interaction.reply({
-                        content: `Please wait ${timeLeft.toFixed(
-                            1
-                        )} more second(s) before reusing the \`${commandName}\` command.`,
-                        ephemeral: true,
-                    });
-                }
-                timestamps.set(interaction.user.id, now);
-                setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
-            }
-            if (
-                interaction.options.data.some(
-                    option => option.value && option.value.toString().includes('@everyone')
-                ) ||
-                interaction.options.data.some(
-                    option => option.value && option.value.toString().includes('@here')
-                )
-            )
-                return await interaction.reply({
-                    content: 'You can\'t mention everyone or here.',
-                    ephemeral: true,
-                });
             if (command.defer) {
                 try {
                     await ctx.defer(command.ephemeral);
