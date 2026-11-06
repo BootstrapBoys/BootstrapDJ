@@ -180,7 +180,13 @@ export default class Play extends Command {
                 break;
             }
             case LoadType.SEARCH: {
-                const track1 = player.buildTrack(res.data[0], author);
+                const first = res.data[0];
+                if (!first) {
+                    return await ctx.sendMessage({
+                        embeds: [embed.setColor(client.color.red).setDescription('There were no results found.')],
+                    });
+                }
+                const track1 = player.buildTrack(first, author);
                 const rejected = checkTrack(player, track1, author.id, limits);
                 if (rejected)
                     return await ctx.sendMessage({
@@ -203,7 +209,7 @@ export default class Play extends Command {
                         embed
                             .setColor(this.client.color.main)
                             .setDescription(
-                                `Added [${res.data[0].info.title}](${res.data[0].info.uri}) to the queue.`
+                                `Added [${first.info.title}](${first.info.uri}) to the queue.`
                             ),
                     ],
                 });

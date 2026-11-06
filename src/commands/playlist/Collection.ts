@@ -212,6 +212,11 @@ export default class Collection extends Command {
         }
 
         if (action === 'save') {
+            if (name.length > 50) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Collection names can be at most 50 characters.')],
+                });
+            }
             const guild = ctx.guild;
             const player = guild ? client.queue.get(guild.id) : null;
             if (!player?.current) {

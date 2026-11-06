@@ -94,10 +94,6 @@ export class Utils {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
 
-    public static formatNumber(number: number): string {
-        return number.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-    }
-
     public static parseTime(string: string): number {
         const time = string.match(/([0-9]+[d,h,m,s])/g);
         if (!time) return 0;
@@ -128,7 +124,7 @@ export class Utils {
      * its collector has ended. Honours COMMAND_DELETE_AFTER (0 keeps it).
      */
     public static scheduleDelete(client: BootstrapClient, message: Message, seconds?: number): void {
-        const timeout = seconds ?? config.deleteAfter;
+        const timeout = seconds ?? client.config.deleteAfter;
         if (!timeout || timeout <= 0) return;
         const timer = setTimeout(() => {
             Promise.resolve(message.delete()).catch(() => {});

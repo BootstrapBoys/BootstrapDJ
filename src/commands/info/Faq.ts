@@ -29,7 +29,7 @@ export default class Faq extends Command {
                             'Join a voice channel and use `/play <song or URL>`.',
                             '',
                             '**How do I see the queue?**',
-                            'Use `/queue` (public) or `/queueinfo` for totals.',
+                            'Use `/queue` (public) for the full queue and totals.',
                             '',
                             '**How do I change volume?**',
                             'Use `/volume <0-200>`.',

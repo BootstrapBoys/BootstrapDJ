@@ -58,6 +58,10 @@ export default class ServerData {
      * invalidate on write (single-process bot, so no cross-process staleness). */
     private guildCache = new Map<string, Guild>();
     private setupCache = new Map<string, Setup | null>();
+    /** Per-guild settings are read on every message/command; cache briefly and
+     * invalidate on writes. Other bot processes may write too, so use a TTL
+     * rather than treating the cache as authoritative. */
+    private settingsCache = new Map<string, { at: number; data: Record<string, string> }>();
 
     constructor(prisma?: PrismaClient) {
         // Injectable so tests can pass a client wired to a throwaway SQLite
@@ -381,15 +385,15 @@ export default class ServerData {
         await this.prisma.recentTrack.create({
             data: { guildId, payload, title, author, uri, requesterId },
         });
-        const stale = await this.prisma.recentTrack.findMany({
+        const cutoff = await this.prisma.recentTrack.findFirst({
             where: { guildId },
-            orderBy: { playedAt: 'desc' },
+            orderBy: { id: 'desc' },
             skip: 100,
             select: { id: true },
         });
-        if (stale.length) {
+        if (cutoff) {
             await this.prisma.recentTrack.deleteMany({
-                where: { id: { in: stale.map(row => row.id) } },
+                where: { guildId, id: { lt: cutoff.id } },
             });
         }
     }
@@ -585,27 +589,32 @@ export default class ServerData {
     }
 
     public async getGuildSettings(guildId: string): Promise<Record<string, string>> {
+        const cached = this.settingsCache.get(guildId);
+        if (cached && Date.now() - cached.at < 5000) return cached.data;
         const rows = await this.prisma.guildSetting.findMany({ where: { guildId } });
-        return Object.fromEntries(rows.map((row: GuildSetting) => [row.key, row.value]));
+        const data = Object.fromEntries(rows.map((row: GuildSetting) => [row.key, row.value]));
+        this.settingsCache.set(guildId, { at: Date.now(), data });
+        return data;
     }
 
     public async getGuildSetting(guildId: string, key: string): Promise<string | null> {
-        const row = await this.prisma.guildSetting.findUnique({
-            where: { guildId_key: { guildId, key } },
-        });
-        return row?.value ?? null;
+        const settings = await this.getGuildSettings(guildId);
+        return settings[key] ?? null;
     }
 
     public async setGuildSetting(guildId: string, key: string, value: string): Promise<GuildSetting> {
-        return await this.prisma.guildSetting.upsert({
+        const row = await this.prisma.guildSetting.upsert({
             where: { guildId_key: { guildId, key } },
             create: { guildId, key, value },
             update: { value },
         });
+        this.settingsCache.delete(guildId);
+        return row;
     }
 
     public async resetGuildSettings(guildId: string): Promise<number> {
         const result = await this.prisma.guildSetting.deleteMany({ where: { guildId } });
+        this.settingsCache.delete(guildId);
         return result.count;
     }
 

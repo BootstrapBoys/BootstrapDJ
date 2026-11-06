@@ -31,11 +31,9 @@ export default class Invite extends Command {
         });
     }
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const clientId = process.env.CLIENT_ID;
+        const clientId = this.client.user?.id ?? this.client.config.clientId;
         if (!clientId) {
-            console.error(
-                'Client ID not found in environment variables, cannot generate invite link.'
-            );
+            this.client.logger.error('[invite] no application id available to build an invite link');
             return await ctx.sendMessage(
                 'Sorry, my invite link is not available at this time. Please tell the bot developer to check their console.'
             );
