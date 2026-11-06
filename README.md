@@ -1,224 +1,271 @@
-<center><img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=BootstrapDJ&fontSize=80&fontAlignY=35&animation=twinkling&fontColor=gradient" /></center>
+# BootstrapDJ
 
-[![Version][version-shield]](version-url)
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![Support Server][support-shield]][support-server]
-[![GPL-3.0 License][license-shield]][license-url]
-[![Remix on Glitch](https://cdn.glitch.com/2703baf2-b643-4da7-ab91-7ee2a2d00b5b%2Fremix-button.svg)](https://glitch.com/edit/#!/import/github/zebz213/BootstrapDJ)
+BootstrapDJ is a self-hosted Discord music bot built with TypeScript, Discord.js,
+Shoukaku, Lavalink v4, and Prisma. It supports slash commands and text prefix
+commands, and every feature is available without a premium tier.
 
-<!-- PROJECT LOGO -->
-<br />
 <p align="center">
-  <a href="https://github.com/zebz213/BootstrapDJ">
-    <img src="https://media.discordapp.net/attachments/876035356460462090/887728792926290091/20210820_124325.png" alt="BootstrapDJ" width="200" height="200">
-  </a>
-
-  <h1 align="center">BootstrapDJ</h1>
-
-  <p align="center">BootstrapDJ is a Discord music bot that uses Discord.js, Shoukaku, and TypeScript.
-    <br />
-    <br />
-    <a href="https://discord.com/api/oauth2/authorize?client_id=1029680163790794772&permissions=8&scope=bot%20applications.commands">Invite BootstrapDJ</a>
-    ·
-    <a href="https://github.com/zebz213/BootstrapDJ/issues">Report Bug & Request Feature</a>
-  </p>
+  <a href="https://discord.com/oauth2/authorize?client_id=1029680163790794772&permissions=4298238976&scope=bot%20applications.commands">Invite BootstrapDJ</a>
+  ·
+  <a href="https://github.com/zebz213/BootstrapDJ/issues">Report a bug</a>
 </p>
 
-## 🔥 Unique Features
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Node.js >= 24.17](https://img.shields.io/badge/node-%3E%3D24.17-43853D.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6.svg)](https://www.typescriptlang.org/)
 
--   Developed using Typescript and Discord.js v14
--   Advanced Music System
--   Customizable Prefix
--   Powerful Search Engine
--   12 + Music Filters
--   Hybrid Command Handling (Slash and Normal Commands)
--   Highly Configurable
--   User-friendly and Easy to Use
--   24/7 Music Playback
--   Playlist commands
--   Setup music channel
+## Features
 
-## 🎶 Support Sources
+- **Slash and prefix commands** — one command set through two entry points.
+- **Lavalink playback** — queueing, seeking, skipping, looping, shuffling, radio,
+  fair play, and saved recent history.
+- **Search** — YouTube, SoundCloud, Deezer, and other Lavalink sources. Prefix
+  commands and slash commands can use separate default engines.
+- **Queue tools** — reverse, sort, swap, mass move/remove, remove duplicates,
+  remove by keyword/user/absence, random selection, and previous-track replay.
+- **Music filters** — 8D, bass boost, distortion, karaoke, nightcore, pitch,
+  rate, rotation, speed, tremolo, vibrato, and low-pass effects through
+  `/filter`, plus `/filters` to inspect active effects.
+- **Autoplay** — Deezer chart seeds, curated fallback seeds, and weighted
+  related-track discovery.
+- **Collections** — create, load, share, import, merge, rename, copy, and clear
+  playlists through `/collection`.
+- **Song-request channel** — ordinary messages become song requests; known
+  prefix commands still work there.
+- **Saved sessions** — queues survive a restart when session restore is enabled.
+- **Multi-bot handoff** — optional local multi-process setup with atomic session
+  leases and automatic takeover.
+- **Dashboard** — Discord OAuth login, player controls, live queue, filters,
+  every guild setting, and listening statistics.
+- **Per-guild settings** — permissions, DJ mode, channels, timeouts, limits,
+  prefix behavior, ephemeral replies, aliases, and command mappings.
+- **Opt-out voice listener integration** — optional local listener bridge; audio
+  from opted-out members is discarded before transcription.
 
-🔍 **Default Sources**:
+## Requirements
 
--   ![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=plastic&logo=youtube&logoColor=white)
--   ![SoundCloud](https://img.shields.io/badge/SoundCloud-FF3300?style=plastic&logo=soundcloud&logoColor=white)
--   ![Twitch](https://img.shields.io/badge/Twitch-9146FF?style=plastic&logo=twitch&logoColor=white)
--   ![Bandcamp](https://img.shields.io/badge/Bandcamp-629AA9?style=plastic&logo=bandcamp&logoColor=white)
--   ![Vimeo](https://img.shields.io/badge/Vimeo-1AB7EA?style=plastic&logo=vimeo&logoColor=white)
--   ![http](https://img.shields.io/badge/http-FFA500?style=plastic&logo=http&logoColor=white)
+- **Node.js 24.17 or newer**
+- **Lavalink v4** (the bot connects over the Lavalink protocol; it does not run
+  Lavalink for you)
+- A Discord application and bot token
+- SQLite (bundled through Prisma; no separate database server required)
 
-🔌 **Plugin Sources**: `(Require: LavaLink v4.0.x)`
+Optional:
 
-**Note: You need to install the plugins to use these sources**
+- A second Lavalink instance for voice failover
+- LavaSrc or another Lavalink plugin for Deezer, Spotify, Apple Music, and
+  similar sources
+- A reverse proxy in front of the dashboard for HTTPS
 
--   ![Spotify](https://img.shields.io/badge/Spotify-1ED760?style=plastic&logo=spotify&logoColor=white) ([Required Plugin][LavaSrc])
--   ![Deezer](https://img.shields.io/badge/Deezer-FF0000?style=plastic&logo=deezer&logoColor=white) ([Required Plugin][LavaSrc])
--   ![Apple Music](https://img.shields.io/badge/Apple%20Music-000000?style=plastic&logo=apple-music&logoColor=white) ([Required Plugin][LavaSrc])
--   ![Yandex Music](https://img.shields.io/badge/Yandex%20Music-FF0066?style=plastic&logo=yandex-music&logoColor=white) ([Required Plugin][LavaSrc])
--   ![Mixcloud](https://img.shields.io/badge/Mixcloud-51C4D3?style=plastic&logo=mixcloud&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
--   ![Ocremix](https://img.shields.io/badge/Ocremix-FF6600?style=plastic&logo=ocremix&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
--   ![Clyp](https://img.shields.io/badge/Clyp-6BB5A6?style=plastic&logo=clyp&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
--   ![Reddit](https://img.shields.io/badge/Reddit-FF4500?style=plastic&logo=reddit&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
--   ![Getyarn](https://img.shields.io/badge/Getyarn-FF9000?style=plastic&logo=getyarn&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
--   ![TikTok](https://img.shields.io/badge/TikTok-FF2D55?style=plastic&logo=tiktok&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
--   ![Soundgasm](https://img.shields.io/badge/Soundgasm-F1672F?style=plastic&logo=soundgasm&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
--   ![Text To Speech](https://img.shields.io/badge/Text%20To%20Speech-3080ff?style=plastic&logo=google-translate&logoColor=white) ([Required Plugin][skybot-lavalink-plugin])
+## Quick start
 
-[LavaSrc]: https://github.com/TopiSenpai/LavaSrc
-[skybot-lavalink-plugin]: https://github.com/DuncteBot/skybot-lavalink-plugin
+1. Clone the repository:
 
-### **Need Help with plugins?** Join our [Discord Server]([support-server]) and ask for help in the `#support` channel.
+    ```bash
+    git clone https://github.com/zebz213/BootstrapDJ.git
+    cd BootstrapDJ
+    ```
 
-## 📚 Commands
+2. Install dependencies. `postinstall` generates the Prisma client:
 
-<details><summary>Click to View Commands</summary>
+    ```bash
+    npm ci
+    ```
 
-| Name         | Description                           | Options                                     |
-| ------------ | ------------------------------------- | ------------------------------------------- |
-| `prefix`     | Shows the bot's prefix                |                                             |
-| `help`       | Shows the help menu                   | `command`: The command you want to get info |
-|              |                                       | on                                          |
-| `info`       | Shows information about the bot       |                                             |
-| `invite`     | Sends the bot's invite link           |                                             |
-| `ping`       | Shows the bot's ping                  |                                             |
-| `clearqueue` | Clears the queue                      |                                             |
-| `join`       | Joins the voice channel               |                                             |
-| `leave`      | Leaves the voice channel              |                                             |
-| `nowplaying` | Shows the currently playing song      |                                             |
-| `play`       | Plays a song from YouTube or Spotify  | `song`: The song you want to play           |
-| `pause`      | Pauses the current song               |                                             |
-| `queue`      | Shows the current queue               |                                             |
-| `remove`     | Removes a song from the queue         | `song`: The song number                     |
-| `resume`     | Resumes the current song              |                                             |
-| `seek`       | Seeks to a certain time in the song   |                                             |
-| `shuffle`    | Shuffles the queue                    |                                             |
-| `skip`       | Skips the current song                |                                             |
-| `skipto`     | Skips to a specific song in the queue |                                             |
-| `stop`       | Stops the music and clears the queue  |                                             |
-| `volume`     | Sets the volume of the player         | `number`: The volume you want to set        |
+3. Create the environment file:
 
-</details>
+    ```bash
+    cp .env.example .env
+    ```
 
-## 🔧 Requirements
+    Open `.env` and set at least:
 
-Before starting with the installation, you need to have the following:
+    ```dotenv
+    BOT_TOKEN="your-bot-token"
+    OWNER_IDS=["your-discord-user-id"]
+    LAVALINK_URL="127.0.0.1:2333"
+    LAVALINK_AUTH="your-lavalink-password"
+    LAVALINK_SECURE="false"
+    ```
 
--   ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white) [v18.17.1 or higher](https://nodejs.org/en/download/)
--   ![Lavalink](https://img.shields.io/badge/Lavalink-7289DA?style=for-the-badge&logo=discord&logoColor=white) [v4.0.x or higher](https://github.com/freyacodes/Lavalink)
+    `.env.example` contains the full, commented configuration. Do not commit
+    `.env`.
 
-## 🚀 Installation from source
+4. Make sure Lavalink is running and reachable at the configured URL.
 
-1. Clone the BootstrapDJ repository:
+5. Build and start:
 
-```bash
-git clone https://github.com/zebz213/BootstrapDJ.git
+    ```bash
+    npm run build
+    npm start
+    ```
+
+    For a process manager, run the built entry point instead of rebuilding on
+    every restart:
+
+    ```bash
+    npm run build
+    pm2 start dist/index.js --name BootstrapDJ
+    ```
+
+6. Invite the bot with the link above. The permissions integer includes the
+   voice, message, and application-command permissions BootstrapDJ needs.
+
+## Configuration
+
+The complete reference is [`.env.example`](.env.example). The most important
+groups are:
+
+| Group     | Variables                                                                                                   | Notes                                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Discord   | `BOT_TOKEN`, `TOKEN`, `CLIENT_ID`, `GUILD_ID`, `PRODUCTION`                                                 | `BOT_TOKEN` wins over the legacy `TOKEN` alias. `GUILD_ID` enables single-guild mode.                     |
+| Commands  | `PREFIX`, `OWNER_IDS`                                                                                       | `PREFIX` accepts comma-separated prefixes. `OWNER_IDS` is a JSON array.                                   |
+| Presence  | `BOT_STATUS`, `BOT_ACTIVITY`, `BOT_ACTIVITY_TYPE`, `BOT_STATUS_MODE`                                        | `BOT_STATUS_MODE` is `static`, `track`, or `count`.                                                       |
+| Search    | `SEARCH_ENGINE`, `PREFIX_SEARCH_ENGINE`                                                                     | Slash commands use the guild `searchtype` or `SEARCH_ENGINE`; prefix commands use `PREFIX_SEARCH_ENGINE`. |
+| Limits    | `MAX_QUEUE_SIZE`, `MAX_PLAYLIST_SIZE`                                                                       | Per-guild limits can also be set with `/settings`.                                                        |
+| Autoplay  | `AUTOPLAY_CHART`, `AUTOPLAY_SEEDS`, `AUTOPLAY_SEED`                                                         | Chart, curated seeds, then a final fallback seed.                                                         |
+| Lavalink  | `LAVALINK_URL`, `LAVALINK_AUTH`, `LAVALINK_SECURE`, `LAVALINK_FALLBACKS`                                    | `LAVALINK_FALLBACKS` is a JSON array of standby nodes.                                                    |
+| Sessions  | `SESSION_RESTORE_AGE`, `SESSION_EMPTY_WAIT`                                                                 | Restore a saved queue for up to six hours by default.                                                     |
+| Messages  | `COMMAND_DELETE_AFTER`, `SETUP_CLEANUP_INTERVAL`                                                            | Set either to `0` to disable that timer.                                                                  |
+| Storage   | `DATABASE_URL`, `STATS_RETENTION_DAYS`, `STATS_INACTIVE_DAYS`, `STATS_PRUNE_INTERVAL_HOURS`                 | SQLite defaults to `prisma/bootstrapdj.db`; WAL mode is enabled at startup.                               |
+| Dashboard | `DASHBOARD_PORT`, `DASHBOARD_HOST`, `DASHBOARD_PUBLIC_URL`, `DASHBOARD_OAUTH_*`, `DASHBOARD_SESSION_SECRET` | `DASHBOARD_PORT=0` disables the dashboard.                                                                |
+| Multi-bot | `BOTS_FILE`, `BOT_NAME`, `BOT_ID`, `BOT_PRIORITY`                                                           | Optional local child-process setup; see below.                                                            |
+
+### Slash replies and ephemeral mode
+
+Slash replies are private by default. An admin or owner can change the guild
+setting with:
+
+```text
+/settings ephemeral false
 ```
 
-2. change the directory to BootstrapDJ
+With `false`, slash successes, gate refusals, defers, and errors are normal
+public messages. Commands that explicitly publish output, such as `/queue` and
+`/nowplaying`, remain public either way. Prefix replies are always normal
+messages. `deleteafter` still controls auto-deletion when a reply is public.
 
-```bash
-cd BootstrapDJ
+## Commands
+
+BootstrapDJ exposes **71 top-level slash commands**. Many commands also work with
+the prefix, and some advanced commands are prefix-only. Run `/utility commands`
+or `!utility commands` to see the live command status, prefix, and disabled
+commands for the current guild.
+
+| Category      | Examples                                                                                                                                                                                                                                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Playback      | `/play`, `/playnext`, `/playrecent`, `/playselect`, `/nowplaying`, `/queue`, `/pause`, `/resume`, `/skip`, `/skipto`, `/previous`, `/replay`, `/seek`, `/backward`, `/forward`, `/stop`, `/join`, `/leave`, `/volume`, `/loop`, `/shuffle`, `/shufflerepeat`, `/voteskip`, `/sessionstats`, `/playleave`, `/radio`, `/fairplay` |
+| Queue editing | `/clearqueue`, `/remove`, `/removelast`, `/removeduplicates`, `/removekeyword`, `/removeuser`, `/massremove`, `/massmove`, `/move`, `/swap`, `/sort`, `/reverse`, `/selectrandom`, `/recentlyplayed`, `/requested`, `/removeabsent`                                                                                             |
+| Discovery     | `/artist`, `/album`, `/song`, `/top`, `/playlistsearch`, `/lyrics`, `/grab`, `/guess`                                                                                                                                                                                                                                           |
+| Filters       | `/filter` and `/filters`, including `8d`, `bassboost`, `nightcore`, `pitch`, `rate`, `speed`, `rotation`, `tremolo`, `vibrato`, and `reset`                                                                                                                                                                                     |
+| Collections   | `/collection` with list, create, delete, view, add, remove, load, save, rename, copy, merge, clear, share, import, unshare, and shares actions                                                                                                                                                                                  |
+| Settings      | `/settings`, `/setup`, `/247`, `/prefix`, `/alias`, `/mappings`, `/permissions`, `/dj`, `/listen`; `selfprefix` is prefix-only                                                                                                                                                                                                  |
+| Information   | `/help`, `/info`, `/invite`, `/ping`, `/stats`, `/leaderboard`, `/profile`, `/lavalink`, `/utility`                                                                                                                                                                                                                             |
+| Utility pages | `/utility overview`, `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`, `commands`, `dashboard`                                                                                                                                                                                                |
+
+`/utility premium` is an informational page: no feature in this project is gated
+behind a paid tier.
+
+## Dashboard
+
+Start the dashboard by setting a port:
+
+```dotenv
+DASHBOARD_PORT="8795"
+DASHBOARD_HOST="127.0.0.1"
+DASHBOARD_PUBLIC_URL="https://dj.example.com/"
 ```
 
-3. Install the required packages:
+Open `http://127.0.0.1:8795/` locally, or put it behind an HTTPS reverse proxy.
+The recommended login method is Discord OAuth:
 
-```bash
-npm i
+```dotenv
+DASHBOARD_OAUTH_CLIENT_ID="your-application-id"
+DASHBOARD_OAUTH_CLIENT_SECRET="your-oauth-secret"
+DASHBOARD_OAUTH_REDIRECT_URI="https://dj.example.com/auth/callback"
+DASHBOARD_SESSION_SECRET="a-long-random-secret"
+DASHBOARD_OAUTH_GUILD_ID="your-server-id"
 ```
 
-4. Set up your environment variables:
+Only the owner or members with **Manage Server** in that guild can sign in. The
+session is an HMAC-signed, HTTP-only cookie scoped to that guild and expires
+after 24 hours. Clear-statistics is restricted to the server owner. Add the
+exact redirect URI to the Discord Developer Portal before starting the bot.
 
-Create a `.env` file in the root directory of your project with the following variables:
-or you can use the [.env.example](https://raw.githubusercontent.com/zebz213/BootstrapDJ/main/.env.example) file
+See [docs/DASHBOARD_OAUTH.md](docs/DASHBOARD_OAUTH.md) for the full OAuth setup,
+reverse-proxy notes, and local token-mode fallback.
+
+## Session restore and multi-bot operation
+
+BootstrapDJ saves queues so they can be restored after a restart when
+`SESSION_RESTORE_AGE` is greater than zero. Only the priority-0 bot restores
+sessions and runs retention jobs.
+
+For local multi-bot operation, provide a mode-600 JSON file through `BOTS_FILE`
+with one entry per bot. The first active bot in the configured order handles
+voice commands; a durable `SessionLease` transfers ownership if the current
+owner stops heartbeating. This is optional — a single bot needs only the normal
+environment variables.
+
+## Storage and retention
+
+The default SQLite database is `prisma/bootstrapdj.db`. BootstrapDJ enables WAL
+mode at startup and applies the retention windows in `.env.example`:
+
+- daily statistics are kept for `STATS_RETENTION_DAYS`
+- inactive track and listener rows are removed after `STATS_INACTIVE_DAYS`,
+  except each guild's top 100 rows
+- expired session leases are pruned
+
+If you back up a live WAL database, include the `-wal` and `-shm` files or run
+`PRAGMA wal_checkpoint(TRUNCATE);` first. See [docs/STORAGE.md](docs/STORAGE.md)
+for details.
+
+## Development
 
 ```bash
-TOKEN="." # Your bot token
-PREFIX= "!" # Your prefix
-OWNER_IDS=["859640640640640640","859640640640640640"] # Your discord id, you can add multiple ids
-GUILD_ID= "859640640640640640" # Your server Id if you want to use the for single server
-PRODUCTION="true" # true for production
-SEARCH_ENGINE= "ytsearch" # ytsearch, scsearch or ytmsearch
-PREFIX_SEARCH_ENGINE="ytsearch" # Prefix commands default here; slash commands use SEARCH_ENGINE/searchtype
-MAX_PLAYLIST_SIZE= "100" # Max playlist size
-MAX_QUEUE_SIZE= "100" # Max queue size
-COMMAND_DELETE_AFTER= "10" # Seconds before a command reply is deleted (0 disables)
-SETUP_CLEANUP_INTERVAL= "30" # Seconds between song-request channel sweeps (0 disables)
-AUTOPLAY_SEED= "top hits" # Search term autoplay starts from when nothing has played yet
-SESSION_RESTORE_AGE= "21600" # Seconds a saved queue survives a restart (0 disables)
-SESSION_EMPTY_WAIT= "30" # Seconds to wait for someone to join the VC before discarding a restored queue
-STATS_RETENTION_DAYS="90" # Days of daily stats history kept for the dashboard
-STATS_INACTIVE_DAYS="180" # Remove inactive track/listener rows; each guild keeps its top 100
-STATS_PRUNE_INTERVAL_HOURS="24" # Retention job interval on the priority-0 bot (0 disables)
-BOT_STATUS= "online" # Your bot status
-BOT_ACTIVITY= "Wavemusic" # Your bot activity
-LAVALINK_URL="localhost:2333" # Your lavalink url
-LAVALINK_AUTH="youshallnotpass" # Your lavalink password
-LAVALINK_NAME="Bootstrap Node" # Your lavalink name
-LAVALINK_SECURE= "true" # true for secure lavalink
-BOT_STATUS_MODE="static" # static, track (main guild song), or count (active servers)
-BOT_ACTIVITY_TYPE=0 # Activity type is a number from 0 to 5 see more here https://discord.com/developers/docs/topics/gateway-events#activity-object-activity-types
-
+npm run build       # compile TypeScript
+npm test            # build, then run the Node test suite
+npm run lint        # ESLint
+npm run format      # Prettier check
 ```
 
-5. Run the bot:
+The test suite covers the command gate, playback request handling, prefix
+routing, session restore, voice teardown, retention/WAL boundaries, and dashboard
+command surfaces. Current test count is **134**.
 
-```bash
-npm start
+## Project layout
+
+```text
+src/
+  commands/       slash and prefix commands grouped by area
+  dashboard/      local web dashboard and OAuth server
+  database/       Prisma data access and retention
+  events/         Discord and player event handlers
+  structures/     client, dispatcher, queue, and command framework
+  utils/          gate, search, session, setup, and response helpers
+prisma/           schema and default SQLite database
+docs/             dashboard, storage, and parity documentation
+tests/            Node test suite
 ```
 
-6. Invite the bot to your server:
+## Security notes
 
-Generate an invite link for your bot and invite it to your server using the Discord Developer Portal or using permissions calculator: <https://discordapi.com/permissions.html>
+- Keep `.env` out of Git and rotate any token that has been exposed.
+- Keep the dashboard on loopback unless it is behind an HTTPS reverse proxy with
+  OAuth enabled.
+- The dashboard does not accept a token in the URL query string. Local token mode
+  uses an `X-Dashboard-Token` header only.
+- The optional voice listener discards audio from opted-out members before
+  decoding or transcription.
 
-## 🔗 Useful Links
+## License and credits
 
--   ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white) [Node.js](https://nodejs.org/en/download/)
--   ![Discord.js](https://img.shields.io/badge/Discord.js-7289DA?style=for-the-badge&logo=discord&logoColor=white) [Discord.js](https://discord.js.org/#/)
--   ![Lavalink](https://img.shields.io/badge/Lavalink-7289DA?style=for-the-badge&logo=discord&logoColor=white) [Lavalink](https://github.com/lavalink-devs/Lavalink)
+BootstrapDJ is distributed under the [GPL-3.0 License](LICENSE).
 
-## 📝 Tutorial
+BootstrapDJ is a [BootstrapBoys](https://github.com/zebz213) project. It is based
+on the LavaMusic project and uses [Discord.js](https://discord.js.org/),
+[Shoukaku](https://github.com/shipgirlproject/Shoukaku), and
+[Lavalink](https://github.com/lavalink-devs/Lavalink).
 
-A Tutorial has been uploaded on YouTube, Watch it by clicking [here](https://youtu.be/x5lQD2rguz0)
-
-## 📜 Contributing
-
-Thank you for your interest in contributing to BootstrapDJ! Here are some guidelines to follow when contributing:
-
-1. Fork the repository and create a new branch for your feature or bug fix.
-2. Write clean and concise code that follows the established coding style.
-3. Create detailed and thorough documentation for any new features or changes.
-4. Write and run tests for your code.
-5. Submit a pull request with your changes.
-
-Your contribution will be reviewed by the project maintainers, and any necessary feedback or changes will be discussed with you. We appreciate your help in making BootstrapDJ better!
-
-## 🔐 License
-
-Distributed under the GPL-3.0 license. See ![LICENSE](https://img.shields.io/github/license/zebz213/BootstrapDJ?style=social) for more information.
-
-## 👥 Contributors
-
-Thanks goes to these wonderful people :
-
-<a href="https://github.com/zebz213/BootstrapDJ/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=zebz213/BootstrapDJ" />
-</a>
-
-[version-shield]: https://img.shields.io/github/package-json/v/zebz213/BootstrapDJ?style=for-the-badge
-[contributors-shield]: https://img.shields.io/github/contributors/zebz213/BootstrapDJ.svg?style=for-the-badge
-[contributors-url]: https://github.com/zebz213/BootstrapDJ/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/zebz213/BootstrapDJ.svg?style=for-the-badge
-[forks-url]: https://github.com/zebz213/BootstrapDJ/network/members
-[stars-shield]: https://img.shields.io/github/stars/zebz213/BootstrapDJ.svg?style=for-the-badge
-[stars-url]: https://github.com/zebz213/BootstrapDJ/stargazers
-[issues-shield]: https://img.shields.io/github/issues/zebz213/BootstrapDJ.svg?style=for-the-badge
-[issues-url]: https://github.com/zebz213/BootstrapDJ/issues
-[license-shield]: https://img.shields.io/github/license/zebz213/BootstrapDJ.svg?style=for-the-badge
-[license-url]: https://github.com/zebz213/BootstrapDJ/blob/master/LICENSE
-[support-server]: https://discord.gg/PMpJnJaHmy
-[support-shield]: https://img.shields.io/discord/942117923001098260.svg?style=for-the-badge&logo=discord&colorB=7289DA
+Thanks to the upstream contributors and to everyone who has tested BootstrapDJ.
