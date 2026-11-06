@@ -32,6 +32,7 @@ if (bots.length) {
                 BOT_ID: bot.clientId,
                 BOT_PRIORITY: String(bot.priority),
                 DASHBOARD_PORT: index === 0 ? process.env.DASHBOARD_PORT || '0' : '0',
+                VOICE_BRIDGE_PORT: String(config.voiceBridgePort + index * 5),
             },
             stdio: 'inherit',
         });
