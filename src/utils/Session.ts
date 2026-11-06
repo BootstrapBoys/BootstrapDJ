@@ -170,6 +170,11 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
         // expired lease means the owner is gone, so any standby may race for it
         // and the database transaction picks exactly one winner.
         if (!lease) {
+            // Only the priority-0 child may adopt an unleased row. During boot
+            // it can still be waiting for Lavalink while lower-priority
+            // watchdogs start; those children must not steal the saved session
+            // before the first restore claims it.
+            if (client.config.botPriority > 0) continue;
             const preferred = await client.preferredBotStatus(session.guildId);
             if (!preferred.allowed) continue;
         }
