@@ -24,7 +24,6 @@ test('nowplaying replies with the compact control buttons', async () => {
         },
     };
     const client = {
-        config: { nowplayingControls: 'buttons' },
         queue: new Map([['guild', player]]),
         embed: () => new EmbedBuilder(),
         color: { main: 0x2f3136 },
@@ -46,21 +45,6 @@ test('nowplaying replies with the compact control buttons', async () => {
     assert.equal(player.registered.duration, 120_000);
     assert.deepEqual(
         sent.components[0].components.map(component => component.data.custom_id),
-        ['PREV_BUT', 'PAUSE_BUT', 'SKIP_BUT']
-    );
-
-    const menuClient = { ...client, config: { nowplayingControls: 'menu' } };
-    let menuSent;
-    await new Nowplaying(menuClient).run(menuClient, {
-        ...ctx,
-        sendMessage: async payload => {
-            menuSent = payload;
-            return { id: 'menu-message' };
-        },
-    });
-    assert.equal(menuSent.components[0].components[0].data.custom_id, 'NOWPLAYING_MENU');
-    assert.deepEqual(
-        menuSent.components[0].components[0].options.map(option => option.data.value),
         ['PREV_BUT', 'PAUSE_BUT', 'SKIP_BUT']
     );
 });

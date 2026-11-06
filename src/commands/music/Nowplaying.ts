@@ -1,5 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { getNowPlayingControls } from '../../utils/Buttons.js';
+import { getNowPlayingButtons } from '../../utils/Buttons.js';
 
 export default class Nowplaying extends Command {
     constructor(client: BootstrapClient) {
@@ -61,7 +61,7 @@ export default class Nowplaying extends Command {
             .setDescription(
                 `[${track.info.title}](${track.info.uri}) · Requested by ${track.info.requester}\n\n\`${bar}\` ${timing}`
             );
-        const message = await ctx.sendMessage({ embeds: [embed1], components: getNowPlayingControls(client.config.nowplayingControls) });
+        const message = await ctx.sendMessage({ embeds: [embed1], components: getNowPlayingButtons() });
         player.registerNowPlayingMessage(message, track.info.isStream ? null : track.info.length);
         return message;
     }
