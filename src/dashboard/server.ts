@@ -1,5 +1,6 @@
 import type Dispatcher from '../structures/Dispatcher.js';
 import type { BootstrapClient } from '../structures/index.js';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import http from 'node:http';
 
 import config from '../config.js';
@@ -370,11 +371,151 @@ function progressFrame(){drawProgress();requestAnimationFrame(progressFrame)}req
 </script>
 </body></html>`;
 
+type DashboardSession = { id: string; name: string; avatar: string | null; exp: number };
+
+function oauthEnabled(): boolean {
+    return Boolean(
+        config.dashboardOAuthClientId &&
+            config.dashboardOAuthClientSecret &&
+            config.dashboardOAuthRedirectUri &&
+            config.dashboardSessionSecret &&
+            config.dashboardOAuthGuildId
+    );
+}
+
+function cookies(req: http.IncomingMessage): Record<string, string> {
+    const result: Record<string, string> = {};
+    const raw = req.headers.cookie ?? '';
+    for (const part of raw.split(';')) {
+        const index = part.indexOf('=');
+        if (index < 0) continue;
+        const key = part.slice(0, index).trim();
+        try {
+            result[key] = decodeURIComponent(part.slice(index + 1).trim());
+        } catch {
+            result[key] = part.slice(index + 1).trim();
+        }
+    }
+    return result;
+}
+
+function appendCookie(res: http.ServerResponse, cookie: string): void {
+    const current = res.getHeader('set-cookie');
+    if (Array.isArray(current)) res.setHeader('set-cookie', [...current, cookie]);
+    else if (typeof current === 'string') res.setHeader('set-cookie', [current, cookie]);
+    else res.setHeader('set-cookie', cookie);
+}
+
+function setCookie(res: http.ServerResponse, name: string, value: string, maxAge: number): void {
+    const secure = config.dashboardOAuthRedirectUri.startsWith('https://') ? '; Secure' : '';
+    appendCookie(res, `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`);
+}
+
+function sessionSignature(payload: string): string {
+    return createHmac('sha256', config.dashboardSessionSecret).update(payload).digest('base64url');
+}
+
+function createSession(user: { id: string; username: string; avatar: string | null }): string {
+    const payload = Buffer.from(
+        JSON.stringify({ id: user.id, name: user.username, avatar: user.avatar, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })
+    ).toString('base64url');
+    return `${payload}.${sessionSignature(payload)}`;
+}
+
+function readSession(req: http.IncomingMessage): DashboardSession | null {
+    if (!config.dashboardSessionSecret) return null;
+    const raw = cookies(req)['bdj_session'];
+    if (!raw) return null;
+    const [payload, signature] = raw.split('.');
+    if (!payload || !signature) return null;
+    const expected = sessionSignature(payload);
+    if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+    try {
+        const session = JSON.parse(Buffer.from(payload, 'base64url').toString()) as DashboardSession;
+        if (!session.id || !session.exp || session.exp < Date.now()) return null;
+        return session;
+    } catch {
+        return null;
+    }
+}
+
 function authorized(req: http.IncomingMessage, url: URL): boolean {
+    if (oauthEnabled()) return Boolean(readSession(req));
     if (!config.dashboardToken) return true;
     const header = req.headers['x-dashboard-token'];
     const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, '');
     return header === config.dashboardToken || bearer === config.dashboardToken || url.searchParams.get('token') === config.dashboardToken;
+}
+
+function loginPage(): string {
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BootstrapDJ — Login</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#090d14;color:#e8eef7;font:15px system-ui,sans-serif}.box{width:min(360px,90vw);background:#121925;border:1px solid #263346;border-radius:16px;padding:28px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4)}h1{font-size:20px;margin:0 0 8px}p{color:#8fa0b8;font-size:13px;line-height:1.5;margin:0 0 22px}a{display:block;background:#5865f2;color:#fff;text-decoration:none;padding:12px;border-radius:9px;font-weight:700}a:hover{background:#4752c4}.small{color:#6b7c93;font-size:11px;margin-top:18px}</style></head><body><div class="box"><h1>BootstrapDJ Dashboard</h1><p>Sign in with Discord. Only server admins can access this dashboard.</p><a href="/auth/discord">Continue with Discord</a><div class="small">Server administrators only</div></div></body></html>`;
+}
+
+function oauthRedirectUrl(state: string): string {
+    const params = new URLSearchParams({
+        client_id: config.dashboardOAuthClientId,
+        redirect_uri: config.dashboardOAuthRedirectUri,
+        response_type: 'code',
+        scope: 'identify guilds',
+        state,
+    });
+    return `https://discord.com/oauth2/authorize?${params.toString()}`;
+}
+
+async function handleOAuthCallback(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<void> {
+    const code = url.searchParams.get('code') ?? '';
+    const state = url.searchParams.get('state') ?? '';
+    const expected = cookies(req)['bdj_oauth_state'] ?? '';
+    setCookie(res, 'bdj_oauth_state', '', 0);
+    if (!code || !state || !expected || state !== expected) {
+        res.writeHead(400, { 'content-type': 'text/plain' });
+        res.end('invalid oauth state');
+        return;
+    }
+    const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id: config.dashboardOAuthClientId,
+            client_secret: config.dashboardOAuthClientSecret,
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: config.dashboardOAuthRedirectUri,
+        }),
+    });
+    if (!tokenResponse.ok) {
+        res.writeHead(401, { 'content-type': 'text/plain' });
+        res.end('discord token exchange failed');
+        return;
+    }
+    const token = (await tokenResponse.json()) as { access_token?: string };
+    if (!token.access_token) {
+        res.writeHead(401, { 'content-type': 'text/plain' });
+        res.end('discord token missing');
+        return;
+    }
+    const headers = { Authorization: `Bearer ${token.access_token}` };
+    const [userResponse, guildsResponse] = await Promise.all([
+        fetch('https://discord.com/api/users/@me', { headers }),
+        fetch('https://discord.com/api/users/@me/guilds', { headers }),
+    ]);
+    if (!userResponse.ok || !guildsResponse.ok) {
+        res.writeHead(401, { 'content-type': 'text/plain' });
+        res.end('discord profile lookup failed');
+        return;
+    }
+    const user = (await userResponse.json()) as { id: string; username: string; avatar: string | null };
+    const guilds = (await guildsResponse.json()) as Array<{ id: string; owner?: boolean; permissions?: string }>;
+    const guild = guilds.find(entry => entry.id === config.dashboardOAuthGuildId);
+    const permissions = Number(guild?.permissions ?? 0);
+    if (!guild || (!guild.owner && (permissions & 0x20) !== 0x20)) {
+        res.writeHead(403, { 'content-type': 'text/plain' });
+        res.end('server administrator permission required');
+        return;
+    }
+    setCookie(res, 'bdj_session', createSession(user), 7 * 24 * 60 * 60);
+    res.writeHead(302, { location: '/' });
+    res.end();
 }
 
 function readBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
@@ -554,14 +695,36 @@ export function startDashboard(client: BootstrapClient): void {
     if (!config.dashboardPort) return;
     const host = config.dashboardHost;
     const loopback = host === '127.0.0.1' || host === 'localhost' || host === '::1';
-    if (!loopback && !config.dashboardToken) {
-        client.logger.error('[dashboard] refusing non-loopback bind without DASHBOARD_TOKEN');
+    if (!loopback && !config.dashboardToken && !oauthEnabled()) {
+        client.logger.error('[dashboard] refusing non-loopback bind without DASHBOARD_TOKEN or Discord OAuth');
         return;
     }
     const server = http.createServer(async (req, res) => {
         const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
         try {
+            if (req.method === 'GET' && url.pathname === '/auth/discord' && oauthEnabled()) {
+                const state = randomBytes(24).toString('hex');
+                setCookie(res, 'bdj_oauth_state', state, 600);
+                res.writeHead(302, { location: oauthRedirectUrl(state) });
+                res.end();
+                return;
+            }
+            if (req.method === 'GET' && url.pathname === '/auth/callback' && oauthEnabled()) {
+                await handleOAuthCallback(req, res, url);
+                return;
+            }
+            if (req.method === 'GET' && url.pathname === '/auth/logout') {
+                setCookie(res, 'bdj_session', '', 0);
+                res.writeHead(302, { location: '/' });
+                res.end();
+                return;
+            }
             if (!authorized(req, url)) {
+                if (oauthEnabled() && req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
+                    res.writeHead(401, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+                    res.end(loginPage());
+                    return;
+                }
                 res.writeHead(401, { 'content-type': 'text/plain' });
                 res.end('unauthorized');
                 return;
