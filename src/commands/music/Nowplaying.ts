@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { getButtons } from '../../utils/Buttons.js';
 
 export default class Nowplaying extends Command {
     constructor(client: BootstrapClient) {
@@ -65,7 +66,7 @@ export default class Nowplaying extends Command {
                           duration
                       )}\``,
             });
-        return await ctx.sendMessage({ embeds: [embed1] });
+        return await ctx.sendMessage({ embeds: [embed1], components: getButtons() });
     }
 }
 

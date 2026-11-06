@@ -29,6 +29,20 @@ import { Utils } from '../utils/Utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/** Shared control IDs used by the setup mock and /nowplaying responses. */
+const CONTROL_BUTTON_IDS = new Set([
+    'LOW_VOL_BUT',
+    'HIGH_VOL_BUT',
+    'PAUSE_BUT',
+    'PREV_BUT',
+    'SKIP_BUT',
+    'STOP_BUT',
+    'LOOP_BUT',
+    'SHUFFLE_BUT',
+    'REWIND_BUT',
+    'FORWARD_BUT',
+]);
+
 
 export default class BootstrapClient extends Client {
     public commands: Collection<string, Command> = new Collection();
@@ -83,12 +97,9 @@ export default class BootstrapClient extends Client {
         startDashboard(this);
         this.on(Events.InteractionCreate, async (interaction: Interaction): Promise<void> => {
             if (!interaction.isButton() || !interaction.guildId) return;
-            const setup = await this.db.getSetup(interaction.guildId);
-            if (
-                setup &&
-                interaction.channelId === setup.textId &&
-                interaction.message?.id === setup.messageId
-            ) {
+            if (interaction.message?.author?.id !== this.user?.id) return;
+            // The setup mock and /nowplaying both use the same control IDs.
+            if (CONTROL_BUTTON_IDS.has(interaction.customId)) {
                 this.emit('setupButtons', interaction);
             }
         });

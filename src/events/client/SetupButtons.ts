@@ -46,15 +46,8 @@ export default class SetupButtons extends Event {
                 `There is no music playing in this server.`,
                 this.client.color.red
             );
-        const data = await this.client.db.getSetup(interaction.guildId);
-        if (!data) return await buttonReply(interaction, 'The song-request channel is not set up.', this.client.color.red);
         const { title, uri, length } = player.current.info;
-        let message;
-        try {
-            message = await interaction.channel.messages.fetch(data.messageId, { cache: true });
-        } catch {
-            /* empty */
-        }
+        const message = interaction.message;
         const icon = player
             ? player.current.info.artworkUrl
             : this.client.user?.displayAvatarURL({ extension: 'png' });
