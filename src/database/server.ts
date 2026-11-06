@@ -436,6 +436,19 @@ export default class ServerData {
         });
     }
 
+    public async clearStats(guildId: string): Promise<number> {
+        const results = await this.prisma.$transaction([
+            this.prisma.statsTrack.deleteMany({ where: { guildId } }),
+            this.prisma.statsListener.deleteMany({ where: { guildId } }),
+            this.prisma.statsCommand.deleteMany({ where: { guildId } }),
+            this.prisma.statsDaily.deleteMany({ where: { guildId } }),
+            this.prisma.statsHour.deleteMany({ where: { guildId } }),
+            this.prisma.statsWeekday.deleteMany({ where: { guildId } }),
+            this.prisma.gameScore.deleteMany({ where: { guildId } }),
+        ]);
+        return results.reduce((sum, result) => sum + result.count, 0);
+    }
+
     public async getStats(guildId: string, days: number = 7): Promise<Record<string, unknown>> {
         const dayKeys: string[] = [];
         const now = new Date();

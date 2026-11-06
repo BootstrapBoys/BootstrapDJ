@@ -256,7 +256,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </div>
 <div id="stats-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="stats-title">
   <div class="modal-card stats-card">
-    <div class="modal-head"><h2 id="stats-title">Statistics</h2><div class="stats-toolbar"><select id="stats-range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select><button class="icon-btn" id="stats-close" aria-label="Close statistics">✕</button></div></div>
+    <div class="modal-head"><h2 id="stats-title">Statistics</h2><div class="stats-toolbar"><select id="stats-range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select><button class="icon-btn" id="stats-clear" title="Clear statistics">Clear stats</button><button class="icon-btn" id="stats-close" aria-label="Close statistics">✕</button></div></div>
     <div id="stats-content"></div>
   </div>
 </div>
@@ -355,6 +355,7 @@ el.innerHTML='<div class="stat-cards"><div class="stat-card"><div class="stat-la
 '<div class="stats-grid two"><div class="stats-block"><h3>Listening time by hour</h3>'+bars(d.hours.map(x=>x.seconds),d.hours.map(x=>String(x.hour).padStart(2,'0')+':00'),true)+'</div><div class="stats-block"><h3>Listening time by weekday</h3>'+bars(d.weekdays.map(x=>x.seconds),['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],true)+'</div></div>'+
 '<div class="stats-grid two"><div class="stats-block"><h3>Most time played</h3>'+statList(d.topTracks.map(item=>{const label=escapeHtml(item.title);const linked=item.uri&&/^https?:/i.test(item.uri)?'<a href="'+escapeHtml(item.uri)+'" target="_blank" rel="noopener">'+label+'</a>':label;const icon=item.icon?'<img class="service-icon" src="'+escapeHtml(item.icon)+'" alt="">':'';return '<span class="stat-main">'+icon+linked+'<br><span class="stat-sub">'+escapeHtml(item.author)+' · '+fmtSeconds(item.seconds)+'</span></span>'}))+'</div><div class="stats-block"><h3>Most time listened</h3>'+statList(d.topListeners.map(item=>'<img class="stat-avatar" src="'+escapeHtml(item.avatar||'')+'" alt="">'+'<span class="stat-main">'+escapeHtml(item.name||item.userId)+'<br><span class="stat-sub">'+fmtSeconds(item.seconds)+'</span></span>'))+'</div></div>'+
 '<div class="stats-block"><h3>Top commands</h3>'+statList(d.topCommands.map(item=>'<span class="stat-main">'+escapeHtml(item.command)+'<br><span class="stat-sub">'+item.count+' uses</span></span>'))+'</div>'}
+$('#stats-clear').onclick=async()=>{if(!state.guildId)return;if(!confirm('Clear all statistics and game scores for this server? This cannot be undone.'))return;try{await api('/api/stats/clear',{method:'POST',body:JSON.stringify({guildId:state.guildId})});toast('Statistics cleared');await loadStats()}catch(e){toast(e.message,true)}};
 async function loadStats(){if(!state.guildId)return;const content=$('#stats-content');content.innerHTML='<div class="small">Loading statistics…</div>';try{const days=$('#stats-range').value;const d=await api('/api/stats?guildId='+encodeURIComponent(state.guildId)+'&days='+days);renderStats(d)}catch(e){content.innerHTML='<div class="error">'+escapeHtml(e.message)+'</div>'}}
 function openStats(){statsModal.classList.add('open');loadStats()}
 function closeStats(){statsModal.classList.remove('open')}
@@ -630,6 +631,14 @@ export function startDashboard(client: BootstrapClient): void {
                 }
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify(data));
+                return;
+            }
+            if (req.method === 'POST' && url.pathname === '/api/stats/clear') {
+                const body = await readBody(req);
+                const guildId = bodyText(body.guildId);
+                const removed = await client.db.clearStats(guildId);
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+                res.end(JSON.stringify({ ok: true, removed }));
                 return;
             }
             if (req.method === 'POST' && url.pathname === '/api/player') {
