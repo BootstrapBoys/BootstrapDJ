@@ -31,6 +31,15 @@ export default class Rotation extends Command {
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         if (!ctx.guild) return await ctx.sendMessage({ content: 'This command only works in a server.' });
         const player = client.queue.get(ctx.guild.id);
+        if (!player)
+            return await ctx.sendMessage({
+                embeds: [
+                    this.client
+                        .embed()
+                        .setColor(this.client.color.red)
+                        .setDescription('There is no music playing in this server.'),
+                ],
+            });
 
         if (player.filters.includes('rotation')) {
             player.player.setRotation();

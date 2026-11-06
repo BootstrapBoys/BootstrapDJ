@@ -218,34 +218,35 @@ export default class BootstrapClient extends Client {
 
     private async registerCommand(dir: string, file: string, cacheBust: boolean = false): Promise<void> {
         const cmd = (await import(`../commands/${dir}/${file}${cacheBust ? `?update=${Date.now()}` : ''}`)).default;
-        const command = new cmd(this);
+        const command: Command = new cmd(this);
         command.category = dir;
         this.commands.set(command.name, command);
         if (command.aliases.length !== 0) {
-            command.aliases.forEach((alias: any) => {
+            command.aliases.forEach(alias => {
                 this.aliases.set(alias, command.name);
             });
         }
         if (!command.slashCommand) return;
-        const data: any = {
+        const data: RESTPostAPIChatInputApplicationCommandsJSONBody = {
             name: command.name,
-            description: command.description.content,
+            description: command.description.content ?? command.name,
             type: ApplicationCommandType.ChatInput,
-            options: command.options ? command.options : null,
-            name_localizations: command.nameLocalizations ? command.nameLocalizations : null,
-            description_localizations: command.descriptionLocalizations
-                ? command.descriptionLocalizations
-                : null,
-            default_member_permissions:
-                command.permissions.user.length > 0 ? command.permissions.user : null,
+            ...(command.options.length
+                ? { options: command.options as unknown as RESTPostAPIChatInputApplicationCommandsJSONBody['options'] }
+                : {}),
+            ...(command.nameLocalizations
+                ? { name_localizations: command.nameLocalizations }
+                : {}),
+            ...(command.descriptionLocalizations
+                ? { description_localizations: command.descriptionLocalizations }
+                : {}),
         };
         if (command.permissions.user.length > 0) {
             const permissionValue = PermissionsBitField.resolve(command.permissions.user);
             data.default_member_permissions =
                 typeof permissionValue === 'bigint' ? permissionValue.toString() : permissionValue;
         }
-        // Round-trip through JSON to drop undefined values Discord rejects.
-        this.body.push(JSON.parse(JSON.stringify(data)));
+        this.body.push(data);
     }
 
     /** Reload command modules without restarting the process. Slash metadata is

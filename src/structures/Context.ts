@@ -1,5 +1,6 @@
 import {
     APIInteractionGuildMember,
+    BaseMessageOptions,
     ChatInputCommandInteraction,
     CommandInteraction,
     DMChannel,
@@ -7,6 +8,8 @@ import {
     GuildMember,
     GuildMemberResolvable,
     GuildTextBasedChannel,
+    InteractionReplyOptions,
+    InteractionResponse,
     Message,
     PartialDMChannel,
     PartialGroupDMChannel,
@@ -36,14 +39,18 @@ export default class Context {
     public createdAt: Date;
     public createdTimestamp: number;
     public member: GuildMemberResolvable | GuildMember | APIInteractionGuildMember | null;
-    public args: any[] = [];
-    public msg: any;
+    public args: string[] = [];
+    public msg: Message | null = null;
     /** Slash command feedback is private unless the command opts out. */
     public ephemeral: boolean;
     /** Per-guild auto-delete override in seconds; null uses config. */
     public deleteAfter: number | null = null;
     private deleteTimer: NodeJS.Timeout | null = null;
-    constructor(ctx: ChatInputCommandInteraction | Message, args: any[], ephemeral: boolean = true) {
+    constructor(
+        ctx: ChatInputCommandInteraction | Message,
+        args: readonly unknown[],
+        ephemeral: boolean = true
+    ) {
         this.ctx = ctx;
         this.interaction = this.ctx instanceof ChatInputCommandInteraction ? this.ctx : null;
         this.message = this.ctx instanceof Message ? this.ctx : null;
@@ -78,11 +85,17 @@ export default class Context {
         return this.ctx instanceof ChatInputCommandInteraction;
     }
 
-    public setArgs(args: readonly any[]): void {
+    public setArgs(args: readonly unknown[]): void {
         if (this.isInteraction) {
-            this.args = args.map((arg: { value: any }) => arg.value);
+            this.args = args.map(arg => {
+                const value = (arg as { value?: unknown }).value;
+                if (value === undefined || value === null) return '';
+                if (typeof value === 'string') return value;
+                if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+                return JSON.stringify(value) ?? '';
+            });
         } else {
-            this.args = [...args];
+            this.args = args.map(String);
         }
     }
 
@@ -106,18 +119,28 @@ export default class Context {
         await this.cmd.deferReply({ ephemeral });
     }
 
-    private ephemeralPayload(content: any): any {
+    /** Interaction replies are typed as Message | InteractionResponse; the
+     * latter still needs a fetch before it can be edited or deleted. */
+    private async settle(response: Message | InteractionResponse<boolean>): Promise<Message> {
+        return response instanceof Message ? response : await this.cmd.fetchReply();
+    }
+
+    private ephemeralPayload(content: string | BaseMessageOptions): string | InteractionReplyOptions {
         if (!this.isInteraction || !this.ephemeral) return content;
         if (content && typeof content === 'object' && !Array.isArray(content))
             return { ...content, ephemeral: true };
         return { content: String(content), ephemeral: true };
     }
 
-    public async sendMessage(content: any, deleteAfter?: number): Promise<Message> {
+    public async sendMessage(
+        content: string | BaseMessageOptions,
+        deleteAfter?: number
+    ): Promise<Message> {
         if (this.isInteraction) {
-            this.msg = this.deferred
+            const response = this.deferred
                 ? await this.cmd.editReply(content)
                 : await this.cmd.reply(this.ephemeralPayload(content));
+            this.msg = await this.settle(response);
             this.armDelete(content, 'reply', deleteAfter);
             return this.msg;
         } else {
@@ -133,7 +156,11 @@ export default class Context {
      * the lifetime. Messages carrying components (pickers, paginators) are
      * exempt, and an exempt edit cancels a pending timer.
      */
-    private armDelete(content: any, target: 'reply' | 'message', seconds?: number): void {
+    private armDelete(
+        content: string | BaseMessageOptions,
+        target: 'reply' | 'message',
+        seconds?: number
+    ): void {
         if (this.deleteTimer) {
             clearTimeout(this.deleteTimer);
             this.deleteTimer = null;
@@ -141,36 +168,43 @@ export default class Context {
         const timeout = seconds ?? this.deleteAfter ?? this.client.config.deleteAfter;
         if (!timeout || timeout <= 0) return;
         if (this.isInteraction && this.ephemeral) return;
-        if (content?.components?.length) return;
-        if (content?.ephemeral) return;
+        if (typeof content !== 'string' && content.components?.length) return;
+        if (
+            typeof content !== 'string' &&
+            'ephemeral' in content &&
+            Boolean((content as InteractionReplyOptions).ephemeral)
+        )
+            return;
         const timer = setTimeout(() => {
             const removal =
                 target === 'reply'
                     ? this.cmd.deleteReply()
-                    : Promise.resolve(this.msg).then((msg: Message) => msg?.delete?.());
+                    : this.msg?.delete();
             Promise.resolve(removal).catch(() => {});
         }, timeout * 1000);
         (timer as unknown as { unref?: () => void }).unref?.();
         this.deleteTimer = timer;
     }
-    public async editMessage(content: any): Promise<Message> {
+    public async editMessage(content: string | BaseMessageOptions): Promise<Message> {
         if (this.isInteraction) {
             if (this.msg || this.deferred) {
-                this.msg = await this.cmd.editReply(content);
+                const response = await this.cmd.editReply(content);
+                this.msg = await this.settle(response);
                 this.armDelete(content, 'reply');
             }
+            if (!this.msg) throw new Error('No interaction message to edit');
             return this.msg;
         } else {
-            if (this.msg) {
-                this.msg = await this.msg.edit(content);
-                this.armDelete(content, 'message');
-            }
+            if (!this.msg) throw new Error('No message to edit');
+            this.msg = await this.msg.edit(content);
+            this.armDelete(content, 'message');
             return this.msg;
         }
     }
-    public async sendDeferMessage(content: any): Promise<Message> {
+    public async sendDeferMessage(content: string | BaseMessageOptions): Promise<Message> {
         if (this.isInteraction) {
-            this.msg = await this.cmd.deferReply({ ephemeral: this.ephemeral, fetchReply: true });
+            await this.cmd.deferReply({ ephemeral: this.ephemeral });
+            this.msg = await this.cmd.fetchReply();
             this.armDelete(content, 'reply');
             return this.msg;
         } else {
@@ -179,9 +213,10 @@ export default class Context {
             return this.msg;
         }
     }
-    public async sendFollowUp(content: any): Promise<void> {
+    public async sendFollowUp(content: string | BaseMessageOptions): Promise<void> {
         if (this.isInteraction) {
-            this.msg = await this.cmd.followUp(this.ephemeralPayload(content));
+            const response = await this.cmd.followUp(this.ephemeralPayload(content));
+            this.msg = response instanceof Message ? response : await this.cmd.fetchReply();
             this.armDelete(content, 'message');
         } else {
             this.msg = await this.messageChannel.send(content);

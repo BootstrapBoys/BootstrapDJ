@@ -39,6 +39,15 @@ export default class Skipto extends Command {
         const guild = ctx.guild;
         if (!guild) return;
         const player = client.queue.get(guild.id);
+        if (!player)
+            return await ctx.sendMessage({
+                embeds: [
+                    this.client
+                        .embed()
+                        .setColor(this.client.color.red)
+                        .setDescription('There is no music playing in this server.'),
+                ],
+            });
         const embed = this.client.embed();
         if (!player.queue.length)
             return await ctx.sendMessage({

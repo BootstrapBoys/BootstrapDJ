@@ -34,6 +34,15 @@ export default class Grab extends Command {
         const author = ctx.author;
         if (!guild || !author) return;
         const player = client.queue.get(guild.id);
+        if (!player)
+            return await ctx.sendMessage({
+                embeds: [
+                    this.client
+                        .embed()
+                        .setColor(this.client.color.red)
+                        .setDescription('There is no music playing in this server.'),
+                ],
+            });
         const song = player.current;
         if (!song)
             return await ctx.sendMessage({

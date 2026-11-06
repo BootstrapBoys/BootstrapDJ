@@ -1,4 +1,4 @@
-import { Message, PermissionFlagsBits } from 'discord.js';
+import { Message, MessageReplyOptions, PermissionFlagsBits } from 'discord.js';
 
 import { BootstrapClient, Context, Event } from '../../structures/index.js';
 import { evaluateCommand } from '../../utils/CommandGate.js';
@@ -22,7 +22,7 @@ export default class MessageCreate extends Event {
         // Handler replies (permissions, cooldown, missing args) are sent straight
         // to the channel, so Context never arms them. Give them the same lifetime
         // as command output instead of leaving them behind.
-        const replySafe = async (content: any): Promise<Message> => {
+        const replySafe = async (content: string | MessageReplyOptions): Promise<Message> => {
             const sent = await message.reply(content);
             this.client.utils.scheduleDelete(this.client, sent);
             return sent;

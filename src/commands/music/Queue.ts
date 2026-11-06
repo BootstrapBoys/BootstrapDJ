@@ -35,6 +35,15 @@ export default class Queue extends Command {
         const guild = ctx.guild;
         if (!guild) return;
         const player = client.queue.get(guild.id);
+        if (!player)
+            return await ctx.sendMessage({
+                embeds: [
+                    this.client
+                        .embed()
+                        .setColor(this.client.color.red)
+                        .setDescription('There is no music playing in this server.'),
+                ],
+            });
         const current = player.current;
         if (player.queue.length === 0) {
             if (!current)

@@ -176,6 +176,8 @@ export default class Dispatcher {
     /** Failed final attempts per track, so an unplayable track is skipped. */
     private failedTracks = new Map<string, number>();
     private persistTimer: ReturnType<typeof setInterval> | null = null;
+    /** Settles when the Shoukaku player teardown finishes; rebuilds await it. */
+    private leavePromise: Promise<void> | null = null;
     private pauseTimer: ReturnType<typeof setTimeout> | null = null;
     private idleTimer: ReturnType<typeof setTimeout> | null = null;
     private statsTimer: ReturnType<typeof setInterval> | null = null;
@@ -217,8 +219,9 @@ export default class Dispatcher {
         this.nowPlayingCommandMessages = new Map();
         this.persistTimer = setInterval(() => {
             // A paused player's position cannot change and pause() already wrote
-            // the state, so the periodic write would only duplicate the row.
-            if (!this.paused) void this.persist();
+            // the state. An idle dispatcher has no position or queue to save;
+            // persisting it only rewrites/deletes the same row every 10s.
+            if (!this.paused && (this.current || this.queue.length)) void this.persist();
         }, 10_000);
         this.statsTimer = setInterval(() => void this.sampleListeners(), 60_000);
         (this.persistTimer as unknown as { unref?: () => void }).unref?.();
@@ -552,11 +555,27 @@ export default class Dispatcher {
         this.history = [];
         this.pauseWhenEmpty = false;
         this.paused247 = false;
-        this.client.shoukaku.leaveVoiceChannel(this.guildId);
+        this.leavePromise = (async () => {
+            try {
+                await this.client.shoukaku.leaveVoiceChannel(this.guildId);
+            } catch (error) {
+                this.client.logger.warn(`[player] leave failed for ${this.guildId}: ${error}`);
+            }
+        })();
         this.client.queue.delete(this.guildId);
         this.client.utils.updateStatus(this.client, this.guildId);
         if (this.stopped) return;
         this.client.shoukaku.emitPlayerEvent('playerDestroy', this.player);
+    }
+
+    /**
+     * Destroy and wait for Lavalink to remove the old player. A rebuild that
+     * joins before this settles can have its new player deleted by the old
+     * leave request, leaving the queue populated but silent.
+     */
+    public async destroyAndWait(preserveSession: boolean = false): Promise<void> {
+        this.destroy(preserveSession);
+        await this.leavePromise;
     }
     public setShuffle(): void {
         if (!this.player) return;
@@ -626,7 +645,7 @@ export default class Dispatcher {
         }
     }
 
-    public setLoop(loop: any): void {
+    public setLoop(loop: 'off' | 'repeat' | 'queue'): void {
         this.loop = loop;
         void this.persist();
     }

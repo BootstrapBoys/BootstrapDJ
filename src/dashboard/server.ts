@@ -227,7 +227,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </style>
 </head>
 <body>
-<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings">⚙</button></div></header>
+<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings">⚙</button><button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none">⏻</button></div></header>
 <main>
 <section class="panel">
 <div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span></div>
@@ -263,13 +263,13 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </div>
 <div id="toast"></div>
 <script>
-const state={guildId:null,data:null,viewer:{owner:true,admin:true},queueKey:null};
+const state={guildId:null,data:null,viewer:{owner:true,admin:true},queueKey:null,csrf:''};
 const $=s=>document.querySelector(s);
 function token(){return localStorage.getItem('bootstrapdj-dashboard-token')||''}
-function headers(json){const h={'x-dashboard-token':token()};if(json)h['content-type']='application/json';return h}
+function headers(json,method){const h={'x-dashboard-token':token()};if(json)h['content-type']='application/json';if(method==='POST'&&state.csrf)h['x-dashboard-csrf']=state.csrf;return h}
 function toast(text,isError){const el=$('#toast');el.textContent=text;el.className='show '+(isError?'error':'ok');setTimeout(()=>el.className='',2500)}
-async function api(path,options){const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body)),...(options&&options.headers)}});if(res.status===401){if(document.body.dataset.oauth==='1'){location.href='/auth/discord';throw new Error('Login required')}const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
-async function boot(){const g=await api('/api/guilds');state.viewer=g.viewer||state.viewer;$('#stats-clear').style.display=state.viewer.owner?'':'none';const sel=$('#guild');sel.innerHTML='';for(const guild of g.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!g.guilds.length){$('#status').textContent='No guilds';return}state.guildId=g.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;load()};await load()}
+async function api(path,options){const method=options&&options.method||'GET';const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body),method),...(options&&options.headers)}});if(res.status===401){if(document.body.dataset.oauth==='1'){location.href='/auth/discord';throw new Error('Login required')}const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
+async function boot(){const g=await api('/api/guilds');state.csrf=g.csrf||'';state.viewer=g.viewer||state.viewer;if(document.body.dataset.oauth==='1'){$('#logout-btn').style.display=''}else{$('#logout-btn').style.display='none'}$('#stats-clear').style.display=state.viewer.owner?'':'none';const sel=$('#guild');sel.innerHTML='';for(const guild of g.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!g.guilds.length){$('#status').textContent='No guilds';return}state.guildId=g.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;load()};await load()}
 async function load(){try{state.data=await api('/api/state?guildId='+encodeURIComponent(state.guildId));render();$('#status').textContent='Connected'}catch(e){$('#status').textContent='Error';toast(e.message,true)}}
 const GROUPS=[
 {title:'Playback',keys:['defaultvolume','defaultautoplay','defaultrepeat','defaultshuffle','searchtype','maxqueue','maxuserqueue','voteskip','voteskippercent','autocorrect','volumeautomatic','loudnesstarget']},
@@ -334,6 +334,7 @@ function render(){const d=state.data;renderPlayer(d);
  const wrap=$('#filters');wrap.innerHTML='';for(const f of d.filters){const row=document.createElement('div');row.className='filter';const active=f.active;const label=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.checked=active;cb.onchange=()=>toggleFilter(f.id,cb.checked,row);label.appendChild(cb);const span=document.createElement('span');span.textContent=f.label;label.appendChild(span);row.appendChild(label);if(f.value){const input=document.createElement('input');input.type='number';input.className='value';input.min=f.value.min;input.max=f.value.max;input.step=f.value.step;input.value=f.current??f.value.fallback;input.onchange=()=>{if(cb.checked)toggleFilter(f.id,true,row,input.value)};row.appendChild(input)}wrap.appendChild(row)}
  const s=$('#settings');s.innerHTML='';const seen=new Set();for(const group of GROUPS){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent=group.title;section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of group.keys){if(!(key in d.settings))continue;seen.add(key);grid.appendChild(field(key,d.settings[key]))}section.appendChild(grid);if(group.title==='Autoplay'){const reset=document.createElement('button');reset.className='autoplay-reset';reset.textContent='Reset autoplay override';reset.onclick=async()=>{try{await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key:'autoplayreset',value:'true'})});await load();toast('Autoplay override reset')}catch(e){toast(e.message,true)}};section.appendChild(reset)}s.appendChild(section)}const rest=Object.keys(d.settings).filter(key=>!seen.has(key));if(rest.length){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent='Other';section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of rest)grid.appendChild(field(key,d.settings[key]));section.appendChild(grid);s.appendChild(section)}}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function safeUrl(v){const s=String(v||'');return /^https?:\/\//i.test(s)?s:''}
 async function toggleFilter(id,enabled,row,value){try{await api('/api/filter',{method:'POST',body:JSON.stringify({guildId:state.guildId,filter:id,enabled,value:value===undefined?undefined:Number(value)})});await load();toast((enabled?'Enabled ':'Disabled ')+id)}catch(e){toast(e.message,true);if(row)row.classList.add('error')}}
 const modal=$('#settings-modal');
 function openSettings(){modal.classList.add('open')}
@@ -353,15 +354,16 @@ function bars(values,labels,unit){const max=Math.max(1,...values);return '<div c
 function statList(rows){return '<div class="stat-list">'+(rows.length?rows.map((row,index)=>'<div class="stat-row"><span class="stat-index">'+(index+1)+'</span>'+row+'</div>').join(''):'<div class="small">No data yet.</div>')+'</div>'}
 function renderStats(d){const el=$('#stats-content');const totalSeconds=d.totals.seconds;const sourceTotal=d.sources.reduce((sum,item)=>sum+item.seconds,0);const colors=['#55d68b','#7c9cff','#ffb454','#ff7272','#c084fc','#5eead4'];const pie=d.sources.length&&sourceTotal?('conic-gradient('+d.sources.map((item,index)=>{const start=d.sources.slice(0,index).reduce((sum,x)=>sum+x.seconds,0)/sourceTotal*100;const end=(d.sources.slice(0,index+1).reduce((sum,x)=>sum+x.seconds,0)/sourceTotal*100);return colors[index%colors.length]+' '+start+'% '+end+'%'}).join(',')+')'):'';
 el.innerHTML='<div class="stat-cards"><div class="stat-card"><div class="stat-label">Listening time</div><div class="stat-value">'+fmtSeconds(totalSeconds)+'</div></div><div class="stat-card"><div class="stat-label">Sessions</div><div class="stat-value">'+d.totals.sessions+'</div></div><div class="stat-card"><div class="stat-label">Game sessions</div><div class="stat-value">'+d.totals.gameSessions+'</div></div><div class="stat-card"><div class="stat-label">Sources</div><div class="stat-value">'+d.sources.length+'</div></div></div>'+
-'<div class="stats-grid"><div class="stats-block"><h3>Listening time by day</h3>'+bars(d.days.map(x=>x.seconds),d.days.map(x=>x.day.slice(5)),true)+'</div><div class="stats-block"><h3>Track types</h3><div class="pie '+(pie?'':'empty')+'" style="'+(pie?'background:'+pie:'')+'"></div><div class="legend">'+(d.sources.length?d.sources.map((item,index)=>'<span><i class="dot" style="background:'+colors[index%colors.length]+'"></i>'+(item.icon?'<img class="service-icon" src="'+escapeHtml(item.icon)+'" alt="">':'')+escapeHtml(item.source)+' — '+fmtSeconds(item.seconds)+'</span>').join(''):'<span>No tracks yet.</span>')+'</div></div></div>'+
+'<div class="stats-grid"><div class="stats-block"><h3>Listening time by day</h3>'+bars(d.days.map(x=>x.seconds),d.days.map(x=>x.day.slice(5)),true)+'</div><div class="stats-block"><h3>Track types</h3><div class="pie '+(pie?'':'empty')+'" style="'+(pie?'background:'+pie:'')+'"></div><div class="legend">'+(d.sources.length?d.sources.map((item,index)=>'<span><i class="dot" style="background:'+colors[index%colors.length]+'"></i>'+(item.icon?'<img class="service-icon" src="'+escapeHtml(safeUrl(item.icon))+'" alt="">':'')+escapeHtml(item.source)+' — '+fmtSeconds(item.seconds)+'</span>').join(''):'<span>No tracks yet.</span>')+'</div></div></div>'+
 '<div class="stats-grid two"><div class="stats-block"><h3>Listening time by hour</h3>'+bars(d.hours.map(x=>x.seconds),d.hours.map(x=>String(x.hour).padStart(2,'0')+':00'),true)+'</div><div class="stats-block"><h3>Listening time by weekday</h3>'+bars(d.weekdays.map(x=>x.seconds),['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],true)+'</div></div>'+
-'<div class="stats-grid two"><div class="stats-block"><h3>Most time played</h3>'+statList(d.topTracks.map(item=>{const label=escapeHtml(item.title);const linked=item.uri&&/^https?:/i.test(item.uri)?'<a href="'+escapeHtml(item.uri)+'" target="_blank" rel="noopener">'+label+'</a>':label;const icon=item.icon?'<img class="service-icon" src="'+escapeHtml(item.icon)+'" alt="">':'';return '<span class="stat-main">'+icon+linked+'<br><span class="stat-sub">'+escapeHtml(item.author)+' · '+fmtSeconds(item.seconds)+'</span></span>'}))+'</div><div class="stats-block"><h3>Most time listened</h3>'+statList(d.topListeners.map(item=>'<img class="stat-avatar" src="'+escapeHtml(item.avatar||'')+'" alt="">'+'<span class="stat-main">'+escapeHtml(item.name||item.userId)+'<br><span class="stat-sub">'+fmtSeconds(item.seconds)+'</span></span>'))+'</div></div>'+
+'<div class="stats-grid two"><div class="stats-block"><h3>Most time played</h3>'+statList(d.topTracks.map(item=>{const label=escapeHtml(item.title);const linked=item.uri&&/^https?:/i.test(item.uri)?'<a href="'+escapeHtml(item.uri)+'" target="_blank" rel="noopener">'+label+'</a>':label;const icon=item.icon?'<img class="service-icon" src="'+escapeHtml(safeUrl(item.icon))+'" alt="">':'';return '<span class="stat-main">'+icon+linked+'<br><span class="stat-sub">'+escapeHtml(item.author)+' · '+fmtSeconds(item.seconds)+'</span></span>'}))+'</div><div class="stats-block"><h3>Most time listened</h3>'+statList(d.topListeners.map(item=>'<img class="stat-avatar" src="'+escapeHtml(safeUrl(item.avatar||''))+'" alt="">'+'<span class="stat-main">'+escapeHtml(item.name||item.userId)+'<br><span class="stat-sub">'+fmtSeconds(item.seconds)+'</span></span>'))+'</div></div>'+
 '<div class="stats-block"><h3>Top commands</h3>'+statList(d.topCommands.map(item=>'<span class="stat-main">'+escapeHtml(item.command)+'<br><span class="stat-sub">'+item.count+' uses</span></span>'))+'</div>'}
 $('#stats-clear').onclick=async()=>{if(!state.guildId)return;if(!confirm('Clear all statistics and game scores for this server? This cannot be undone.'))return;try{await api('/api/stats/clear',{method:'POST',body:JSON.stringify({guildId:state.guildId})});toast('Statistics cleared');await loadStats()}catch(e){toast(e.message,true)}};
 async function loadStats(){if(!state.guildId)return;const content=$('#stats-content');content.innerHTML='<div class="small">Loading statistics…</div>';try{const days=$('#stats-range').value;const d=await api('/api/stats?guildId='+encodeURIComponent(state.guildId)+'&days='+days);renderStats(d)}catch(e){content.innerHTML='<div class="error">'+escapeHtml(e.message)+'</div>'}}
 function openStats(){statsModal.classList.add('open');loadStats()}
 function closeStats(){statsModal.classList.remove('open')}
 $('#stats-btn').onclick=openStats;
+$('#logout-btn').onclick=async()=>{try{await fetch('/auth/logout',{method:'POST',headers:{'content-type':'application/json','x-dashboard-csrf':state.csrf},body:'{}'})}finally{location.href='/'}};
 $('#stats-close').onclick=closeStats;
 $('#stats-range').onchange=loadStats;
 statsModal.addEventListener('click',e=>{if(e.target===statsModal)closeStats()});
@@ -372,9 +374,66 @@ function progressFrame(){drawProgress();requestAnimationFrame(progressFrame)}req
 </script>
 </body></html>`;
 
-type DashboardSession = { id: string; name: string; avatar: string | null; owner: boolean; guildId: string; exp: number };
+type DashboardSession = {
+    id: string;
+    name: string;
+    avatar: string | null;
+    owner: boolean;
+    guildId: string;
+    exp: number;
+    sid: string;
+};
 
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
+const CSRF_COOKIE = 'bdj_csrf';
+const CSRF_HEADER = 'x-dashboard-csrf';
+/** In-memory revocation for the current process; rotating the session secret
+ * remains the only way to revoke every session across a restart. */
+const revokedSessions = new Map<string, number>();
+const rateBuckets = new Map<string, { count: number; reset: number }>();
+
+function clientAddress(req: http.IncomingMessage): string {
+    const forwarded = req.headers['x-forwarded-for'];
+    const first = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0];
+    return first?.trim() || req.socket.remoteAddress || 'unknown';
+}
+
+function rateLimited(
+    req: http.IncomingMessage,
+    name: string,
+    limit: number,
+    windowMs: number
+): boolean {
+    const now = Date.now();
+    const key = `${name}:${clientAddress(req)}`;
+    const bucket = rateBuckets.get(key);
+    if (!bucket || bucket.reset <= now) {
+        rateBuckets.set(key, { count: 1, reset: now + windowMs });
+        return false;
+    }
+    bucket.count += 1;
+    if (rateBuckets.size > 500) {
+        for (const [entry, value] of rateBuckets) {
+            if (value.reset <= now) rateBuckets.delete(entry);
+        }
+    }
+    return bucket.count > limit;
+}
+
+function csrfToken(req: http.IncomingMessage, res: http.ServerResponse): string {
+    const existing = cookies(req)[CSRF_COOKIE];
+    if (existing && /^[A-Za-z0-9_-]{32,}$/.test(existing)) return existing;
+    const token = randomBytes(24).toString('base64url');
+    setCookie(res, CSRF_COOKIE, token, SESSION_TTL_SECONDS, false, 'Strict');
+    return token;
+}
+
+function csrfValid(req: http.IncomingMessage): boolean {
+    const cookie = cookies(req)[CSRF_COOKIE] ?? '';
+    const header = req.headers[CSRF_HEADER];
+    const supplied = Array.isArray(header) ? header[0] : header ?? '';
+    return Boolean(cookie && supplied && cookie === supplied);
+}
 
 function oauthEnabled(): boolean {
     return Boolean(
@@ -422,9 +481,19 @@ function appendCookie(res: http.ServerResponse, cookie: string): void {
     else res.setHeader('set-cookie', cookie);
 }
 
-function setCookie(res: http.ServerResponse, name: string, value: string, maxAge: number): void {
+function setCookie(
+    res: http.ServerResponse,
+    name: string,
+    value: string,
+    maxAge: number,
+    httpOnly: boolean = true,
+    sameSite: 'Lax' | 'Strict' = 'Lax'
+): void {
     const secure = config.dashboardOAuthRedirectUri.startsWith('https://') ? '; Secure' : '';
-    appendCookie(res, `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`);
+    appendCookie(
+        res,
+        `${name}=${encodeURIComponent(value)}; Path=/;${httpOnly ? ' HttpOnly;' : ''} SameSite=${sameSite}; Max-Age=${maxAge}${secure}`
+    );
 }
 
 function sessionSignature(payload: string): string {
@@ -433,7 +502,15 @@ function sessionSignature(payload: string): string {
 
 function createSession(user: { id: string; username: string; avatar: string | null }, owner: boolean, guildId: string): string {
     const payload = Buffer.from(
-        JSON.stringify({ id: user.id, name: user.username, avatar: user.avatar, owner, guildId, exp: Date.now() + SESSION_TTL_SECONDS * 1000 })
+        JSON.stringify({
+            id: user.id,
+            name: user.username,
+            avatar: user.avatar,
+            owner,
+            guildId,
+            exp: Date.now() + SESSION_TTL_SECONDS * 1000,
+            sid: randomBytes(16).toString('hex'),
+        })
     ).toString('base64url');
     return `${payload}.${sessionSignature(payload)}`;
 }
@@ -451,6 +528,7 @@ function readSession(req: http.IncomingMessage): DashboardSession | null {
     try {
         const session = JSON.parse(Buffer.from(payload, 'base64url').toString()) as DashboardSession;
         if (!session.id || !session.exp || session.exp < Date.now()) return null;
+        if (session.sid && revokedSessions.has(session.sid)) return null;
         session.owner = Boolean(session.owner);
         // Cookies issued before the guild binding existed are still scoped to
         // the configured dashboard guild, never to arbitrary guild ids.
@@ -784,6 +862,21 @@ export function startDashboard(client: BootstrapClient): void {
                 res.end('content-type must be application/json');
                 return;
             }
+            if (
+                (url.pathname === '/auth/discord' ||
+                    url.pathname === '/auth/callback' ||
+                    url.pathname === '/auth/logout') &&
+                rateLimited(req, 'auth', 30, 60_000)
+            ) {
+                res.writeHead(429, { 'content-type': 'text/plain', 'retry-after': '60' });
+                res.end('too many authentication attempts');
+                return;
+            }
+            if (req.method === 'POST' && rateLimited(req, 'mutate', 180, 60_000)) {
+                res.writeHead(429, { 'content-type': 'text/plain', 'retry-after': '60' });
+                res.end('too many requests');
+                return;
+            }
             if (req.method === 'GET' && url.pathname === '/auth/discord' && oauthEnabled()) {
                 const state = randomBytes(24).toString('hex');
                 setCookie(res, 'bdj_oauth_state', state, 600);
@@ -793,12 +886,6 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/auth/callback' && oauthEnabled()) {
                 await handleOAuthCallback(req, res, url);
-                return;
-            }
-            if (req.method === 'GET' && url.pathname === '/auth/logout') {
-                setCookie(res, 'bdj_session', '', 0);
-                res.writeHead(302, { location: '/' });
-                res.end();
                 return;
             }
             if (!authorized(req)) {
@@ -811,15 +898,32 @@ export function startDashboard(client: BootstrapClient): void {
                 res.end('unauthorized');
                 return;
             }
+            if (req.method === 'POST' && !csrfValid(req)) {
+                res.writeHead(403, { 'content-type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid CSRF token' }));
+                return;
+            }
+            if (req.method === 'POST' && url.pathname === '/auth/logout') {
+                const session = readSession(req);
+                if (session?.sid) revokedSessions.set(session.sid, session.exp);
+                setCookie(res, 'bdj_session', '', 0);
+                setCookie(res, CSRF_COOKIE, '', 0, false, 'Strict');
+                res.writeHead(302, { location: '/' });
+                res.end();
+                return;
+            }
             if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
+                csrfToken(req, res);
                 res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
                 res.end(oauthEnabled() ? HTML.replace('<body>', '<body data-oauth="1">') : HTML);
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/api/guilds') {
+                const csrf = csrfToken(req, res);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(
                     JSON.stringify({
+                        csrf,
                         guilds: [...client.guilds.cache.values()]
                             .filter(guild => !oauthEnabled() || guild.id === config.dashboardOAuthGuildId)
                             .map(guild => ({

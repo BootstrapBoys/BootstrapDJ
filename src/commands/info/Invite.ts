@@ -40,7 +40,7 @@ export default class Invite extends Command {
         }
 
         const embed = this.client.embed();
-        const row = new ActionRowBuilder().addComponents(
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setLabel('Invite')
                 .setStyle(ButtonStyle.Link)

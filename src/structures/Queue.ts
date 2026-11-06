@@ -3,13 +3,13 @@ import { LavalinkResponse, LoadType, Node } from 'shoukaku';
 
 import { BootstrapClient, Dispatcher } from './index.js';
 import { isFallbackNode } from '../utils/PublicNodes.js';
-export class Queue extends Map {
+export class Queue extends Map<string, Dispatcher> {
     public client: BootstrapClient;
     constructor(client: BootstrapClient) {
         super();
         this.client = client;
     }
-    public get(guildId: string): Dispatcher {
+    public get(guildId: string): Dispatcher | undefined {
         return super.get(guildId);
     }
     public set(guildId: string, dispatcher: Dispatcher): this {
@@ -96,7 +96,11 @@ export class Queue extends Map {
             return dispatcher;
         } else {
             if (!dispatcher.isStale) return dispatcher;
-            return (await this.rebuild(dispatcher, givenNode ?? this.node)) ?? dispatcher;
+            const rebuilt = await this.rebuild(dispatcher, givenNode ?? this.node);
+            if (!rebuilt) {
+                throw new Error('Could not rebuild the player after the Lavalink node changed');
+            }
+            return rebuilt;
         }
     }
 
@@ -144,7 +148,7 @@ export class Queue extends Map {
         this.client.logger.info(
             `[queue] rebuilding ${dispatcher.guildId} on "${node.name}" (was "${dispatcher.player.node?.name}")`
         );
-        dispatcher.destroy(true);
+        await dispatcher.destroyAndWait(true);
 
         try {
             const player = await this.client.shoukaku.joinVoiceChannel({

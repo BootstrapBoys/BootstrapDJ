@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType } from 'discord.js';
-import { LoadType } from 'shoukaku';
+import { LoadType, Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 import { resolveSearchEngine } from '../../utils/SearchEngine.js';
@@ -98,7 +98,7 @@ export default class Add extends Command {
 
         // Normalise every load type to an array of tracks; res.data is a single
         // track for TRACK, an array for SEARCH, and { tracks } for PLAYLIST.
-        let tracks: any[] = [];
+        let tracks: Track[] = [];
         if (res.loadType === LoadType.PLAYLIST) tracks = res.data.tracks;
         else if (res.loadType === LoadType.TRACK) tracks = [res.data];
         else if (res.loadType === LoadType.SEARCH && res.data.length) tracks = [res.data[0]];

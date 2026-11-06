@@ -59,7 +59,7 @@ export default class Eval extends Command {
                 .setStyle(ButtonStyle.Danger)
                 .setLabel('Delete')
                 .setCustomId('eval-delete');
-            const row = new ActionRowBuilder().addComponents(button);
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
 
             if (typeof evaled !== 'string') evaled = (await import('node:util')).inspect(evaled);
 

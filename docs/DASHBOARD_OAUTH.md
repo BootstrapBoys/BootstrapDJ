@@ -55,6 +55,19 @@ Everyone else receives a 403 response.
 
 - `/auth/discord` — start login
 - `/auth/callback` — Discord callback
-- `/auth/logout` — clear the session
+- `POST /auth/logout` — clear the session; requires the CSRF header below
+- `/auth/discord`, `/auth/callback`, and logout are rate-limited per client IP
 
 Sessions are signed HTTP-only cookies, scoped to the configured guild, and expire after 24 hours.
+
+## Request protection
+
+Every mutating request must be `content-type: application/json` and carry the
+`x-dashboard-csrf` header. The browser reads the non-HttpOnly `bdj_csrf` cookie
+from `/api/guilds`; the dashboard does this automatically. Direct API clients
+must first call `GET /api/guilds`, keep the cookie, and send its `csrf` value in
+the header.
+
+Logout revokes the current session in-process and clears both cookies. Rotate
+`DASHBOARD_SESSION_SECRET` to invalidate every existing session across a
+process restart.

@@ -13,7 +13,7 @@ export default class Event {
         this.one = options.one || false;
         this.fileName = file.split('.')[0];
     }
-    public async run(..._args: any[]): Promise<unknown> {
+    public async run(..._args: unknown[]): Promise<unknown> {
         return await Promise.resolve();
     }
 }

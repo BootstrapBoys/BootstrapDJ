@@ -1,4 +1,5 @@
 import { ApplicationCommandOptionType } from 'discord.js';
+import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
 
@@ -74,7 +75,7 @@ export default class Load extends Command {
         let skipped = 0;
         const added: Song[] = [];
         for (const row of songs) {
-            let parsed: any;
+            let parsed: unknown;
             try {
                 parsed = JSON.parse(row.track);
             } catch {
@@ -82,7 +83,7 @@ export default class Load extends Command {
                 continue;
             }
             // Rows written before the per-track fix hold an array in one row.
-            const tracks: any[] = Array.isArray(parsed) ? parsed : [parsed];
+            const tracks = (Array.isArray(parsed) ? parsed : [parsed]) as Array<Song | Track>;
             for (const entry of tracks) {
                 if (player.queue.length >= client.config.maxQueueSize) {
                     skipped++;

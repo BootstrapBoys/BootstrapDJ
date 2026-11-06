@@ -1,5 +1,14 @@
 /* eslint-disable no-case-declarations */
-import { AttachmentBuilder, ColorResolvable, EmbedBuilder, Message, TextChannel } from 'discord.js';
+import {
+    AttachmentBuilder,
+    ButtonInteraction,
+    ColorResolvable,
+    EmbedBuilder,
+    Guild,
+    Message,
+    StringSelectMenuInteraction,
+    TextChannel,
+} from 'discord.js';
 import { existsSync } from 'node:fs';
 import { LoadType } from 'shoukaku';
 
@@ -257,7 +266,7 @@ async function setupStart(
     }
 }
 async function trackStart(
-    msgId: any,
+    msgId: string,
     channel: TextChannel,
     player: Dispatcher,
     track: Song,
@@ -335,7 +344,7 @@ async function trackStart(
     }
 }
 
-async function updateSetup(client: BootstrapClient, guild: any): Promise<void> {
+async function updateSetup(client: BootstrapClient, guild: Guild): Promise<void> {
     let setup = await client.db.getSetup(guild.id);
     let m: Message | undefined;
     if (setup && setup.textId) {
@@ -405,17 +414,23 @@ async function updateSetup(client: BootstrapClient, guild: any): Promise<void> {
     }
 }
 
-async function buttonReply(int: any, args: string, color: ColorResolvable): Promise<void> {
+async function buttonReply(
+    int: ButtonInteraction<'cached'> | StringSelectMenuInteraction<'cached'>,
+    args: string,
+    color: ColorResolvable
+): Promise<void> {
     const embed = new EmbedBuilder();
     let m: Message | undefined;
     if (int.replied) {
-        m = await int
+        const reply = await int
             .editReply({ embeds: [embed.setColor(color).setDescription(args)] })
-            .catch(() => { });
+            .catch(() => null);
+        if (reply) m = reply;
     } else {
-        m = await int
+        const reply = await int
             .followUp({ embeds: [embed.setColor(color).setDescription(args)] })
-            .catch(() => { });
+            .catch(() => null);
+        if (reply) m = reply;
     }
     setTimeout(async () => {
         if (int && !int.ephemeral) {

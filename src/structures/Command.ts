@@ -1,17 +1,17 @@
-import { ApplicationCommandOption, PermissionsString } from 'discord.js';
+import { ApplicationCommandOption, LocalizationMap, PermissionsString } from 'discord.js';
 
 import BootstrapClient from './BootstrapClient.js';
 
 export default class Command {
     public client: BootstrapClient;
     public name: string;
-    public nameLocalizations: any;
+    public nameLocalizations: LocalizationMap | null;
     public description: {
         content: string | null;
         usage: string | null;
         examples: string[];
     };
-    public descriptionLocalizations: any;
+    public descriptionLocalizations: LocalizationMap | null;
     public aliases: string[];
     public cooldown: number;
     public args: boolean;
@@ -35,7 +35,7 @@ export default class Command {
     constructor(client: BootstrapClient, options: CommandOptions) {
         this.client = client;
         this.name = options.name;
-        this.nameLocalizations = options.nameLocalizations;
+        this.nameLocalizations = options.nameLocalizations ?? null;
         this.description = {
             content: options.description
                 ? options.description.content || 'No description provided'
@@ -45,7 +45,7 @@ export default class Command {
                 : 'No usage provided',
             examples: options.description ? options.description.examples || [''] : [''],
         };
-        this.descriptionLocalizations = options.descriptionLocalizations;
+        this.descriptionLocalizations = options.descriptionLocalizations ?? null;
         this.aliases = options.aliases || [];
         this.cooldown = options.cooldown || 3;
         this.args = options.args || false;
@@ -68,20 +68,20 @@ export default class Command {
         this.options = options.options || [];
         this.category = options.category || 'general';
     }
-    public async run(_client: BootstrapClient, _message: any, _args: string[]): Promise<unknown> {
+    public async run(_client: BootstrapClient, _message: unknown, _args: string[]): Promise<unknown> {
         return await Promise.resolve();
     }
 }
 
 interface CommandOptions {
     name: string;
-    nameLocalizations?: any;
+    nameLocalizations?: LocalizationMap;
     description?: {
         content: string;
         usage: string;
         examples: string[];
     };
-    descriptionLocalizations?: any;
+    descriptionLocalizations?: LocalizationMap;
     aliases?: string[];
     cooldown?: number;
     args?: boolean;

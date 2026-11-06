@@ -1,3 +1,5 @@
+import { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
+
 import { BootstrapClient, Event } from '../../structures/index.js';
 import { buttonReply } from '../../utils/SetupSystem.js';
 import { checkDj } from '../player/TrackStart.js';
@@ -8,7 +10,9 @@ export default class SetupButtons extends Event {
             name: 'setupButtons',
         });
     }
-    public async run(interaction: any): Promise<void> {
+    public async run(
+        interaction: ButtonInteraction<'cached'> | StringSelectMenuInteraction<'cached'>
+    ): Promise<void> {
         if (!interaction.replied) await interaction.deferReply().catch(() => { });
 
         if (!interaction.member.voice.channel)
@@ -18,13 +22,13 @@ export default class SetupButtons extends Event {
                 this.client.color.red
             );
         if (
-            interaction.guild.members.cache.get(this.client.user?.id ?? '').voice.channel &&
-            interaction.guild.members.cache.get(this.client.user?.id ?? '').voice.channelId !==
+            interaction.guild.members.cache.get(this.client.user?.id ?? '')?.voice.channel &&
+            interaction.guild.members.cache.get(this.client.user?.id ?? '')?.voice.channelId !==
             interaction.member.voice.channelId
         )
             return await buttonReply(
                 interaction,
-                `You are not connected to ${interaction.guild.me.voice.channel} to use this buttons.`,
+                `You are not connected to ${interaction.guild.members.me?.voice.channel} to use this buttons.`,
                 this.client.color.red
             );
         const player = this.client.queue.get(interaction.guildId);

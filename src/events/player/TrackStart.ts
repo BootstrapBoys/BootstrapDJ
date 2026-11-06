@@ -343,8 +343,8 @@ export async function checkDj(
     if (dj && dj.mode) {
         const djRole = await client.db.getRoles(interaction.guildId);
         if (!djRole) return false;
-        const findDJRole = interaction.member.roles.cache.find((x: any) =>
-            djRole.map((y: any) => y.roleId).includes(x.id)
+        const findDJRole = interaction.member.roles.cache.find(role =>
+            djRole.some(entry => entry.roleId === role.id)
         );
         if (!findDJRole) {
             if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

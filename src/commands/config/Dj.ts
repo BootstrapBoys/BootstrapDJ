@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType } from 'discord.js';
+import { APIRole, ApplicationCommandOptionType, Role } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 
@@ -71,7 +71,7 @@ export default class Dj extends Command {
         const guild = ctx.guild;
         if (!guild) return;
         let subCommand: string;
-        let role: any;
+        let role: Role | APIRole | null | undefined;
         if (ctx.isInteraction) {
             const interaction = ctx.interaction;
             if (!interaction) return;
