@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
 
 import Command from '../dist/structures/Command.js';
@@ -24,6 +26,28 @@ test('defer can be opted into', () => {
     const command = new Command(fakeClient, baseOptions({ defer: true }));
 
     assert.equal(command.defer, true);
+});
+
+test('command names and aliases do not collide across the tree', async () => {
+    const root = path.join(process.cwd(), 'dist', 'commands');
+    const owners = new Map();
+    for (const dir of fs.readdirSync(root)) {
+        const folder = path.join(root, dir);
+        if (!fs.statSync(folder).isDirectory()) continue;
+        for (const file of fs.readdirSync(folder).filter(name => name.endsWith('.js'))) {
+            const CommandClass = (await import(`../dist/commands/${dir}/${file}`)).default;
+            const command = new CommandClass(fakeClient);
+            const source = `${dir}/${file}`;
+            for (const token of [command.name, ...command.aliases]) {
+                const key = token.toLowerCase();
+                const previous = owners.get(key);
+                if (previous && previous !== source) {
+                    assert.fail(`${source} duplicates command/alias \`${key}\` from ${previous}`);
+                }
+                owners.set(key, source);
+            }
+        }
+    }
 });
 
 test('commands that do remote work before replying defer; fast ones do not', async () => {
