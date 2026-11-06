@@ -33,7 +33,7 @@ Restart the process:
 pm2 restart BotTest --update-env
 ```
 
-When all OAuth values are present, the dashboard requires a Discord session.
+When all OAuth values are present, the dashboard requires a Discord session. If any OAuth value is present but the set is incomplete, the dashboard fails closed and does not fall back to anonymous access.
 The static `DASHBOARD_TOKEN` is ignored in OAuth mode, and NPM does not need to
 inject `X-Dashboard-Token`.
 

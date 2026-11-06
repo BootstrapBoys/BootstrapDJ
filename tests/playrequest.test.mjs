@@ -184,6 +184,18 @@ test('track limits and queue caps reject before enqueueing', async () => {
     assert.match(cappedCtx.replies[0].embeds[0].data.description, /queue is too long/);
 });
 
+test('per-user queue limits are enforced', async () => {
+    const player = makePlayer([rawTrack('existing')]);
+    player.queue[0].info.requester = { id: 'user' };
+    const client = makeClient(player, { loadType: LoadType.TRACK, data: rawTrack('new') });
+    client.db.getGuildSettings = async () => ({ maxuserqueue: '1' });
+    const ctx = makeCtx();
+
+    await runPlayRequest(client, ctx, ['query'], 'queue');
+    assert.equal(player.queue.length, 1);
+    assert.match(ctx.replies[0].embeds[0].data.description, /already have 1 tracks/);
+});
+
 test('playlist limits and rejected tracks are reflected in the reply count', async () => {
     const player = makePlayer();
     const client = makeClient(player, {

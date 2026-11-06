@@ -145,6 +145,12 @@ test('collection exposes the legacy playlist actions without exceeding Discord c
     assert.ok(choices.length <= 25, 'Discord caps one option at 25 choices');
 });
 
+test('the filter entry point enforces the same management permission as its children', async () => {
+    const FilterClass = (await import('../dist/commands/filters/Filter.js')).default;
+    const command = new FilterClass(fakeClient);
+    assert.ok(command.permissions.user.includes('ManageGuild'));
+});
+
 test('autoplay exposes three optional seed boxes', async () => {
     const AutoplayClass = (await import('../dist/commands/music/Autoplay.js')).default;
     const command = new AutoplayClass(fakeClient);

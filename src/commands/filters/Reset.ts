@@ -31,6 +31,11 @@ export default class Reset extends Command {
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         if (!ctx.guild) return await ctx.sendMessage({ content: 'This command only works in a server.' });
         const player = client.queue.get(ctx.guild.id);
+        if (!player) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+            });
+        }
 
         player.player.clearFilters();
         player.filters = [];

@@ -53,6 +53,12 @@ export default class VoiceStateUpdate extends Event {
         }
 
         if (isBot) {
+            // Keep the dispatcher's voice id current when the bot is moved
+            // between channels; restore/sampling/24-7 checks use it.
+            if (newState.channelId && newState.channelId !== player.voiceId) {
+                player.voiceId = newState.channelId;
+                void player.persist();
+            }
             if (
                 newState.channelId &&
                 newState.channel?.type === ChannelType.GuildStageVoice &&

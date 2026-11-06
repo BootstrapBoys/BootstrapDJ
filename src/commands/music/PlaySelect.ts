@@ -2,6 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder }
 import { LoadType, Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
 import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 const PAGE_SIZE = 25;
@@ -68,14 +69,23 @@ export default class PlaySelect extends Command {
             });
         }
 
-        const enqueue = async (track: Track): Promise<void> => {
+        const limits = await getPlayLimits(client, guild.id);
+        const enqueue = async (track: Track): Promise<string | null> => {
             const song = player.buildTrack(track, author);
+            const rejected = checkTrack(player, song, author.id, limits);
+            if (rejected) return rejected;
             player.enqueue(song);
             await player.isPlaying();
+            return null;
         };
 
         if (tracks.length === 1) {
-            await enqueue(tracks[0]);
+            const rejected = await enqueue(tracks[0]);
+            if (rejected) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription(rejected)],
+                });
+            }
             return await ctx.sendMessage({
                 embeds: [
                     client
@@ -153,7 +163,11 @@ export default class PlaySelect extends Command {
                 return;
             }
             await interaction.deferUpdate();
-            await enqueue(track);
+            const rejected = await enqueue(track);
+            if (rejected) {
+                await interaction.followUp({ content: rejected, ephemeral: true });
+                return;
+            }
             await msg
                 .edit({
                     embeds: [

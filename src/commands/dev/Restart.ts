@@ -24,7 +24,7 @@ export default class Restart extends Command {
         await ctx.sendMessage({
             embeds: [client.embed().setColor(client.color.main).setDescription('Restarting the bot process.')],
         });
-        setTimeout(() => process.exit(0), 1000);
+        setTimeout(() => process.kill(process.pid, 'SIGTERM'), 1000);
         return undefined;
     }
 }

@@ -96,7 +96,7 @@ export async function runPlayRequest(
                 });
                 return;
             }
-            if (player.queue.length > client.config.maxQueueSize) {
+            if (player.queue.length >= client.config.maxQueueSize) {
                 await ctx.sendMessage({
                     embeds: [
                         embed
@@ -149,7 +149,7 @@ export async function runPlayRequest(
                 const pl = player.buildTrack(track, author);
                 const rejected = checkTrack(player, pl, author.id, limits);
                 if (rejected) continue;
-                if (player.queue.length > client.config.maxQueueSize) {
+                if (player.queue.length >= client.config.maxQueueSize) {
                     // Keep the tracks already accepted; the old early return
                     // left them in memory but never persisted them.
                     void player.persist();
@@ -206,7 +206,7 @@ export async function runPlayRequest(
                 });
                 return;
             }
-            if (player.queue.length > client.config.maxQueueSize) {
+            if (player.queue.length >= client.config.maxQueueSize) {
                 await ctx.sendMessage({
                     embeds: [
                         embed

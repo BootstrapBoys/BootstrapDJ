@@ -8,6 +8,7 @@ export type PlayLimits = {
     maxQueue: number;
     maxUserTracks: number;
     maxUserTracksLength: number;
+    maxUserQueue: number;
     maxPlaylistTracks: number;
     maxPlaylistLength: number;
 };
@@ -25,6 +26,7 @@ export async function getPlayLimits(client: BootstrapClient, guildId: string): P
         maxQueue: number(settings.maxqueue, client.config.maxQueueSize),
         maxUserTracks: number(settings.maxusertracks, 0),
         maxUserTracksLength: number(settings.maxusertrackslength, 0),
+        maxUserQueue: number(settings.maxuserqueue, 50),
         maxPlaylistTracks: number(settings.maxplaylisttracks, 0),
         maxPlaylistLength: number(settings.maxplaylistlength, 0),
     };
@@ -49,6 +51,9 @@ export function checkTrack(
         return `The queue is full (${limits.maxQueue} tracks).`;
     }
     const requested = player.queue.filter(item => item.info.requester?.id === requesterId);
+    if (limits.maxUserQueue > 0 && requested.length >= limits.maxUserQueue) {
+        return `You already have ${limits.maxUserQueue} tracks queued.`;
+    }
     if (limits.maxUserTracks > 0 && requested.length >= limits.maxUserTracks) {
         return `You already have ${limits.maxUserTracks} tracks queued.`;
     }

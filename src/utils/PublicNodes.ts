@@ -191,8 +191,3 @@ export async function findBestPublicNode(
     const ranked = rankNodes(usable).filter(probe => !isFallbackBlocked(toNodeOption(probe.entry).name));
     return ranked[0] ?? null;
 }
-
-export function clearPublicNodeCache(): void {
-    cache = null;
-    blocked.clear();
-}

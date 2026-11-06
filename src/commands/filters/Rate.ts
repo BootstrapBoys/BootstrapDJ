@@ -15,7 +15,7 @@ export default class Rate extends Command {
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
+                user: ['ManageGuild'],
             },
             slashCommand: false,
             options: [

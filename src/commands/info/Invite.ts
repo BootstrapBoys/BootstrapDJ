@@ -30,7 +30,7 @@ export default class Invite extends Command {
             options: [],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
+    public async run(_client: BootstrapClient, ctx: Context): Promise<unknown> {
         const clientId = this.client.user?.id ?? this.client.config.clientId;
         if (!clientId) {
             this.client.logger.error('[invite] no application id available to build an invite link');
@@ -45,12 +45,12 @@ export default class Invite extends Command {
                 .setLabel('Invite')
                 .setStyle(ButtonStyle.Link)
                 .setURL(
-                    `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=8&scope=bot%20applications.commands`
+                    `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=4298238976&scope=bot%20applications.commands`
                 ),
             new ButtonBuilder()
-                .setLabel('My Server')
+                .setLabel('Issues')
                 .setStyle(ButtonStyle.Link)
-                .setURL('https://discord.gg/STXurwnZD5')
+                .setURL('https://github.com/zebz213/BootstrapDJ/issues')
         );
 
         return await ctx.sendMessage({
@@ -58,7 +58,7 @@ export default class Invite extends Command {
                 embed
                     .setColor(this.client.color.main)
                     .setDescription(
-                        `You can invite me by clicking the button below. Any bugs or outages? Join the support server!`
+                        `You can invite me by clicking the button below. For bugs or feature requests, open an issue on GitHub.`
                     ),
             ],
             components: [row],

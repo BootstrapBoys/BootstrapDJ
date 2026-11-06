@@ -3,6 +3,7 @@ import { AttachmentBuilder, ColorResolvable, EmbedBuilder, Message, TextChannel 
 import { LoadType } from 'shoukaku';
 
 import { getButtons } from './Buttons.js';
+import { checkTrack, getPlayLimits } from './PlayLimits.js';
 import { Song } from '../structures/Dispatcher.js';
 import { BootstrapClient, Dispatcher } from '../structures/index.js';
 
@@ -82,7 +83,8 @@ async function setupStart(
     }
     if (m) {
         try {
-            let res = await client.queue.search(query);
+            const limits = await getPlayLimits(client, player.guildId);
+            let res = await client.queue.search(query, client.config.prefixSearchEngine);
             if (!res) return;
             switch (res.loadType) {
                 case LoadType.ERROR:
@@ -109,8 +111,19 @@ async function setupStart(
                     break;
                 case LoadType.TRACK:
                     const track = player.buildTrack(res.data, message.author);
+                    const rejected = checkTrack(player, track, message.author.id, limits);
+                    if (rejected) {
+                        await message.channel
+                            .send({
+                                embeds: [
+                                    embed.setColor(client.color.red).setDescription(rejected),
+                                ],
+                            })
+                            .then(msg => scheduleExpire(client, msg));
+                        return;
+                    }
 
-                    if (player.queue.length > client.config.maxQueueSize) {
+                    if (player.queue.length >= client.config.maxQueueSize) {
                         await message.channel
                             .send({
                                 embeds: [
@@ -155,9 +168,10 @@ async function setupStart(
                             .then(msg => scheduleExpire(client, msg));
                         return;
                     }
-                    for (const track of res.data.tracks) {
+                    for (const track of res.data.tracks.slice(0, limits.maxPlaylistTracks || undefined)) {
                         const pl = player.buildTrack(track, message.author);
-                        if (player.queue.length > client.config.maxQueueSize) {
+                        if (checkTrack(player, pl, message.author.id, limits)) break;
+                        if (player.queue.length >= client.config.maxQueueSize) {
                             await message.channel
                                 .send({
                                     embeds: [
@@ -191,7 +205,18 @@ async function setupStart(
                     break;
                 case LoadType.SEARCH:
                     const track2 = player.buildTrack(res.data[0], message.author);
-                    if (player.queue.length > client.config.maxQueueSize) {
+                    const rejected2 = checkTrack(player, track2, message.author.id, limits);
+                    if (rejected2) {
+                        await message.channel
+                            .send({
+                                embeds: [
+                                    embed.setColor(client.color.red).setDescription(rejected2),
+                                ],
+                            })
+                            .then(msg => scheduleExpire(client, msg));
+                        return;
+                    }
+                    if (player.queue.length >= client.config.maxQueueSize) {
                         await message.channel
                             .send({
                                 embeds: [
@@ -476,6 +501,13 @@ export async function resetSetupChannel(
  * Periodically delete everything in the song-request channel except the mock
  * player, so the channel stays a control surface instead of a chat log.
  */
+export function stopSetupJanitor(guildId: string): void {
+    const timer = setupJanitors.get(guildId);
+    if (!timer) return;
+    clearInterval(timer);
+    setupJanitors.delete(guildId);
+}
+
 export function startSetupJanitor(client: BootstrapClient, guildId: string): void {
     const seconds = client.config.setupCleanupInterval;
     if (!seconds || seconds <= 0) return;
@@ -485,7 +517,10 @@ export function startSetupJanitor(client: BootstrapClient, guildId: string): voi
     const timer = setInterval(async () => {
         try {
             const setup = await client.db.getSetup(guildId);
-            if (!setup) return;
+            if (!setup) {
+                stopSetupJanitor(guildId);
+                return;
+            }
             const guild = client.guilds.cache.get(guildId);
             const channel = guild?.channels.cache.get(setup.textId) as TextChannel | undefined;
             if (!channel) return;

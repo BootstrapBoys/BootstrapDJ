@@ -114,10 +114,6 @@ export interface SavedTrack {
     };
 }
 
-export interface SavedCurrent extends SavedTrack {
-    position: number;
-}
-
 /** Strip runtime-only state (requester, live player position) for storage. */
 export function toSaved(song: Song): SavedTrack {
     // Optional fields are only set when present: undefined keys vanish through

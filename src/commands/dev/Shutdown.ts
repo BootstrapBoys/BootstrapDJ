@@ -20,7 +20,7 @@ export default class Shutdown extends Command {
         await ctx.sendMessage({
             embeds: [client.embed().setColor(client.color.red).setDescription('Shutting down the bot process.')],
         });
-        setTimeout(() => process.exit(0), 1000);
+        setTimeout(() => process.kill(process.pid, 'SIGTERM'), 1000);
         return undefined;
     }
 }

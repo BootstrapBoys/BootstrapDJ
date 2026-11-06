@@ -10,7 +10,7 @@ export default class QueueEnd extends Event {
             name: 'queueEnd',
         });
     }
-    public async run(player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
+    public async run(_player: Player, _track: Song, dispatcher: Dispatcher): Promise<void> {
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         if (!guild) return;
         // TrackEnd owns loop modes, autoplay, previous/current bookkeeping and

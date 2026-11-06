@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
 import { resolveSearchEngine } from '../../utils/SearchEngine.js';
 
 export default class PlayLeave extends Command {
@@ -54,7 +55,26 @@ export default class PlayLeave extends Command {
         }
         let player = client.queue.get(guild.id);
         if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
-        for (const track of tracks) player.enqueue(player.buildTrack(track, author), true, false);
+        const limits = await getPlayLimits(client, guild.id);
+        const accepted: typeof tracks = [];
+        let rejection: string | null = null;
+        for (const track of tracks.slice(0, limits.maxPlaylistTracks || client.config.maxPlaylistSize)) {
+            const song = player.buildTrack(track, author);
+            rejection = checkTrack(player, song, author.id, limits);
+            if (rejection) break;
+            player.enqueue(song, true, false);
+            accepted.push(track);
+        }
+        if (!accepted.length) {
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(rejection ?? 'No tracks were accepted.'),
+                ],
+            });
+        }
         void player.persist();
         player.leaveOnEnd = true;
         await player.isPlaying();
@@ -64,7 +84,7 @@ export default class PlayLeave extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Queued ${tracks.length} track${tracks.length === 1 ? '' : 's'}. I'll leave voice when the queue ends.`
+                        `Queued ${accepted.length} track${accepted.length === 1 ? '' : 's'}. I'll leave voice when the queue ends.`
                     ),
             ],
         });

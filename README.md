@@ -232,7 +232,7 @@ npm run format      # Prettier check
 
 The test suite covers the command gate, playback request handling, prefix
 routing, session restore, voice teardown, retention/WAL boundaries, and dashboard
-command surfaces. Current test count is **134**.
+command surfaces. Current test count is **136**.
 
 ## Project layout
 
@@ -253,7 +253,7 @@ tests/            Node test suite
 
 - Keep `.env` out of Git and rotate any token that has been exposed.
 - Keep the dashboard on loopback unless it is behind an HTTPS reverse proxy with
-  OAuth enabled.
+  OAuth enabled. A partial OAuth configuration fails closed.
 - The dashboard does not accept a token in the URL query string. Local token mode
   uses an `X-Dashboard-Token` header only.
 - The optional voice listener discards audio from opted-out members before

@@ -17,7 +17,12 @@ const advicePlugin: BotPlugin = {
         ];
 
         client.on('messageCreate', (message: Message) => {
-            if (message.content.startsWith('!advice')) {
+            if (message.author.bot || !client.user) return;
+            const prefixes = client.config.prefix
+                .split(',')
+                .map(prefix => prefix.trim())
+                .filter(Boolean);
+            if (prefixes.some(prefix => message.content.startsWith(`${prefix}advice`))) {
                 const randomIndex = Math.floor(Math.random() * adviceList.length);
                 const advice = adviceList[randomIndex];
                 message.reply(advice);

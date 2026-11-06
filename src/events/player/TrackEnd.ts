@@ -11,7 +11,7 @@ export default class TrackEnd extends Event {
             name: 'trackEnd',
         });
     }
-    public async run(player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
+    public async run(_player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
         if (track) {
             void this.client.db.recordTrackPlay(
                 dispatcher.guildId,

@@ -27,7 +27,7 @@ This branch is additive and experimental. It does **not** change `main`.
 - Existing `play`, `playnext`, and playlist commands remain.
 
 ### Information / utility
-- `/utility` grouped page selector for `overview`, `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`; the individual pages remain prefix commands.
+- `/utility` grouped page selector for `overview`, `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`, `commands`, `dashboard`; the individual pages remain prefix commands.
 - Aliases added: `about`, `searchlyrics`.
 
 ### Games
@@ -86,7 +86,7 @@ being completed first; public listing/clone services are explicitly out of scope
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 134 tests at the latest branch commit.
+- `npm test` — 136 tests at the latest branch commit.
 
 Storage: WAL mode and bounded stats retention are documented in [`docs/STORAGE.md`](STORAGE.md).
 

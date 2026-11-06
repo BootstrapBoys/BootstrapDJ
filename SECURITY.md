@@ -2,20 +2,31 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+BootstrapDJ is maintained as a self-hosted project. Security fixes are applied
+to the current `4.1.x` line and the latest `main` branch. Older forks and
+modified deployments are not supported.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 4.1.x   | :white_check_mark: |
+| < 4.1   | :x: |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+Please do **not** open a public issue for a security problem.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Use GitHub's private **Security → Report a vulnerability** flow for
+`zebz213/BootstrapDJ`, or contact the repository owner directly through
+GitHub. Include:
+
+- the affected version or commit,
+- reproduction steps,
+- the impact you believe it has,
+- whether the issue is already public.
+
+Do not include live bot tokens, dashboard secrets, Lavalink credentials, or
+database exports in the report. Rotate any credential that may have been
+exposed before reporting.
+
+You can expect an acknowledgement, a triage decision, and a coordinated fix
+window. Credit will be given if requested.

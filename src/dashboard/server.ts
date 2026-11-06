@@ -386,6 +386,19 @@ function oauthEnabled(): boolean {
     );
 }
 
+/** Any OAuth value means auth is intended; incomplete config must fail closed. */
+function oauthConfigured(): boolean {
+    // Do not treat the generic CLIENT_ID/GUILD_ID fallbacks as an OAuth intent;
+    // otherwise a token-mode dashboard would be locked out by normal bot config.
+    return Boolean(
+        process.env.DASHBOARD_OAUTH_CLIENT_ID ||
+            process.env.DASHBOARD_OAUTH_GUILD_ID ||
+            config.dashboardOAuthClientSecret ||
+            config.dashboardOAuthRedirectUri ||
+            config.dashboardSessionSecret
+    );
+}
+
 function cookies(req: http.IncomingMessage): Record<string, string> {
     const result: Record<string, string> = {};
     const raw = req.headers.cookie ?? '';
@@ -431,8 +444,10 @@ function readSession(req: http.IncomingMessage): DashboardSession | null {
     if (!raw) return null;
     const [payload, signature] = raw.split('.');
     if (!payload || !signature) return null;
-    const expected = sessionSignature(payload);
-    if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+    if (!/^[A-Za-z0-9_-]+$/.test(signature)) return null;
+    const expected = Buffer.from(sessionSignature(payload), 'base64url');
+    const actual = Buffer.from(signature, 'base64url');
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
     try {
         const session = JSON.parse(Buffer.from(payload, 'base64url').toString()) as DashboardSession;
         if (!session.id || !session.exp || session.exp < Date.now()) return null;
@@ -460,6 +475,8 @@ function guildAllowed(req: http.IncomingMessage, guildId: string): boolean {
 
 function authorized(req: http.IncomingMessage): boolean {
     if (oauthEnabled()) return Boolean(readSession(req));
+    // A partially configured OAuth deployment must never become anonymous.
+    if (oauthConfigured()) return false;
     if (!config.dashboardToken) return true;
     const header = req.headers['x-dashboard-token'];
     const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, '');
@@ -742,10 +759,15 @@ export function startDashboard(client: BootstrapClient): void {
         return;
     }
     const server = http.createServer(async (req, res) => {
-        const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
         res.setHeader('Referrer-Policy', 'no-referrer');
         res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader(
+            'Content-Security-Policy',
+            `default-src 'self'; img-src 'self' https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`
+        );
         try {
+            const url = new URL(req.url ?? '/', 'http://localhost');
             if (req.method === 'GET' && url.pathname === '/auth/discord' && oauthEnabled()) {
                 const state = randomBytes(24).toString('hex');
                 setCookie(res, 'bdj_oauth_state', state, 600);
@@ -843,7 +865,9 @@ export function startDashboard(client: BootstrapClient): void {
                 const guildId = url.searchParams.get('guildId') ?? '';
                 if (!guildAllowed(req, guildId)) return guildDenied(res);
                 const requestedDays = Number(url.searchParams.get('days') ?? 7);
-                const days = Number.isFinite(requestedDays) ? Math.min(90, Math.max(1, requestedDays)) : 7;
+                const days = Number.isFinite(requestedDays)
+                    ? Math.min(90, Math.max(1, Math.floor(requestedDays)))
+                    : 7;
                 const data = await client.db.getStats(guildId, days);
                 const iconFor = (source: string): string | null => client.config.icons[source.toLowerCase()] ?? null;
                 const tracks = data.topTracks as Array<{ source: string; icon?: string | null }>;
@@ -890,8 +914,13 @@ export function startDashboard(client: BootstrapClient): void {
             res.writeHead(404, { 'content-type': 'text/plain' });
             res.end('not found');
         } catch (error) {
-            res.writeHead(400, { 'content-type': 'text/plain' });
-            res.end(error instanceof Error ? error.message : 'dashboard error');
+            client.logger.warn(
+                `[dashboard] ${req.method} ${req.url ?? '/'} failed: ${
+                    error instanceof Error ? error.message : String(error)
+                }`
+            );
+            res.writeHead(500, { 'content-type': 'text/plain' });
+            res.end('request failed');
         }
     });
     server.on('error', error => {

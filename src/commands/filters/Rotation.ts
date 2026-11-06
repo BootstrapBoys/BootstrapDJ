@@ -44,7 +44,7 @@ export default class Rotation extends Command {
                 ],
             });
         } else {
-            player.player.setRotation({ rotationHz: 0 });
+            player.player.setRotation({ rotationHz: 0.2 });
             player.filters.push('rotation');
             ctx.sendMessage({
                 embeds: [

@@ -2,8 +2,5 @@
 /.cache
 /.git
 /dist
-/dashboard
 /docs
-/misc
 /node_modules
-/temp

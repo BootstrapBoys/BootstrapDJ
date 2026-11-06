@@ -85,10 +85,6 @@ export function isIncidentActive(): boolean {
     return incidentStartedAt !== null;
 }
 
-export function incidentDurationMs(now: number = Date.now()): number {
-    return incidentStartedAt === null ? 0 : now - incidentStartedAt;
-}
-
 /** True at most once per interval, so a long outage gets one reminder, not spam. */
 export function takeReminder(reminderMs: number, now: number = Date.now()): boolean {
     if (incidentStartedAt === null || reminderMs <= 0) return false;

@@ -32,7 +32,7 @@ export default class Filter extends Command {
             cooldown: 3,
             args: false,
             player: { voice: true, dj: true, active: true, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: ['ManageGuild'] },
             slashCommand: true,
             options: [
                 ...Object.keys(SIMPLE).map(

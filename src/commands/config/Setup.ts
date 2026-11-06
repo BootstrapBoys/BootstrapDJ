@@ -7,6 +7,7 @@ import {
 
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
 import { getButtons } from '../../utils/Buttons.js';
+import { startSetupJanitor, stopSetupJanitor } from '../../utils/SetupSystem.js';
 
 export default class Setup extends Command {
     constructor(client: BootstrapClient) {
@@ -118,7 +119,8 @@ export default class Setup extends Command {
                         components: getButtons(),
                     })
                     .then(async msg => {
-                        client.db.setSetup(guild.id, textChannel.id, msg.id);
+                        await client.db.setSetup(guild.id, textChannel.id, msg.id);
+                        startSetupJanitor(this.client, guild.id);
                     });
                 const embed2 = client.embed().setColor(client.color.main);
                 await ctx.sendMessage({
@@ -141,7 +143,8 @@ export default class Setup extends Command {
                             },
                         ],
                     });
-                client.db.deleteSetup(guild.id);
+                await client.db.deleteSetup(guild.id);
+                stopSetupJanitor(guild.id);
                 const channel = guild.channels.cache.get(data2.textId);
                 if (channel)
                     await channel.delete().catch(() => {});

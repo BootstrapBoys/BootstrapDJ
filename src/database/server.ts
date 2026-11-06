@@ -5,7 +5,6 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import config from '../config.js';
 import {
     AutoplaySetting,
-    Botchannel,
     BotPresence,
     CollectionShare,
     CommandAlias,
@@ -604,19 +603,6 @@ export default class ServerData {
         ]);
     }
 
-    public async recordListenerStats(
-        guildId: string,
-        userId: string,
-        seconds: number,
-        deafSeconds: number
-    ): Promise<void> {
-        await this.prisma.statsListener.upsert({
-            where: { guildId_userId: { guildId, userId } },
-            create: { guildId, userId, seconds, deafSeconds },
-            update: { seconds: { increment: seconds }, deafSeconds: { increment: deafSeconds } },
-        });
-    }
-
     public async recordListenerStatsBulk(
         guildId: string,
         rows: Array<{ userId: string; seconds: number; deafSeconds: number }>
@@ -887,29 +873,6 @@ export default class ServerData {
         });
     }
 
-    public async getBotChannel(guildId: string): Promise<Botchannel | null> {
-        return await this.prisma.botchannel.findUnique({
-            where: {
-                guildId,
-            },
-        });
-    }
-
-    public async setBotChannel(guildId: string, textId: string): Promise<void> {
-        await this.prisma.botchannel.upsert({
-            where: {
-                guildId,
-            },
-            update: {
-                textId,
-            },
-            create: {
-                guildId,
-                textId,
-            },
-        });
-    }
-
     public async getSetup(guildId: string): Promise<Setup | null> {
         if (this.setupCache.has(guildId)) return this.setupCache.get(guildId) ?? null;
         const setup = await this.prisma.setup.findUnique({
@@ -1151,21 +1114,6 @@ export default class ServerData {
         }
     }
 
-    public async clearPlaylists(userId: string): Promise<void> {
-        await this.prisma.playlist.deleteMany({
-            where: {
-                userId,
-            },
-        });
-    }
-
-    public async clearAllPlaylists(): Promise<void> {
-        await this.prisma.playlist.deleteMany();
-    }
-
-    public async clearAllSongs(): Promise<void> {
-        await this.prisma.song.deleteMany();
-    }
 }
 
 

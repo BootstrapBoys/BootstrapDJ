@@ -29,7 +29,7 @@ export default class GuildLeave extends Command {
         });
     }
 
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
+    public async run(_client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guild = this.client.guilds.cache.get(args[0]);
         if (!guild) return await ctx.sendMessage('Guild not found');
         try {

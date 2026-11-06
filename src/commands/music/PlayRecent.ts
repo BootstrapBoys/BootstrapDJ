@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 
 import { fromSaved, SavedTrack } from '../../structures/Dispatcher.js';
 import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
 import { trackIdentity } from '../../utils/QueueTools.js';
 
 export default class PlayRecent extends Command {
@@ -73,7 +74,23 @@ export default class PlayRecent extends Command {
                 ],
             });
         }
-        for (const track of recent) player.enqueue(track, true, false);
+        const limits = await getPlayLimits(client, guild.id);
+        const accepted: typeof recent = [];
+        for (const track of recent) {
+            if (checkTrack(player, track, author.id, limits)) break;
+            player.enqueue(track, true, false);
+            accepted.push(track);
+        }
+        if (!accepted.length) {
+            return await ctx.sendMessage({
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('None of those tracks fit the current limits.'),
+                ],
+            });
+        }
         void player.persist();
         await player.isPlaying();
         return await ctx.sendMessage({
@@ -81,7 +98,7 @@ export default class PlayRecent extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Queued ${recent.length} recent track${recent.length === 1 ? '' : 's'}.`),
+                    .setDescription(`Queued ${accepted.length} recent track${accepted.length === 1 ? '' : 's'}.`),
             ],
         });
     }

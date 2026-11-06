@@ -234,7 +234,9 @@ export class Queue extends Map {
         let moved = 0;
         for (const dispatcher of [...this.values()]) {
             if (!dispatcher.current && !dispatcher.queue.length) continue;
-            if (dispatcher.player.node?.name === node.name) continue;
+            // Same node name is not enough: a restarted Lavalink has a new
+            // session id and the old player is stale.
+            if (dispatcher.player.node?.name === node.name && !dispatcher.isStale) continue;
             const rebuilt = await this.rebuild(dispatcher, node);
             if (rebuilt) moved += 1;
         }
