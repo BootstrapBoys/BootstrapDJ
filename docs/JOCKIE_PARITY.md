@@ -61,7 +61,7 @@ being completed first; external-service features are listed explicitly.
 
 - **Profile:** color, bio, background, avatar shape/border, privacy, visibility, and server visibility are implemented.
 - **Games:** guess-the-song with persistent wins/plays and leaderboard is implemented.
-- **Announcements:** opt-in text announcements are implemented. Voice/stage TTS announcements still need a TTS provider and are not locally available.
+- **Announcements:** opt-in text announcements are implemented. Voice/TTS announcements are intentionally out of scope.
 - **Prefix modes:** personal prefix set/reset/list and comma-combined server prefixes are implemented.
 - **Permission modes:** claim and transfer ownership and per-command allow/deny rules are implemented; rebind/session/property modes remain.
 - **Command routing:** text/voice gates, disabled-command filtering, session lock, typo suggestions (`settings autocorrect`), vote-skip percentages, and `/utility commands` status listing are implemented; message/thread policies remain.
