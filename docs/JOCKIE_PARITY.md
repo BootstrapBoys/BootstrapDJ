@@ -76,7 +76,7 @@ being completed first; external-service features are listed explicitly.
 
 - `playrecent` stores the newest 100 tracks per guild in `RecentTrack`; it no longer depends on dispatcher lifetime.
 - `playselect` paginates playlist/search results 25 at a time with a select menu; `playsingle` intentionally picks one random track.
-- Custom aliases and mappings affect the prefix path; Discord slash-command names are registered statically and cannot be added at runtime.
+- Server-scoped custom aliases are registered as top-level slash commands during the startup sync and consume command slots. User-scoped aliases remain prefix-only because slash-command metadata is guild-wide; changing either scope requires a restart.
 - Any command that changes the queue persists through the existing session row.
 
 ## Verification
