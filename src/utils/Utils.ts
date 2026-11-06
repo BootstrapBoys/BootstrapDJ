@@ -39,27 +39,42 @@ export class Utils {
     }
 
     public static updateStatus(client: BootstrapClient, guildId?: string): void {
-        if (client.user) {
-            if (guildId === config.guildId) {
-                const player = client.queue.get(config.guildId);
-                if (player && player.current) {
-                    client.user.setActivity({
-                        name: `🎶 | ${player.current.info.title}`,
-                        type: ActivityType.Listening,
-                    });
-                } else {
-                    client.user?.setPresence({
-                        activities: [
-                            {
-                                name: config.botActivity,
-                                type: config.botActivityType,
-                            },
-                        ],
-                        status: config.botStatus,
-                    });
-                }
+        if (!client.user) return;
+        const staticPresence = (): void => {
+            client.user?.setPresence({
+                activities: [{ name: config.botActivity, type: config.botActivityType }],
+                status: config.botStatus,
+            });
+        };
+
+        if (config.botStatusMode === 'track') {
+            if (guildId !== config.guildId) return;
+            const player = client.queue.get(config.guildId);
+            if (player?.current) {
+                client.user.setActivity({
+                    name: `🎶 | ${player.current.info.title}`,
+                    type: ActivityType.Listening,
+                });
+            } else {
+                staticPresence();
             }
+            return;
         }
+
+        if (config.botStatusMode === 'count') {
+            const active = [...client.queue.values()].filter(player => Boolean(player.current)).length;
+            if (active > 0) {
+                client.user.setActivity({
+                    name: `music in ${active} server${active === 1 ? '' : 's'}`,
+                    type: ActivityType.Listening,
+                });
+            } else {
+                staticPresence();
+            }
+            return;
+        }
+
+        staticPresence();
     }
 
     public static chunk<T>(array: readonly T[], size: number): T[][] {

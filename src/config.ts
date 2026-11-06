@@ -25,6 +25,12 @@ export default {
     botStatus: (process.env.BOT_STATUS || 'online') as 'online' | 'idle' | 'dnd' | 'invisible', // online, idle, dnd, invisible
     botActivity: process.env.BOT_ACTIVITY || 'Bootstrap DJ', // set the bot activity
     botActivityType: process.env.BOT_ACTIVITY_TYPE ? parseInt(process.env.BOT_ACTIVITY_TYPE) : 2, // 0 = PLAYING, 1 = STREAMING, 2 = LISTENING, 3 = WATCHING
+    // static: BOT_ACTIVITY only. track: the configured guild's current song.
+    // count: "music in N servers". Discord presence is account-wide, so no
+    // mode can show a different song per guild for the same bot account.
+    botStatusMode: (['static', 'track', 'count'].includes(process.env.BOT_STATUS_MODE || '')
+        ? process.env.BOT_STATUS_MODE
+        : 'static') as 'static' | 'track' | 'count',
     maxQueueSize: process.env.MAX_QUEUE_SIZE ? parseInt(process.env.MAX_QUEUE_SIZE) : 100, // max queue size
     deleteAfter: process.env.COMMAND_DELETE_AFTER ? parseInt(process.env.COMMAND_DELETE_AFTER) : 10, // seconds before a command reply is deleted (0 disables)
     setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)

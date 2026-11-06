@@ -25,6 +25,10 @@ export default class TrackEnd extends Event {
         }
         dispatcher.previous = dispatcher.current;
         dispatcher.current = null;
+        // QueueEnd alone is too early: it fires before this handler clears
+        // current, so a track-title status would stay on the old song. Update
+        // after the authoritative current->null transition as well.
+        this.client.utils.updateStatus(this.client, dispatcher.guildId);
         const m = await dispatcher.nowPlayingMessage?.fetch().catch(() => {});
         if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
         if (dispatcher.loop === 'queue') dispatcher.queue.push(track);

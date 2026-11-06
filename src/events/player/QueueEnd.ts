@@ -13,10 +13,8 @@ export default class QueueEnd extends Event {
     public async run(player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         if (!guild) return;
-        // TrackEnd owns loop modes, autoplay and previous/current bookkeeping: it fires
-        // alongside this event, so repeating that work here queued every looped track
-        // twice and started two autoplay tracks whenever the queue drained.
-        this.client.utils.updateStatus(this.client, guild.id);
+        // TrackEnd owns loop modes, autoplay, previous/current bookkeeping and
+        // the status transition when current becomes null.
         if (dispatcher.leaveOnEnd && !dispatcher.autoplay && !dispatcher.queue.length) {
             dispatcher.leaveOnEnd = false;
             dispatcher.destroy();

@@ -156,6 +156,7 @@ LAVALINK_URL="localhost:2333" # Your lavalink url
 LAVALINK_AUTH="youshallnotpass" # Your lavalink password
 LAVALINK_NAME="Bootstrap Node" # Your lavalink name
 LAVALINK_SECURE= "true" # true for secure lavalink
+BOT_STATUS_MODE="static" # static, track (main guild song), or count (active servers)
 BOT_ACTIVITY_TYPE=0 # Activity type is a number from 0 to 5 see more here https://discord.com/developers/docs/topics/gateway-events#activity-object-activity-types
 
 ```
