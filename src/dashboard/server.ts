@@ -364,7 +364,7 @@ $('#stats-btn').onclick=openStats;
 $('#stats-close').onclick=closeStats;
 $('#stats-range').onchange=loadStats;
 statsModal.addEventListener('click',e=>{if(e.target===statsModal)closeStats()});
-$('#save').onclick=async()=>{const values={};for(const el of document.querySelectorAll('#settings input, #settings select'))values[el.dataset.key]=el.value;try{for(const [key,value] of Object.entries(values))await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key,value})});await load();toast('Settings saved')}catch(e){toast(e.message,true)}};
+$('#save').onclick=async()=>{const values={};for(const el of document.querySelectorAll('#settings input, #settings select'))values[el.dataset.key]=el.value;try{await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,settings:values})});await load();toast('Settings saved')}catch(e){toast(e.message,true)}};
 boot().catch(e=>{$('#status').textContent='Error';toast(e.message,true)});
 setInterval(refreshPlayer,1000);
 function progressFrame(){drawProgress();requestAnimationFrame(progressFrame)}requestAnimationFrame(progressFrame);
@@ -625,11 +625,11 @@ async function updateSetting(
 ): Promise<void> {
     if (!isKnownSetting(key)) throw new Error(`Unknown setting: ${key}`);
     if (AUTOPLAY_FIELDS.has(key)) {
-        if (!value) return;
         if (key === 'autoplayreset') {
             await client.db.deleteAutoplaySetting(guildId);
             return;
         }
+        if (!value && key !== 'autoplayseeds') return;
         const current = await client.db.getAutoplaySetting(guildId).catch(() => null);
         if (key === 'autoplaysource') {
             if (!['chart', 'curated', 'legacy'].includes(value)) throw new Error('Invalid autoplay source');
@@ -651,13 +651,31 @@ function filterState(client: BootstrapClient, guildId: string): Record<string, u
     return { active: player.filters };
 }
 
+const FILTER_GROUPS: string[][] = [
+    ['nightcore', 'pitch', 'rate', 'speed'],
+    ['8d', 'rotation'],
+];
+
 function applyFilter(client: BootstrapClient, guildId: string, id: string, enabled: boolean, value?: number): void {
     const player = client.queue.get(guildId);
     if (!player) throw new Error('No active player');
     const def = FILTERS.find(filter => filter.id === id);
     if (!def) throw new Error('Unknown filter');
     if (enabled) {
-        const applied = value ?? def.value?.fallback ?? 1;
+        const base = value ?? def.value?.fallback ?? 1;
+        const applied = def.value
+            ? Math.min(def.value.max, Math.max(def.value.min, Number.isFinite(base) ? base : def.value.fallback))
+            : base;
+        for (const group of FILTER_GROUPS) {
+            if (!group.includes(id)) continue;
+            for (const siblingId of group) {
+                if (siblingId === id) continue;
+                const sibling = FILTERS.find(filter => filter.id === siblingId);
+                if (!sibling?.activeName) continue;
+                player.filters = player.filters.filter(name => name !== sibling.activeName);
+                delete player.filterValues[sibling.id];
+            }
+        }
         def.enable(player, applied);
         if (def.value) player.filterValues[def.id] = applied;
         if (def.activeName && !player.filters.includes(def.activeName)) player.filters.push(def.activeName);
@@ -795,9 +813,15 @@ export function startDashboard(client: BootstrapClient): void {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
                 if (!guildAllowed(req, guildId)) return guildDenied(res);
-                const key = bodyText(body.key);
-                const value = bodyText(body.value);
-                await updateSetting(client, guildId, key, value);
+                if (body.settings && typeof body.settings === 'object' && !Array.isArray(body.settings)) {
+                    for (const [key, value] of Object.entries(body.settings as Record<string, unknown>)) {
+                        await updateSetting(client, guildId, key, bodyText(value));
+                    }
+                } else {
+                    const key = bodyText(body.key);
+                    const value = bodyText(body.value);
+                    await updateSetting(client, guildId, key, value);
+                }
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, settings: await settingsState(client, guildId) }));
                 return;
@@ -868,6 +892,9 @@ export function startDashboard(client: BootstrapClient): void {
             res.writeHead(400, { 'content-type': 'text/plain' });
             res.end(error instanceof Error ? error.message : 'dashboard error');
         }
+    });
+    server.on('error', error => {
+        client.logger.error(`[dashboard] server error: ${error}`);
     });
     server.listen(config.dashboardPort, host, () => {
         client.logger.info(`[dashboard] http://${host}:${config.dashboardPort}`);
