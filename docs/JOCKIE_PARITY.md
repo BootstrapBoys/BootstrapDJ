@@ -48,6 +48,8 @@ This branch is additive and experimental. It does **not** change `main`.
 - `/filter` grouped selector for 8D, bass boost, distortion, karaoke, nightcore, pitch, rate, reset, rotation, speed, tremolo, vibrato, and low-pass; child filter names remain prefix commands. `filters` reports active filters.
 
 ### Profile / prefixes / gates
+
+The prefix and slash entry paths now share `src/utils/CommandGate.ts`; the gate owns permission, channel, voice, DJ, cooldown and argument checks while each adapter keeps its own reply lifetime. `/play` and `/playnext` share `src/utils/PlayRequest.ts`, which also adds the missing no-node guard and awaited replies to play-next.
 - `profile` (color, bio, privacy, visibility)
 - `selfprefix` (personal prefix; prefix-only)
 - `settings commandchannel` and `settings voicechannel` gates for slash and prefix commands.
@@ -84,7 +86,7 @@ being completed first; public listing/clone services are explicitly out of scope
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 97 tests at the latest branch commit.
+- `npm test` — 114 tests at the latest branch commit.
 
 Storage: WAL mode and bounded stats retention are documented in [`docs/STORAGE.md`](STORAGE.md).
 
