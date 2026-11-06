@@ -27,6 +27,10 @@ export const DEFAULTS: Record<string, string> = {
     autocorrect: 'false',
     volumeautomatic: 'false',
     locked: 'false',
+    allowthreads: 'true',
+    timeoutlisteners: '5',
+    timeoutpause: '0',
+    timeoutplaying: '0',
 };
 
 export function isKnownSetting(key: string): key is keyof typeof DEFAULTS {

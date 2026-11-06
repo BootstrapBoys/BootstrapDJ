@@ -19,6 +19,12 @@ export default class QueueEnd extends Event {
         if (dispatcher.leaveOnEnd && !dispatcher.autoplay && !dispatcher.queue.length) {
             dispatcher.leaveOnEnd = false;
             dispatcher.destroy();
+            return;
+        }
+        if (!dispatcher.autoplay && !dispatcher.queue.length) {
+            const settings = await this.client.db.getGuildSettings(guild.id);
+            const seconds = Number(settings.timeoutplaying ?? 0);
+            dispatcher.armIdleTimeout(Number.isFinite(seconds) ? seconds : 0);
         }
     }
 }

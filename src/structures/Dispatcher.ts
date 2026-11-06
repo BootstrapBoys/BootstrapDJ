@@ -173,6 +173,8 @@ export default class Dispatcher {
     public seeds: Song[];
     private toppingUp = false;
     private persistTimer: ReturnType<typeof setInterval> | null = null;
+    private pauseTimer: ReturnType<typeof setTimeout> | null = null;
+    private idleTimer: ReturnType<typeof setTimeout> | null = null;
     public nowPlayingMessage: Message | null;
     /** Set by /playleave: tear down the player when the queue drains. */
     public leaveOnEnd = false;
@@ -337,6 +339,23 @@ export default class Dispatcher {
             this.callPlayer('resume', () => this.player.setPaused(false));
             this.paused = false;
         }
+        if (this.pauseTimer) {
+            clearTimeout(this.pauseTimer);
+            this.pauseTimer = null;
+        }
+        if (this.paused) {
+            void this.client.db
+                .getGuildSettings(this.guildId)
+                .then(settings => {
+                    const seconds = Number(settings.timeoutpause ?? 0);
+                    if (!Number.isFinite(seconds) || seconds <= 0 || !this.paused) return;
+                    this.pauseTimer = setTimeout(() => {
+                        if (this.paused) this.destroy();
+                    }, seconds * 1000);
+                    (this.pauseTimer as unknown as { unref?: () => void }).unref?.();
+                })
+                .catch(() => {});
+        }
         void this.persist();
     }
     public remove(index: number): void {
@@ -382,9 +401,27 @@ export default class Dispatcher {
         this.queue.unshift(this.previous);
         this.callPlayer('stop', () => this.player.stopTrack());
     }
+    public armIdleTimeout(seconds: number): void {
+        this.clearIdleTimeout();
+        if (!Number.isFinite(seconds) || seconds <= 0) return;
+        this.idleTimer = setTimeout(() => {
+            this.idleTimer = null;
+            if (!this.queue.length && !this.autoplay) this.destroy();
+        }, seconds * 1000);
+        (this.idleTimer as unknown as { unref?: () => void }).unref?.();
+    }
+
+    public clearIdleTimeout(): void {
+        if (this.idleTimer) clearTimeout(this.idleTimer);
+        this.idleTimer = null;
+    }
+
     public destroy(): void {
         if (this.persistTimer) clearInterval(this.persistTimer);
         this.persistTimer = null;
+        if (this.pauseTimer) clearTimeout(this.pauseTimer);
+        this.pauseTimer = null;
+        this.clearIdleTimeout();
         void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.queue.length = 0;
         this.history = [];
@@ -482,6 +519,7 @@ export default class Dispatcher {
      * request becomes the seed for future picks.
      */
     public enqueue(song: Song, remember = true): void {
+        this.clearIdleTimeout();
         if (this.autoplay) this.purgeAutoplay();
         this.queue.push(song);
         if (remember) this.rememberSeed(song);
@@ -491,6 +529,7 @@ export default class Dispatcher {
 
     /** Same contract as enqueue(), but jumps the queue (used by /playnext). */
     public enqueueNext(song: Song, remember = true): void {
+        this.clearIdleTimeout();
         if (this.autoplay) this.purgeAutoplay();
         this.queue.unshift(song);
         if (remember) this.rememberSeed(song);

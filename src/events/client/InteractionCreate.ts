@@ -128,6 +128,9 @@ export default class InteractionCreate extends Event {
                 });
             }
             const guildSettings = await this.client.db.getGuildSettings(interaction.guildId);
+            if (guildSettings.allowthreads === 'false' && interaction.channel?.isThread()) {
+                return await interaction.reply({ content: 'Commands are disabled in threads for this server.', ephemeral: true });
+            }
             if (
                 (guildSettings.disabledcommands ?? '')
                     .split(',')

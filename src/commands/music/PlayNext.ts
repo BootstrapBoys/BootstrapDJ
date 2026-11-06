@@ -125,7 +125,11 @@ export default class PlayNext extends Command {
                                 ),
                         ],
                     });
+                let playlistDuration = 0;
                 for (const track of res.data.tracks.slice(0, limits.maxPlaylistTracks || undefined)) {
+                    const trackLength = track.info.isStream ? 0 : track.info.length;
+                    if (limits.maxPlaylistLength > 0 && playlistDuration + trackLength > limits.maxPlaylistLength * 1000) break;
+                    playlistDuration += trackLength;
                     const pl = player.buildTrack(track, author);
                     const rejected = checkTrack(player, pl, author.id, limits);
                     if (rejected) continue;

@@ -81,11 +81,15 @@ export default class MessageCreate extends Event {
             if (guildSettings.autocorrect === 'true') {
                 const suggestion = this.closestCommand(cmd);
                 if (suggestion) {
-                    const prefix = guild.prefix.split(',')[0]?.trim() || this.client.config.prefix;
-                    return await replySafe({ content: `Did you mean \`${prefix}${suggestion}\`?` });
+                    command = this.client.commands.get(suggestion);
+                    if (command) {
+                        const prefix = guild.prefix.split(',')[0]?.trim() || this.client.config.prefix;
+                        await replySafe({ content: `Corrected \`${prefix}${cmd}\` to \`${prefix}${suggestion}\`.` });
+                        cmd = suggestion;
+                    }
                 }
             }
-            return;
+            if (!command) return;
         }
         if (
             guildSettings.locked === 'true' &&
@@ -102,6 +106,9 @@ export default class MessageCreate extends Event {
         );
         if (!permitted) {
             return await replySafe({ content: 'You are not allowed to use this command.' });
+        }
+        if (guildSettings.allowthreads === 'false' && message.channel.isThread()) {
+            return await replySafe({ content: 'Commands are disabled in threads for this server.' });
         }
         if (
             (guildSettings.disabledcommands ?? '')

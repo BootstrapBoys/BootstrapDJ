@@ -15,6 +15,9 @@ export default class VoiceStateUpdate extends Event {
         if (!guildId || !botId || !me) return;
         const player = this.client.queue.get(guildId);
         if (!player) return;
+        const settings = await this.client.db.getGuildSettings(guildId);
+        const listenerWait = Number(settings.timeoutlisteners ?? 5);
+        const listenerWaitMs = (Number.isFinite(listenerWait) && listenerWait >= 0 ? listenerWait : 5) * 1000;
         if (
             newState.guild.members.cache.get(botId) &&
             !newState.guild.members.cache.get(botId).voice.channelId
@@ -75,7 +78,7 @@ export default class VoiceStateUpdate extends Event {
                             player.destroy();
                         }
                     }
-                }, 5000);
+                }, listenerWaitMs);
             } else {
                 if (server) return;
                 setTimeout(async () => {
@@ -91,7 +94,7 @@ export default class VoiceStateUpdate extends Event {
                             player.destroy();
                         }
                     }
-                }, 5000);
+                }, listenerWaitMs);
             }
         }
     }
