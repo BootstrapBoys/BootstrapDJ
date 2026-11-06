@@ -108,4 +108,4 @@ This branch is for a self-hosted bot, not a public bot network.
 
 ## Search engines
 
-Prefix commands default to `PREFIX_SEARCH_ENGINE` (`ytsearch`) while slash commands keep the per-guild `searchtype`/`SEARCH_ENGINE` value. URLs are resolved directly and ignore the search engine.
+Prefix commands default to `PREFIX_SEARCH_ENGINE` (`ytsearch`) while slash commands keep the per-guild `searchtype`/`SEARCH_ENGINE` value. URLs are resolved directly and ignore the search engine. In the setup/song-request channel, `!playnext`/`!pn` is recognised as a next-queue request; ordinary setup messages remain append-only.

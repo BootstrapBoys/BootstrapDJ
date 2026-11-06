@@ -40,9 +40,6 @@ export async function runPlayRequest(
     }
     if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
 
-    client.logger.debug(
-        `[play] mode=${mode} query=${JSON.stringify(query)} guild=${guild.id} queue=${player.queue.length} current=${player.current?.info.title ?? '-'}`
-    );
     const limits = await getPlayLimits(client, guild.id);
     const guildSettings: Record<string, string> = await client.db
         .getGuildSettings(guild.id)

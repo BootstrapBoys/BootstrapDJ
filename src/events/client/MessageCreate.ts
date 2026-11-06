@@ -92,9 +92,6 @@ export default class MessageCreate extends Event {
             }
             if (!command) return;
         }
-        this.client.logger.debug(
-            `[command] prefix "${cmd}" -> ${command.name} args=${JSON.stringify(args)}`
-        );
         const gate = await evaluateCommand({
             client: this.client,
             command,
