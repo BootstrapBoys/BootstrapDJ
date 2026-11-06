@@ -21,7 +21,7 @@ This branch is additive and experimental. It does **not** change `main`.
 - Jockie-compatible prefix aliases: `rewind`, `restart`, `windto`, `clear`.
 
 ### Playback / search
-- `playrecent`, `playsingle`, `playselect`, `playleave`, `radio`
+- `playrecent` (persistent recent history), `playsingle`, `playselect` (paginated page picker), `playleave`, `radio`
 - `album`, `artist`, `playlistsearch`, `top`
 - Existing `play`, `playnext`, `search`, and playlist commands remain.
 
@@ -70,12 +70,12 @@ being completed first; external-service features are listed explicitly.
 - **Premium equivalents:** `/premium` reports the free policy; there are no paid commands. Jockie-specific boost/perk cosmetics remain.
 - **Owner tools:** dev-only restart, shutdown, and command reload are implemented.
 - **Dashboard / hosted surfaces:** local dashboard is implemented at `DASHBOARD_PORT` (loopback by default) with player controls, the live queue, filter toggles, a categorized settings editor, and a statistics page (sessions, listen time, track types, hourly/weekday activity, most played, most listened, top commands). Bot-list votes/clones still require external services.
-- **Multi-bot:** `BOTS_FILE` launches one client per token, heartbeats bots, and routes voice commands to the first active bot in `preferredOrder`. Automatic session handoff after a crash is not yet a lease-based transfer.
+- **Multi-bot:** `BOTS_FILE` launches one client per token, heartbeats bots, routes voice commands to the first active bot in `preferredOrder`, and uses a durable `SessionLease` for automatic session handoff after the owner stops heartbeating. The lease is atomically claimed, refreshed every 10 s, and expires after 60 s.
 
 ## Known limitations
 
-- `playrecent` uses in-memory history (same lifetime as the dispatcher), not a persistent recent-tracks table.
-- `playsingle`/`playselect` use a single pick; they do not implement Jockie's page-selection UI.
+- `playrecent` stores the newest 100 tracks per guild in `RecentTrack`; it no longer depends on dispatcher lifetime.
+- `playselect` paginates playlist/search results 25 at a time with a select menu; `playsingle` intentionally picks one random track.
 - Custom aliases and mappings affect the prefix path; Discord slash-command names are registered statically and cannot be added at runtime.
 - Any command that changes the queue persists through the existing session row.
 
@@ -83,7 +83,7 @@ being completed first; external-service features are listed explicitly.
 
 - `tsc --noEmit`
 - `eslint .`
-- `npm test` — 86 tests at the latest branch commit.
+- `npm test` — 90 tests at the latest branch commit.
 
 Dashboard: `DASHBOARD_PORT=8795` on the bot host, loopback-bound by default; set `DASHBOARD_TOKEN` before binding non-loopback.
 
