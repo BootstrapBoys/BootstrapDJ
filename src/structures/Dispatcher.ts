@@ -184,6 +184,8 @@ export default class Dispatcher {
     private statsTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
     public nowPlayingCollector: NowPlayingCollector | null;
+    /** Ephemeral command responses that should expire with the current track. */
+    private nowPlayingCommandMessages = new Map<Message, NodeJS.Timeout | null>();
     /** Set by /playleave: tear down the player when the queue drains. */
     public leaveOnEnd = false;
     /** 24/7 mode: pause at the end of the current track when the channel is empty. */
@@ -216,6 +218,7 @@ export default class Dispatcher {
         this.seeds = [];
         this.nowPlayingMessage = null;
         this.nowPlayingCollector = null;
+        this.nowPlayingCommandMessages = new Map();
         this.persistTimer = setInterval(() => {
             // A paused player's position cannot change and pause() already wrote
             // the state, so the periodic write would only duplicate the row.
@@ -463,6 +466,37 @@ export default class Dispatcher {
         this.idleTimer = null;
     }
 
+    /** Register a /nowplaying or !nowplaying response for track-scoped cleanup. */
+    public registerNowPlayingMessage(message: Message, durationMs: number | null): void {
+        this.removeNowPlayingMessage(message);
+        const timer =
+            durationMs === null
+                ? null
+                : setTimeout(
+                      () => this.removeNowPlayingMessage(message),
+                      Math.min(Math.max(durationMs + 30_000, 15_000), 12 * 60 * 60 * 1000)
+                  );
+        (timer as unknown as { unref?: () => void })?.unref?.();
+        this.nowPlayingCommandMessages.set(message, timer);
+    }
+
+    private removeNowPlayingMessage(message: Message): void {
+        if (!this.nowPlayingCommandMessages.has(message)) return;
+        const timer = this.nowPlayingCommandMessages.get(message);
+        if (timer) clearTimeout(timer);
+        this.nowPlayingCommandMessages.delete(message);
+        void message.delete().catch(() => {});
+    }
+
+    /** Delete every track-scoped now-playing response (track end/skip/stop). */
+    public clearNowPlayingCommandMessages(): void {
+        for (const [message, timer] of [...this.nowPlayingCommandMessages]) {
+            if (timer) clearTimeout(timer);
+            this.nowPlayingCommandMessages.delete(message);
+            void message.delete().catch(() => {});
+        }
+    }
+
     public destroy(preserveSession: boolean = false): void {
         // A delayed timer or collector may still hold the old dispatcher after
         // a rebuild installed a replacement; never tear down the live player.
@@ -476,6 +510,7 @@ export default class Dispatcher {
             this.clearIdleTimeout();
             this.nowPlayingCollector?.stop('destroy');
             this.nowPlayingCollector = null;
+            this.clearNowPlayingCommandMessages();
             return;
         }
         if (this.client.shuttingDown) {
@@ -494,6 +529,7 @@ export default class Dispatcher {
         this.clearIdleTimeout();
         this.nowPlayingCollector?.stop('destroy');
         this.nowPlayingCollector = null;
+        this.clearNowPlayingCommandMessages();
         if (!preserveSession) void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.queue.length = 0;
         this.history = [];

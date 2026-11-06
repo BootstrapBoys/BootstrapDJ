@@ -31,6 +31,7 @@ export default class TrackStart extends Event {
         // previous listener even if the new channel is missing from cache.
         dispatcher.nowPlayingCollector?.stop('replaced');
         dispatcher.nowPlayingCollector = null;
+        dispatcher.clearNowPlayingCommandMessages();
         // Top up the lookahead before any early return below can skip it.
         void dispatcher.ensureLookahead().catch(() => {});
         const guild = this.client.guilds.cache.get(player.guildId);

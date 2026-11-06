@@ -31,6 +31,7 @@ export default class TrackEnd extends Event {
         this.client.utils.updateStatus(this.client, dispatcher.guildId);
         dispatcher.nowPlayingCollector?.stop('trackEnd');
         dispatcher.nowPlayingCollector = null;
+        dispatcher.clearNowPlayingCommandMessages();
         const m = await dispatcher.nowPlayingMessage?.fetch().catch(() => {});
         if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
         if (dispatcher.loop === 'queue') dispatcher.queue.push(track);

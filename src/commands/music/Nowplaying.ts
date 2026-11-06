@@ -66,7 +66,9 @@ export default class Nowplaying extends Command {
                           duration
                       )}\``,
             });
-        return await ctx.sendMessage({ embeds: [embed1], components: getButtons() });
+        const message = await ctx.sendMessage({ embeds: [embed1], components: getButtons() });
+        player.registerNowPlayingMessage(message, track.info.isStream ? null : track.info.length);
+        return message;
     }
 }
 
