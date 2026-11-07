@@ -5,6 +5,7 @@ import { PermissionFlagsBits } from 'discord.js';
 import {
     dashboardFilter,
     dashboardGuilds,
+    dashboardPlayerAction,
     guildAccessFor,
     playerSnapshot,
 } from '../dist/dashboard/shardApi.js';
@@ -124,4 +125,17 @@ test('dashboardFilter applies a filter on the owning player', () => {
     assert.deepEqual(enabled.active, ['8D']);
     const disabled = dashboardFilter(c, 'g1', '8d', false);
     assert.deepEqual(disabled.active, []);
+});
+
+
+test('dashboardPlayerAction seeks to a valid position', async () => {
+    let sought = null;
+    const c = client([]);
+    c.queue.set('g1', {
+        current: { info: { length: 10000 } },
+        seek: value => { sought = value; },
+    });
+    const result = await dashboardPlayerAction(c, 'g1', 'seek', 4321);
+    assert.equal(result.ok, true);
+    assert.equal(sought, 4321);
 });

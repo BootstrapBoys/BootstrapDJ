@@ -197,6 +197,15 @@ export async function dashboardPlayerAction(
                 await player.skip(value);
                 break;
             }
+            case 'seek': {
+                const length = player.current?.info.length ?? 0;
+                if (length <= 0) throw new Error('Cannot seek a live stream');
+                if (!Number.isFinite(value) || value < 0 || value > length) {
+                    throw new Error('Invalid seek position');
+                }
+                player.seek(Math.round(value));
+                break;
+            }
             default:
                 throw new Error('Unknown player action');
         }
