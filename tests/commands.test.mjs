@@ -81,6 +81,7 @@ test('commands that do remote work before replying defer; fast ones do not', asy
 test('the new feature commands are registered and keep ephemeral defaults', async () => {
     for (const path of [
         'config/AutoplayConfig',
+        'dev/Guild',
         'config/Mappings',
         'config/Permissions',
         'config/Alias',
@@ -158,4 +159,12 @@ test('autoplay exposes three optional seed boxes', async () => {
 
     assert.deepEqual(names, ['seed', 'seed2', 'seed3']);
     assert.ok(command.options.every(option => option.required === false));
+});
+test('guild inspector is owner-only and slash-visible', async () => {
+    const GuildClass = (await import('../dist/commands/dev/Guild.js')).default;
+    const command = new GuildClass(fakeClient);
+    assert.equal(command.permissions.dev, true);
+    assert.equal(command.slashCommand, true);
+    assert.equal(command.ephemeral, true);
+    assert.deepEqual(command.options, []);
 });
