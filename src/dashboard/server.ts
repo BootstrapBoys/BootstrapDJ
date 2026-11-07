@@ -228,7 +228,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </style>
 </head>
 <body>
-<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings">⚙</button><button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none">⏻</button></div></header>
+<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings" style="display:none">⚙</button><button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none">⏻</button></div></header>
 <main>
 <section class="panel">
 <div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span></div>
@@ -236,7 +236,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 <div id="now-meta" class="now-meta"></div>
 <div id="now-time" class="now-time">0:00 / 0:00</div>
 <div class="progress"><div id="progress-bar"></div></div>
-<div class="controls">
+<div class="controls" id="player-controls" style="display:none">
 <button class="ctrl" data-player="previous" title="Previous">⏮</button>
 <button class="ctrl" data-player="toggle" title="Pause or resume">⏯</button>
 <button class="ctrl" data-player="next" title="Skip">⏭</button>
@@ -247,7 +247,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </div>
 <div class="queue-block"><div class="queue-head"><h3>Queue</h3><span id="queue-count" class="small"></span></div><div id="queue-list" class="queue-list"><div class="small">Nothing queued.</div></div></div>
 </section>
-<section class="panel"><h2>Filters</h2><div id="filters" class="filters"></div></section>
+<section class="panel" id="filters-panel" style="display:none"><h2>Filters</h2><div id="filters" class="filters"></div></section>
 </main>
 <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
   <div class="modal-card">
@@ -258,21 +258,21 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </div>
 <div id="stats-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="stats-title">
   <div class="modal-card stats-card">
-    <div class="modal-head"><h2 id="stats-title">Statistics</h2><div class="stats-toolbar"><select id="stats-range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select><button class="icon-btn" id="stats-clear" title="Clear statistics">Clear stats</button><button class="icon-btn" id="stats-close" aria-label="Close statistics">✕</button></div></div>
+    <div class="modal-head"><h2 id="stats-title">Statistics</h2><div class="stats-toolbar"><select id="stats-range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select><button class="icon-btn" id="stats-clear" title="Clear statistics" style="display:none">Clear stats</button><button class="icon-btn" id="stats-close" aria-label="Close statistics">✕</button></div></div>
     <div id="stats-content"></div>
   </div>
 </div>
 <div id="toast"></div>
 <script>
-const state={guildId:null,data:null,guilds:[],viewer:{owner:true,admin:true},queueKey:null,csrf:''};
+const state={guildId:null,data:null,guilds:[],permissions:{member:false,owner:false,admin:false,controls:false,settings:false},queueKey:null,csrf:''};
 const $=s=>document.querySelector(s);
 function token(){return localStorage.getItem('bootstrapdj-dashboard-token')||''}
 function headers(json,method){const h={'x-dashboard-token':token()};if(json)h['content-type']='application/json';if(method==='POST'&&state.csrf)h['x-dashboard-csrf']=state.csrf;return h}
 function toast(text,isError){const el=$('#toast');el.textContent=text;el.className='show '+(isError?'error':'ok');setTimeout(()=>el.className='',2500)}
 async function api(path,options){const method=options&&options.method||'GET';const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body),method),...(options&&options.headers)}});if(res.status===401){if(document.body.dataset.oauth==='1'){location.href='/auth/discord';throw new Error('Login required')}const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
-async function boot(){const g=await api('/api/guilds');state.csrf=g.csrf||'';state.guilds=g.guilds||[];state.viewer=g.viewer||state.viewer;if(document.body.dataset.oauth==='1'){$('#logout-btn').style.display=''}else{$('#logout-btn').style.display='none'}const sel=$('#guild');sel.innerHTML='';for(const guild of state.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!state.guilds.length){syncViewer();$('#status').textContent='No guilds';return}state.guildId=state.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;syncViewer();load()};syncViewer();await load()}
-function syncViewer(){const entry=state.guilds.find(guild=>guild.id===state.guildId);state.viewer={owner:Boolean(entry&&entry.owner),admin:Boolean(entry&&entry.admin)};$('#stats-clear').style.display=state.viewer.owner?'':'none'}
-async function load(){try{state.data=await api('/api/state?guildId='+encodeURIComponent(state.guildId));render();$('#status').textContent='Connected'}catch(e){$('#status').textContent='Error';toast(e.message,true)}}
+async function boot(){const g=await api('/api/guilds');state.csrf=g.csrf||'';state.guilds=g.guilds||[];if(document.body.dataset.oauth==='1'){$('#logout-btn').style.display=''}else{$('#logout-btn').style.display='none'}const sel=$('#guild');sel.innerHTML='';for(const guild of state.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!state.guilds.length){syncViewer();$('#status').textContent='No guilds';return}state.guildId=state.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;syncViewer();load()};syncViewer();await load()}
+function syncViewer(){const entry=state.guilds.find(guild=>guild.id===state.guildId);state.permissions={member:Boolean(entry&&entry.member),owner:Boolean(entry&&entry.owner),admin:Boolean(entry&&entry.admin),controls:Boolean(entry&&entry.controls),settings:Boolean(entry&&entry.settings)};$('#settings-btn').style.display=state.permissions.settings?'':'none';$('#player-controls').style.display=state.permissions.controls?'':'none';$('#filters-panel').style.display=state.permissions.settings?'':'none';$('#stats-clear').style.display=state.permissions.owner?'':'none'}
+async function load(){try{state.data=await api('/api/state?guildId='+encodeURIComponent(state.guildId));render();$('#status').textContent=state.permissions.controls?'Connected':'Read-only'}catch(e){$('#status').textContent='Error';toast(e.message,true)}}
 const GROUPS=[
 {title:'Playback',keys:['defaultvolume','defaultautoplay','defaultrepeat','defaultshuffle','searchtype','maxqueue','maxuserqueue','voteskip','voteskippercent','autocorrect','volumeautomatic','loudnesstarget']},
 {title:'Autoplay',keys:['autoplaysource','autoplayseeds']},
@@ -330,14 +330,14 @@ const jumpedBack=nextPosition<progress.serverPosition-1500;
 const jumpedForward=nextPosition>progress.serverPosition+8000;
 const drifted=serverChanged&&Math.abs(nextPosition-estimated)>2000;
 if(trackChanged||nextPaused!==progress.paused||nextDuration!==progress.duration||jumpedBack||jumpedForward||drifted){progress={track:trackKey,serverPosition:nextPosition,position:nextPaused?estimated:nextPosition,duration:nextDuration,at:Date.now(),paused:nextPaused}}else{progress.serverPosition=nextPosition}
-drawProgress();stateEl.textContent=(p.paused?'paused':'playing')+(p.autoplay?' · autoplay':'');$('#volume').value=p.volume??100;$('#volume-label').textContent=($('#volume').value)+'%';const loop=$('#loop-btn');loop.textContent='Loop: '+p.loop;loop.classList.toggle('on',p.loop!=='off');count.textContent=p.queueLength+' queued';const queueKey=(p.queueLength||0)+'|'+(p.upcoming||[]).map(t=>t.position+':'+t.title+':'+(t.author||'')).join('|');if(state.queueKey!==queueKey){state.queueKey=queueKey;list.innerHTML='';if(!p.upcoming||!p.upcoming.length){list.innerHTML='<div class="small">Nothing queued.</div>'}else{for(const t of p.upcoming){const row=document.createElement('div');row.className='queue-item';const pos=document.createElement('span');pos.className='qpos';pos.textContent=t.position;const name=document.createElement('span');name.className='qtitle';name.textContent=t.title;const meta2=document.createElement('span');meta2.className='qmeta';meta2.textContent=(t.author||'')+(t.duration?' · '+formatMs(t.duration):'');row.append(pos,name,meta2);row.title='Skip to '+t.title;row.tabIndex=0;row.role='button';row.onclick=()=>playerAction('jump',t.position);row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();playerAction('jump',t.position)}};list.appendChild(row)}}}}
+drawProgress();stateEl.textContent=(p.paused?'paused':'playing')+(p.autoplay?' · autoplay':'');$('#volume').value=p.volume??100;$('#volume-label').textContent=($('#volume').value)+'%';const loop=$('#loop-btn');loop.textContent='Loop: '+p.loop;loop.classList.toggle('on',p.loop!=='off');count.textContent=p.queueLength+' queued';const queueKey=(p.queueLength||0)+'|'+(p.upcoming||[]).map(t=>t.position+':'+t.title+':'+(t.author||'')).join('|');if(state.queueKey!==queueKey){state.queueKey=queueKey;list.innerHTML='';if(!p.upcoming||!p.upcoming.length){list.innerHTML='<div class="small">Nothing queued.</div>'}else{for(const t of p.upcoming){const row=document.createElement('div');row.className='queue-item';const pos=document.createElement('span');pos.className='qpos';pos.textContent=t.position;const name=document.createElement('span');name.className='qtitle';name.textContent=t.title;const meta2=document.createElement('span');meta2.className='qmeta';meta2.textContent=(t.author||'')+(t.duration?' · '+formatMs(t.duration):'');row.append(pos,name,meta2);if(state.permissions.controls){row.title='Skip to '+t.title;row.tabIndex=0;row.role='button';row.onclick=()=>playerAction('jump',t.position);row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();playerAction('jump',t.position)}}};list.appendChild(row)}}}}
 function formatMs(ms){const s=Math.max(0,Math.floor(ms/1000));const m=Math.floor(s/60);const h=Math.floor(m/60);return h?h+':'+String(m%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):m+':'+String(s%60).padStart(2,'0')}
 function render(){const d=state.data;renderPlayer(d);
  const wrap=$('#filters');wrap.innerHTML='';for(const f of d.filters){const row=document.createElement('div');row.className='filter';const active=f.active;const label=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.checked=active;cb.onchange=()=>toggleFilter(f.id,cb.checked,row);label.appendChild(cb);const span=document.createElement('span');span.textContent=f.label;label.appendChild(span);row.appendChild(label);if(f.value){const input=document.createElement('input');input.type='number';input.className='value';input.min=f.value.min;input.max=f.value.max;input.step=f.value.step;input.value=f.current??f.value.fallback;input.onchange=()=>{if(cb.checked)toggleFilter(f.id,true,row,input.value)};row.appendChild(input)}wrap.appendChild(row)}
  const s=$('#settings');s.innerHTML='';const seen=new Set();for(const group of GROUPS){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent=group.title;section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of group.keys){if(!(key in d.settings))continue;seen.add(key);grid.appendChild(field(key,d.settings[key]))}section.appendChild(grid);if(group.title==='Autoplay'){const reset=document.createElement('button');reset.className='autoplay-reset';reset.textContent='Reset autoplay override';reset.onclick=async()=>{try{await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,key:'autoplayreset',value:'true'})});await load();toast('Autoplay override reset')}catch(e){toast(e.message,true)}};section.appendChild(reset)}s.appendChild(section)}const rest=Object.keys(d.settings).filter(key=>!seen.has(key));if(rest.length){const section=document.createElement('section');section.className='settings-group';const heading=document.createElement('h3');heading.textContent='Other';section.appendChild(heading);const grid=document.createElement('div');grid.className='settings-grid';for(const key of rest)grid.appendChild(field(key,d.settings[key]));section.appendChild(grid);s.appendChild(section)}}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function safeUrl(v){const s=String(v||'');return /^https?:\/\//i.test(s)?s:''}
-async function toggleFilter(id,enabled,row,value){try{await api('/api/filter',{method:'POST',body:JSON.stringify({guildId:state.guildId,filter:id,enabled,value:value===undefined?undefined:Number(value)})});await load();toast((enabled?'Enabled ':'Disabled ')+id)}catch(e){toast(e.message,true);if(row)row.classList.add('error')}}
+async function toggleFilter(id,enabled,row,value){if(!state.permissions.settings){toast('Manager access required',true);return}try{await api('/api/filter',{method:'POST',body:JSON.stringify({guildId:state.guildId,filter:id,enabled,value:value===undefined?undefined:Number(value)})});await load();toast((enabled?'Enabled ':'Disabled ')+id)}catch(e){toast(e.message,true);if(row)row.classList.add('error')}}
 const modal=$('#settings-modal');
 function openSettings(){modal.classList.add('open')}
 function closeSettings(){modal.classList.remove('open')}
@@ -346,7 +346,7 @@ $('#settings-close').onclick=closeSettings;
 $('#settings-cancel').onclick=closeSettings;
 modal.addEventListener('click',e=>{if(e.target===modal)closeSettings()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSettings();closeStats()}});
-async function playerAction(action,value){try{await api('/api/player',{method:'POST',body:JSON.stringify({guildId:state.guildId,action,value})});await load()}catch(e){toast(e.message,true)}}
+async function playerAction(action,value){if(!state.permissions.controls){toast('Read-only dashboard access',true);return}try{await api('/api/player',{method:'POST',body:JSON.stringify({guildId:state.guildId,action,value})});await load()}catch(e){toast(e.message,true)}}
 document.querySelectorAll('[data-player]').forEach(button=>button.onclick=()=>playerAction(button.dataset.player));
 $('#volume').onchange=()=>{const value=Number($('#volume').value);$('#volume-label').textContent=value+'%';playerAction('volume',value)};
 $('#volume').oninput=()=>{$('#volume-label').textContent=$('#volume').value+'%'};
@@ -369,7 +369,7 @@ $('#logout-btn').onclick=async()=>{try{await fetch('/auth/logout',{method:'POST'
 $('#stats-close').onclick=closeStats;
 $('#stats-range').onchange=loadStats;
 statsModal.addEventListener('click',e=>{if(e.target===statsModal)closeStats()});
-$('#save').onclick=async()=>{const values={};for(const el of document.querySelectorAll('#settings input, #settings select'))values[el.dataset.key]=el.value;try{await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,settings:values})});await load();toast('Settings saved')}catch(e){toast(e.message,true)}};
+$('#save').onclick=async()=>{const values={};for(const el of document.querySelectorAll('#settings input, #settings select'))values[el.dataset.key]=el.value;try{await api('/api/settings',{method:'POST',body:JSON.stringify({guildId:state.guildId,settings:values})});await load();closeSettings();toast('Settings saved')}catch(e){toast(e.message,true)}};
 boot().catch(e=>{$('#status').textContent='Error';toast(e.message,true)});
 setInterval(refreshPlayer,1000);
 function progressFrame(){drawProgress();requestAnimationFrame(progressFrame)}requestAnimationFrame(progressFrame);
@@ -537,13 +537,20 @@ function viewer(req: http.IncomingMessage): { name: string; owner: boolean; admi
     return { name: 'Local admin', owner: true, admin: true };
 }
 
-type GuildAccess = { owner: boolean; admin: boolean };
+type GuildAccess = {
+    member: boolean;
+    owner: boolean;
+    admin: boolean;
+    controls: boolean;
+    settings: boolean;
+};
+const NO_ACCESS: GuildAccess = { member: false, owner: false, admin: false, controls: false, settings: false };
 const guildAccessCache = new Map<string, GuildAccess & { at: number }>();
 const GUILD_ACCESS_TTL_MS = 60_000;
 
 /**
  * Bot membership is the allow-list. A guild is authorized only while it is in
- * client.guilds.cache, and the signed-in user must be its owner or a manager.
+ * client.guilds.cache, and the signed-in user must be a member of that guild.
  */
 async function guildAccess(
     client: BootstrapClient,
@@ -551,28 +558,34 @@ async function guildAccess(
     guildId: string
 ): Promise<GuildAccess> {
     const liveGuild = client.guilds.cache.get(guildId);
-    if (!liveGuild) return { owner: false, admin: false };
-    if (!oauthEnabled()) return { owner: true, admin: true };
+    if (!liveGuild) return NO_ACCESS;
+    if (!oauthEnabled()) {
+        return { member: true, owner: true, admin: true, controls: true, settings: true };
+    }
     const session = readSession(req);
-    if (!session) return { owner: false, admin: false };
+    if (!session) return NO_ACCESS;
     const key = `${session.id}:${guildId}`;
     const cached = guildAccessCache.get(key);
     if (cached && Date.now() - cached.at < GUILD_ACCESS_TTL_MS) {
-        return { owner: cached.owner, admin: cached.admin };
+        return cached;
     }
+    const member =
+        liveGuild.members.cache.get(session.id) ??
+        (await liveGuild.members.fetch(session.id).catch(() => null));
+    if (!member) return NO_ACCESS;
     const owner = liveGuild.ownerId === session.id;
-    let admin = owner;
-    if (!admin) {
-        const member =
-            liveGuild.members.cache.get(session.id) ??
-            (await liveGuild.members.fetch(session.id).catch(() => null));
-        admin = Boolean(
-            member?.permissions.has(PermissionFlagsBits.ManageGuild) ||
-                member?.permissions.has(PermissionFlagsBits.Administrator)
-        );
-    }
-    guildAccessCache.set(key, { owner, admin, at: Date.now() });
-    return { owner, admin };
+    const admin = Boolean(
+        owner ||
+            member.permissions.has(PermissionFlagsBits.ManageGuild) ||
+            member.permissions.has(PermissionFlagsBits.Administrator)
+    );
+    // Dashboard controls are the DJ role surface. A configured DJ role earns
+    // controls even when DJ mode is off; without roles, only managers do.
+    const djRoles = await client.db.getRoles(guildId).catch(() => []);
+    const controls = admin || djRoles.some(role => member.roles.cache.has(role.roleId));
+    const access: GuildAccess = { member: true, owner, admin, controls, settings: admin };
+    guildAccessCache.set(key, { ...access, at: Date.now() });
+    return access;
 }
 
 async function guildAllowed(
@@ -580,7 +593,7 @@ async function guildAllowed(
     req: http.IncomingMessage,
     guildId: string
 ): Promise<boolean> {
-    return (await guildAccess(client, req, guildId)).admin;
+    return (await guildAccess(client, req, guildId)).member;
 }
 
 function authorized(req: http.IncomingMessage): boolean {
@@ -599,7 +612,7 @@ function guildDenied(res: http.ServerResponse): void {
 }
 
 function loginPage(): string {
-    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BootstrapDJ — Login</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#090d14;color:#e8eef7;font:15px system-ui,sans-serif}.box{width:min(360px,90vw);background:#121925;border:1px solid #263346;border-radius:16px;padding:28px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4)}h1{font-size:20px;margin:0 0 8px}p{color:#8fa0b8;font-size:13px;line-height:1.5;margin:0 0 22px}a{display:block;background:#5865f2;color:#fff;text-decoration:none;padding:12px;border-radius:9px;font-weight:700}a:hover{background:#4752c4}.small{color:#6b7c93;font-size:11px;margin-top:18px}</style></head><body><div class="box"><h1>BootstrapDJ Dashboard</h1><p>Sign in with Discord. Only server admins can access this dashboard.</p><a href="/auth/discord">Continue with Discord</a><div class="small">Server administrators only</div></div></body></html>`;
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BootstrapDJ — Login</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#090d14;color:#e8eef7;font:15px system-ui,sans-serif}.box{width:min(360px,90vw);background:#121925;border:1px solid #263346;border-radius:16px;padding:28px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.4)}h1{font-size:20px;margin:0 0 8px}p{color:#8fa0b8;font-size:13px;line-height:1.5;margin:0 0 22px}a{display:block;background:#5865f2;color:#fff;text-decoration:none;padding:12px;border-radius:9px;font-weight:700}a:hover{background:#4752c4}.small{color:#6b7c93;font-size:11px;margin-top:18px}</style></head><body><div class="box"><h1>BootstrapDJ Dashboard</h1><p>Sign in with Discord. Dashboard access is limited to members of servers with this bot.</p><a href="/auth/discord">Continue with Discord</a><div class="small">Members of servers with BootstrapDJ</div></div></body></html>`;
 }
 
 function oauthRedirectUrl(state: string): string {
@@ -662,14 +675,10 @@ async function handleOAuthCallback(
     }
     const user = (await userResponse.json()) as { id: string; username: string; avatar: string | null };
     const guilds = (await guildsResponse.json()) as Array<{ id: string; owner?: boolean; permissions?: string }>;
-    const eligible = guilds.find(
-        (entry: { id: string; owner?: boolean; permissions?: string }) =>
-            client.guilds.cache.has(entry.id) &&
-            (entry.owner === true || (Number(entry.permissions ?? 0) & 0x20) === 0x20)
-    );
+    const eligible = guilds.find((entry: { id: string }) => client.guilds.cache.has(entry.id));
     if (!eligible) {
         res.writeHead(403, { 'content-type': 'text/plain' });
-        res.end('server administrator permission required in a guild with this bot');
+        res.end('you must share a guild with this bot');
         return;
     }
     setCookie(res, 'bdj_session', createSession(user), SESSION_TTL_SECONDS);
@@ -968,12 +977,15 @@ export function startDashboard(client: BootstrapClient): void {
                             await Promise.all(
                                 [...client.guilds.cache.values()].map(async guild => {
                                     const access = await guildAccess(client, req, guild.id);
-                                    return access.admin
+                                    return access.member
                                         ? {
                                               id: guild.id,
                                               name: guild.name,
+                                              member: access.member,
                                               owner: access.owner,
                                               admin: access.admin,
+                                              controls: access.controls,
+                                              settings: access.settings,
                                           }
                                         : null;
                                 })
@@ -994,9 +1006,11 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/state') {
                 const guildId = url.searchParams.get('guildId') ?? '';
-                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
+                const access = await guildAccess(client, req, guildId);
+                if (!access.member) return guildDenied(res);
                 const data = state(client, guildId);
-                data.settings = await settingsState(client, guildId);
+                data.permissions = access;
+                data.settings = access.settings ? await settingsState(client, guildId) : {};
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify(data));
                 return;
@@ -1004,7 +1018,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/settings') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
-                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
+                if (!(await guildAccess(client, req, guildId)).settings) return guildDenied(res);
                 if (body.settings && typeof body.settings === 'object' && !Array.isArray(body.settings)) {
                     for (const [key, value] of Object.entries(body.settings as Record<string, unknown>)) {
                         await updateSetting(client, guildId, key, bodyText(value));
@@ -1021,7 +1035,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/filter') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
-                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
+                if (!(await guildAccess(client, req, guildId)).settings) return guildDenied(res);
                 const filter = bodyText(body.filter);
                 const enabled = Boolean(body.enabled);
                 const value = body.value === undefined ? undefined : Number(body.value);
@@ -1072,7 +1086,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/player') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
-                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
+                if (!(await guildAccess(client, req, guildId)).controls) return guildDenied(res);
                 const action = bodyText(body.action);
                 const value = Number(body.value ?? 0);
                 await playerAction(client, guildId, action, value);

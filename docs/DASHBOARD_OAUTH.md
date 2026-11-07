@@ -40,12 +40,14 @@ inject `X-Dashboard-Token`.
 
 ## Access rule
 
-The callback accepts a user who owns or has **Manage Server** in at least one
-guild the bot is currently in. The guild selector and every API call are then
-checked against the same live bot membership plus owner/manager rule. A guild
-appears automatically after the bot is invited and disappears when the bot is
-removed; there is no separate allow-list to maintain. Clear-statistics remains
-restricted to the owner of the selected guild.
+The callback accepts any user who is a member of at least one guild the bot is
+currently in. The guild selector and every API call are checked against live bot
+membership. A guild appears automatically after the bot is invited and
+disappears when the bot is removed; there is no separate allow-list to maintain.
+Ordinary members get read-only player/queue/statistics access. Configured DJ
+roles unlock playback controls; **Manage Server** members also get settings and
+filter editing. Clear-statistics remains restricted to the owner of the selected
+guild.
 
 ## Nginx Proxy Manager
 

@@ -186,10 +186,11 @@ DASHBOARD_OAUTH_REDIRECT_URI="https://dj.example.com/auth/callback"
 DASHBOARD_SESSION_SECRET="a-long-random-secret"
 ```
 
-Every guild the bot is in is discovered automatically. The owner or a member
-with **Manage Server** in that guild can sign in; access disappears when the bot
-leaves the guild. The session is an HMAC-signed, HTTP-only cookie and expires
-after 24 hours. Clear-statistics is restricted to each guild’s owner. Add the
+Every guild the bot is in is discovered automatically. Any member of that guild
+can sign in; access disappears when the bot leaves the guild. The session is an
+HMAC-signed, HTTP-only cookie and expires after 24 hours. Dashboard controls are
+read-only for ordinary members; configured DJ roles and **Manage Server** unlock
+playback controls and settings, and Clear-statistics is restricted to each guild’s owner. Add the
 exact redirect URI to the Discord Developer Portal before starting the bot.
 
 See [docs/DASHBOARD_OAUTH.md](docs/DASHBOARD_OAUTH.md) for the full OAuth setup,
