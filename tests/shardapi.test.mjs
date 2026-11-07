@@ -139,3 +139,74 @@ test('dashboardPlayerAction seeks to a valid position', async () => {
     assert.equal(result.ok, true);
     assert.equal(sought, 4321);
 });
+
+
+test('all dashboard player actions map to the expected Dispatcher calls', async () => {
+    const calls = [];
+    const player = {
+        current: { info: { length: 30000 } },
+        queue: [{}, {}],
+        paused: false,
+        loop: 'off',
+        volume: 50,
+        player: {
+            setGlobalVolume: async value => {
+                await new Promise(resolve => setTimeout(resolve, 10));
+                player.volume = value;
+                calls.push(['volume', value]);
+            },
+        },
+        pause: () => calls.push(['pause']),
+        skip: async value => calls.push(['skip', value]),
+        previousTrack: () => calls.push(['previous']),
+        stop: () => calls.push(['stop']),
+        setShuffle: () => calls.push(['shuffle']),
+        persist: async () => calls.push(['persist']),
+        setLoop: value => { player.loop = value; calls.push(['loop', value]); },
+        seek: value => calls.push(['seek', value]),
+    };
+    const c = client([]);
+    c.queue.set('g1', player);
+    const expected = [
+        ['toggle', undefined],
+        ['next', undefined],
+        ['previous', undefined],
+        ['stop', undefined],
+        ['shuffle', undefined],
+        ['loop', undefined],
+        ['jump', 2],
+        ['seek', 12000],
+        ['volume', 75],
+    ];
+    for (const [action, value] of expected) {
+        const result = await dashboardPlayerAction(c, 'g1', action, value);
+        assert.equal(result.ok, true, action);
+    }
+    assert.deepEqual(calls, [
+        ['pause'],
+        ['skip', undefined],
+        ['previous'],
+        ['stop'],
+        ['shuffle'],
+        ['persist'],
+        ['loop', 'repeat'],
+        ['skip', 2],
+        ['seek', 12000],
+        ['volume', 75],
+    ]);
+    assert.equal(player.volume, 75);
+});
+
+test('dashboardPlayerAction rejects invalid seek and jump values', async () => {
+    const c = client([]);
+    c.queue.set('g1', {
+        current: { info: { length: 10000 } },
+        queue: [{}],
+        seek: () => {},
+        skip: async () => {},
+    });
+    assert.equal((await dashboardPlayerAction(c, 'g1', 'seek', -1)).ok, false);
+    assert.equal((await dashboardPlayerAction(c, 'g1', 'seek', 10001)).ok, false);
+    assert.equal((await dashboardPlayerAction(c, 'g1', 'jump', 0)).ok, false);
+    assert.equal((await dashboardPlayerAction(c, 'g1', 'jump', 2)).ok, false);
+});
