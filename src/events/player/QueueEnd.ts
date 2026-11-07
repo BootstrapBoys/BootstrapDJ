@@ -3,6 +3,7 @@ import { Player } from 'shoukaku';
 
 import { Song } from '../../structures/Dispatcher.js';
 import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
+import { formatDuration } from '../../utils/NodeStatus.js';
 
 export default class QueueEnd extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -42,10 +43,14 @@ export default class QueueEnd extends Event {
                         this.client
                             .embed()
                             .setColor(this.client.color.main)
-                            .setDescription(`The queue is empty. I'll leave in ${confirmSeconds}s unless someone confirms.`)
+                            .setDescription(
+                                `The queue is empty. I'll leave in ${formatDuration(confirmSeconds * 1000)} unless someone confirms.`
+                            )
                     ],
                     components: [row]
                 });
+                dispatcher.clearQueueEmptyPrompt();
+                dispatcher.queueEmptyPrompt = prompt;
                 const collector = prompt.createMessageComponentCollector({ time: confirmSeconds * 1000, max: 1 });
                 collector.on('collect', async interaction => {
                     if (interaction.customId === 'timeout-leave') {
@@ -58,7 +63,8 @@ export default class QueueEnd extends Event {
                     collector.stop('confirmed');
                 });
                 collector.on('end', async (_collected, reason) => {
-                    await prompt.edit({ components: [] }).catch(() => null);
+                    if (dispatcher.queueEmptyPrompt === prompt) dispatcher.queueEmptyPrompt = null;
+                    await prompt.delete().catch(() => null);
                     if (reason === 'time' && !dispatcher.queue.length && !dispatcher.autoplay) dispatcher.destroy();
                 });
                 return;

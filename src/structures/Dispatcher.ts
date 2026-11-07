@@ -184,6 +184,8 @@ export default class Dispatcher {
     private statsTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
     public nowPlayingCollector: NowPlayingCollector | null;
+    /** "Leave in …" prompt shown when the queue drains; cleared on leave/requeue. */
+    public queueEmptyPrompt: Message | null;
     /** Ephemeral command responses that should expire with the current track. */
     private nowPlayingCommandMessages = new Map<Message, NodeJS.Timeout | null>();
     /** Set by /playleave: tear down the player when the queue drains. */
@@ -217,6 +219,7 @@ export default class Dispatcher {
         this.seeds = [];
         this.nowPlayingMessage = null;
         this.nowPlayingCollector = null;
+        this.queueEmptyPrompt = null;
         this.nowPlayingCommandMessages = new Map();
         this.persistTimer = setInterval(() => {
             // A paused player's position cannot change and pause() already wrote
@@ -479,6 +482,13 @@ export default class Dispatcher {
         this.idleTimer = null;
     }
 
+    /** Remove the "leave in …" prompt when playback resumes or the player goes away. */
+    public clearQueueEmptyPrompt(): void {
+        const prompt = this.queueEmptyPrompt;
+        this.queueEmptyPrompt = null;
+        if (prompt) void prompt.delete().catch(() => {});
+    }
+
     /** Register a /nowplaying or !nowplaying response for track-scoped cleanup. */
     public registerNowPlayingMessage(message: Message, durationMs: number | null): void {
         this.removeNowPlayingMessage(message);
@@ -532,6 +542,7 @@ export default class Dispatcher {
             this.nowPlayingCollector?.stop('destroy');
             this.nowPlayingCollector = null;
             this.clearNowPlayingCommandMessages();
+            this.clearQueueEmptyPrompt();
             return;
         }
         if (this.client.shuttingDown) {
@@ -539,6 +550,7 @@ export default class Dispatcher {
             this.persistTimer = null;
             if (this.statsTimer) clearInterval(this.statsTimer);
             this.statsTimer = null;
+            this.clearQueueEmptyPrompt();
             return;
         }
         if (this.persistTimer) clearInterval(this.persistTimer);
@@ -551,6 +563,7 @@ export default class Dispatcher {
         this.nowPlayingCollector?.stop('destroy');
         this.nowPlayingCollector = null;
         this.clearNowPlayingCommandMessages();
+        this.clearQueueEmptyPrompt();
         if (!preserveSession) void this.client.db.deleteSession(this.guildId).catch(() => {});
         this.queue.length = 0;
         this.history = [];
@@ -666,6 +679,7 @@ export default class Dispatcher {
      */
     public enqueue(song: Song, remember = true, persist = true): void {
         this.clearIdleTimeout();
+        this.clearQueueEmptyPrompt();
         if (this.autoplay) this.purgeAutoplay();
         this.queue.push(song);
         if (remember) this.rememberSeed(song);
@@ -676,6 +690,7 @@ export default class Dispatcher {
     /** Same contract as enqueue(), but jumps the queue (used by /playnext). */
     public enqueueNext(song: Song, remember = true, persist = true): void {
         this.clearIdleTimeout();
+        this.clearQueueEmptyPrompt();
         if (this.autoplay) this.purgeAutoplay();
         this.queue.unshift(song);
         if (remember) this.rememberSeed(song);

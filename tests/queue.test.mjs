@@ -113,3 +113,23 @@ test('fairPlay round-robins the queue by requester', () => {
         ['a1', 'b1', 'c1', 'a2', 'b2', 'a3']
     );
 });
+
+test('queue-empty prompt is deleted when the player is destroyed or a request arrives', () => {
+    const prompt = {
+        deleted: false,
+        delete() {
+            this.deleted = true;
+            return Promise.resolve();
+        },
+    };
+    const dispatcher = makeDispatcher({ queueEmptyPrompt: prompt });
+    dispatcher.clearQueueEmptyPrompt();
+    assert.equal(dispatcher.queueEmptyPrompt, null);
+    assert.equal(prompt.deleted, true);
+
+    const second = { deleted: false, delete() { this.deleted = true; return Promise.resolve(); } };
+    dispatcher.queueEmptyPrompt = second;
+    dispatcher.enqueue(makeSong('next'));
+    assert.equal(dispatcher.queueEmptyPrompt, null);
+    assert.equal(second.deleted, true);
+});

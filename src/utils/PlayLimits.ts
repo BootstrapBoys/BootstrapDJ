@@ -2,6 +2,8 @@ import type Dispatcher from '../structures/Dispatcher.js';
 import type { Song } from '../structures/Dispatcher.js';
 import type { BootstrapClient } from '../structures/index.js';
 
+import { formatDuration } from './NodeStatus.js';
+
 export type PlayLimits = {
     maxTrackLength: number;
     minTrackLength: number;
@@ -41,10 +43,10 @@ export function checkTrack(
 ): string | null {
     const lengthSeconds = track.info.isStream ? 0 : Math.round(track.info.length / 1000);
     if (limits.maxTrackLength > 0 && lengthSeconds > limits.maxTrackLength) {
-        return `That track is longer than this server's ${limits.maxTrackLength}s limit.`;
+        return `That track is longer than this server's ${formatDuration(limits.maxTrackLength * 1000)} limit.`;
     }
     if (limits.minTrackLength > 0 && lengthSeconds > 0 && lengthSeconds < limits.minTrackLength) {
-        return `That track is shorter than this server's ${limits.minTrackLength}s minimum.`;
+        return `That track is shorter than this server's ${formatDuration(limits.minTrackLength * 1000)} minimum.`;
     }
     const queued = player.queue.length + (player.current ? 1 : 0);
     if (limits.maxQueue > 0 && queued >= limits.maxQueue) {
@@ -60,7 +62,7 @@ export function checkTrack(
     if (limits.maxUserTracksLength > 0) {
         const total = requested.reduce((sum, item) => sum + (item.info.isStream ? 0 : item.info.length), 0);
         if (total + (track.info.isStream ? 0 : track.info.length) > limits.maxUserTracksLength * 1000) {
-            return `You already have ${limits.maxUserTracksLength}s of music queued.`;
+            return `You already have ${formatDuration(limits.maxUserTracksLength * 1000)} of music queued.`;
         }
     }
     return null;
