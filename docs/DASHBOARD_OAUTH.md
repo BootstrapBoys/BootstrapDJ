@@ -1,6 +1,6 @@
 # Dashboard Discord login
 
-The dashboard uses Discord OAuth2 and allows only server administrators in one guild.
+The dashboard uses Discord OAuth2 and allows any member of a guild containing the bot. Ordinary members are read-only; DJ roles and server managers unlock more.
 
 ## Discord Developer Portal
 
