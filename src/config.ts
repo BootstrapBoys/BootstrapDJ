@@ -6,11 +6,13 @@ import { parseFallbackNodes, toNodeOptions } from './utils/NodeConfig.js';
 dotenv.config({ quiet: true });
 
 export default {
-    token: process.env.BOT_TOKEN || process.env.TOKEN || '',
+    token: process.env.BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN || '',
     botsFile: process.env.BOTS_FILE || '',
     botId: process.env.BOT_ID || '',
     botName: process.env.BOT_NAME || '',
     botPriority: process.env.BOT_PRIORITY ? parseInt(process.env.BOT_PRIORITY) : -1,
+    botCoordinator: process.env.BOT_COORDINATOR ? parseBoolean(process.env.BOT_COORDINATOR) : false,
+    shardCount: process.env.SHARD_COUNT ? parseInt(process.env.SHARD_COUNT) : 0,
     prefix: process.env.PREFIX || '!',
     color: {
         red: 0xff0000,

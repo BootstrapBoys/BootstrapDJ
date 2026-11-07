@@ -1,3 +1,4 @@
+import type { EarlCommandBody, EarlCommandResult } from '../../types.js';
 import { ChannelType, Events, Guild, GuildMember, PermissionFlagsBits, TextChannel } from 'discord.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { LoadType } from 'shoukaku';
@@ -7,13 +8,7 @@ import { updateSetup } from '../../utils/SetupSystem.js';
 import { hasDjAccess, isVoiceOptedOut } from '../../utils/VoiceAccess.js';
 import { BotPlugin } from '../index.js';
 
-interface VoiceCommandBody {
-    guildId?: string;
-    voiceChannelId?: string;
-    textChannelId?: string;
-    userId?: string;
-    text?: string;
-}
+type VoiceCommandBody = EarlCommandBody;
 
 /** Commands Earl may run. Everything else is a no-op, so a misheard word cannot
  * reach destructive commands. */
@@ -67,6 +62,47 @@ function send(res: ServerResponse, status: number, payload: unknown): void {
     res.end(JSON.stringify(payload));
 }
 
+/** Run a voice command locally in a single-process/BOTS_FILE deployment, or
+ * on the shard that owns the guild when ShardingManager is active. */
+async function executeVoice(
+    client: BootstrapClient,
+    body: VoiceCommandBody
+): Promise<EarlCommandResult> {
+    if (!client.shard) {
+        if (!client.earlCommand) return { status: 503, message: 'The bot is still starting up.' };
+        return await client.earlCommand(body);
+    }
+    const results = await client.shard.broadcastEval(
+        async (shard, context) => {
+            const candidate = shard as unknown as BootstrapClient;
+            const guildId = context.body.guildId ?? '';
+            if (!guildId || !candidate.guilds.cache.has(guildId)) return null;
+            return candidate.earlCommand ? await candidate.earlCommand(context.body) : null;
+        },
+        { context: { body } }
+    );
+    return results.find((result): result is EarlCommandResult => result !== null) ?? {
+        status: 503,
+        message: 'The bot is still starting up.',
+    };
+}
+
+async function refreshSetup(client: BootstrapClient, guildId: string): Promise<void> {
+    if (!client.shard) {
+        await client.earlRefreshSetup?.(guildId);
+        return;
+    }
+    await client.shard.broadcastEval(
+        async (shard, context) => {
+            const candidate = shard as unknown as BootstrapClient;
+            if (!candidate.guilds.cache.has(context.guildId)) return false;
+            await candidate.earlRefreshSetup?.(context.guildId);
+            return true;
+        },
+        { context: { guildId } }
+    );
+}
+
 function createPlugin(): BotPlugin {
         let server: ReturnType<typeof createServer> | null = null;
 
@@ -81,6 +117,21 @@ function createPlugin(): BotPlugin {
                     return;
                 }
 
+                client.earlCommand = async body => {
+                    const result = await handle(client, body);
+                    if (result.message) await say(client, body, result.message);
+                    return result;
+                };
+                client.earlRefreshSetup = async guildId => {
+                    const guild = client.guilds.cache.get(guildId);
+                    if (guild) await updateSetup(client, guild).catch(() => {});
+                };
+
+                // In a sharded deployment only shard 0 binds the public bridge;
+                // the other shards expose earlCommand through broadcastEval.
+                // BOTS_FILE uses one process per account, each with its own port.
+                if (client.shard && !client.isCoordinator) return;
+
                 server = createServer(async (req, res) => {
                     const url = new URL(req.url ?? '/', 'http://localhost');
                     if (req.headers.authorization !== `Bearer ${secret}`) {
@@ -92,8 +143,7 @@ function createPlugin(): BotPlugin {
                             const body = JSON.parse(raw || '{}') as { guildId?: string };
                             if (body.guildId) {
                                 await client.db.setVoiceListen(body.guildId, { enabled: false });
-                                const guild = client.guilds.cache.get(body.guildId);
-                                if (guild) await updateSetup(client, guild).catch(() => {});
+                                await refreshSetup(client, body.guildId);
                             }
                             return send(res, 200, { ok: true });
                         } catch (error) {
@@ -111,10 +161,7 @@ function createPlugin(): BotPlugin {
                     try {
                         const raw = await readBody(req);
                         const body = JSON.parse(raw || '{}') as VoiceCommandBody;
-                        const result = await handle(client, body);
-                        if (result.message) {
-                            await say(client, body, result.message);
-                        }
+                        const result = await executeVoice(client, body);
                         return send(res, result.status, { ok: result.status < 400, message: result.message });
                     } catch (error) {
                         client.logger.error(`[earl] bridge error: ${error}`);
@@ -128,7 +175,7 @@ function createPlugin(): BotPlugin {
 
                 // The listener can stop without telling us (crash/restart). Once
                 // the bot is up, clear a stale enabled flag if it is not running.
-                client.once(Events.ClientReady, () => {
+                if (!client.shard || client.isCoordinator) client.once(Events.ClientReady, () => {
                     setTimeout(() => {
                         void (async () => {
                             try {
@@ -144,8 +191,7 @@ function createPlugin(): BotPlugin {
                                 const state = await client.db.getVoiceListen(guildId);
                                 if (!state?.enabled) return;
                                 await client.db.setVoiceListen(guildId, { enabled: false });
-                                const guild = client.guilds.cache.get(guildId);
-                                if (guild) await updateSetup(client, guild).catch(() => {});
+                                await refreshSetup(client, guildId);
                                 client.logger.warn('[earl] listener was not active; cleared stale listening state');
                             } catch {
                                 // Listener may still be starting; leave the state alone.

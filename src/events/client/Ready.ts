@@ -36,6 +36,9 @@ export default class Ready extends Event {
             try {
                 const setups = await this.client.db.getSetups();
                 for (const setup of setups) {
+                    // A shard only owns a subset of guilds; purging or starting
+                    // a janitor for another shard's setup is wasted and noisy.
+                    if (!this.client.guilds.cache.has(setup.guildId)) continue;
                     try {
                         await resetSetupChannel(this.client, setup);
                         startSetupJanitor(this.client, setup.guildId);

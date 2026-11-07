@@ -62,15 +62,29 @@ export class Utils {
         }
 
         if (config.botStatusMode === 'count') {
-            const active = [...client.queue.values()].filter(player => Boolean(player.current)).length;
-            if (active > 0) {
-                client.user.setActivity({
-                    name: `music in ${active} server${active === 1 ? '' : 's'}`.slice(0, 128),
-                    type: ActivityType.Listening,
-                });
-            } else {
-                staticPresence();
+            const setCount = (active: number): void => {
+                if (active > 0) {
+                    client.user?.setActivity({
+                        name: `music in ${active} server${active === 1 ? '' : 's'}`.slice(0, 128),
+                        type: ActivityType.Listening,
+                    });
+                } else {
+                    staticPresence();
+                }
+            };
+            if (client.shard) {
+                if (!client.isCoordinator) return;
+                void client.shard
+                    .broadcastEval(c => {
+                        const shard = c as unknown as BootstrapClient;
+                        return [...shard.queue.values()].filter(player => Boolean(player.current)).length;
+                    })
+                    .then(counts => setCount(counts.reduce((sum, value) => sum + value, 0)))
+                    .catch(() => {});
+                return;
             }
+            const active = [...client.queue.values()].filter(player => Boolean(player.current)).length;
+            setCount(active);
             return;
         }
 

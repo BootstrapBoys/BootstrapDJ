@@ -99,7 +99,7 @@ export async function waitForListeners(
 export async function restoreSessions(client: BootstrapClient): Promise<void> {
     // In a multi-bot deployment only the first preferred bot restores on boot;
     // the others take over later through the lease watchdog.
-    if (client.config.botPriority >= 0 && client.config.botPriority !== 0) return;
+    if (!client.shard && client.config.botPriority >= 0 && client.config.botPriority !== 0) return;
     const sessions = await client.db.getSessions();
     if (!sessions.length) return;
     client.logger.info(
@@ -191,7 +191,7 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
             // it can still be waiting for Lavalink while lower-priority
             // watchdogs start; those children must not steal the saved session
             // before the first restore claims it.
-            if (client.config.botPriority > 0) continue;
+            if (!client.shard && client.config.botPriority > 0) continue;
             const preferred = await client.preferredBotStatus(guildId);
             if (!preferred.allowed) continue;
         }

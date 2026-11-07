@@ -1,3 +1,4 @@
+import type { EarlCommandHandler, EarlSetupRefresher } from '../types.js';
 import {
     ApplicationCommandType,
     Client,
@@ -21,6 +22,18 @@ import { Command, Queue, ShoukakuClient } from './index.js';
 import Logger from './Logger.js';
 import config from '../config.js';
 import { startDashboard } from '../dashboard/server.js';
+import {
+    type AccessResult,
+    type ActionError,
+    dashboardFilter,
+    type DashboardGuild,
+    dashboardGuilds,
+    dashboardPlayer,
+    dashboardPlayerAction,
+    type FilterResult,
+    guildAccessFor,
+    type PlayerSnapshot,
+} from '../dashboard/shardApi.js';
 import ServerData from '../database/server.js';
 import loadPlugins from '../plugin/index.js';
 import { loadBots } from '../utils/BotsFile.js';
@@ -58,10 +71,62 @@ export default class BootstrapClient extends Client {
     public queue = new Queue(this);
     /** True while the process is doing a graceful shutdown; don't erase saved sessions. */
     public shuttingDown = false;
+    /** Installed by the Earl plugin so the coordinator shard can execute a
+     * voice command on the shard that actually owns the guild. */
+    public earlCommand?: EarlCommandHandler;
+    public earlRefreshSetup?: EarlSetupRefresher;
     private statsMaintenanceStarted = false;
     public constructor(options: ClientOptions) {
         super(options);
     }
+
+    /** True when this process owns global singletons. In a sharded deployment
+     * only shard 0 does; the BOTS_FILE launcher marks its first child. */
+    public get isCoordinator(): boolean {
+        if (this.shard) return this.shard.ids.includes(0);
+        if (this.config.botsFile) return this.config.botCoordinator;
+        return true;
+    }
+
+    /** Serializable helpers used by the coordinator dashboard through
+     * shard.broadcastEval. Keep these free of class instances and closures. */
+    public dashboardLocalGuildIds(): string[] {
+        return [...this.guilds.cache.keys()];
+    }
+
+    public dashboardLocalGuilds(userId: string | null): Promise<DashboardGuild[]> {
+        return dashboardGuilds(this, userId);
+    }
+
+    public dashboardLocalAccess(userId: string | null, guildId: string): Promise<AccessResult> {
+        return guildAccessFor(this, userId, guildId);
+    }
+
+    public dashboardLocalPlayer(guildId: string): { found: boolean; player: PlayerSnapshot | null } {
+        return dashboardPlayer(this, guildId);
+    }
+
+    public dashboardLocalPlayerAction(
+        guildId: string,
+        action: string,
+        value: number
+    ): Promise<ActionError> {
+        return dashboardPlayerAction(this, guildId, action, value);
+    }
+
+    public dashboardLocalFilter(
+        guildId: string,
+        id: string,
+        enabled: boolean,
+        value?: number
+    ): FilterResult {
+        return dashboardFilter(this, guildId, id, enabled, value);
+    }
+
+    public clearGuildSettingsCache(guildId: string): void {
+        this.db.clearGuildSettingsCache(guildId);
+    }
+
     public embed(): EmbedBuilder {
         return new EmbedBuilder();
     }
@@ -141,7 +206,7 @@ export default class BootstrapClient extends Client {
     }
 
     private startStatsMaintenance(): void {
-        if (this.statsMaintenanceStarted || this.config.botPriority > 0) return;
+        if (this.statsMaintenanceStarted || !this.isCoordinator) return;
         const intervalHours = this.config.statsPruneIntervalHours;
         if (!Number.isFinite(intervalHours) || intervalHours <= 0) return;
         this.statsMaintenanceStarted = true;
@@ -178,12 +243,21 @@ export default class BootstrapClient extends Client {
         this.once(Events.ClientReady, async () => {
             const userId = this.user?.id;
             if (!userId) return;
+            const shardedNonCoordinator = Boolean(this.shard) && !this.isCoordinator;
             const registrationRoutes =
                 this.config.production === true
-                    ? [Routes.applicationCommands(userId)]
+                    ? shardedNonCoordinator
+                        ? []
+                        : [Routes.applicationCommands(userId)]
                     : [...this.guilds.cache.keys()].map(guildId => Routes.applicationGuildCommands(userId, guildId));
-            if (!this.config.production && !registrationRoutes.length) {
-                registrationRoutes.push(Routes.applicationGuildCommands(userId, this.config.guildId));
+            if (!this.config.production && !registrationRoutes.length && !shardedNonCoordinator) {
+                if (this.guilds.cache.has(this.config.guildId)) {
+                    registrationRoutes.push(Routes.applicationGuildCommands(userId, this.config.guildId));
+                }
+            }
+            if (!registrationRoutes.length && shardedNonCoordinator) {
+                this.logger.info('[slash] no command routes for this shard');
+                return;
             }
             try {
                 // Discord accepts at most 100 top-level chat-input commands.
@@ -196,7 +270,7 @@ export default class BootstrapClient extends Client {
                     this.body = this.body.slice(0, 100);
                 }
                 const rest = new REST({ version: '10' }).setToken(this.config.token ?? '');
-                if (this.config.production !== true) {
+                if (this.config.production !== true && (!this.shard || this.isCoordinator)) {
                     // Commands registered globally by a previous deployment linger
                     // in the guild command picker alongside guild commands. Clear
                     // the global scope when running in test/guild mode.

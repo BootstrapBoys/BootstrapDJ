@@ -1,139 +1,21 @@
-import type Dispatcher from '../structures/Dispatcher.js';
+
 import type { BootstrapClient } from '../structures/index.js';
-import { PermissionFlagsBits } from 'discord.js';
+import type { Client, Serialized } from 'discord.js';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import http from 'node:http';
 
 import config from '../config.js';
+import { FILTERS } from './filters.js';
+import {
+    type AccessResult,
+    type DashboardGuild,
+    type GuildAccess,
+    NO_ACCESS,
+    type PlayerSnapshot,
+} from './shardApi.js';
 import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../utils/SettingsSchema.js';
 
-type FilterDef = {
-    id: string;
-    label: string;
-    description: string;
-    value?: { min: number; max: number; step: number; fallback: number };
-    activeName?: string;
-    enable: (player: Dispatcher, value: number) => void;
-    disable: (player: Dispatcher) => void;
-};
 
-const FILTERS: FilterDef[] = [
-    {
-        id: '8d',
-        label: '8D',
-        description: 'Rotating stereo image',
-        activeName: '8D',
-        enable: player => player.player.setRotation({ rotationHz: 0.2 }),
-        disable: player => player.player.setRotation(),
-    },
-    {
-        id: 'bassboost',
-        label: 'Bass boost',
-        description: 'Low-band equalizer lift',
-        activeName: 'bassboost',
-        enable: player =>
-            player.player.setEqualizer([
-                { band: 0, gain: 0.34 },
-                { band: 1, gain: 0.34 },
-                { band: 2, gain: 0.34 },
-                { band: 3, gain: 0.34 },
-            ]),
-        disable: player => player.player.setEqualizer([]),
-    },
-    {
-        id: 'distortion',
-        label: 'Distortion',
-        description: 'Soft distortion effect',
-        activeName: 'distorsion',
-        enable: player =>
-            player.player.setDistortion({
-                sinOffset: 0,
-                sinScale: 1,
-                cosOffset: 0,
-                cosScale: 1,
-                tanOffset: 0,
-                tanScale: 1,
-                offset: 0,
-                scale: 1,
-            }),
-        disable: player => player.player.setDistortion({}),
-    },
-    {
-        id: 'karaoke',
-        label: 'Karaoke',
-        description: 'Remove center vocals',
-        activeName: 'karaoke',
-        enable: player => player.player.setKaraoke({ level: 1, monoLevel: 1, filterBand: 220, filterWidth: 100 }),
-        disable: player => player.player.setKaraoke(),
-    },
-    {
-        id: 'nightcore',
-        label: 'Nightcore',
-        description: 'Faster, higher-pitched playback',
-        activeName: 'nightcore',
-        enable: player => player.player.setTimescale({ speed: 1.165, pitch: 1.125, rate: 1.05 }),
-        disable: player => player.player.setTimescale(),
-    },
-    {
-        id: 'rotation',
-        label: 'Rotation',
-        description: 'Rotating channel effect',
-        activeName: 'rotation',
-        enable: player => player.player.setRotation({ rotationHz: 0 }),
-        disable: player => player.player.setRotation(),
-    },
-    {
-        id: 'tremolo',
-        label: 'Tremolo',
-        description: 'Amplitude modulation',
-        activeName: 'tremolo',
-        enable: player => player.player.setTremolo({ depth: 0.75, frequency: 4 }),
-        disable: player => player.player.setTremolo(),
-    },
-    {
-        id: 'vibrato',
-        label: 'Vibrato',
-        description: 'Pitch modulation',
-        activeName: 'vibrato',
-        enable: player => player.player.setVibrato({ depth: 0.75, frequency: 4 }),
-        disable: player => player.player.setVibrato(),
-    },
-    {
-        id: 'lowpass',
-        label: 'Low pass',
-        description: 'Smooth high frequencies',
-        activeName: 'lowpass',
-        enable: player => player.player.setLowPass({ smoothing: 20 }),
-        disable: player => player.player.setLowPass({}),
-    },
-    {
-        id: 'pitch',
-        label: 'Pitch',
-        description: 'Set pitch multiplier',
-        value: { min: 1, max: 5, step: 0.05, fallback: 1 },
-        activeName: 'pitch',
-        enable: (player, value) => player.player.setTimescale({ pitch: value, rate: 1, speed: 1 }),
-        disable: player => player.player.setTimescale(),
-    },
-    {
-        id: 'rate',
-        label: 'Rate',
-        description: 'Set playback rate',
-        value: { min: 0.5, max: 5, step: 0.05, fallback: 1 },
-        activeName: 'rate',
-        enable: (player, value) => player.player.setTimescale({ rate: value, pitch: value, speed: 1 }),
-        disable: player => player.player.setTimescale(),
-    },
-    {
-        id: 'speed',
-        label: 'Speed',
-        description: 'Set playback speed',
-        value: { min: 0.5, max: 5, step: 0.05, fallback: 1 },
-        activeName: 'speed',
-        enable: (player, value) => player.player.setTimescale({ speed: value }),
-        disable: player => player.player.setTimescale(),
-    },
-];
 
 const HTML = String.raw`<!doctype html>
 <html lang="en">
@@ -553,61 +435,160 @@ function viewer(req: http.IncomingMessage): { name: string; owner: boolean; admi
     return { name: 'Local admin', owner: true, admin: true };
 }
 
-type GuildAccess = {
-    member: boolean;
-    owner: boolean;
-    admin: boolean;
-    controls: boolean;
-    settings: boolean;
-};
-const NO_ACCESS: GuildAccess = { member: false, owner: false, admin: false, controls: false, settings: false };
 const guildAccessCache = new Map<string, GuildAccess & { at: number }>();
 const GUILD_ACCESS_TTL_MS = 60_000;
 
-/**
- * Bot membership is the allow-list. A guild is authorized only while it is in
- * client.guilds.cache, and the signed-in user must be a member of that guild.
- */
+/** Run a shard-safe method on every shard. In a single-process deployment the
+ * same method runs locally; the callback must only reference properties that
+ * exist on BootstrapClient in the child process (no imported closures). */
+async function shardValues<T, C>(
+    client: BootstrapClient,
+    fn: (shard: BootstrapClient, context: C) => T | Promise<T>,
+    context: C
+): Promise<T[]> {
+    if (!client.shard) return [await fn(client, context)];
+    try {
+        const values = await client.shard.broadcastEval(
+            fn as unknown as (shard: Client<true>, context: Serialized<C>) => T | Promise<T>,
+            { context }
+        );
+        return values as T[];
+    } catch (error) {
+        client.logger.warn(
+            `[dashboard] shard query failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+        return [];
+    }
+}
+
+async function readAccess(
+    client: BootstrapClient,
+    userId: string | null,
+    guildId: string
+): Promise<AccessResult> {
+    const results = await shardValues(
+        client,
+        (shard, context) => shard.dashboardLocalAccess(context.userId, context.guildId),
+        { userId, guildId }
+    );
+    return results.find(result => result.found) ?? { found: false, access: NO_ACCESS };
+}
+
+async function remoteGuilds(
+    client: BootstrapClient,
+    userId: string | null
+): Promise<DashboardGuild[]> {
+    const lists = await shardValues(
+        client,
+        (shard, context) => shard.dashboardLocalGuilds(context.userId),
+        { userId }
+    );
+    const seen = new Set<string>();
+    const guilds: DashboardGuild[] = [];
+    for (const list of lists) {
+        for (const guild of list) {
+            if (seen.has(guild.id)) continue;
+            seen.add(guild.id);
+            guilds.push(guild);
+        }
+    }
+    return guilds;
+}
+
+async function remoteGuildIds(client: BootstrapClient): Promise<string[]> {
+    const lists = await shardValues(
+        client,
+        shard => shard.dashboardLocalGuildIds(),
+        {}
+    );
+    return [...new Set(lists.flat())];
+}
+
+async function remotePlayer(
+    client: BootstrapClient,
+    guildId: string
+): Promise<{ found: boolean; player: PlayerSnapshot | null }> {
+    const results = await shardValues(
+        client,
+        (shard, context) => shard.dashboardLocalPlayer(context.guildId),
+        { guildId }
+    );
+    return results.find(result => result.found) ?? { found: false, player: null };
+}
+
+async function remotePlayerAction(
+    client: BootstrapClient,
+    guildId: string,
+    action: string,
+    value: number
+): Promise<void> {
+    const results = await shardValues(
+        client,
+        (shard, context) =>
+            shard.dashboardLocalPlayerAction(context.guildId, context.action, context.value),
+        { guildId, action, value }
+    );
+    const result = results.find(entry => entry.found);
+    if (!result) throw new Error('Unknown guild');
+    if (!result.ok) throw new Error(result.error ?? 'Player action failed');
+}
+
+async function remoteFilter(
+    client: BootstrapClient,
+    guildId: string,
+    id: string,
+    enabled: boolean,
+    value?: number
+): Promise<string[]> {
+    const results = await shardValues(
+        client,
+        (shard, context) =>
+            shard.dashboardLocalFilter(
+                context.guildId,
+                context.id,
+                context.enabled,
+                context.value
+            ),
+        { guildId, id, enabled, value }
+    );
+    const result = results.find(entry => entry.found);
+    if (!result) throw new Error('No active player');
+    return result.active;
+}
+
+async function invalidateSettings(client: BootstrapClient, guildId: string): Promise<void> {
+    await shardValues(
+        client,
+        (shard, context) => {
+            shard.clearGuildSettingsCache(context.guildId);
+            return true;
+        },
+        { guildId }
+    );
+}
+
+/** Bot membership is the allow-list. A guild is authorized only while it is in
+ * any shard's cache, and the signed-in user must be a member of that guild. */
 async function guildAccess(
     client: BootstrapClient,
     req: http.IncomingMessage,
     guildId: string
 ): Promise<GuildAccess> {
-    const liveGuild = client.guilds.cache.get(guildId);
-    if (!liveGuild) return NO_ACCESS;
-    if (!oauthEnabled()) {
-        return { member: true, owner: true, admin: true, controls: true, settings: true };
-    }
-    const session = readSession(req);
-    if (!session) return NO_ACCESS;
-    const key = `${session.id}:${guildId}`;
+    const session = oauthEnabled() ? readSession(req) : null;
+    if (oauthEnabled() && !session) return NO_ACCESS;
+    const key = `${session?.id ?? 'token'}:${guildId}`;
     const cached = guildAccessCache.get(key);
-    if (cached && Date.now() - cached.at < GUILD_ACCESS_TTL_MS) {
-        return cached;
-    }
-    const member =
-        liveGuild.members.cache.get(session.id) ??
-        (await liveGuild.members.fetch(session.id).catch(() => null));
-    if (!member) return NO_ACCESS;
-    const owner = liveGuild.ownerId === session.id;
-    const admin = Boolean(
-        owner ||
-            member.permissions.has(PermissionFlagsBits.ManageGuild) ||
-            member.permissions.has(PermissionFlagsBits.Administrator)
-    );
-    // Dashboard controls are the DJ role surface. A configured DJ role earns
-    // controls even when DJ mode is off; without roles, only managers do.
-    const djRoles = await client.db.getRoles(guildId).catch(() => []);
-    const controls = admin || djRoles.some(role => member.roles.cache.has(role.roleId));
-    const access: GuildAccess = { member: true, owner, admin, controls, settings: admin };
-    guildAccessCache.set(key, { ...access, at: Date.now() });
+    if (cached && Date.now() - cached.at < GUILD_ACCESS_TTL_MS) return cached;
+    const result = await readAccess(client, session?.id ?? null, guildId);
+    if (!result.found || !result.access.member) return NO_ACCESS;
+    guildAccessCache.set(key, { ...result.access, at: Date.now() });
     if (guildAccessCache.size > 1000) {
         const now = Date.now();
         for (const [entry, value] of guildAccessCache) {
             if (now - value.at >= GUILD_ACCESS_TTL_MS) guildAccessCache.delete(entry);
         }
     }
-    return access;
+    return result.access;
 }
 
 async function guildAllowed(
@@ -697,7 +678,8 @@ async function handleOAuthCallback(
     }
     const user = (await userResponse.json()) as { id: string; username: string; avatar: string | null };
     const guilds = (await guildsResponse.json()) as Array<{ id: string; owner?: boolean; permissions?: string }>;
-    const eligible = guilds.find((entry: { id: string }) => client.guilds.cache.has(entry.id));
+    const botGuildIds = new Set(await remoteGuildIds(client));
+    const eligible = guilds.find((entry: { id: string }) => botGuildIds.has(entry.id));
     if (!eligible) {
         res.writeHead(403, { 'content-type': 'text/plain' });
         res.end('you must share a guild with this bot');
@@ -735,26 +717,21 @@ function bodyText(value: unknown, fallback: string = ''): string {
         : fallback;
 }
 
-function state(client: BootstrapClient, guildId: string): Record<string, unknown> {
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) throw new Error('Unknown guild');
-    const player = client.queue.get(guildId);
-    const active = new Set((player?.filters ?? []).map(name => name.toLowerCase()));
+function stateFromSnapshot(
+    guildId: string,
+    player: PlayerSnapshot | null
+): Record<string, unknown> {
+    const active = new Set((player?.activeFilters ?? []).map(name => name.toLowerCase()));
     return {
         guildId,
         player: player
             ? {
-                  title: player.current?.info.title ?? null,
-                  author: player.current?.info.author ?? null,
-                  duration: player.current?.info.length ?? 0,
-                  position: player.player.position,
-                  queueLength: player.queue.length,
-                  upcoming: player.queue.slice(0, 20).map((track, index) => ({
-                      position: index + 1,
-                      title: track.info.title,
-                      author: track.info.author,
-                      duration: track.info.isStream ? 0 : track.info.length,
-                  })),
+                  title: player.title,
+                  author: player.author,
+                  duration: player.duration,
+                  position: player.position,
+                  queueLength: player.queueLength,
+                  upcoming: player.upcoming,
                   volume: player.volume,
                   paused: player.paused,
                   loop: player.loop,
@@ -766,7 +743,7 @@ function state(client: BootstrapClient, guildId: string): Record<string, unknown
             label: filter.label,
             description: filter.description,
             value: filter.value,
-            current: player?.filterValues?.[filter.id],
+            current: player?.filterValues[filter.id],
             active: active.has((filter.activeName ?? filter.id).toLowerCase()),
         })),
         settings: DEFAULTS,
@@ -818,94 +795,8 @@ async function updateSetting(
     await client.db.setGuildSetting(guildId, key, value);
 }
 
-function filterState(client: BootstrapClient, guildId: string): Record<string, unknown> {
-    const player = client.queue.get(guildId);
-    if (!player) throw new Error('No active player');
-    return { active: player.filters };
-}
-
-const FILTER_GROUPS: string[][] = [
-    ['nightcore', 'pitch', 'rate', 'speed'],
-    ['8d', 'rotation'],
-];
-
-function applyFilter(client: BootstrapClient, guildId: string, id: string, enabled: boolean, value?: number): void {
-    const player = client.queue.get(guildId);
-    if (!player) throw new Error('No active player');
-    const def = FILTERS.find(filter => filter.id === id);
-    if (!def) throw new Error('Unknown filter');
-    if (enabled) {
-        const base = value ?? def.value?.fallback ?? 1;
-        const applied = def.value
-            ? Math.min(def.value.max, Math.max(def.value.min, Number.isFinite(base) ? base : def.value.fallback))
-            : base;
-        for (const group of FILTER_GROUPS) {
-            if (!group.includes(id)) continue;
-            for (const siblingId of group) {
-                if (siblingId === id) continue;
-                const sibling = FILTERS.find(filter => filter.id === siblingId);
-                if (!sibling?.activeName) continue;
-                player.filters = player.filters.filter(name => name !== sibling.activeName);
-                delete player.filterValues[sibling.id];
-            }
-        }
-        def.enable(player, applied);
-        if (def.value) player.filterValues[def.id] = applied;
-        if (def.activeName && !player.filters.includes(def.activeName)) player.filters.push(def.activeName);
-    } else {
-        def.disable(player);
-        delete player.filterValues[def.id];
-        if (def.activeName) player.filters = player.filters.filter(name => name !== def.activeName);
-    }
-}
-
-async function playerAction(client: BootstrapClient, guildId: string, action: string, value: number): Promise<void> {
-    const player = client.queue.get(guildId);
-    if (!player) throw new Error('No active player');
-    switch (action) {
-        case 'toggle':
-            player.pause();
-            break;
-        case 'next':
-            await player.skip();
-            break;
-        case 'previous':
-            player.previousTrack();
-            break;
-        case 'stop':
-            player.stop();
-            break;
-        case 'leave':
-            player.destroy();
-            break;
-        case 'shuffle':
-            player.setShuffle();
-            await player.persist();
-            break;
-        case 'loop': {
-            const loops: Array<'off' | 'repeat' | 'queue'> = ['off', 'repeat', 'queue'];
-            const index = loops.indexOf(player.loop);
-            player.setLoop(loops[(index + 1) % loops.length]);
-            break;
-        }
-        case 'volume': {
-            if (!Number.isFinite(value) || value < 0 || value > 200) throw new Error('Volume must be 0–200');
-            void player.player.setGlobalVolume(value).catch(error => client.logger.warn(`[dashboard] volume failed: ${error}`));
-            break;
-        }
-        case 'jump': {
-            if (!Number.isInteger(value) || value < 1 || value > player.queue.length) {
-                throw new Error('Invalid queue position');
-            }
-            await player.skip(value);
-            break;
-        }
-        default:
-            throw new Error('Unknown player action');
-    }
-}
-
 export function startDashboard(client: BootstrapClient): void {
+    if (!client.isCoordinator) return;
     if (!config.dashboardPort) return;
     const host = config.dashboardHost;
     const loopback = host === '127.0.0.1' || host === 'localhost' || host === '::1';
@@ -997,37 +888,17 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/guilds') {
                 const csrf = csrfToken(req, res);
+                const userId = oauthEnabled() ? (readSession(req)?.id ?? null) : null;
+                const guilds = await remoteGuilds(client, userId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-                res.end(
-                    JSON.stringify({
-                        csrf,
-                        guilds: (
-                            await Promise.all(
-                                [...client.guilds.cache.values()].map(async guild => {
-                                    const access = await guildAccess(client, req, guild.id);
-                                    return access.member
-                                        ? {
-                                              id: guild.id,
-                                              name: guild.name,
-                                              member: access.member,
-                                              owner: access.owner,
-                                              admin: access.admin,
-                                              controls: access.controls,
-                                              settings: access.settings,
-                                          }
-                                        : null;
-                                })
-                            )
-                        ).filter((guild): guild is NonNullable<typeof guild> => guild !== null),
-                        viewer: viewer(req),
-                    })
-                );
+                res.end(JSON.stringify({ csrf, guilds, viewer: viewer(req) }));
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/api/player-state') {
                 const guildId = url.searchParams.get('guildId') ?? '';
                 if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
-                const data = state(client, guildId);
+                const data = await remotePlayer(client, guildId);
+                if (!data.found) return guildDenied(res);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ player: data.player }));
                 return;
@@ -1036,7 +907,9 @@ export function startDashboard(client: BootstrapClient): void {
                 const guildId = url.searchParams.get('guildId') ?? '';
                 const access = await guildAccess(client, req, guildId);
                 if (!access.member) return guildDenied(res);
-                const data = state(client, guildId);
+                const remote = await remotePlayer(client, guildId);
+                if (!remote.found) return guildDenied(res);
+                const data = stateFromSnapshot(guildId, remote.player);
                 data.permissions = access;
                 data.settings = access.settings ? await settingsState(client, guildId) : {};
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -1056,6 +929,7 @@ export function startDashboard(client: BootstrapClient): void {
                     const value = bodyText(body.value);
                     await updateSetting(client, guildId, key, value);
                 }
+                await invalidateSettings(client, guildId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, settings: await settingsState(client, guildId) }));
                 return;
@@ -1067,9 +941,9 @@ export function startDashboard(client: BootstrapClient): void {
                 const filter = bodyText(body.filter);
                 const enabled = Boolean(body.enabled);
                 const value = body.value === undefined ? undefined : Number(body.value);
-                applyFilter(client, guildId, filter, enabled, value);
+                const active = await remoteFilter(client, guildId, filter, enabled, value);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-                res.end(JSON.stringify({ ok: true, filters: filterState(client, guildId) }));
+                res.end(JSON.stringify({ ok: true, filters: { active } }));
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/api/me/stats') {
@@ -1101,13 +975,17 @@ export function startDashboard(client: BootstrapClient): void {
                 const sourceList = data.sources as Array<{ source: string; icon?: string | null }>;
                 for (const source of sourceList) source.icon = iconFor(source.source);
                 const listeners = data.topListeners as Array<{ userId: string; seconds: number; deafSeconds: number }>;
-                for (const listener of listeners) {
-                    const user = client.users.cache.get(listener.userId);
-                    Object.assign(listener, {
-                        name: user?.username ?? 'Unknown user',
-                        avatar: user?.displayAvatarURL() ?? null,
-                    });
-                }
+                await Promise.all(
+                    listeners.map(async listener => {
+                        const user =
+                            client.users.cache.get(listener.userId) ??
+                            (await client.users.fetch(listener.userId).catch(() => null));
+                        Object.assign(listener, {
+                            name: user?.username ?? 'Unknown user',
+                            avatar: user?.displayAvatarURL() ?? null,
+                        });
+                    })
+                );
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify(data));
                 return;
@@ -1132,9 +1010,10 @@ export function startDashboard(client: BootstrapClient): void {
                 if (!(await guildAccess(client, req, guildId)).controls) return guildDenied(res);
                 const action = bodyText(body.action);
                 const value = Number(body.value ?? 0);
-                await playerAction(client, guildId, action, value);
+                await remotePlayerAction(client, guildId, action, value);
+                const updated = await remotePlayer(client, guildId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-                res.end(JSON.stringify({ ok: true, player: state(client, guildId).player }));
+                res.end(JSON.stringify({ ok: true, player: updated.player }));
                 return;
             }
             res.writeHead(404, { 'content-type': 'text/plain' });

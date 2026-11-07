@@ -859,6 +859,11 @@ export default class ServerData {
         return data;
     }
 
+    /** Invalidate the per-process settings cache after another shard writes. */
+    public clearGuildSettingsCache(guildId: string): void {
+        this.settingsCache.delete(guildId);
+    }
+
     public async getGuildSetting(guildId: string, key: string): Promise<string | null> {
         const settings = await this.getGuildSettings(guildId);
         return settings[key] ?? null;
