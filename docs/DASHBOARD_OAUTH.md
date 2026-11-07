@@ -47,7 +47,8 @@ disappears when the bot is removed; there is no separate allow-list to maintain.
 Ordinary members get read-only player/queue/statistics access. Configured DJ
 roles unlock playback controls; **Manage Server** members also get settings and
 filter editing. Clear-statistics remains restricted to the owner of the selected
-guild.
+guild. The person-shaped button opens **My stats**, showing the signed-in
+member’s requested songs and sampled listening hours only.
 
 ## Nginx Proxy Manager
 

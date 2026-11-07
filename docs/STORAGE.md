@@ -31,6 +31,7 @@ during a run is safe.
 | `StatsDaily` | 90 days | Rows older than the cutoff date are deleted. This matches the dashboard's maximum 7/30/90-day range. |
 | `StatsTrack` | 180 days inactive | Rows whose `lastPlayed` is older are deleted, except each guild's top 100 tracks by total listening seconds. |
 | `StatsListener` | 180 days inactive | Rows whose `lastSeen` is older are deleted, except each guild's top 100 listeners by total listening seconds. |
+| `StatsUserTrack` | 180 days inactive | Per-user requested-track rows older than the cutoff are deleted, except the top 100 rows per guild by play count. |
 | `SessionLease` | 60 seconds | Expired leases are deleted. |
 | `RecentTrack` | 100 tracks/guild | Trimmed on every write. |
 | `StatsHour`, `StatsWeekday` | lifetime | Bounded to 24 and 7 rows per guild. |

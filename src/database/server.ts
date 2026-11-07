@@ -55,6 +55,7 @@ export interface StatsPruneResult {
     daily: number;
     tracks: number;
     listeners: number;
+    userTracks: number;
     leases: number;
 }
 
@@ -109,7 +110,7 @@ export default class ServerData {
         const now = options.now ?? new Date();
         const retentionDays = options.retentionDays ?? config.statsRetentionDays;
         const inactiveDays = options.inactiveDays ?? config.statsInactiveDays;
-        const result: StatsPruneResult = { daily: 0, tracks: 0, listeners: 0, leases: 0 };
+        const result: StatsPruneResult = { daily: 0, tracks: 0, listeners: 0, userTracks: 0, leases: 0 };
 
         if (retentionDays > 0) {
             const cutoffDay = new Date(
@@ -124,6 +125,7 @@ export default class ServerData {
             const cutoff = new Date(now.getTime() - inactiveDays * 86_400_000);
             result.tracks = await this.pruneInactiveTracks(cutoff);
             result.listeners = await this.pruneInactiveListeners(cutoff);
+            result.userTracks = await this.pruneInactiveUserTracks(cutoff);
         }
 
         result.leases = (
@@ -175,6 +177,40 @@ export default class ServerData {
                     guildId,
                     lastSeen: { lt: cutoff },
                     ...(keep.length ? { userId: { notIn: keep.map(row => row.userId) } } : {}),
+                },
+            });
+            removed += removedForGuild.count;
+        }
+        return removed;
+    }
+
+    private async pruneInactiveUserTracks(cutoff: Date): Promise<number> {
+        const guilds = await this.prisma.statsUserTrack.findMany({
+            select: { guildId: true },
+            distinct: ['guildId'],
+        });
+        let removed = 0;
+        for (const { guildId } of guilds) {
+            const keep = await this.prisma.statsUserTrack.findMany({
+                where: { guildId },
+                orderBy: { plays: 'desc' },
+                take: 100,
+                select: { userId: true, trackId: true },
+            });
+            const removedForGuild = await this.prisma.statsUserTrack.deleteMany({
+                where: {
+                    guildId,
+                    lastPlayed: { lt: cutoff },
+                    ...(keep.length
+                        ? {
+                              NOT: {
+                                  OR: keep.map(row => ({
+                                      userId: row.userId,
+                                      trackId: row.trackId,
+                                  })),
+                              },
+                          }
+                        : {}),
                 },
             });
             removed += removedForGuild.count;
@@ -569,12 +605,13 @@ export default class ServerData {
         author: string,
         source: string,
         seconds: number,
-        uri: string | null = null
+        uri: string | null = null,
+        requesterId: string | null = null
     ): Promise<void> {
         const value = Math.max(0, Math.round(seconds));
         const now = new Date();
         const day = now.toISOString().slice(0, 10);
-        await this.prisma.$transaction([
+        const writes = [
             this.prisma.statsTrack.upsert({
                 where: { guildId_trackId: { guildId, trackId } },
                 create: { guildId, trackId, title, author, source, uri, seconds: value, plays: 1 },
@@ -595,7 +632,26 @@ export default class ServerData {
                 create: { guildId, weekday: now.getUTCDay(), seconds: value },
                 update: { seconds: { increment: value } },
             }),
-        ]);
+        ];
+        if (requesterId) {
+            writes.push(
+                this.prisma.statsUserTrack.upsert({
+                    where: {
+                        guildId_userId_trackId: { guildId, userId: requesterId, trackId },
+                    },
+                    create: { guildId, userId: requesterId, trackId, title, author, source, uri, seconds: value, plays: 1 },
+                    update: {
+                        title,
+                        author,
+                        source,
+                        uri,
+                        seconds: { increment: value },
+                        plays: { increment: 1 },
+                    },
+                })
+            );
+        }
+        await this.prisma.$transaction(writes);
     }
 
     public async recordListenerStatsBulk(
@@ -638,6 +694,7 @@ export default class ServerData {
         const results = await this.prisma.$transaction([
             this.prisma.statsTrack.deleteMany({ where: { guildId } }),
             this.prisma.statsListener.deleteMany({ where: { guildId } }),
+            this.prisma.statsUserTrack.deleteMany({ where: { guildId } }),
             this.prisma.statsCommand.deleteMany({ where: { guildId } }),
             this.prisma.statsDaily.deleteMany({ where: { guildId } }),
             this.prisma.statsHour.deleteMany({ where: { guildId } }),
@@ -702,6 +759,54 @@ export default class ServerData {
             weekdays: Array.from({ length: 7 }, (_, weekday) => ({
                 weekday,
                 seconds: weekdays.find(entry => entry.weekday === weekday)?.seconds ?? 0,
+            })),
+        };
+    }
+
+    /** Self-only personal statistics used by the dashboard. */
+    public async getUserStats(
+        guildId: string,
+        userId: string
+    ): Promise<{
+        listenedSeconds: number;
+        deafSeconds: number;
+        totalPlays: number;
+        totalSeconds: number;
+        uniqueTracks: number;
+        tracks: Array<{
+            title: string;
+            author: string;
+            source: string;
+            uri: string | null;
+            plays: number;
+            seconds: number;
+            lastPlayed: Date;
+        }>;
+    }> {
+        const [listener, tracks] = await Promise.all([
+            this.prisma.statsListener.findUnique({
+                where: { guildId_userId: { guildId, userId } },
+            }),
+            this.prisma.statsUserTrack.findMany({
+                where: { guildId, userId },
+                orderBy: { plays: 'desc' },
+                take: 100,
+            }),
+        ]);
+        return {
+            listenedSeconds: listener?.seconds ?? 0,
+            deafSeconds: listener?.deafSeconds ?? 0,
+            totalPlays: tracks.reduce((sum, row) => sum + row.plays, 0),
+            totalSeconds: tracks.reduce((sum, row) => sum + row.seconds, 0),
+            uniqueTracks: tracks.length,
+            tracks: tracks.slice(0, 20).map(row => ({
+                title: row.title,
+                author: row.author,
+                source: row.source,
+                uri: row.uri,
+                plays: row.plays,
+                seconds: row.seconds,
+                lastPlayed: row.lastPlayed,
             })),
         };
     }

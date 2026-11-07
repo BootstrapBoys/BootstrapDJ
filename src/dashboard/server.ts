@@ -228,7 +228,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </style>
 </head>
 <body>
-<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings" style="display:none">⚙</button><button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none">⏻</button></div></header>
+<header><h1>BootstrapDJ dashboard</h1><div style="display:flex;gap:8px;align-items:center"><span id="status" class="small">loading…</span><select id="guild"></select><button id="personal-btn" class="gear" title="My stats" aria-label="Open my stats" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></button><button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button><button id="settings-btn" class="gear" title="Settings" aria-label="Open settings" style="display:none">⚙</button><button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none">⏻</button></div></header>
 <main>
 <section class="panel">
 <div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span></div>
@@ -262,6 +262,12 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
     <div id="stats-content"></div>
   </div>
 </div>
+<div id="personal-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="personal-title">
+  <div class="modal-card stats-card">
+    <div class="modal-head"><h2 id="personal-title">My stats</h2><button class="icon-btn" id="personal-close" aria-label="Close my stats">✕</button></div>
+    <div id="personal-content"></div>
+  </div>
+</div>
 <div id="toast"></div>
 <script>
 const state={guildId:null,data:null,guilds:[],permissions:{member:false,owner:false,admin:false,controls:false,settings:false},queueKey:null,csrf:''};
@@ -270,7 +276,7 @@ function token(){return localStorage.getItem('bootstrapdj-dashboard-token')||''}
 function headers(json,method){const h={'x-dashboard-token':token()};if(json)h['content-type']='application/json';if(method==='POST'&&state.csrf)h['x-dashboard-csrf']=state.csrf;return h}
 function toast(text,isError){const el=$('#toast');el.textContent=text;el.className='show '+(isError?'error':'ok');setTimeout(()=>el.className='',2500)}
 async function api(path,options){const method=options&&options.method||'GET';const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body),method),...(options&&options.headers)}});if(res.status===401){if(document.body.dataset.oauth==='1'){location.href='/auth/discord';throw new Error('Login required')}const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
-async function boot(){const g=await api('/api/guilds');state.csrf=g.csrf||'';state.guilds=g.guilds||[];if(document.body.dataset.oauth==='1'){$('#logout-btn').style.display=''}else{$('#logout-btn').style.display='none'}const sel=$('#guild');sel.innerHTML='';for(const guild of state.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!state.guilds.length){syncViewer();$('#status').textContent='No guilds';return}state.guildId=state.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;syncViewer();load()};syncViewer();await load()}
+async function boot(){const g=await api('/api/guilds');state.csrf=g.csrf||'';state.guilds=g.guilds||[];if(document.body.dataset.oauth==='1'){$('#logout-btn').style.display='';$('#personal-btn').style.display=''}else{$('#logout-btn').style.display='none';$('#personal-btn').style.display='none'}const sel=$('#guild');sel.innerHTML='';for(const guild of state.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!state.guilds.length){syncViewer();$('#status').textContent='No guilds';return}state.guildId=state.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;syncViewer();load()};syncViewer();await load()}
 function syncViewer(){const entry=state.guilds.find(guild=>guild.id===state.guildId);state.permissions={member:Boolean(entry&&entry.member),owner:Boolean(entry&&entry.owner),admin:Boolean(entry&&entry.admin),controls:Boolean(entry&&entry.controls),settings:Boolean(entry&&entry.settings)};$('#settings-btn').style.display=state.permissions.settings?'':'none';$('#player-controls').style.display=state.permissions.controls?'':'none';$('#filters-panel').style.display=state.permissions.settings?'':'none';$('#stats-clear').style.display=state.permissions.owner?'':'none'}
 async function load(){try{state.data=await api('/api/state?guildId='+encodeURIComponent(state.guildId));render();$('#status').textContent=state.permissions.controls?'Connected':'Read-only'}catch(e){$('#status').textContent='Error';toast(e.message,true)}}
 const GROUPS=[
@@ -350,6 +356,16 @@ async function playerAction(action,value){if(!state.permissions.controls){toast(
 document.querySelectorAll('[data-player]').forEach(button=>button.onclick=()=>playerAction(button.dataset.player));
 $('#volume').onchange=()=>{const value=Number($('#volume').value);$('#volume-label').textContent=value+'%';playerAction('volume',value)};
 $('#volume').oninput=()=>{$('#volume-label').textContent=$('#volume').value+'%'};
+function formatHours(seconds){const total=Math.max(0,Math.round(seconds/60));const h=Math.floor(total/60);const m=total%60;return h?h+'h '+m+'m':m+'m'}
+function renderPersonal(d){const content=$('#personal-content');const tracks=d.tracks||[];const rows=tracks.map(item=>'<div class="stat-row"><span class="stat-main">'+escapeHtml(item.title)+'<br><span class="stat-sub">'+escapeHtml(item.author)+' · '+escapeHtml(item.source)+' · '+formatMs(item.seconds*1000)+' each</span></span><span class="stat-sub">'+item.plays+' play'+(item.plays===1?'':'s')+'</span></div>').join('');content.innerHTML='<div class="stat-cards"><div class="stat-card"><div class="stat-label">Hours listened</div><div class="stat-value">'+formatHours(d.listenedSeconds||0)+'</div></div><div class="stat-card"><div class="stat-label">Songs played</div><div class="stat-value">'+(d.totalPlays||0)+'</div></div><div class="stat-card"><div class="stat-label">Unique songs</div><div class="stat-value">'+(d.uniqueTracks||0)+'</div></div></div><div class="stats-block"><h3>Songs you requested</h3>'+(rows?'<div class="stat-list">'+rows+'</div>':'<div class="small">No requested songs yet.</div>')+'</div>'}
+async function loadPersonal(){const content=$('#personal-content');content.innerHTML='<div class="small">Loading your statistics…</div>';try{const d=await api('/api/me/stats?guildId='+encodeURIComponent(state.guildId));renderPersonal(d)}catch(e){content.innerHTML='<div class="error">'+escapeHtml(e.message)+'</div>'}}
+const personalModal=$('#personal-modal');
+function openPersonal(){personalModal.classList.add('open');loadPersonal()}
+function closePersonal(){personalModal.classList.remove('open')}
+$('#personal-btn').onclick=openPersonal;
+$('#personal-close').onclick=closePersonal;
+personalModal.addEventListener('click',e=>{if(e.target===personalModal)closePersonal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePersonal()});
 const statsModal=$('#stats-modal');
 function fmtSeconds(value){const s=Math.max(0,Math.round(value));const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=s%60;return h?h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'):m+':'+String(sec).padStart(2,'0')}
 function bars(values,labels,unit){const max=Math.max(1,...values);return '<div class="bars">'+values.map((value,index)=>'<div class="bar-wrap"><div class="bar" style="height:'+Math.max(2,Math.round((value/max)*100))+'%" title="'+escapeHtml(labels[index])+': '+escapeHtml(unit?fmtSeconds(value):String(value))+'"></div><span class="bar-label">'+escapeHtml(labels[index])+'</span></div>').join('')+'</div>'}
@@ -1042,6 +1058,21 @@ export function startDashboard(client: BootstrapClient): void {
                 applyFilter(client, guildId, filter, enabled, value);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ ok: true, filters: filterState(client, guildId) }));
+                return;
+            }
+            if (req.method === 'GET' && url.pathname === '/api/me/stats') {
+                const guildId = url.searchParams.get('guildId') ?? '';
+                const access = await guildAccess(client, req, guildId);
+                if (!access.member) return guildDenied(res);
+                const session = readSession(req);
+                if (!session) {
+                    res.writeHead(401, { 'content-type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Personal statistics require Discord login' }));
+                    return;
+                }
+                const stats = await client.db.getUserStats(guildId, session.id);
+                res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+                res.end(JSON.stringify(stats));
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/api/stats') {

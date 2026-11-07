@@ -63,16 +63,16 @@ model CommandMapping {
 }
 
 model Profile {
-  userId    String   @id
-  color       String?
-  bio         String?
-  background  String?
-  avatarShape String?
-  avatarBorder String?
-  privacy     String   @default("public")
-  visible     Boolean  @default(true)
-  serverVisible Boolean @default(true)
-  updatedAt   DateTime @updatedAt
+  userId        String   @id
+  color         String?
+  bio           String?
+  background    String?
+  avatarShape   String?
+  avatarBorder  String?
+  privacy       String   @default("public")
+  visible       Boolean  @default(true)
+  serverVisible Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
 }
 
 model UserPrefix {
@@ -121,14 +121,31 @@ model StatsTrack {
 }
 
 model StatsListener {
-  guildId    String
-  userId     String
-  seconds    Int      @default(0)
-  deafSeconds Int     @default(0)
-  lastSeen   DateTime @updatedAt
+  guildId     String
+  userId      String
+  seconds     Int      @default(0)
+  deafSeconds Int      @default(0)
+  lastSeen    DateTime @updatedAt
 
   @@id([guildId, userId])
   @@index([guildId, seconds])
+}
+
+/// Per-user requested-track aggregate for the personal stats modal.
+model StatsUserTrack {
+  guildId    String
+  userId     String
+  trackId    String
+  title      String
+  author     String
+  source     String
+  uri        String?
+  seconds    Int      @default(0)
+  plays      Int      @default(0)
+  lastPlayed DateTime @updatedAt
+
+  @@id([guildId, userId, trackId])
+  @@index([guildId, userId, plays])
 }
 
 model StatsCommand {
@@ -142,9 +159,9 @@ model StatsCommand {
 model StatsDaily {
   guildId      String
   day          String
-  seconds      Int @default(0)
-  sessions     Int @default(0)
-  gameSessions Int @default(0)
+  seconds      Int    @default(0)
+  sessions     Int    @default(0)
+  gameSessions Int    @default(0)
 
   @@id([guildId, day])
 }
@@ -152,7 +169,7 @@ model StatsDaily {
 model StatsHour {
   guildId String
   hour    Int
-  seconds Int @default(0)
+  seconds Int    @default(0)
 
   @@id([guildId, hour])
 }
@@ -160,19 +177,19 @@ model StatsHour {
 model StatsWeekday {
   guildId String
   weekday Int
-  seconds Int @default(0)
+  seconds Int    @default(0)
 
   @@id([guildId, weekday])
 }
 
 model Guild {
-  guildId    String      @id
-  prefix     String
-  stay       Stay?
-  dj         Dj?
-  roles      Role[]
-  setup      Setup?
-  voiceListen VoiceListen?
+  guildId      String              @id
+  prefix       String
+  stay         Stay?
+  dj           Dj?
+  roles        Role[]
+  setup        Setup?
+  voiceListen  VoiceListen?
   voiceOptOuts VoiceListenOptOut[]
 }
 
@@ -207,7 +224,7 @@ model Playlist {
 }
 
 model Song {
-  id         String   @id  @default(uuid())
+  id         String   @id @default(uuid())
   track      String
   playlistId String
   playlist   Playlist @relation(fields: [playlistId], references: [id])
@@ -265,7 +282,6 @@ model Setup {
   Guild     Guild  @relation(fields: [guildId], references: [guildId])
 }
 
-
 /// Guild-level voice-listening state. Off by default; /listen flips it.
 model VoiceListen {
   guildId        String   @id
@@ -279,10 +295,10 @@ model VoiceListen {
 
 /// Members whose frames must be dropped before STT when listening is active.
 model VoiceListenOptOut {
-  guildId    String
-  userId     String
-  createdAt  DateTime @default(now())
-  Guild      Guild    @relation(fields: [guildId], references: [guildId])
+  guildId   String
+  userId    String
+  createdAt DateTime @default(now())
+  Guild     Guild    @relation(fields: [guildId], references: [guildId])
 
   @@id([guildId, userId])
 }

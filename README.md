@@ -36,7 +36,7 @@ commands, and every feature is available without a premium tier.
 - **Multi-bot handoff** — optional local multi-process setup with atomic session
   leases and automatic takeover.
 - **Dashboard** — Discord OAuth login, player controls, live queue, filters,
-  every guild setting, and listening statistics.
+  every guild setting, listening statistics, and a per-member personal stats view.
 - **Per-guild settings** — permissions, DJ mode, channels, timeouts, limits,
   prefix behavior, ephemeral replies, aliases, and command mappings.
 - **Opt-out voice listener integration** — optional local listener bridge; audio

@@ -57,6 +57,15 @@ test.before(async () => {
         `CREATE TABLE "StatsListener" ("guildId" TEXT NOT NULL, "userId" TEXT NOT NULL, "seconds" INTEGER NOT NULL DEFAULT 0, "deafSeconds" INTEGER NOT NULL DEFAULT 0, "lastSeen" DATETIME NOT NULL, PRIMARY KEY ("guildId", "userId"))`
     );
     await prisma.$executeRawUnsafe(
+        `CREATE TABLE "StatsUserTrack" ("guildId" TEXT NOT NULL, "userId" TEXT NOT NULL, "trackId" TEXT NOT NULL, "title" TEXT NOT NULL, "author" TEXT NOT NULL, "source" TEXT NOT NULL, "uri" TEXT, "seconds" INTEGER NOT NULL DEFAULT 0, "plays" INTEGER NOT NULL DEFAULT 0, "lastPlayed" DATETIME NOT NULL, PRIMARY KEY ("guildId", "userId", "trackId"))`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "StatsHour" ("guildId" TEXT NOT NULL, "hour" INTEGER NOT NULL, "seconds" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY ("guildId", "hour"))`
+    );
+    await prisma.$executeRawUnsafe(
+        `CREATE TABLE "StatsWeekday" ("guildId" TEXT NOT NULL, "weekday" INTEGER NOT NULL, "seconds" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY ("guildId", "weekday"))`
+    );
+    await prisma.$executeRawUnsafe(
         `CREATE TABLE "SessionLease" ("guildId" TEXT NOT NULL PRIMARY KEY, "botId" TEXT NOT NULL, "botName" TEXT NOT NULL, "expiresAt" DATETIME NOT NULL, "updatedAt" DATETIME NOT NULL)`
     );
 });
@@ -141,6 +150,24 @@ test('SQLite initialization enables WAL', async () => {
     assert.equal(String(rows[0].journal_mode).toLowerCase(), 'wal');
 });
 
+test('personal stats aggregate requested tracks and listener time', async () => {
+    await prisma.statsListener.create({ data: { guildId: 'personal', userId: 'u1', seconds: 7200, deafSeconds: 60, lastSeen: new Date() } });
+    await prisma.statsUserTrack.create({ data: { guildId: 'personal', userId: 'u1', trackId: 't1', title: 'Track One', author: 'Artist', source: 'deezer', uri: 'https://example.com/1', seconds: 180, plays: 2, lastPlayed: new Date() } });
+    await prisma.statsUserTrack.create({ data: { guildId: 'personal', userId: 'u1', trackId: 't2', title: 'Track Two', author: 'Artist', source: 'deezer', seconds: 240, plays: 1, lastPlayed: new Date() } });
+    const stats = await db.getUserStats('personal', 'u1');
+    assert.equal(stats.listenedSeconds, 7200);
+    assert.equal(stats.totalPlays, 3);
+    assert.equal(stats.totalSeconds, 420);
+    assert.equal(stats.uniqueTracks, 2);
+    assert.equal(stats.tracks[0].title, 'Track One');
+    assert.equal(stats.tracks[0].plays, 2);
+    await db.recordTrackPlay('personal', 't3', 'Track Three', 'Artist', 'deezer', 60, 'https://example.com/3', 'u1');
+    const after = await db.getUserStats('personal', 'u1');
+    assert.equal(after.totalPlays, 4);
+    assert.equal(after.uniqueTracks, 3);
+    assert.equal(after.totalSeconds, 480);
+});
+
 test('stats retention keeps recent rows and each guild top 100', async () => {
     const now = new Date('2026-06-01T12:00:00Z');
     const old = new Date('2025-01-01T00:00:00Z');
@@ -168,10 +195,10 @@ test('stats retention keeps recent rows and each guild top 100', async () => {
     await prisma.sessionLease.create({ data: { guildId: 'live', botId: 'b', botName: 'B', expiresAt: new Date('2026-06-01T13:00:00Z'), updatedAt: now } });
 
     const result = await db.pruneStats({ now, retentionDays: 90, inactiveDays: 180 });
-    assert.deepEqual(result, { daily: 1, tracks: 3, listeners: 2, leases: 1 });
-    assert.equal((await prisma.statsDaily.count()), 1);
-    assert.equal((await prisma.statsTrack.count()), 100);
-    assert.equal((await prisma.statsListener.count()), 100);
+    assert.deepEqual(result, { daily: 1, tracks: 3, listeners: 2, userTracks: 0, leases: 1 });
+    assert.equal((await prisma.statsDaily.count({ where: { guildId: 'g1' } })), 1);
+    assert.equal((await prisma.statsTrack.count({ where: { guildId: 'g1' } })), 100);
+    assert.equal((await prisma.statsListener.count({ where: { guildId: 'g1' } })), 100);
     assert.equal((await prisma.statsTrack.findUnique({ where: { guildId_trackId: { guildId: 'g1', trackId: 'top' } } }))?.seconds, 1000);
     assert.equal((await prisma.statsTrack.findUnique({ where: { guildId_trackId: { guildId: 'g1', trackId: 'new' } } }))?.seconds, 5);
     assert.equal((await prisma.statsListener.findUnique({ where: { guildId_userId: { guildId: 'g1', userId: 'top' } } }))?.seconds, 500);
