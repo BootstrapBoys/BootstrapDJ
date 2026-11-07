@@ -3,6 +3,7 @@ import { ChannelType, Message, User } from 'discord.js';
 import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
 
 import { BootstrapClient } from './index.js';
+import { isFinishedTrackReason } from '../utils/TrackEndReason.js';
 
 /** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
@@ -234,7 +235,7 @@ export default class Dispatcher {
             .on('end', (data: TrackEndEvent) => {
                 // FINISHED is the normal path; LOAD_FAILED/CLEANUP/STOPPED/REPLACED mean
                 // Lavalink dropped the track, which used to be completely silent.
-                if (data?.reason && String(data.reason) !== 'FINISHED')
+                if (data?.reason && !isFinishedTrackReason(data.reason))
                     this.client.logger.warn(
                         `Track ended with reason ${data.reason}: ${
                             this.current?.info?.title ?? 'unknown'

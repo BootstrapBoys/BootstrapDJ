@@ -4,6 +4,7 @@ import { Player } from 'shoukaku';
 import { Song } from '../../structures/Dispatcher.js';
 import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
 import { updateSetup } from '../../utils/SetupSystem.js';
+import { isFinishedTrackReason } from '../../utils/TrackEndReason.js';
 
 export default class TrackEnd extends Event {
     constructor(client: BootstrapClient, file: string) {
@@ -41,7 +42,7 @@ export default class TrackEnd extends Event {
         const m = await dispatcher.nowPlayingMessage?.fetch().catch(() => {});
         // Only a natural end repeats; STOPPED (skip/stop/previous) must not
         // requeue the track it was asked to leave.
-        if (reason === 'FINISHED') {
+        if (isFinishedTrackReason(reason)) {
             if (dispatcher.loop === 'repeat') dispatcher.queue.unshift(track);
             if (dispatcher.loop === 'queue') dispatcher.queue.push(track);
         }

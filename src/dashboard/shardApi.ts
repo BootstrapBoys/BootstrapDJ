@@ -185,9 +185,7 @@ export async function dashboardPlayerAction(
                 if (!Number.isFinite(value) || value < 0 || value > 200) {
                     throw new Error('Volume must be 0–200');
                 }
-                void player.player
-                    .setGlobalVolume(value)
-                    .catch(error => client.logger.warn(`[dashboard] volume failed: ${error}`));
+                await player.player.setGlobalVolume(value);
                 break;
             }
             case 'jump': {
