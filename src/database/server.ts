@@ -41,8 +41,7 @@ function trackKey(track: unknown): string | null {
     if (!info) return null;
     if (info.uri) return info.uri;
     if (info.identifier && info.sourceName) return `${info.sourceName}:${info.identifier}`;
-    const encoded = (track as { encoded?: string })?.encoded;
-    return encoded ?? null;
+    return null;
 }
 
 /** Prisma 7 requires a driver adapter; the path is relative to the cwd. */
@@ -79,6 +78,40 @@ export default class ServerData {
     }
 
     /**
+     * Populate `trackKey` for playlist rows written before the column existed.
+     * Guarded by PRAGMA table_info so old test fixtures and pre-push databases
+     * can still initialize; the add/remove paths also fall back to null-key rows.
+     */
+    private async backfillSongKeys(): Promise<void> {
+        const table = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
+            `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Song'`
+        );
+        if (!table.length) return;
+        const columns = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
+            `PRAGMA table_info('Song')`
+        );
+        if (!columns.some(column => column.name === 'trackKey')) return;
+        const rows = await this.prisma.song.findMany({
+            where: { trackKey: null },
+            select: { id: true, track: true },
+        });
+        const writes = [];
+        for (const row of rows) {
+            try {
+                const parsed: unknown = JSON.parse(row.track);
+                const entries = Array.isArray(parsed) ? parsed : [parsed];
+                const key = entries.map(trackKey).find((candidate): candidate is string => candidate !== null);
+                if (key) writes.push(this.prisma.song.update({ where: { id: row.id }, data: { trackKey: key } }));
+            } catch {
+                // Leave malformed legacy rows untouched; removal falls back to raw text.
+            }
+        }
+        for (let index = 0; index < writes.length; index += 100) {
+            await this.prisma.$transaction(writes.slice(index, index + 100));
+        }
+    }
+
+    /**
      * Enable SQLite's concurrent-reader mode. WAL is stored in the database
      * file, so setting it once is enough; busy_timeout and synchronous are
      * per-connection and must be set by every bot process.
@@ -89,6 +122,7 @@ export default class ServerData {
                 await this.prisma.$queryRawUnsafe('PRAGMA busy_timeout = 10000');
                 await this.prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL');
                 await this.prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL');
+                await this.backfillSongKeys();
             })().catch(error => {
                 this.initPromise = null;
                 throw error;
@@ -1113,11 +1147,18 @@ export default class ServerData {
         // Compare on the canonical track identity; see trackKey().
         const key = trackKey(track);
         if (key) {
-            const rows = await this.prisma.song.findMany({
-                where: { playlistId: playlist.id },
-                select: { track: true },
+            const existing = await this.prisma.song.findFirst({
+                where: { playlistId: playlist.id, trackKey: key },
+                select: { id: true },
             });
-            const duplicate = rows.some(row => {
+            if (existing) return false;
+            // Rows written before trackKey existed are backfilled at startup;
+            // this fallback covers an in-flight/failed backfill.
+            const legacy = await this.prisma.song.findMany({
+                where: { playlistId: playlist.id, trackKey: null },
+                select: { id: true, track: true },
+            });
+            const duplicate = legacy.find(row => {
                 try {
                     const parsed = JSON.parse(row.track);
                     const entries = Array.isArray(parsed) ? parsed : [parsed];
@@ -1126,13 +1167,20 @@ export default class ServerData {
                     return false;
                 }
             });
-            if (duplicate) return false;
+            if (duplicate) {
+                await this.prisma.song.update({
+                    where: { id: duplicate.id },
+                    data: { trackKey: key },
+                });
+                return false;
+            }
         }
         try {
             await this.prisma.song.create({
                 data: {
                     track: JSON.stringify(track),
                     playlistId: playlist.id,
+                    trackKey: key,
                 },
             });
         } catch (error) {
@@ -1148,8 +1196,16 @@ export default class ServerData {
     public async removeSong(userId: string, name: string, songKey: string): Promise<boolean> {
         const playlist = await this.getPLaylist(userId, name);
         if (!playlist) return false;
+        const direct = await this.prisma.song.findFirst({
+            where: { playlistId: playlist.id, trackKey: songKey },
+            select: { id: true },
+        });
+        if (direct) {
+            await this.prisma.song.delete({ where: { id: direct.id } });
+            return true;
+        }
         const rows = await this.prisma.song.findMany({
-            where: { playlistId: playlist.id },
+            where: { playlistId: playlist.id, trackKey: null },
             select: { id: true, track: true },
         });
         const row = rows.find(candidate => {

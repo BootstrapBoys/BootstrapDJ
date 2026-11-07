@@ -228,10 +228,12 @@ model Song {
   id         String   @id @default(uuid())
   track      String
   playlistId String
+  trackKey   String?
   playlist   Playlist @relation(fields: [playlistId], references: [id])
 
   @@unique([track, playlistId])
   @@index([playlistId])
+  @@index([playlistId, trackKey])
 }
 
 /// Playback state for crash/restart recovery. One row per guild; deleted when

@@ -28,12 +28,15 @@ before(async () => {
         `CREATE UNIQUE INDEX "Playlist_userId_name_key" ON "Playlist"("userId", "name")`
     );
     await prisma.$executeRawUnsafe(
-        `CREATE TABLE "Song" ("id" TEXT NOT NULL PRIMARY KEY, "track" TEXT NOT NULL, "playlistId" TEXT NOT NULL)`
+        `CREATE TABLE "Song" ("id" TEXT NOT NULL PRIMARY KEY, "track" TEXT NOT NULL, "playlistId" TEXT NOT NULL, "trackKey" TEXT)`
     );
     await prisma.$executeRawUnsafe(
         `CREATE UNIQUE INDEX "Song_track_playlistId_key" ON "Song"("track", "playlistId")`
     );
     await prisma.$executeRawUnsafe(`CREATE INDEX "Song_playlistId_idx" ON "Song"("playlistId")`);
+    await prisma.$executeRawUnsafe(
+        `CREATE INDEX "Song_playlistId_trackKey_idx" ON "Song"("playlistId", "trackKey")`
+    );
 });
 
 after(async () => {
@@ -54,7 +57,9 @@ test('addSong stores one row per track and rejects the same track twice', async 
 
     assert.equal(first, true);
     assert.equal(duplicate, false);
-    assert.equal((await db.getSong(user, 'ParkerJack')).length, 1);
+    const songs = await db.getSong(user, 'ParkerJack');
+    assert.equal(songs.length, 1);
+    assert.equal(songs[0].trackKey, 'https://deezer.com/track/1');
 });
 
 test('a different track is added alongside it', async () => {
@@ -93,6 +98,42 @@ test('playlist names keep their internal spaces', async () => {
     assert.equal(found?.name, 'My Mix');
 });
 
+
+test('startup backfill keys legacy playlist rows', async () => {
+    await db.createPlaylist(user, 'Legacy Backfill');
+    const playlist = await db.getPLaylist(user, 'Legacy Backfill');
+    assert.ok(playlist);
+    await prisma.song.create({
+        data: {
+            track: JSON.stringify(track('Old', 'https://deezer.com/track/20', 'OLD')),
+            playlistId: playlist.id,
+        },
+    });
+    await db.initialize();
+    const row = await prisma.song.findFirst({ where: { playlistId: playlist.id } });
+    assert.equal(row?.trackKey, 'https://deezer.com/track/20');
+});
+
+test('addSong upgrades a null-key legacy duplicate instead of inserting', async () => {
+    await db.createPlaylist(user, 'Legacy Duplicate');
+    const playlist = await db.getPLaylist(user, 'Legacy Duplicate');
+    assert.ok(playlist);
+    await prisma.song.create({
+        data: {
+            track: JSON.stringify(track('Legacy', 'https://deezer.com/track/21', 'LEGACY-A')),
+            playlistId: playlist.id,
+        },
+    });
+    const added = await db.addSong(
+        user,
+        'Legacy Duplicate',
+        track('Legacy', 'https://deezer.com/track/21', 'LEGACY-B')
+    );
+    assert.equal(added, false);
+    const rows = await prisma.song.findMany({ where: { playlistId: playlist.id } });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].trackKey, 'https://deezer.com/track/21');
+});
 
 test('removeSong finds the stored row by canonical track key', async () => {
     await db.createPlaylist(user, 'Canonical');
