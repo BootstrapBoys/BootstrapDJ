@@ -110,3 +110,18 @@ test('dashboardFilter reports a missing player instead of throwing', () => {
     const result = dashboardFilter(client([]), 'g1', 'bassboost', true, 0.5);
     assert.deepEqual(result, { found: false, active: [] });
 });
+
+
+test('dashboardFilter applies a filter on the owning player', () => {
+    const c = client([]);
+    c.queue.set('g1', {
+        filters: [],
+        filterValues: {},
+        player: { setRotation: () => {} },
+    });
+    const enabled = dashboardFilter(c, 'g1', '8d', true);
+    assert.equal(enabled.found, true);
+    assert.deepEqual(enabled.active, ['8D']);
+    const disabled = dashboardFilter(c, 'g1', '8d', false);
+    assert.deepEqual(disabled.active, []);
+});
