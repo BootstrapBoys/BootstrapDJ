@@ -1,49 +1,166 @@
-server: # REST and WS server
-  port: 2333 # The port that the server listens on
+# ============================================================================
+# BootstrapDJ — Lavalink 4 example configuration
+# ============================================================================
+# Copy this file to application.yml and fill in only what you use.
+# Never commit the real application.yml: it contains the Lavalink password and
+# source credentials. Lavalink reads this file at boot; restart the process
+# after editing it.
+#
+# Minimum setup:
+#   1. Set lavalink.server.password (and use the same value in the bot's
+#      LAVALINK_AUTH).
+#   2. Enable and configure at least one source below.
+#   3. Keep server.port reachable by the bot.
+# ============================================================================
+
+server:
+  # REST/WebSocket port used by the bot. 443 is common when TLS is terminated
+  # by a reverse proxy; 2333 is Lavalink's default.
+  port: 2333
   address: 0.0.0.0
+  # Uncomment when a TLS-terminating proxy expects HTTP/2 upstream.
+  # http2:
+  #   enabled: true
+
 plugins:
+  # --------------------------------------------------------------------------
+  # LavaSrc — Spotify, Deezer, Apple Music, Yandex Music, Flowery TTS
+  # --------------------------------------------------------------------------
   lavasrc:
+    # Search fallbacks tried in order. ISRC gives the best match; the search
+    # provider handles tracks that have no ISRC.
+    providers:
+      - "dzisrc:%ISRC%"
+      - "dzsearch:%QUERY%"
+      # - "spsearch:%QUERY%" # add other providers as needed
+
+    # Enable only the sources you have credentials for. Disabled sources do
+    # not register and will make their search prefixes fail.
     sources:
-      spotify: true # Enable Spotify source
-      applemusic: true # Enable Apple Music source
-      deezer: true # Enable Deezer source
-      yandexmusic: true # Enable Yandex Music source
+      spotify: false
+      applemusic: false
+      deezer: false
+      yandexmusic: false
+      flowerytts: false
+      youtube: true # LavaSrc YouTube search; leave false if using youtube-plugin search
+
     spotify:
-      clientId: ""
-      clientSecret: ""
-      countryCode: "US" # the country code you want to use for filtering the artists top tracks. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-      playlistLoadLimit: 6 # The number of pages at 100 tracks each
-      albumLoadLimit: 6 # The number of pages at 50 tracks each
+      clientId: "" # Spotify Developer Dashboard
+      clientSecret: "" # Spotify Developer Dashboard
+      countryCode: "US" # ISO 3166-1 alpha-2; used for artist top tracks
+      playlistLoadLimit: 6 # pages of 100 tracks
+      albumLoadLimit: 6 # pages of 50 tracks
+
     applemusic:
-      countryCode: "US" # the country code you want to use for filtering the artists top tracks and language. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-      mediaAPIToken: "" # apple music api token
-      playlistLoadLimit: 6 # The number of pages at 300 tracks each
-      albumLoadLimit: 6 # The number of pages at 300 tracks each
+      countryCode: "US" # ISO 3166-1 alpha-2
+      # Use either mediaAPIToken, or the Apple Music key trio below.
+      mediaAPIToken: ""
+      keyID: ""
+      teamID: ""
+      musicKitKey: ""
+      playlistLoadLimit: 6 # pages of 300 tracks
+      albumLoadLimit: 6 # pages of 300 tracks
+
     deezer:
-      masterDecryptionKey: "" # the master key used for decrypting the deezer tracks. (yes this is not here you need to get it from somewhere else)
+      # Deezer needs a valid ARL. Leave blank to keep the source disabled.
+      arl: ""
+      # Only needed for legacy encrypted-track support; may be left blank.
+      masterDecryptionKey: ""
+
     yandexmusic:
-      accessToken: "" # the token used for accessing the yandex music api. See https://github.com/TopiSenpai/LavaSrc#yandex-music
+      accessToken: ""
+
+    flowerytts:
+      voice: "default voice" # case-sensitive voice name
+      translate: false
+      silence: 1000 # milliseconds; 0–10000
+      speed: 1.0 # 0.5–10.0
+      audioFormat: "mp3" # mp3, ogg_opus, ogg_vorbis, aac, wav, flac
+
+  # --------------------------------------------------------------------------
+  # YouTube plugin — recommended for reliable YouTube playback
+  # --------------------------------------------------------------------------
+  # Pin a release or snapshot. Snapshot builds are immutable commit hashes;
+  # update the commit deliberately after testing playback.
+  youtube:
+    enabled: false
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    clients:
+      - MUSIC
+      - ANDROID_VR
+      - WEB
+      - WEBEMBEDDED
+      - TV
+      - IOS
+      - ANDROID_MUSIC
+      - MWEB
+    # OAuth can reduce YouTube restrictions, but needs a refresh token. Keep
+    # this disabled unless you have one and understand the account risk.
+    oauth:
+      enabled: false
+      refreshToken: ""
+    # Optional remote cipher service for signature-protected videos. Leave the
+    # URL blank to rely on the plugin's local cipher handling.
+    remoteCipher:
+      url: ""
+      userAgent: "bootstrapdj"
+
+  # --------------------------------------------------------------------------
+  # Optional plugins
+  # --------------------------------------------------------------------------
+  # DuncteBot adds Mixcloud, Reddit, TikTok, Bandcamp and other sources.
+  # Enable only the sources you actually want; several are not music-focused.
+  # dunctebot:
+  #   ttsLanguage: "en-AU"
+  #   sources:
+  #     getyarn: false
+  #     clypit: false
+  #     tts: false
+  #     pornhub: false
+  #     reddit: false
+  #     ocremix: false
+  #     tiktok: false
+  #     mixcloud: false
+  #     soundgasm: false
+
 lavalink:
+  # Plugin coordinates are downloaded at boot and cached in pluginsDir.
   plugins:
-      - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.0.1"
-        repository: "https://maven.lavalink.dev/releases"
-        snapshot: false
-      - dependency: "com.github.topi314.sponsorblock:sponsorblock-plugin:3.0.0"
-        repository: "https://maven.lavalink.dev/releases" # this is optional for lavalink v4.0.0-beta.5 or greater
-        snapshot: false
-      
-  pluginsDir: "./plugins"
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
+      repository: "https://maven.lavalink.dev/releases"
+      snapshot: false
+
+    # YouTube plugin. Use a release version for stable deployments, or pin a
+    # tested snapshot commit as shown here.
+    - dependency: "dev.lavalink.youtube:youtube-plugin:2be8e542d3f6f178e048dca565892684c2e40177"
+      repository: "https://maven.lavalink.dev/releases"
+      snapshot: true
+
+    # Optional:
+    # - dependency: "com.dunctebot:skybot-lavalink-plugin:1.7.2"
+    #   repository: "https://maven.lavalink.dev/releases"
+    #   snapshot: false
+
+  pluginsDir: "./plugins" # optional; defaults to ./plugins
+
   server:
-    password: "youshallnotpass"
+    # Must match LAVALINK_AUTH in the bot's .env. Use a long random value.
+    password: "change-me"
+
+    # Lavalink's built-in source managers. Disable youtube here when the
+    # youtube-plugin above is enabled to avoid two managers claiming it.
     sources:
-      youtube: true
+      youtube: false
       bandcamp: true
       soundcloud: true
       twitch: true
       vimeo: true
       http: true
       local: false
-    filters: # All filters are enabled by default
+
+    filters:
       volume: true
       equalizer: true
       karaoke: true
@@ -54,31 +171,37 @@ lavalink:
       rotation: true
       channelMix: true
       lowPass: true
-    bufferDurationMs: 400 # The duration of the NAS buffer. Higher values fare better against longer GC pauses. Duration <= 0 to disable JDA-NAS. Minimum of 40ms, lower values may introduce
-    frameBufferDurationMs: 1000 # How many milliseconds of audio to keep buffered
-    opusEncodingQuality: 10 # Opus encoder quality. Valid values range from 0 to 10, where 10 is best quality but is the most expensive on the CPU.
-    resamplingQuality: MEDIUM # Quality of resampling operations. Valid values are LOW, MEDIUM and HIGH, where HIGH uses the most CPU.
-    trackStuckThresholdMs: 10000 # The threshold for how long a track can be stuck. A track is stuck if does not return any audio data.
-    useSeekGhosting: true # Seek ghosting is the effect where whilst a seek is in progress, the audio buffer is read from until empty, or until seek is ready.
-    youtubePlaylistLoadLimit: 6 # Number of pages at 100 each
-    playerUpdateInterval: 5 # How frequently to send player updates to clients, in seconds
+
+    # Audio buffering and encoder tuning. Higher quality/CPU values are fine
+    # for a small private node; lower them if the host is CPU-constrained.
+    bufferDurationMs: 400 # JDA-NAS buffer; <=0 disables NAS
+    frameBufferDurationMs: 5000 # audio kept buffered
+    opusEncodingQuality: 10 # 0–10; 10 is best and most CPU-expensive
+    resamplingQuality: HIGH # LOW | MEDIUM | HIGH
+    trackStuckThresholdMs: 10000 # no audio progress for this long = stuck
+    useSeekGhosting: true
+    youtubePlaylistLoadLimit: 6 # pages of 100 tracks
+    playerUpdateInterval: 5 # seconds between player updates
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
-    #ratelimit:
-      #ipBlocks: ["2001:470:28:d66::/64"] # list of ip blocks
-      #excludedIps: ["...", "..."] # ips which should be explicit excluded from usage by lavalink
-      #strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
-      #searchTriggersFail: true # Whether a search 429 should trigger marking the ip as failing
-      #retryLimit: -1 # -1 = use default lavaplayer value | 0 = infinity | >0 = retry will happen this numbers times
-    #youtubeConfig: # Required for avoiding all age restrictions by YouTube, some restricted videos still can be played without.
-      #email: "" # Email of Google account
-      #password: "" # Password of Google account
-    #httpConfig: # Useful for blocking bad-actors from ip-grabbing your music node and attacking it, this way only the http proxy will be attacked
-      #proxyHost: "localhost" # Hostname of the proxy, (ip or domain)
-      #proxyPort: 3128 # Proxy port, 3128 is the default for squidProxy
-      #proxyUser: "" # Optional user for basic authentication fields, leave blank if you don't use basic auth
-      #proxyPassword: "" # Password for basic authentication
+
+    # Optional rate limiting. Uncomment and tune for a public-facing node.
+    # ratelimit:
+    #   ipBlocks: ["2001:db8::/32"]
+    #   excludedIps: ["127.0.0.1"]
+    #   strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
+    #   searchTriggersFail: true
+    #   retryLimit: -1 # -1 = LavaPlayer default, 0 = infinite, >0 = retries
+
+    # Optional HTTP proxy for outbound source requests. Useful when the node
+    # must egress through a fixed IP.
+    # httpConfig:
+    #   proxyHost: "localhost"
+    #   proxyPort: 3128
+    #   proxyUser: ""
+    #   proxyPassword: ""
+
 metrics:
   prometheus:
     enabled: false
@@ -87,9 +210,8 @@ metrics:
 sentry:
   dsn: ""
   environment: ""
-#  tags:
-#    some_key: some_value
-#    another_key: another_value
+  # tags:
+  #   some_key: some_value
 
 logging:
   file:
@@ -104,7 +226,9 @@ logging:
     includeClientInfo: true
     includeHeaders: false
     includeQueryString: true
-    includePayload: true
+    # Keep false in production unless you need to debug query payloads; request
+    # bodies can contain user search terms.
+    includePayload: false
     maxPayloadLength: 10000
 
   logback:
