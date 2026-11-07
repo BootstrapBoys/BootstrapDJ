@@ -31,7 +31,7 @@ if (bots.length) {
                 BOT_NAME: bot.name,
                 BOT_ID: bot.clientId,
                 BOT_PRIORITY: String(bot.priority),
-                BOT_COORDINATOR: index === 0 ? '1' : '0',
+                BOT_COORDINATOR: index === 0 ? 'true' : 'false',
                 DASHBOARD_PORT: index === 0 ? process.env.DASHBOARD_PORT || '0' : '0',
                 VOICE_BRIDGE_PORT: String(config.voiceBridgePort + index * 5),
             },
