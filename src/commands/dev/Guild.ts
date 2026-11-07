@@ -1,5 +1,6 @@
 import {
     ActionRowBuilder,
+    ApplicationCommandOptionType,
     ButtonBuilder,
     ButtonStyle,
     ChannelType,
@@ -62,7 +63,15 @@ export default class GuildCommand extends Command {
                 user: [],
             },
             slashCommand: true,
-            options: [],
+            options: [
+                {
+                    name: 'guild',
+                    description: 'Guild name or ID (autocompletes)',
+                    type: ApplicationCommandOptionType.String,
+                    required: false,
+                    autocomplete: true,
+                },
+            ],
         });
     }
 
@@ -141,7 +150,7 @@ export default class GuildCommand extends Command {
             .setTimestamp(guild.joinedAt ?? new Date());
     }
 
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
         const guilds = this.pages();
@@ -149,6 +158,18 @@ export default class GuildCommand extends Command {
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.red).setDescription('The bot is not in any guilds.')],
             });
+        }
+        const selected = args[0]?.trim();
+        if (selected) {
+            const guild =
+                client.guilds.cache.get(selected) ??
+                guilds.find(candidate => candidate.name.toLowerCase() === selected.toLowerCase());
+            if (!guild) {
+                return await ctx.sendMessage({
+                    embeds: [client.embed().setColor(client.color.red).setDescription('That guild was not found.')],
+                });
+            }
+            return await ctx.sendMessage({ embeds: [await this.buildEmbed(guild)] });
         }
         const totalPages = Math.ceil(guilds.length / PAGE_SIZE);
         let page = 0;

@@ -166,5 +166,6 @@ test('guild inspector is owner-only and slash-visible', async () => {
     assert.equal(command.permissions.dev, true);
     assert.equal(command.slashCommand, true);
     assert.equal(command.ephemeral, true);
-    assert.deepEqual(command.options, []);
+    assert.equal(command.options[0].name, 'guild');
+    assert.equal(command.options[0].autocomplete, true);
 });

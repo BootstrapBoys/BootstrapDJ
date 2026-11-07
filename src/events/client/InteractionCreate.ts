@@ -194,6 +194,24 @@ export default class InteractionCreate extends Event {
         } else if (interaction.type == InteractionType.ApplicationCommandAutocomplete) {
             const focused = interaction.options.getFocused(true);
 
+            if (interaction.commandName === 'guild' && focused.name === 'guild') {
+                if (!this.client.config.owners.includes(interaction.user.id)) {
+                    return await interaction.respond([]).catch(() => {});
+                }
+                const query = String(focused.value ?? '').toLowerCase();
+                const choices = [...this.client.guilds.cache.values()]
+                    .filter(guild => guild.name.toLowerCase().includes(query) || guild.id.includes(query))
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .slice(0, 25)
+                    .map(guild => ({
+                        name: `${guild.name} (${guild.id})`.slice(0, 100),
+                        value: guild.id,
+                    }));
+                return await interaction
+                    .respond(choices)
+                    .catch(error => this.client.logger.error(`[autocomplete] guild respond failed: ${error}`));
+            }
+
             // Playlist name suggestions for /collection (and legacy prefix-only
             // helpers when they are invoked through a slash option).
             if (
