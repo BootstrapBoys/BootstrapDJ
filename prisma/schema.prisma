@@ -146,6 +146,7 @@ model StatsUserTrack {
 
   @@id([guildId, userId, trackId])
   @@index([guildId, userId, plays])
+  @@index([guildId, lastPlayed])
 }
 
 model StatsCommand {

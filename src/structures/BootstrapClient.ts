@@ -149,10 +149,11 @@ export default class BootstrapClient extends Client {
             void this.db
                 .pruneStats()
                 .then(result => {
-                    const removed = result.daily + result.tracks + result.listeners + result.leases;
+                    const removed =
+                        result.daily + result.tracks + result.listeners + result.userTracks + result.leases;
                     if (removed > 0) {
                         this.logger.info(
-                            `[stats] pruned ${result.daily} daily, ${result.tracks} tracks, ${result.listeners} listeners, ${result.leases} expired leases`
+                            `[stats] pruned ${result.daily} daily, ${result.tracks} tracks, ${result.listeners} listeners, ${result.userTracks} per-user tracks, ${result.leases} expired leases`
                         );
                     }
                 })

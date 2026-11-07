@@ -783,23 +783,28 @@ export default class ServerData {
             lastPlayed: Date;
         }>;
     }> {
-        const [listener, tracks] = await Promise.all([
+        const [listener, aggregate, tracks] = await Promise.all([
             this.prisma.statsListener.findUnique({
                 where: { guildId_userId: { guildId, userId } },
+            }),
+            this.prisma.statsUserTrack.aggregate({
+                where: { guildId, userId },
+                _sum: { plays: true, seconds: true },
+                _count: { trackId: true },
             }),
             this.prisma.statsUserTrack.findMany({
                 where: { guildId, userId },
                 orderBy: { plays: 'desc' },
-                take: 100,
+                take: 20,
             }),
         ]);
         return {
             listenedSeconds: listener?.seconds ?? 0,
             deafSeconds: listener?.deafSeconds ?? 0,
-            totalPlays: tracks.reduce((sum, row) => sum + row.plays, 0),
-            totalSeconds: tracks.reduce((sum, row) => sum + row.seconds, 0),
-            uniqueTracks: tracks.length,
-            tracks: tracks.slice(0, 20).map(row => ({
+            totalPlays: aggregate._sum.plays ?? 0,
+            totalSeconds: aggregate._sum.seconds ?? 0,
+            uniqueTracks: aggregate._count.trackId,
+            tracks: tracks.map(row => ({
                 title: row.title,
                 author: row.author,
                 source: row.source,

@@ -601,6 +601,12 @@ async function guildAccess(
     const controls = admin || djRoles.some(role => member.roles.cache.has(role.roleId));
     const access: GuildAccess = { member: true, owner, admin, controls, settings: admin };
     guildAccessCache.set(key, { ...access, at: Date.now() });
+    if (guildAccessCache.size > 1000) {
+        const now = Date.now();
+        for (const [entry, value] of guildAccessCache) {
+            if (now - value.at >= GUILD_ACCESS_TTL_MS) guildAccessCache.delete(entry);
+        }
+    }
     return access;
 }
 
@@ -971,6 +977,12 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/auth/logout') {
                 const session = readSession(req);
                 if (session?.sid) revokedSessions.set(session.sid, session.exp);
+                if (revokedSessions.size > 1000) {
+                    const now = Date.now();
+                    for (const [sid, exp] of revokedSessions) {
+                        if (exp < now) revokedSessions.delete(sid);
+                    }
+                }
                 setCookie(res, 'bdj_session', '', 0);
                 setCookie(res, CSRF_COOKIE, '', 0, false, 'Strict');
                 res.writeHead(302, { location: '/' });
