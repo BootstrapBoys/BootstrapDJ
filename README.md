@@ -184,12 +184,12 @@ DASHBOARD_OAUTH_CLIENT_ID="your-application-id"
 DASHBOARD_OAUTH_CLIENT_SECRET="your-oauth-secret"
 DASHBOARD_OAUTH_REDIRECT_URI="https://dj.example.com/auth/callback"
 DASHBOARD_SESSION_SECRET="a-long-random-secret"
-DASHBOARD_OAUTH_GUILD_ID="your-server-id"
 ```
 
-Only the owner or members with **Manage Server** in that guild can sign in. The
-session is an HMAC-signed, HTTP-only cookie scoped to that guild and expires
-after 24 hours. Clear-statistics is restricted to the server owner. Add the
+Every guild the bot is in is discovered automatically. The owner or a member
+with **Manage Server** in that guild can sign in; access disappears when the bot
+leaves the guild. The session is an HMAC-signed, HTTP-only cookie and expires
+after 24 hours. Clear-statistics is restricted to each guild’s owner. Add the
 exact redirect URI to the Discord Developer Portal before starting the bot.
 
 See [docs/DASHBOARD_OAUTH.md](docs/DASHBOARD_OAUTH.md) for the full OAuth setup,

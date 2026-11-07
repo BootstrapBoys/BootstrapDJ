@@ -71,7 +71,6 @@ export default {
     dashboardOAuthClientSecret: process.env.DASHBOARD_OAUTH_CLIENT_SECRET || '',
     dashboardOAuthRedirectUri: process.env.DASHBOARD_OAUTH_REDIRECT_URI || '',
     dashboardSessionSecret: process.env.DASHBOARD_SESSION_SECRET || '',
-    dashboardOAuthGuildId: process.env.DASHBOARD_OAUTH_GUILD_ID || process.env.GUILD_ID || '',
     // Voice listener (Earl the Ear): localhost control API + bridge.
     earlControlUrl: process.env.EARL_CONTROL_URL || 'http://127.0.0.1:8791',
     earlBridgeSecret: process.env.EARL_BRIDGE_SECRET || '',

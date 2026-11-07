@@ -21,11 +21,12 @@ DASHBOARD_OAUTH_CLIENT_ID=<application-client-id>
 DASHBOARD_OAUTH_CLIENT_SECRET=<application-client-secret>
 DASHBOARD_OAUTH_REDIRECT_URI=https://<dashboard-host>/auth/callback
 DASHBOARD_SESSION_SECRET=<openssl rand -hex 32>
-DASHBOARD_OAUTH_GUILD_ID=<discord-server-id>
 ```
 
-`DASHBOARD_OAUTH_CLIENT_ID` defaults to `CLIENT_ID`, and
-`DASHBOARD_OAUTH_GUILD_ID` defaults to `GUILD_ID` when omitted.
+`DASHBOARD_OAUTH_CLIENT_ID` defaults to `CLIENT_ID`. Guild access is derived
+from the guilds the bot is currently in; no guild id allow-list is required.
+`DASHBOARD_OAUTH_GUILD_ID` is accepted for backwards compatibility but no longer
+scopes the dashboard.
 
 Restart the process:
 
@@ -39,9 +40,12 @@ inject `X-Dashboard-Token`.
 
 ## Access rule
 
-The callback checks that the user is a member of the configured guild and has
-either the server owner flag or the `Manage Server` permission (`0x20`).
-Everyone else receives a 403 response.
+The callback accepts a user who owns or has **Manage Server** in at least one
+guild the bot is currently in. The guild selector and every API call are then
+checked against the same live bot membership plus owner/manager rule. A guild
+appears automatically after the bot is invited and disappears when the bot is
+removed; there is no separate allow-list to maintain. Clear-statistics remains
+restricted to the owner of the selected guild.
 
 ## Nginx Proxy Manager
 
@@ -58,7 +62,7 @@ Everyone else receives a 403 response.
 - `POST /auth/logout` — clear the session; requires the CSRF header below
 - `/auth/discord`, `/auth/callback`, and logout are rate-limited per client IP
 
-Sessions are signed HTTP-only cookies, scoped to the configured guild, and expire after 24 hours.
+Sessions are signed HTTP-only cookies, scoped to the signed-in user, and expire after 24 hours. Guild access is re-checked per request.
 
 ## Request protection
 

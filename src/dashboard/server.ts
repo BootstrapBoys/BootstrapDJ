@@ -1,5 +1,6 @@
 import type Dispatcher from '../structures/Dispatcher.js';
 import type { BootstrapClient } from '../structures/index.js';
+import { PermissionFlagsBits } from 'discord.js';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import http from 'node:http';
 
@@ -263,13 +264,14 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 </div>
 <div id="toast"></div>
 <script>
-const state={guildId:null,data:null,viewer:{owner:true,admin:true},queueKey:null,csrf:''};
+const state={guildId:null,data:null,guilds:[],viewer:{owner:true,admin:true},queueKey:null,csrf:''};
 const $=s=>document.querySelector(s);
 function token(){return localStorage.getItem('bootstrapdj-dashboard-token')||''}
 function headers(json,method){const h={'x-dashboard-token':token()};if(json)h['content-type']='application/json';if(method==='POST'&&state.csrf)h['x-dashboard-csrf']=state.csrf;return h}
 function toast(text,isError){const el=$('#toast');el.textContent=text;el.className='show '+(isError?'error':'ok');setTimeout(()=>el.className='',2500)}
 async function api(path,options){const method=options&&options.method||'GET';const res=await fetch(path,{...options,headers:{...headers(Boolean(options&&options.body),method),...(options&&options.headers)}});if(res.status===401){if(document.body.dataset.oauth==='1'){location.href='/auth/discord';throw new Error('Login required')}const t=prompt('Dashboard token');if(t){localStorage.setItem('bootstrapdj-dashboard-token',t);return api(path,options)}}if(!res.ok)throw new Error((await res.text())||res.statusText);return res.json()}
-async function boot(){const g=await api('/api/guilds');state.csrf=g.csrf||'';state.viewer=g.viewer||state.viewer;if(document.body.dataset.oauth==='1'){$('#logout-btn').style.display=''}else{$('#logout-btn').style.display='none'}$('#stats-clear').style.display=state.viewer.owner?'':'none';const sel=$('#guild');sel.innerHTML='';for(const guild of g.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!g.guilds.length){$('#status').textContent='No guilds';return}state.guildId=g.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;load()};await load()}
+async function boot(){const g=await api('/api/guilds');state.csrf=g.csrf||'';state.guilds=g.guilds||[];state.viewer=g.viewer||state.viewer;if(document.body.dataset.oauth==='1'){$('#logout-btn').style.display=''}else{$('#logout-btn').style.display='none'}const sel=$('#guild');sel.innerHTML='';for(const guild of state.guilds){const o=document.createElement('option');o.value=guild.id;o.textContent=guild.name;sel.appendChild(o)}if(!state.guilds.length){syncViewer();$('#status').textContent='No guilds';return}state.guildId=state.guilds[0].id;sel.value=state.guildId;sel.onchange=()=>{state.guildId=sel.value;syncViewer();load()};syncViewer();await load()}
+function syncViewer(){const entry=state.guilds.find(guild=>guild.id===state.guildId);state.viewer={owner:Boolean(entry&&entry.owner),admin:Boolean(entry&&entry.admin)};$('#stats-clear').style.display=state.viewer.owner?'':'none'}
 async function load(){try{state.data=await api('/api/state?guildId='+encodeURIComponent(state.guildId));render();$('#status').textContent='Connected'}catch(e){$('#status').textContent='Error';toast(e.message,true)}}
 const GROUPS=[
 {title:'Playback',keys:['defaultvolume','defaultautoplay','defaultrepeat','defaultshuffle','searchtype','maxqueue','maxuserqueue','voteskip','voteskippercent','autocorrect','volumeautomatic','loudnesstarget']},
@@ -378,8 +380,6 @@ type DashboardSession = {
     id: string;
     name: string;
     avatar: string | null;
-    owner: boolean;
-    guildId: string;
     exp: number;
     sid: string;
 };
@@ -440,8 +440,7 @@ function oauthEnabled(): boolean {
         config.dashboardOAuthClientId &&
             config.dashboardOAuthClientSecret &&
             config.dashboardOAuthRedirectUri &&
-            config.dashboardSessionSecret &&
-            config.dashboardOAuthGuildId
+            config.dashboardSessionSecret
     );
 }
 
@@ -451,7 +450,6 @@ function oauthConfigured(): boolean {
     // otherwise a token-mode dashboard would be locked out by normal bot config.
     return Boolean(
         process.env.DASHBOARD_OAUTH_CLIENT_ID ||
-            process.env.DASHBOARD_OAUTH_GUILD_ID ||
             config.dashboardOAuthClientSecret ||
             config.dashboardOAuthRedirectUri ||
             config.dashboardSessionSecret
@@ -500,14 +498,12 @@ function sessionSignature(payload: string): string {
     return createHmac('sha256', config.dashboardSessionSecret).update(payload).digest('base64url');
 }
 
-function createSession(user: { id: string; username: string; avatar: string | null }, owner: boolean, guildId: string): string {
+function createSession(user: { id: string; username: string; avatar: string | null }): string {
     const payload = Buffer.from(
         JSON.stringify({
             id: user.id,
             name: user.username,
             avatar: user.avatar,
-            owner,
-            guildId,
             exp: Date.now() + SESSION_TTL_SECONDS * 1000,
             sid: randomBytes(16).toString('hex'),
         })
@@ -529,10 +525,6 @@ function readSession(req: http.IncomingMessage): DashboardSession | null {
         const session = JSON.parse(Buffer.from(payload, 'base64url').toString()) as DashboardSession;
         if (!session.id || !session.exp || session.exp < Date.now()) return null;
         if (session.sid && revokedSessions.has(session.sid)) return null;
-        session.owner = Boolean(session.owner);
-        // Cookies issued before the guild binding existed are still scoped to
-        // the configured dashboard guild, never to arbitrary guild ids.
-        session.guildId = session.guildId || config.dashboardOAuthGuildId;
         return session;
     } catch {
         return null;
@@ -541,14 +533,54 @@ function readSession(req: http.IncomingMessage): DashboardSession | null {
 
 function viewer(req: http.IncomingMessage): { name: string; owner: boolean; admin: boolean } {
     const session = readSession(req);
-    if (session) return { name: session.name, owner: session.owner, admin: true };
+    if (session) return { name: session.name, owner: false, admin: true };
     return { name: 'Local admin', owner: true, admin: true };
 }
 
-function guildAllowed(req: http.IncomingMessage, guildId: string): boolean {
-    if (!oauthEnabled()) return true;
+type GuildAccess = { owner: boolean; admin: boolean };
+const guildAccessCache = new Map<string, GuildAccess & { at: number }>();
+const GUILD_ACCESS_TTL_MS = 60_000;
+
+/**
+ * Bot membership is the allow-list. A guild is authorized only while it is in
+ * client.guilds.cache, and the signed-in user must be its owner or a manager.
+ */
+async function guildAccess(
+    client: BootstrapClient,
+    req: http.IncomingMessage,
+    guildId: string
+): Promise<GuildAccess> {
+    const liveGuild = client.guilds.cache.get(guildId);
+    if (!liveGuild) return { owner: false, admin: false };
+    if (!oauthEnabled()) return { owner: true, admin: true };
     const session = readSession(req);
-    return Boolean(session && guildId && session.guildId === guildId);
+    if (!session) return { owner: false, admin: false };
+    const key = `${session.id}:${guildId}`;
+    const cached = guildAccessCache.get(key);
+    if (cached && Date.now() - cached.at < GUILD_ACCESS_TTL_MS) {
+        return { owner: cached.owner, admin: cached.admin };
+    }
+    const owner = liveGuild.ownerId === session.id;
+    let admin = owner;
+    if (!admin) {
+        const member =
+            liveGuild.members.cache.get(session.id) ??
+            (await liveGuild.members.fetch(session.id).catch(() => null));
+        admin = Boolean(
+            member?.permissions.has(PermissionFlagsBits.ManageGuild) ||
+                member?.permissions.has(PermissionFlagsBits.Administrator)
+        );
+    }
+    guildAccessCache.set(key, { owner, admin, at: Date.now() });
+    return { owner, admin };
+}
+
+async function guildAllowed(
+    client: BootstrapClient,
+    req: http.IncomingMessage,
+    guildId: string
+): Promise<boolean> {
+    return (await guildAccess(client, req, guildId)).admin;
 }
 
 function authorized(req: http.IncomingMessage): boolean {
@@ -581,7 +613,12 @@ function oauthRedirectUrl(state: string): string {
     return `https://discord.com/oauth2/authorize?${params.toString()}`;
 }
 
-async function handleOAuthCallback(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<void> {
+async function handleOAuthCallback(
+    client: BootstrapClient,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    url: URL
+): Promise<void> {
     const code = url.searchParams.get('code') ?? '';
     const state = url.searchParams.get('state') ?? '';
     const expected = cookies(req)['bdj_oauth_state'] ?? '';
@@ -625,14 +662,17 @@ async function handleOAuthCallback(req: http.IncomingMessage, res: http.ServerRe
     }
     const user = (await userResponse.json()) as { id: string; username: string; avatar: string | null };
     const guilds = (await guildsResponse.json()) as Array<{ id: string; owner?: boolean; permissions?: string }>;
-    const guild = guilds.find(entry => entry.id === config.dashboardOAuthGuildId);
-    const permissions = Number(guild?.permissions ?? 0);
-    if (!guild || (!guild.owner && (permissions & 0x20) !== 0x20)) {
+    const eligible = guilds.find(
+        (entry: { id: string; owner?: boolean; permissions?: string }) =>
+            client.guilds.cache.has(entry.id) &&
+            (entry.owner === true || (Number(entry.permissions ?? 0) & 0x20) === 0x20)
+    );
+    if (!eligible) {
         res.writeHead(403, { 'content-type': 'text/plain' });
-        res.end('server administrator permission required');
+        res.end('server administrator permission required in a guild with this bot');
         return;
     }
-    setCookie(res, 'bdj_session', createSession(user, guild.owner === true, config.dashboardOAuthGuildId), SESSION_TTL_SECONDS);
+    setCookie(res, 'bdj_session', createSession(user), SESSION_TTL_SECONDS);
     res.writeHead(302, { location: '/' });
     res.end();
 }
@@ -885,7 +925,7 @@ export function startDashboard(client: BootstrapClient): void {
                 return;
             }
             if (req.method === 'GET' && url.pathname === '/auth/callback' && oauthEnabled()) {
-                await handleOAuthCallback(req, res, url);
+                await handleOAuthCallback(client, req, res, url);
                 return;
             }
             if (!authorized(req)) {
@@ -924,12 +964,21 @@ export function startDashboard(client: BootstrapClient): void {
                 res.end(
                     JSON.stringify({
                         csrf,
-                        guilds: [...client.guilds.cache.values()]
-                            .filter(guild => !oauthEnabled() || guild.id === config.dashboardOAuthGuildId)
-                            .map(guild => ({
-                                id: guild.id,
-                                name: guild.name,
-                            })),
+                        guilds: (
+                            await Promise.all(
+                                [...client.guilds.cache.values()].map(async guild => {
+                                    const access = await guildAccess(client, req, guild.id);
+                                    return access.admin
+                                        ? {
+                                              id: guild.id,
+                                              name: guild.name,
+                                              owner: access.owner,
+                                              admin: access.admin,
+                                          }
+                                        : null;
+                                })
+                            )
+                        ).filter((guild): guild is NonNullable<typeof guild> => guild !== null),
                         viewer: viewer(req),
                     })
                 );
@@ -937,7 +986,7 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/player-state') {
                 const guildId = url.searchParams.get('guildId') ?? '';
-                if (!guildAllowed(req, guildId)) return guildDenied(res);
+                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
                 const data = state(client, guildId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
                 res.end(JSON.stringify({ player: data.player }));
@@ -945,7 +994,7 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/state') {
                 const guildId = url.searchParams.get('guildId') ?? '';
-                if (!guildAllowed(req, guildId)) return guildDenied(res);
+                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
                 const data = state(client, guildId);
                 data.settings = await settingsState(client, guildId);
                 res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -955,7 +1004,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/settings') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
-                if (!guildAllowed(req, guildId)) return guildDenied(res);
+                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
                 if (body.settings && typeof body.settings === 'object' && !Array.isArray(body.settings)) {
                     for (const [key, value] of Object.entries(body.settings as Record<string, unknown>)) {
                         await updateSetting(client, guildId, key, bodyText(value));
@@ -972,7 +1021,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/filter') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
-                if (!guildAllowed(req, guildId)) return guildDenied(res);
+                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
                 const filter = bodyText(body.filter);
                 const enabled = Boolean(body.enabled);
                 const value = body.value === undefined ? undefined : Number(body.value);
@@ -983,7 +1032,7 @@ export function startDashboard(client: BootstrapClient): void {
             }
             if (req.method === 'GET' && url.pathname === '/api/stats') {
                 const guildId = url.searchParams.get('guildId') ?? '';
-                if (!guildAllowed(req, guildId)) return guildDenied(res);
+                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
                 const requestedDays = Number(url.searchParams.get('days') ?? 7);
                 const days = Number.isFinite(requestedDays)
                     ? Math.min(90, Math.max(1, Math.floor(requestedDays)))
@@ -1009,8 +1058,8 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/stats/clear') {
                 const clearBody = await readBody(req);
                 const clearGuildId = bodyText(clearBody.guildId);
-                if (!guildAllowed(req, clearGuildId)) return guildDenied(res);
-                if (!viewer(req).owner) {
+                if (!(await guildAllowed(client, req, clearGuildId))) return guildDenied(res);
+                if (!(await guildAccess(client, req, clearGuildId)).owner) {
                     res.writeHead(403, { 'content-type': 'application/json' });
                     res.end(JSON.stringify({ error: 'Only the server owner can clear statistics' }));
                     return;
@@ -1023,7 +1072,7 @@ export function startDashboard(client: BootstrapClient): void {
             if (req.method === 'POST' && url.pathname === '/api/player') {
                 const body = await readBody(req);
                 const guildId = bodyText(body.guildId);
-                if (!guildAllowed(req, guildId)) return guildDenied(res);
+                if (!(await guildAllowed(client, req, guildId))) return guildDenied(res);
                 const action = bodyText(body.action);
                 const value = Number(body.value ?? 0);
                 await playerAction(client, guildId, action, value);
