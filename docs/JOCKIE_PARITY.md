@@ -1,4 +1,7 @@
-# Jockie parity — experimental branch
+# Jockie parity — merged into main
+
+**Merge (2026-11-07):** this feature set was fast-forwarded into `main` at `f933ce9`
+and is the production release candidate.
 
 **Scope correction (2026-11-05):** full feature parity with Jockie’s public feature set.
 Every feature is to remain free; no premium gate is to be introduced. Admin/owner
@@ -6,7 +9,7 @@ restrictions may exist for safety, but they are not paid restrictions.
 
 Reference command list: <https://www.jockiemusic.com/commands> (retrieved 2026-11-05).
 
-This branch is additive and experimental. It does **not** change `main`.
+This document describes the merged, production-bound feature set.
 
 ## Implemented so far
 
