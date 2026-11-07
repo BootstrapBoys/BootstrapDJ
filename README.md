@@ -130,6 +130,7 @@ groups are:
 | Storage   | `DATABASE_URL`, `STATS_RETENTION_DAYS`, `STATS_INACTIVE_DAYS`, `STATS_PRUNE_INTERVAL_HOURS`                 | SQLite defaults to `prisma/bootstrapdj.db`; WAL mode is enabled at startup.                               |
 | Dashboard | `DASHBOARD_PORT`, `DASHBOARD_HOST`, `DASHBOARD_PUBLIC_URL`, `DASHBOARD_OAUTH_*`, `DASHBOARD_SESSION_SECRET` | `DASHBOARD_PORT=0` disables the dashboard.                                                                |
 | Multi-bot | `BOTS_FILE`, `BOT_NAME`, `BOT_ID`, `BOT_PRIORITY`                                                           | Optional local child-process setup; see below.                                                            |
+| Sharding  | `SHARD_COUNT`                                                                                                | Optional Discord shard count; `0` uses Discord's automatic count. Only shard 0 owns shared services.        |
 
 ### Slash replies and ephemeral mode
 
@@ -207,6 +208,15 @@ with one entry per bot. The first active bot in the configured order handles
 voice commands; a durable `SessionLease` transfers ownership if the current
 owner stops heartbeating. This is optional — a single bot needs only the normal
 environment variables.
+
+### Sharding
+
+Set `SHARD_COUNT` to a positive number to force Discord sharding, or `0` to use
+Discord's calculated count. Shard 0 owns the dashboard, Earl bridge, global
+command registration and retention jobs; other shards only own their gateway
+connections and local guilds. Dashboard and voice requests are routed to the
+shard that owns the guild. `BOTS_FILE` is a separate one-process-per-token mode
+and is not combined with `SHARD_COUNT`.
 
 ## Storage and retention
 

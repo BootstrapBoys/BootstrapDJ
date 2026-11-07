@@ -38,6 +38,13 @@ When all OAuth values are present, the dashboard requires a Discord session. If 
 The static `DASHBOARD_TOKEN` is ignored in OAuth mode, and NPM does not need to
 inject `X-Dashboard-Token`.
 
+## Sharded deployments
+
+When `SHARD_COUNT` is positive, only shard 0 serves the dashboard. Guild lists,
+member permissions, player state and player actions are routed to the owning
+shard; settings and statistics use the shared SQLite database. OAuth membership
+and guild visibility therefore include guilds on every shard.
+
 ## Access rule
 
 The callback accepts any user who is a member of at least one guild the bot is
