@@ -125,7 +125,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 <button class="ctrl" data-player="stop" title="Stop" aria-label="Stop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg></button>
 <button class="ctrl" data-player="shuffle" title="Shuffle queue" aria-label="Shuffle queue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
 <button class="ctrl" id="loop-btn" data-player="loop" title="Cycle loop" aria-label="Cycle loop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm0 10h10v-3l4 4-4 4v-3H5v-6h2v4z"/></svg><span id="loop-label">off</span></button>
-<label class="volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input id="volume" type="range" min="0" max="200" step="1" value="100" list="volume-detents"><span id="volume-label">100%</span></label><datalist id="volume-detents"><option value="0"></option><option value="25"></option><option value="50"></option><option value="75"></option><option value="100"></option></datalist>
+<label class="volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input id="volume" type="range" min="0" max="200" step="1" value="100" list="volume-detents"><span id="volume-label">100%</span></label><datalist id="volume-detents"></datalist>
 </div>
 <div class="queue-block"><div class="queue-head"><h3>Queue</h3><span id="queue-count" class="small"></span></div><div id="queue-list" class="queue-list"><div class="small">Nothing queued.</div></div></div>
 </section>
@@ -248,8 +248,10 @@ async function playerAction(action,value){if(!state.permissions.controls){toast(
 document.querySelectorAll('[data-player]').forEach(button=>button.onclick=()=>playerAction(button.dataset.player));
 const volumeInput=$('#volume'),volumeLabel=$('#volume-label');
 let volumeDragging=false,volumeHoldUntil=0;
-const VOLUME_DETENTS=[0,25,50,75,100];
-function snapVolume(value){let result=value;for(const point of VOLUME_DETENTS)if(Math.abs(value-point)<=3)result=point;return result}
+const VOLUME_DETENTS=Array.from({length:41},(_,index)=>index*5);
+const volumeDetentList=$('#volume-detents');
+for(const value of VOLUME_DETENTS){const option=document.createElement('option');option.value=String(value);volumeDetentList.appendChild(option)}
+function snapVolume(value){return Math.round(value/5)*5}
 function readVolume(){const value=snapVolume(Number(volumeInput.value));if(value!==Number(volumeInput.value))volumeInput.value=String(value);volumeLabel.textContent=value+'%';return value}
 function renderVolume(value){if(volumeDragging||Date.now()<volumeHoldUntil||document.activeElement===volumeInput)return;volumeInput.value=String(value);volumeLabel.textContent=value+'%'}
 volumeInput.addEventListener('pointerdown',()=>{volumeDragging=true});
