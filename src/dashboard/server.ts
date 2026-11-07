@@ -41,6 +41,9 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 .controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:12px 0 16px}
 .ctrl{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--panel2);border:1px solid #394556;color:var(--text);border-radius:9px;min-width:38px;padding:8px 10px;font-size:15px}.ctrl:hover{border-color:var(--accent)}.ctrl.on{border-color:var(--accent);color:var(--accent)}.ctrl svg,.volume svg{width:18px;height:18px;display:block;fill:currentColor;flex:none}.volume svg{color:var(--text)}.ctrl .play-icon{display:none}.ctrl.paused .play-icon{display:block}.ctrl.paused .pause-icon{display:none}
 .volume{display:flex;gap:7px;align-items:center;color:var(--muted);font-size:12px;margin-left:auto}.volume input{width:220px;accent-color:var(--accent)}
+footer{border-top:1px solid #2b3340;margin-top:2px;padding:14px 22px 20px;color:var(--muted);font-size:12px;text-align:center}
+footer a{color:var(--muted);text-decoration:none;margin:0 5px}footer a:hover{color:var(--accent);text-decoration:underline}
+footer .sep{color:#4b5a6e;margin:0 2px}
 .queue-block{border-top:1px solid #2f3948;padding-top:12px}.queue-head{display:flex;justify-content:space-between;align-items:baseline}.queue-head h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px}
 .queue-list{display:grid;gap:5px;max-height:260px;overflow:auto}.queue-item{display:flex;gap:10px;align-items:baseline;padding:7px 9px;background:var(--panel2);border-radius:7px;font-size:13px;cursor:pointer}.queue-item:hover{border:1px solid var(--accent);padding:6px 8px}.queue-item .qpos{color:var(--muted);width:20px;flex:none}.queue-item .qtitle{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.queue-item .qmeta{color:var(--muted);font-size:12px;flex:none}
 .settings{display:grid;gap:18px}
@@ -125,7 +128,7 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
 <button class="ctrl" data-player="stop" title="Stop" aria-label="Stop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg></button>
 <button class="ctrl" data-player="shuffle" title="Shuffle queue" aria-label="Shuffle queue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
 <button class="ctrl" id="loop-btn" data-player="loop" title="Cycle loop" aria-label="Cycle loop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm0 10h10v-3l4 4-4 4v-3H5v-6h2v4z"/></svg><span id="loop-label">off</span></button>
-<label class="volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input id="volume" type="range" min="0" max="200" step="1" value="100" list="volume-detents"><span id="volume-label">100%</span></label><datalist id="volume-detents"></datalist>
+<label class="volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input id="volume" type="range" min="0" max="200" step="5" value="100"><span id="volume-label">100%</span></label>
 </div>
 <div class="queue-block"><div class="queue-head"><h3>Queue</h3><span id="queue-count" class="small"></span></div><div id="queue-list" class="queue-list"><div class="small">Nothing queued.</div></div></div>
 </section>
@@ -151,6 +154,12 @@ button{cursor:pointer}button.primary{background:var(--accent);color:#0d1220;bord
   </div>
 </div>
 <div id="toast"></div>
+<footer>
+  <span>© 2026 BootstrapBoys</span><span class="sep">·</span>
+  <a href="https://zebz213.github.io/bootstrapdj-legal/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a><span class="sep">·</span>
+  <a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a><span class="sep">·</span>
+  <a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">Legal</a>
+</footer>
 <script>
 const state={guildId:null,data:null,guilds:[],permissions:{member:false,owner:false,admin:false,controls:false,settings:false},queueKey:null,csrf:''};
 const $=s=>document.querySelector(s);
@@ -248,9 +257,6 @@ async function playerAction(action,value){if(!state.permissions.controls){toast(
 document.querySelectorAll('[data-player]').forEach(button=>button.onclick=()=>playerAction(button.dataset.player));
 const volumeInput=$('#volume'),volumeLabel=$('#volume-label');
 let volumeDragging=false,volumeHoldUntil=0;
-const VOLUME_DETENTS=Array.from({length:41},(_,index)=>index*5);
-const volumeDetentList=$('#volume-detents');
-for(const value of VOLUME_DETENTS){const option=document.createElement('option');option.value=String(value);volumeDetentList.appendChild(option)}
 function snapVolume(value){return Math.round(value/5)*5}
 function readVolume(){const value=snapVolume(Number(volumeInput.value));if(value!==Number(volumeInput.value))volumeInput.value=String(value);volumeLabel.textContent=value+'%';return value}
 function renderVolume(value){if(volumeDragging||Date.now()<volumeHoldUntil||document.activeElement===volumeInput)return;volumeInput.value=String(value);volumeLabel.textContent=value+'%'}
