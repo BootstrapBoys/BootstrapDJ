@@ -18,15 +18,19 @@ export default class Ready extends Event {
             `[boot] ${this.client.user?.tag} priority=${this.client.config.botPriority} botsFile=${Boolean(this.client.config.botsFile)}`
         );
 
-        this.client.user?.setPresence({
-            activities: [
-                {
-                    name: config.botActivity,
-                    type: config.botActivityType,
-                },
-            ],
-            status: config.botStatus,
-        });
+        // Presence is account-wide. In a shard group only the coordinator may
+        // set it, or a late shard's static presence overwrites the aggregate.
+        if (!this.client.shard || this.client.isCoordinator) {
+            this.client.user?.setPresence({
+                activities: [
+                    {
+                        name: config.botActivity,
+                        type: config.botActivityType,
+                    },
+                ],
+                status: config.botStatus,
+            });
+        }
 
         const firstReady = !channelsPurged;
         channelsPurged = true;
