@@ -1,4 +1,5 @@
 import type { BootstrapClient } from '../../core/index.js';
+import { shutdownPlugins } from '../index.js';
 import type { BotPlugin } from '../index.js';
 
 const SIGNALS: readonly NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGQUIT'];
@@ -39,6 +40,8 @@ function createPlugin(): BotPlugin {
                 client.logger.star('Saving playback state...');
                 const players = [...client.queue.values()];
                 await Promise.all(players.map(player => player.persist().catch(() => {})));
+                client.logger.star('Stopping plugins...');
+                await shutdownPlugins(client);
                 client.logger.star('Disconnecting from Discord...');
                 try {
                     await client.destroy();
