@@ -3,6 +3,8 @@ import { GuildMember, Message, MessageReplyOptions, PermissionFlagsBits } from '
 import { BootstrapClient, Context, Event } from '../../core/index.js';
 import { evaluateCommand, type GateMember } from '../../lib/CommandGate.js';
 import { matchPrefixCommand } from '../../lib/PrefixCommand.js';
+import { refreshStalePlayer } from '../../lib/PlayerResolver.js';
+import { deleteAfterSeconds } from '../../lib/ResponseMode.js';
 
 function escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -209,11 +211,18 @@ export default class MessageCreate extends Event {
         }
 
         const ctx = new Context(message, args);
-        ctx.deleteAfter = Number(settings.deleteafter) || null;
+        ctx.deleteAfter = deleteAfterSeconds(settings);
         ctx.setArgs(args);
         void this.client.db.recordCommand(message.guildId, command.name).catch(() => {});
 
         try {
+            await refreshStalePlayer(
+                this.client,
+                command,
+                message.guildId,
+                member.voice.channel,
+                message.channel
+            );
             return await command.run(this.client, ctx, ctx.args);
         } catch (error) {
             this.client.logger.error(error);

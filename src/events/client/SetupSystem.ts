@@ -1,6 +1,7 @@
 import { Message, PermissionFlagsBits, TextChannel } from 'discord.js';
 
 import { BootstrapClient, Event } from '../../core/index.js';
+import { resolvePlayer } from '../../lib/PlayerResolver.js';
 import { oops, setupStart } from '../../lib/SetupSystem.js';
 
 /** A plain request-channel message: resolve voice, then hand it to the search flow. */
@@ -52,21 +53,16 @@ export default class SetupSystem extends Event {
             );
         }
 
-        let player = this.client.queue.get(message.guildId);
-        if (!player) {
-            if (!this.client.queue.hasNode) {
-                return await this.reject(
-                    channel,
-                    message,
-                    'No Lavalink node is available right now. Please try again in a moment.'
-                );
-            }
-            player = await this.client.queue.create(
-                message.guild,
-                voice,
+        if (!this.client.queue.hasNode) {
+            return await this.reject(
                 channel,
-                this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes)
+                message,
+                'No Lavalink node is available right now. Please try again in a moment.'
             );
+        }
+        let player = await resolvePlayer(this.client, message.guildId, voice, channel);
+        if (!player) {
+            player = await this.client.queue.create(message.guild, voice, channel);
         }
 
         await setupStart(this.client, message.content, player, message);

@@ -199,7 +199,14 @@ async function setupStart(
     try {
         const limits = await getPlayLimits(client, player.guildId);
         const result = await client.queue.search(query, client.config.prefixSearchEngine);
-        if (!result) return;
+        if (!result) {
+            return await sendTransient(
+                client,
+                channel,
+                'There was an error while searching. Please try again.',
+                client.color.red
+            );
+        }
 
         if (result.loadType === LoadType.ERROR) {
             return await sendTransient(
@@ -223,9 +230,12 @@ async function setupStart(
             if (!raw) return;
             const track = player.buildTrack(raw, message.author);
             if (!(await enqueueSingle(client, player, message, channel, track, limits))) return;
-            await mock
-                .edit({ embeds: [nowPlayingEmbed(client, track, 'request')] })
-                .catch(() => {});
+            const shown = player.current;
+            if (shown) {
+                await mock
+                    .edit({ embeds: [nowPlayingEmbed(client, shown, 'request')] })
+                    .catch(() => {});
+            }
             return;
         }
 
@@ -239,9 +249,11 @@ async function setupStart(
             );
         }
 
-        for (const raw of result.data.tracks.slice(0, limits.maxPlaylistTracks || undefined)) {
+        let accepted = 0;
+        const wanted = result.data.tracks.slice(0, limits.maxPlaylistTracks || undefined);
+        for (const raw of wanted) {
             const track = player.buildTrack(raw, message.author);
-            if (checkTrack(player, track, message.author.id, limits)) break;
+            if (checkTrack(player, track, message.author.id, limits)) continue;
             if (player.queue.length >= client.config.maxQueueSize) {
                 await sendTransient(
                     client,
@@ -252,18 +264,23 @@ async function setupStart(
                 return;
             }
             player.enqueue(track, true, false);
+            accepted += 1;
         }
         void player.persist();
         await player.isPlaying();
+        const skipped = wanted.length - accepted;
         await sendTransient(
             client,
             channel,
-            `Added [${result.data.tracks.length}](${result.data.tracks[0]?.info.uri ?? ''}) to the queue.`,
+            `Added ${accepted} track${accepted === 1 ? '' : 's'} to the queue${
+                skipped > 0 ? ` (${skipped} skipped)` : ''
+            }.`,
             client.color.main
         );
 
-        const first = result.data.tracks[0];
-        const shown = player.current ?? (first ? player.buildTrack(first, message.author) : null);
+        // The panel mirrors what is actually playing; the first requested
+        // track is only current if playback was idle when the playlist landed.
+        const shown = player.current;
         if (shown) {
             await mock
                 .edit({ embeds: [nowPlayingEmbed(client, shown, 'request')] })
@@ -271,6 +288,12 @@ async function setupStart(
         }
     } catch (error) {
         client.logger.error(error);
+        await sendTransient(
+            client,
+            channel,
+            'Something went wrong while adding that request. Please try again.',
+            client.color.red
+        );
     }
 }
 

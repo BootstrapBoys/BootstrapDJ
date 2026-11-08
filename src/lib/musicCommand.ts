@@ -2,6 +2,7 @@ import type { CommandOptions } from '../core/Command.js';
 import type { ApplicationCommandOption, PermissionsString } from 'discord.js';
 
 import { BootstrapClient, Command, Context, Dispatcher } from '../core/index.js';
+import { resolvePlayer } from './PlayerResolver.js';
 
 export type MusicRunContext = {
     client: BootstrapClient;
@@ -69,7 +70,12 @@ export function defineMusicCommand(definition: MusicCommandDefinition): typeof C
 
         public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
             if (!ctx.guild) return;
-            const player = client.queue.get(ctx.guild.id);
+            const player = await resolvePlayer(
+                client,
+                ctx.guild.id,
+                ctx.voiceChannel,
+                ctx.guild.channels?.cache?.get(ctx.channelId) ?? null
+            );
             if (!player && (definition.requirePlayer ?? true)) {
                 return await ctx.sendMessage({
                     embeds: [client.embed().setColor(client.color.red).setDescription(NO_PLAYER)],

@@ -8,6 +8,7 @@ import MessageCreate from '../dist/events/client/MessageCreate.js';
 function makeHarness({ content, setupTextId = 'setup-channel' }) {
     let setupEmitted = 0;
     let commandRuns = 0;
+    let lastCtx = null;
     const replies = [];
     const member = {
         id: 'user',
@@ -35,8 +36,9 @@ function makeHarness({ content, setupTextId = 'setup-channel' }) {
         args: false,
         player: { voice: false, dj: false, active: false, djPerm: null },
         permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
-        run: async () => {
+        run: async (_client, ctx) => {
             commandRuns += 1;
+            lastCtx = ctx;
         },
     };
     const client = {
@@ -96,6 +98,7 @@ function makeHarness({ content, setupTextId = 'setup-channel' }) {
         message,
         replies,
         counts: () => ({ setupEmitted, commandRuns }),
+        ctx: () => lastCtx,
     };
 }
 
@@ -115,4 +118,10 @@ test('an unknown prefixed message stays a setup request', async () => {
     const harness = makeHarness({ content: '!not-a-command' });
     await harness.event.run(harness.message);
     assert.deepEqual(harness.counts(), { setupEmitted: 1, commandRuns: 0 });
+});
+
+test('deleteafter=0 reaches the context as an explicit disable', async () => {
+    const harness = makeHarness({ content: '!skip' });
+    await harness.event.run(harness.message);
+    assert.equal(harness.ctx().deleteAfter, 0);
 });

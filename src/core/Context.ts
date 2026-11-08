@@ -171,7 +171,9 @@ export default class Context {
         this.cancelPendingDelete();
         if (this.exemptFromDelete(content)) return;
 
-        const delaySeconds = seconds ?? this.deleteAfter ?? this.client.config.deleteAfter;
+        const delaySeconds =
+            seconds ??
+            (this.deleteAfter !== null ? this.deleteAfter : this.client.config.deleteAfter);
         if (!Number.isFinite(delaySeconds) || delaySeconds <= 0) return;
 
         const timer = setTimeout(() => {

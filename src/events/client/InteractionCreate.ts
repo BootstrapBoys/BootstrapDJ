@@ -8,7 +8,8 @@ import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Context, Event } from '../../core/index.js';
 import { evaluateCommand, isOwner } from '../../lib/CommandGate.js';
-import { shouldReplyEphemeral } from '../../lib/ResponseMode.js';
+import { refreshStalePlayer } from '../../lib/PlayerResolver.js';
+import { deleteAfterSeconds, shouldReplyEphemeral } from '../../lib/ResponseMode.js';
 
 interface Choice {
     name: string;
@@ -159,7 +160,7 @@ export default class InteractionCreate extends Event {
         }
 
         const ctx = new Context(interaction, rawArgs, ephemeral);
-        ctx.deleteAfter = Number(settings.deleteafter) || null;
+        ctx.deleteAfter = deleteAfterSeconds(settings);
 
         if (command.defer) {
             try {
@@ -172,6 +173,13 @@ export default class InteractionCreate extends Event {
 
         void this.client.db.recordCommand(interaction.guildId, command.name).catch(() => {});
         try {
+            await refreshStalePlayer(
+                this.client,
+                command,
+                interaction.guildId,
+                member.voice.channel,
+                channel
+            );
             await command.run(this.client, ctx, ctx.args);
         } catch (error) {
             this.client.logger.error(error);

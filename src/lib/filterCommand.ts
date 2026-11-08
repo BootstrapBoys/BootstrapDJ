@@ -2,6 +2,7 @@ import type { CommandOptions } from '../core/Command.js';
 import type { ApplicationCommandOption, PermissionsString } from 'discord.js';
 
 import { BootstrapClient, Command, Context, Dispatcher } from '../core/index.js';
+import { resolvePlayer } from './PlayerResolver.js';
 import { replyFail, replyOk } from './reply.js';
 
 export type FilterRunContext = {
@@ -65,7 +66,12 @@ export function defineFilterCommand(definition: FilterDefinition): typeof Comman
             if (!ctx.guild) {
                 return await ctx.sendMessage({ content: 'This command only works in a server.' });
             }
-            const player = client.queue.get(ctx.guild.id);
+            const player = await resolvePlayer(
+                client,
+                ctx.guild.id,
+                ctx.voiceChannel,
+                ctx.guild.channels?.cache?.get(ctx.channelId) ?? null
+            );
             if (!player || (definition.requireCurrent && !player.current)) {
                 if (definition.missingPlayer === null) return;
                 return await ctx.sendMessage({
