@@ -7,6 +7,7 @@ import { BootstrapClient } from './index.js';
 import { normalizeAuthor, trackKey, trackSignature } from './player/TrackIdentity.js';
 import { PresentationRegistry } from './player/PresentationRegistry.js';
 import { persistSession } from './player/SessionWriter.js';
+import { PlaybackTimers } from './player/PlaybackTimers.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
@@ -122,6 +123,12 @@ export default class Dispatcher {
     private client: BootstrapClient;
     public guildId: string;
     public channelId: string;
+    private timersStore?: PlaybackTimers;
+
+    private get timers(): PlaybackTimers {
+        return (this.timersStore ??= new PlaybackTimers());
+    }
+
     /** Voice channel this dispatcher is bound to; needed for session restore. */
     public voiceId: string | null;
     public player: Player;
@@ -147,12 +154,8 @@ export default class Dispatcher {
     private toppingUp = false;
     /** Failed final attempts per track, so an unplayable track is skipped. */
     private failedTracks = new Map<string, number>();
-    private persistTimer: ReturnType<typeof setInterval> | null = null;
     /** Settles when the Shoukaku player teardown finishes; rebuilds await it. */
     private leavePromise: Promise<void> | null = null;
-    private pauseTimer: ReturnType<typeof setTimeout> | null = null;
-    private idleTimer: ReturnType<typeof setTimeout> | null = null;
-    private statsTimer: ReturnType<typeof setInterval> | null = null;
     public nowPlayingMessage: Message | null;
     public nowPlayingCollector: NowPlayingCollector | null;
     /** "Leave in …" prompt shown when the queue drains; cleared on leave/requeue. */
@@ -191,15 +194,15 @@ export default class Dispatcher {
         this.nowPlayingMessage = null;
         this.nowPlayingCollector = null;
         this.queueEmptyPrompt = null;
-        this.persistTimer = setInterval(() => {
+        this.timers.persist = setInterval(() => {
             // A paused player's position cannot change and pause() already wrote
             // the state. An idle dispatcher has no position or queue to save;
             // persisting it only rewrites/deletes the same row every 10s.
             if (!this.paused && (this.current || this.queue.length)) void this.persist();
         }, 10_000);
-        this.statsTimer = setInterval(() => void this.sampleListeners(), 60_000);
-        (this.persistTimer as unknown as { unref?: () => void }).unref?.();
-        (this.statsTimer as unknown as { unref?: () => void }).unref?.();
+        this.timers.stats = setInterval(() => void this.sampleListeners(), 60_000);
+        (this.timers.persist as unknown as { unref?: () => void }).unref?.();
+        (this.timers.stats as unknown as { unref?: () => void }).unref?.();
 
         this.player
             .on('start', () =>
@@ -349,9 +352,9 @@ export default class Dispatcher {
             this.callPlayer('resume', () => this.player.setPaused(false));
             this.paused = false;
         }
-        if (this.pauseTimer) {
-            clearTimeout(this.pauseTimer);
-            this.pauseTimer = null;
+        if (this.timers.pause) {
+            clearTimeout(this.timers.pause);
+            this.timers.pause = null;
         }
         if (this.paused) {
             void this.client.db
@@ -361,10 +364,10 @@ export default class Dispatcher {
                     return this.client.db.getGuildSettings(this.guildId).then(settings => {
                         const seconds = Number(settings.timeoutpause ?? 0);
                         if (!Number.isFinite(seconds) || seconds <= 0 || !this.paused) return;
-                        this.pauseTimer = setTimeout(() => {
+                        this.timers.pause = setTimeout(() => {
                             if (this.paused) this.destroy();
                         }, seconds * 1000);
-                        (this.pauseTimer as unknown as { unref?: () => void }).unref?.();
+                        (this.timers.pause as unknown as { unref?: () => void }).unref?.();
                     });
                 })
                 .catch(() => {});
@@ -440,16 +443,16 @@ export default class Dispatcher {
     public armIdleTimeout(seconds: number): void {
         this.clearIdleTimeout();
         if (!Number.isFinite(seconds) || seconds <= 0) return;
-        this.idleTimer = setTimeout(() => {
-            this.idleTimer = null;
+        this.timers.idle = setTimeout(() => {
+            this.timers.idle = null;
             if (!this.queue.length && !this.autoplay && !this.current) this.destroy();
         }, seconds * 1000);
-        (this.idleTimer as unknown as { unref?: () => void }).unref?.();
+        (this.timers.idle as unknown as { unref?: () => void }).unref?.();
     }
 
     public clearIdleTimeout(): void {
-        if (this.idleTimer) clearTimeout(this.idleTimer);
-        this.idleTimer = null;
+        if (this.timers.idle) clearTimeout(this.timers.idle);
+        this.timers.idle = null;
     }
 
     /** Remove the "leave in …" prompt when playback resumes or the player goes away. */
@@ -475,12 +478,12 @@ export default class Dispatcher {
         // A delayed timer or collector may still hold the old dispatcher after
         // a rebuild installed a replacement; never tear down the live player.
         if (this.client.queue.get(this.guildId) !== this) {
-            if (this.persistTimer) clearInterval(this.persistTimer);
-            this.persistTimer = null;
-            if (this.statsTimer) clearInterval(this.statsTimer);
-            this.statsTimer = null;
-            if (this.pauseTimer) clearTimeout(this.pauseTimer);
-            this.pauseTimer = null;
+            if (this.timers.persist) clearInterval(this.timers.persist);
+            this.timers.persist = null;
+            if (this.timers.stats) clearInterval(this.timers.stats);
+            this.timers.stats = null;
+            if (this.timers.pause) clearTimeout(this.timers.pause);
+            this.timers.pause = null;
             this.clearIdleTimeout();
             this.nowPlayingCollector?.stop('destroy');
             this.nowPlayingCollector = null;
@@ -489,19 +492,19 @@ export default class Dispatcher {
             return;
         }
         if (this.client.shuttingDown) {
-            if (this.persistTimer) clearInterval(this.persistTimer);
-            this.persistTimer = null;
-            if (this.statsTimer) clearInterval(this.statsTimer);
-            this.statsTimer = null;
+            if (this.timers.persist) clearInterval(this.timers.persist);
+            this.timers.persist = null;
+            if (this.timers.stats) clearInterval(this.timers.stats);
+            this.timers.stats = null;
             this.clearQueueEmptyPrompt();
             return;
         }
-        if (this.persistTimer) clearInterval(this.persistTimer);
-        this.persistTimer = null;
-        if (this.statsTimer) clearInterval(this.statsTimer);
-        this.statsTimer = null;
-        if (this.pauseTimer) clearTimeout(this.pauseTimer);
-        this.pauseTimer = null;
+        if (this.timers.persist) clearInterval(this.timers.persist);
+        this.timers.persist = null;
+        if (this.timers.stats) clearInterval(this.timers.stats);
+        this.timers.stats = null;
+        if (this.timers.pause) clearTimeout(this.timers.pause);
+        this.timers.pause = null;
         this.clearIdleTimeout();
         this.nowPlayingCollector?.stop('destroy');
         this.nowPlayingCollector = null;
