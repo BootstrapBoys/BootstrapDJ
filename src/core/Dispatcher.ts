@@ -19,10 +19,8 @@ import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
 import { findColdStart } from './player/AutoplayColdStart.js';
 import { relatedTracks as getRelatedTracks } from './player/YouTubeMix.js';
-import { previousTrack as goPrevious, resume247 as resumeSession, seekTo as seekPlayer, shuffleQueue, skipTracks, stopPlayback } from './player/TransportActions.js';
 import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
 import { isRecent as checkRecent, youtubeIdFor as findYouTubeId, resolveFresh as freshTrack, resolveTracks as resolveIdentifier } from './player/TrackResolution.js';
-import { recordPlayFailure } from './player/PlaybackFailure.js';
 import { fairPlayQueue, playlistSeeds, purgeAutoplayQueue, rememberSeedState } from './player/QueueOps.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
@@ -231,70 +229,7 @@ export default class Dispatcher {
     }
 
     public async play(attempt: number = 1): Promise<void> {
-        if (!this.exists || (!this.queue.length && !this.current)) {
-            return;
-        }
-        if (this.isStale) {
-            this.client.logger.warn(
-                `[queue] refusing to play on a stale player for ${this.guildId} (node session changed)`
-            );
-            return;
-        }
-
-        this.paused247 = false;
-        // On a retry current is already the track that failed; shifting again
-        // would skip it and play the next queue entry instead.
-        if (!this.current && this.queue.length !== 0) this.current = this.queue.shift() ?? null;
-        if (!this.current) return;
-
-        try {
-            await this.player.playTrack({ track: { encoded: this.current.encoded } });
-            const startedKey = this.current.info?.uri ?? this.current.encoded;
-            this.failedTracks.delete(startedKey);
-            void this.persist();
-            this.history.push(this.current);
-            if (this.history.length > 100) this.history.shift();
-            return;
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            const detail = error as { status?: number; path?: string; error?: string; trace?: string };
-            this.client.logger.error(
-                `[queue] play failed for ${this.guildId}: ${message}` +
-                    (detail.status ? ` (status ${detail.status}, ${detail.path ?? '?'})` : '') +
-                    (detail.error ? ` — ${detail.error}` : '')
-            );
-
-            // Encoded tracks can be rejected after a Lavalink restart ("missing
-            // source manager" / version mismatch). Re-resolve by URI once and
-            // retry with a fresh payload instead of leaving a dead current track
-            // that makes isPlaying() believe playback is running.
-            if (attempt <= 3 && this.current?.info?.uri) {
-                const fresh = await this.resolveFresh(this.current);
-                if (fresh) this.current = fresh;
-                // A freshly reconnected node may still be registering its source
-                // managers, so retry with backoff instead of once immediately.
-                setTimeout(() => {
-                    if (this.current) void this.play(attempt + 1);
-                }, 3000 * attempt);
-                return;
-            }
-
-            // Retry a failed track a bounded number of times, then drop it.
-            // Requeueing an unplayable track forever blocks the whole queue.
-            if (this.current) {
-                const failure = recordPlayFailure(this.current, this.failedTracks);
-                if (failure.drop) {
-                    this.client.logger.warn(
-                        `[queue] skipping unplayable track in ${this.guildId}: ${failure.key}`
-                    );
-                } else {
-                    this.queue.unshift(this.current);
-                }
-            }
-            this.current = null;
-            void this.persist();
-            if (this.queue.length) setTimeout(() => void this.isPlaying(), 3000);
-        }
+        await this.engine.play(attempt);
     }
 
     public async resolveFresh(track: Song): Promise<Song | null> {
@@ -314,35 +249,7 @@ export default class Dispatcher {
     }
 
     public pause(): void {
-        if (!this.player) return;
-        if (!this.paused) {
-            this.callPlayer('pause', () => this.player.setPaused(true));
-            this.paused = true;
-        } else {
-            this.callPlayer('resume', () => this.player.setPaused(false));
-            this.paused = false;
-        }
-        if (this.timers.pause) {
-            clearTimeout(this.timers.pause);
-            this.timers.pause = null;
-        }
-        if (this.paused) {
-            void this.client.db
-                .get_247(this.guildId)
-                .then(stay => {
-                    if (stay) return;
-                    return this.client.db.getGuildSettings(this.guildId).then(settings => {
-                        const seconds = Number(settings.timeoutpause ?? 0);
-                        if (!Number.isFinite(seconds) || seconds <= 0 || !this.paused) return;
-                        this.timers.pause = setTimeout(() => {
-                            if (this.paused) this.destroy();
-                        }, seconds * 1000);
-                        (this.timers.pause as unknown as { unref?: () => void }).unref?.();
-                    });
-                })
-                .catch(() => {});
-        }
-        void this.persist();
+        this.engine.pause();
     }
     public remove(index: number): void {
         if (!this.player) return;
@@ -358,12 +265,11 @@ export default class Dispatcher {
     }
 
     public previousTrack(): void {
-        if (!this.player) return;
-        goPrevious(this);
+        this.engine.previous();
     }
     /** A listener joined a 24/7 session after it paused at track end. */
     public resume247(): void {
-        resumeSession(this);
+        this.engine.resume247();
     }
 
     /** Sample voice membership once a minute for listener-time statistics. */
@@ -479,22 +385,19 @@ export default class Dispatcher {
     }
     public setShuffle(): void {
         if (!this.player) return;
-        shuffleQueue(this);
+        this.engine.shuffle();
     }
 
     public async skip(skipto = 1): Promise<void> {
-        if (!this.player) return;
-        skipTracks(this, skipto);
+        this.engine.skip(skipto);
     }
 
     public seek(time: number): void {
-        if (!this.player) return;
-        seekPlayer(this, time);
+        this.engine.seek(time);
     }
 
     public stop(): void {
-        if (!this.player) return;
-        stopPlayback(this);
+        this.engine.stop();
     }
     /**
      * Snapshot playback state so a crash or restart can resume it. The row is
@@ -528,9 +431,7 @@ export default class Dispatcher {
         return new Song(track, user);
     }
     public async isPlaying(): Promise<void> {
-        if (this.queue.length && !this.current && !this.player.paused) {
-            this.play();
-        }
+        await this.engine.isPlaying();
     }
     /**
      * Queue a track a user asked for. Anything autoplay guessed is dropped

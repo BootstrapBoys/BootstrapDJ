@@ -22,7 +22,7 @@ function harness(overrides = {}) {
         failedTracks: new Map(),
         ...overrides,
     };
-    const calls = { play: 0, stop: 0, pause: [], seek: [], removed: [], persisted: 0, restarts: 0 };
+    const calls = { play: 0, stop: 0, pause: [], seek: [], removed: [], persisted: 0, restarts: 0, volumes: [] };
     const scheduled = [];
     let pauseTimeout = null;
     let clearPauseCalls = 0;
@@ -48,7 +48,7 @@ function harness(overrides = {}) {
         stop: async () => {
             calls.stop += 1;
         },
-        setVolume: async () => {},
+        setVolume: async value => { calls.volumes.push(value); },
         positionValue: 5000,
     };
 
@@ -320,4 +320,41 @@ test('dispatcher setLoop delegates to the engine without duplicating state', asy
 
     assert.equal(dispatcher.loop, 'queue');
     assert.equal(persisted, 1);
+});
+
+test('a dropped third failure advances to the queued head on the next play', async () => {
+    const broken = makeSong('broken', { uri: 'https://x/broken' });
+    const next = makeSong('next', { uri: 'https://x/next' });
+    const h = harness({ current: broken, queue: [next] });
+    h.state.failedTracks.set(broken.info.uri, 2);
+    h.player.play = async () => {
+        throw new Error('unplayable');
+    };
+
+    await h.engine.play(4);
+    assert.equal(h.state.current, null);
+    assert.deepEqual(h.state.queue.map(track => track.info.title), ['next']);
+
+    h.player.play = async () => {
+        h.calls.play += 1;
+    };
+    await h.engine.play();
+
+    assert.equal(h.state.current, next);
+    assert.deepEqual(h.state.queue, []);
+    assert.deepEqual(h.state.history.map(track => track.info.title), ['next']);
+});
+
+test('stop then play keeps the player volume untouched', async () => {
+    const h = harness({ queue: [makeSong('a')] });
+    h.player.volume = 25;
+    h.state.volume = 25;
+
+    h.engine.stop();
+    h.state.queue.push(makeSong('after-stop'));
+    await h.engine.play();
+
+    assert.equal(h.state.current?.info.title, 'after-stop');
+    assert.equal(h.state.volume, 25);
+    assert.deepEqual(h.calls.volumes, []);
 });
