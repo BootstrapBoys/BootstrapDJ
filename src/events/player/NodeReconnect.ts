@@ -5,24 +5,22 @@ import { endIncident, formatDuration } from '../../lib/NodeStatus.js';
 import { isFallbackNode } from '../../lib/PublicNodes.js';
 
 export default class NodeReconnect extends Event {
-    constructor(client: BootstrapClient, file: string) {
-        super(client, file, {
-            name: 'nodeReconnect',
-        });
+    public constructor(client: BootstrapClient, file: string) {
+        super(client, file, { name: 'nodeReconnect' });
     }
+
     public async run(node: string): Promise<void> {
         const configured = this.client.config.lavalink.map(option => option.name);
         if (!isFallbackNode(node) && configured.includes(node) && !isPrimaryNode(node, configured)) {
             this.client.logger.info(`[nodes] standby node "${node}" reconnected`);
             return;
         }
-
         if (isFallbackNode(node)) {
-            const message = `Public fallback node "${node}" reconnected — the configured nodes are still down.`;
-            this.client.logger.warn(message);
+            this.client.logger.warn(
+                `Public fallback node "${node}" reconnected — the configured nodes are still down.`
+            );
             return;
         }
-
         const recoveredMs = endIncident();
         const message =
             recoveredMs === null
