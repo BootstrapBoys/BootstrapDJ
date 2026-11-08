@@ -1,4 +1,4 @@
-import { ChannelType, User } from 'discord.js';
+import { ChannelType, Message, TextChannel, User } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import Dispatcher, { fromSaved, SavedTrack, Song } from '../core/Dispatcher.js';
@@ -223,6 +223,26 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
     }
 }
 
+/** Delete pre-restart track panels; keep the setup mock and non-panel replies. */
+async function clearStaleNowPlaying(
+    client: BootstrapClient,
+    channel: TextChannel,
+    setupMessageId: string | null
+): Promise<void> {
+    const botId = client.user?.id;
+    if (!botId) return;
+    const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+    if (!messages) return;
+    const stale = messages.filter(
+        (message: Message) =>
+            message.author.id === botId &&
+            message.id !== setupMessageId &&
+            message.components.length > 0 &&
+            message.embeds.some(embed => embed.author?.name === 'Now Playing')
+    );
+    await Promise.all(stale.map(message => message.delete().catch(() => {})));
+}
+
 async function restoreSession(client: BootstrapClient, session: Session, botUser: User): Promise<void> {
     const guildId = session.guildId;
     const drop = async (reason: string): Promise<void> => {
@@ -245,6 +265,11 @@ async function restoreSession(client: BootstrapClient, session: Session, botUser
         voiceChannel.type !== ChannelType.GuildStageVoice
     ) {
         return await drop(`guild ${guildId}: saved channel is not a voice channel`);
+    }
+
+    const setup = await client.db.getSetup(guildId);
+    if (textChannel instanceof TextChannel) {
+        await clearStaleNowPlaying(client, textChannel, setup?.messageId ?? null);
     }
 
     // Restoring into an empty channel would play to nobody: the bot's own join
