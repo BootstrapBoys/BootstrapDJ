@@ -244,6 +244,7 @@ export class PlaybackEngine {
     }
 
     public previous(): void {
+        if (!this.ports.player.isAvailable()) return;
         if (!this.state.previous) return;
         this.state.queue.unshift(this.state.previous);
         this.callPlayer('stop', () => this.ports.player.stop());
