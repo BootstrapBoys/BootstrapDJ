@@ -5,6 +5,17 @@ import { isFallbackNode } from '../lib/PublicNodes.js';
 import { BootstrapClient, Dispatcher } from './index.js';
 import { NodeMigrator } from './player/NodeMigrator.js';
 
+const SESSION_LEASE_MS = 60_000;
+const DEFAULT_VOLUME_MAX = 200;
+const ABSOLUTE_URL = /^https?:\/\//;
+const ENGINE_PREFIX = /^[a-z]+search:/i;
+
+/**
+ * Guild-id → player registry.
+ *
+ * Player construction, default settings, and node migration live here so
+ * commands only ever ask for `client.queue.get(guildId)` or `create(...)`.
+ */
 export class Queue extends Map<string, Dispatcher> {
     public client: BootstrapClient;
     private readonly rebuilding = new Set<string>();
@@ -21,11 +32,12 @@ export class Queue extends Map<string, Dispatcher> {
     }
 
     public get node(): Node | undefined {
-        return this.client.shoukaku.options.nodeResolver(this.client.shoukaku.nodes);
+        const pool = this.client.shoukaku.nodes;
+        return this.client.shoukaku.options.nodeResolver(pool);
     }
 
     public get hasNode(): boolean {
-        return Boolean(this.node);
+        return this.node !== undefined;
     }
 
     private async spawn(
@@ -49,23 +61,23 @@ export class Queue extends Map<string, Dispatcher> {
             node,
         });
         this.set(guild.id, dispatcher);
-        void this.client.db
-            .claimSessionLease(
-                guild.id,
-                this.client.user?.id ?? '',
-                this.client.config.botName || this.client.user?.username || '',
-                60_000
-            )
-            .catch(() => {});
+        void this.claimLease(guild.id).catch(() => {});
         return dispatcher;
+    }
+
+    private claimLease(guildId: string): Promise<unknown> {
+        const botId = this.client.user?.id ?? '';
+        const botName = this.client.config.botName || this.client.user?.username || '';
+        return this.client.db.claimSessionLease(guildId, botId, botName, SESSION_LEASE_MS);
     }
 
     private async applyDefaults(dispatcher: Dispatcher): Promise<void> {
         const defaults: Record<string, string> = await this.client.db
             .getGuildSettings(dispatcher.guildId)
             .catch(() => ({}));
+
         const volume = Number(defaults.defaultvolume);
-        if (Number.isFinite(volume) && volume >= 0 && volume <= 200) {
+        if (Number.isFinite(volume) && volume >= 0 && volume <= DEFAULT_VOLUME_MAX) {
             void dispatcher.player.setGlobalVolume(volume).catch(() => {});
         }
         if (defaults.defaultrepeat === 'repeat' || defaults.defaultrepeat === 'queue') {
@@ -81,16 +93,18 @@ export class Queue extends Map<string, Dispatcher> {
         channel: Channel | null,
         givenNode?: Node
     ): Promise<Dispatcher> {
+        if (!guild) throw new Error('No guild was provided');
         if (!voice) throw new Error('No voice channel was provided');
         if (!channel) throw new Error('No text channel was provided');
-        if (!guild) throw new Error('No guild was provided');
 
         const existing = this.get(guild.id);
         if (existing && this.rebuilding.has(guild.id)) return existing;
         if (existing && !existing.isStale) return existing;
         if (existing) {
             const rebuilt = await this.rebuild(existing, givenNode ?? this.node);
-            if (!rebuilt) throw new Error('Could not rebuild the player after the Lavalink node changed');
+            if (!rebuilt) {
+                throw new Error('Could not rebuild the player after the Lavalink node changed');
+            }
             return rebuilt;
         }
 
@@ -112,6 +126,7 @@ export class Queue extends Map<string, Dispatcher> {
         }
     }
 
+    /** Sample active positions before a node switch so tracks resume in place. */
     public holdPositions(fromNodeName?: string): void {
         for (const dispatcher of this.values()) {
             if (!dispatcher.current) continue;
@@ -119,7 +134,9 @@ export class Queue extends Map<string, Dispatcher> {
             if (!Number.isFinite(dispatcher.player.position)) continue;
             dispatcher.resumePosition = dispatcher.player.position;
             this.client.logger.debug(
-                `[queue] held ${dispatcher.guildId} at ${Math.round(dispatcher.player.position / 1000)}s for the switch`
+                `[queue] held ${dispatcher.guildId} at ${Math.round(
+                    dispatcher.player.position / 1000
+                )}s for the switch`
             );
         }
     }
@@ -129,14 +146,20 @@ export class Queue extends Map<string, Dispatcher> {
             this.client.logger.warn('[queue] migration skipped: no connected node');
             return 0;
         }
+
         let moved = 0;
         for (const dispatcher of Array.from(this.values())) {
-            if (!dispatcher.current && !dispatcher.queue.length) continue;
-            if (dispatcher.player.node?.name === node.name && !dispatcher.isStale) continue;
+            const idle = !dispatcher.current && dispatcher.queue.length === 0;
+            if (idle) continue;
+            const alreadyThere = dispatcher.player.node?.name === node.name && !dispatcher.isStale;
+            if (alreadyThere) continue;
             if (await this.rebuild(dispatcher, node)) moved += 1;
         }
-        if (!moved) {
-            this.client.logger.info(`[queue] nothing to migrate to "${node.name}" (${this.size} dispatcher(s))`);
+
+        if (moved === 0) {
+            this.client.logger.info(
+                `[queue] nothing to migrate to "${node.name}" (${this.size} dispatcher(s))`
+            );
         }
         return moved;
     }
@@ -149,10 +172,9 @@ export class Queue extends Map<string, Dispatcher> {
         try {
             return (await node.rest.resolve(identifier)) ?? null;
         } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
             this.client.logger.error(
-                `Lavalink search failed on ${node.name} for ${identifier}: ${
-                    error instanceof Error ? error.message : String(error)
-                }`
+                `Lavalink search failed on ${node.name} for ${identifier}: ${detail}`
             );
             return null;
         }
@@ -167,18 +189,21 @@ export class Queue extends Map<string, Dispatcher> {
             this.client.logger.warn('Search attempted with no connected Lavalink node');
             return null;
         }
-        const direct = /^https?:\/\//.test(query);
-        const prefixed = /^[a-z]+search:/i.test(query);
-        let result = await this.resolve(node, direct || prefixed ? query : `${engine}:${query}`);
 
-        const fallbackNeedsRetry =
-            !direct &&
+        const literal = ABSOLUTE_URL.test(query);
+        const prefixed = ENGINE_PREFIX.test(query);
+        const identifier = literal || prefixed ? query : `${engine}:${query}`;
+        let result = await this.resolve(node, identifier);
+
+        const retryOnFallback =
+            !literal &&
             isFallbackNode(node.name) &&
             !/^ytm?search:/i.test(query) &&
-            (!result || result.loadType === LoadType.EMPTY || result.loadType === LoadType.ERROR);
-        if (fallbackNeedsRetry) {
+            (result === null || result.loadType === LoadType.EMPTY || result.loadType === LoadType.ERROR);
+        if (retryOnFallback) {
             result = (await this.resolve(node, `ytsearch:${query}`)) ?? result;
         }
+
         if (!result) this.client.logger.warn(`Lavalink returned no response for ${query}`);
         return result;
     }

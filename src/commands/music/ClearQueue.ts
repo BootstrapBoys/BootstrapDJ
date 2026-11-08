@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { replyFail, replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
     name: 'clearqueue',
@@ -6,14 +7,9 @@ export default defineMusicCommand({
     aliases: ['cq', 'clear'],
     run: async ({ client, ctx, player }) => {
         if (!player) return;
-        if (!player.queue.length) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('There are no songs in the queue.')],
-            });
-        }
+        if (!player.queue.length) return await replyFail(client, ctx, 'There are no songs in the queue.');
+
         player.queue = [];
-        return await ctx.sendMessage({
-            embeds: [client.embed().setColor(client.color.main).setDescription('Cleared the queue')],
-        });
+        return await replyOk(client, ctx, 'Cleared the queue');
     },
 });

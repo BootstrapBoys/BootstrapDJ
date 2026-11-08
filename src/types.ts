@@ -1,9 +1,16 @@
-export enum SearchEngine {
-    YouTube = 'ytsearch',
-    SoundCloud = 'scsearch',
-    YouTubeMusic = 'ytmsearch',
-}
+/**
+ * Lavalink search prefixes. These strings are part of the Lavalink REST
+ * protocol, so they are values rather than display labels.
+ */
+export const SearchEngine = {
+    YouTube: 'ytsearch',
+    SoundCloud: 'scsearch',
+    YouTubeMusic: 'ytmsearch',
+} as const;
 
+export type SearchEngine = (typeof SearchEngine)[keyof typeof SearchEngine];
+
+/** Body accepted by the Earl control bridge. */
 export interface EarlCommandBody {
     guildId?: string;
     voiceChannelId?: string;

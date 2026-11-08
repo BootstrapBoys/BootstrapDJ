@@ -207,9 +207,3 @@ export default class GuildCommand extends Command {
         return message;
     }
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */

@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
     name: 'join',
@@ -8,32 +9,21 @@ export default defineMusicCommand({
     active: false,
     requirePlayer: false,
     run: async ({ client, ctx, player }) => {
-        if (!ctx.guild) return;
-        if (!player || player.isStale) {
-            const created = await client.queue.create(
-                ctx.guild,
-                ctx.voiceChannel,
-                ctx.channel,
-                client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
-            );
-            return await ctx.sendMessage({
-                embeds: [
-                    client
-                        .embed()
-                        .setColor(client.color.main)
-                        .setDescription(`Joined <#${created.node.manager.connections.get(ctx.guild.id)?.channelId}>`),
-                ],
-            });
+        const guild = ctx.guild;
+        if (!guild) return;
+
+        if (player && !player.isStale) {
+            const channelId = player.node.manager.connections.get(guild.id)?.channelId;
+            return await replyOk(client, ctx, `I'm already connected to <#${channelId}>`);
         }
-        return await ctx.sendMessage({
-            embeds: [
-                client
-                    .embed()
-                    .setColor(client.color.main)
-                    .setDescription(
-                        `I'm already connected to <#${player.node.manager.connections.get(ctx.guild.id)?.channelId}>`
-                    ),
-            ],
-        });
+
+        const created = await client.queue.create(
+            guild,
+            ctx.voiceChannel,
+            ctx.channel,
+            client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
+        );
+        const channelId = created.node.manager.connections.get(guild.id)?.channelId;
+        return await replyOk(client, ctx, `Joined <#${channelId}>`);
     },
 });

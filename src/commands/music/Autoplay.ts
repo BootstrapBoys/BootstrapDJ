@@ -1,149 +1,94 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { replyFail, replyOk } from '../../lib/reply.js';
 
-export default class Autoplay extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'autoplay',
-            description: {
-                content: 'Toggles autoplay',
-                examples: ['autoplay'],
-                usage: 'autoplay',
-            },
-            category: 'music',
-            aliases: ['ap'],
-            cooldown: 3,
-            args: false,
-            // seedFrom() resolves through Lavalink and may create the player,
-            // which can exceed Discord's 3s acknowledgement window.
-            defer: true,
-            player: {
-                voice: true,
-                dj: true,
-                // Deliberately false: autoplay is what starts playback when
-                // nothing is playing, so the active-player guard must not run.
-                active: false,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks', 'Connect', 'Speak'],
-                user: [],
-            },
-            slashCommand: true,
-            options: [
-                {
-                    name: 'seed',
-                    description: 'First artist or song',
-                    type: ApplicationCommandOptionType.String,
-                    required: false,
-                },
-                {
-                    name: 'seed2',
-                    description: 'Second artist or song (optional)',
-                    type: ApplicationCommandOptionType.String,
-                    required: false,
-                },
-                {
-                    name: 'seed3',
-                    description: 'Third artist or song (optional)',
-                    type: ApplicationCommandOptionType.String,
-                    required: false,
-                },
-            ],
-        });
-    }
-    /** Slash commands use the three option boxes; prefix commands keep the
-     * comma-separated form (and a single multi-word seed still works). */
-    private seedsFrom(ctx: Context, args: string[]): string[] {
-        if (ctx.isInteraction) {
-            return ['seed', 'seed2', 'seed3']
-                .map(name => ctx.interaction?.options.getString(name)?.trim() ?? '')
-                .filter(Boolean)
-                .slice(0, 3);
-        }
-        return args
-            .join(' ')
-            .split(',')
-            .map(seed => seed.trim())
-            .filter(Boolean)
-            .slice(0, 3);
-    }
+const SEED_OPTIONS = ['seed', 'seed2', 'seed3'] as const;
+const MAX_SEEDS = SEED_OPTIONS.length;
 
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const seeds = this.seedsFrom(ctx, args);
-        const seedLabel = seeds.join(', ');
+function seedsFromArguments(args: string[]): string[] {
+    return args
+        .join(' ')
+        .split(',')
+        .map(seed => seed.trim())
+        .filter(Boolean)
+        .slice(0, MAX_SEEDS);
+}
+
+export default defineMusicCommand({
+    name: 'autoplay',
+    description: {
+        content: 'Toggles autoplay',
+        examples: ['autoplay'],
+        usage: 'autoplay',
+    },
+    aliases: ['ap'],
+    args: false,
+    // seedFrom() resolves through Lavalink and may create the player, which can
+    // exceed Discord's three-second acknowledgement window.
+    defer: true,
+    // Autoplay is what starts playback when nothing is playing, so the
+    // active-player guard must not run. DJ mode still applies.
+    active: false,
+    requirePlayer: false,
+    clientPermissions: ['SendMessages', 'ViewChannel', 'EmbedLinks', 'Connect', 'Speak'],
+    options: SEED_OPTIONS.map(name => ({
+        name,
+        description:
+            name === 'seed' ? 'First artist or song' : `${name === 'seed2' ? 'Second' : 'Third'} artist or song (optional)`,
+        type: ApplicationCommandOptionType.String,
+        required: false,
+    })),
+    run: async ({ client, ctx, player: existing, args }) => {
         const guild = ctx.guild;
         if (!guild) return;
-        const vc = ctx.voiceChannel;
-        let player = client.queue.get(guild.id);
-        const embed = this.client.embed();
 
-        if (!client.queue.hasNode)
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(client.color.red)
-                        .setDescription(
-                            'No Lavalink node is available right now. Please try again in a moment.'
-                        ),
-                ],
-            });
+        const seeds = ctx.isInteraction
+            ? SEED_OPTIONS.map(name => ctx.interaction?.options.getString(name)?.trim() ?? '').filter(Boolean)
+            : seedsFromArguments(args);
+        const label = seeds.join(', ');
 
-        // Bare /autoplay while it is on means "turn it off".
-        if (!seeds.length && player?.autoplay) {
-            await player.setAutoplay(false);
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(client.color.main)
-                        .setDescription('Autoplay disabled and queued bot picks removed.'),
-                ],
-            });
+        if (!client.queue.hasNode) {
+            return await replyFail(
+                client,
+                ctx,
+                'No Lavalink node is available right now. Please try again in a moment.'
+            );
         }
 
-        if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
+        // Bare /autoplay while it is on means "turn it off".
+        if (seeds.length === 0 && existing?.autoplay) {
+            await existing.setAutoplay(false);
+            return await replyOk(client, ctx, 'Autoplay disabled and queued bot picks removed.');
+        }
 
-        if (seeds.length) {
+        let player = existing;
+        if (!player || player.isStale) {
+            player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
+        }
+
+        if (seeds.length > 0) {
             const picked = await player.seedFrom(seeds);
             if (!picked) {
-                return await ctx.sendMessage({
-                    embeds: [
-                        embed
-                            .setColor(client.color.red)
-                            .setDescription(
-                                `I couldn't find anything for **${seedLabel}**. Autoplay was left unchanged.`
-                            ),
-                    ],
-                });
+                return await replyFail(
+                    client,
+                    ctx,
+                    `I couldn't find anything for **${label}**. Autoplay was left unchanged.`
+                );
             }
             await player.setAutoplay(true);
-            await client.db.setAutoplaySetting(guild.id, {
-                source: 'curated',
-                seeds: seedLabel,
-            });
-            return await ctx.sendMessage({
-                embeds: [
-                    embed.setColor(client.color.main).setDescription(
-                        `Autoplay enabled — seeded from **${seedLabel}**, starting with **${picked.info.title}** by ${picked.info.author}.`
-                    ),
-                ],
-            });
+            await client.db.setAutoplaySetting(guild.id, { source: 'curated', seeds: label });
+            return await replyOk(
+                client,
+                ctx,
+                `Autoplay enabled — seeded from **${label}**, starting with **${picked.info.title}** by ${picked.info.author}.`
+            );
         }
 
         const first = await player.setAutoplay(true);
         const description = first
             ? `Autoplay enabled — starting from **${first.info.title}** by ${first.info.author}.`
             : 'Autoplay enabled — I will pick tracks when the queue runs out.';
-        return await ctx.sendMessage({
-            embeds: [embed.setColor(client.color.main).setDescription(description)],
-        });
-    }
-}
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+        return await replyOk(client, ctx, description);
+    },
+});

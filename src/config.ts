@@ -5,51 +5,63 @@ import { SearchEngine } from './types.js';
 
 dotenv.config({ quiet: true });
 
-const raw = process.env;
+const env = process.env;
 
-function text(name: string, fallback: string = ''): string {
-    return raw[name] || fallback;
+const text = (key: string, fallback: string = ''): string => env[key] || fallback;
+
+/** `parseInt` with a fallback; malformed values keep the fallback. */
+function integer(key: string, fallback: number): number {
+    const value = env[key];
+    if (!value) return fallback;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? fallback : parsed;
 }
 
-function integer(name: string, fallback: number): number {
-    const value = raw[name];
-    return value ? Number.parseInt(value, 10) : fallback;
-}
-
-function flag(name: string, fallback: boolean): boolean {
-    const value = raw[name];
+/** Only an explicit `true` enables a flag; anything else is false. */
+function flag(key: string, fallback: boolean): boolean {
+    const value = env[key];
     if (value === undefined) return fallback;
     return value.trim().toLowerCase() === 'true';
 }
 
-function commaList(name: string): string[] {
-    return (raw[name] ?? '')
+function list(key: string): string[] {
+    return (env[key] ?? '')
         .split(',')
         .map(entry => entry.trim())
         .filter(Boolean);
 }
 
-const statusMode = ((): 'static' | 'track' | 'count' => {
-    const value = raw.BOT_STATUS_MODE;
+const PALETTE = {
+    red: 0xff0000,
+    green: 0x00ff00,
+    blue: 0x0000ff,
+    yellow: 0xffff00,
+    main: 0x2f3136,
+};
+
+const SOURCE_ICONS: Record<string, string> = {
+    youtube: 'https://i.imgur.com/xzVHhFY.png',
+    spotify: 'https://i.imgur.com/qvdqtsc.png',
+    soundcloud: 'https://i.imgur.com/MVnJ7mj.png',
+    applemusic: 'https://i.imgur.com/Wi0oyYm.png',
+    deezer: 'https://i.imgur.com/xyZ43FG.png',
+};
+
+function statusMode(): 'static' | 'track' | 'count' {
+    const value = env.BOT_STATUS_MODE;
     return value === 'track' || value === 'count' ? value : 'static';
-})();
+}
 
 const config = {
-    token: raw.BOT_TOKEN || raw.DISCORD_TOKEN || raw.TOKEN || '',
+    token: env.BOT_TOKEN || env.DISCORD_TOKEN || env.TOKEN || '',
     botsFile: text('BOTS_FILE'),
     botId: text('BOT_ID'),
     botName: text('BOT_NAME'),
-    botPriority: raw.BOT_PRIORITY ? integer('BOT_PRIORITY', -1) : -1,
+    botPriority: integer('BOT_PRIORITY', -1),
     botCoordinator: flag('BOT_COORDINATOR', false),
-    shardCount: raw.SHARD_COUNT ? integer('SHARD_COUNT', 0) : 0,
+    shardCount: integer('SHARD_COUNT', 0),
     prefix: text('PREFIX', '!'),
-    color: {
-        red: 0xff0000,
-        green: 0x00ff00,
-        blue: 0x0000ff,
-        yellow: 0xffff00,
-        main: 0x2f3136,
-    },
+    color: PALETTE,
     autoNode: flag('AUTO_NODE', true),
     searchEngine: text('SEARCH_ENGINE', SearchEngine.YouTube),
     prefixSearchEngine: text('PREFIX_SEARCH_ENGINE', SearchEngine.YouTube),
@@ -57,13 +69,13 @@ const config = {
     botStatus: text('BOT_STATUS', 'online') as 'online' | 'idle' | 'dnd' | 'invisible',
     botActivity: text('BOT_ACTIVITY', 'Bootstrap DJ'),
     botActivityType: integer('BOT_ACTIVITY_TYPE', 2),
-    botStatusMode: statusMode,
+    botStatusMode: statusMode(),
     maxQueueSize: integer('MAX_QUEUE_SIZE', 100),
     deleteAfter: integer('COMMAND_DELETE_AFTER', 10),
     setupCleanupInterval: integer('SETUP_CLEANUP_INTERVAL', 30),
     autoplaySeed: text('AUTOPLAY_SEED', 'dj'),
     autoplayChart: flag('AUTOPLAY_CHART', true),
-    autoplaySeeds: commaList('AUTOPLAY_SEEDS'),
+    autoplaySeeds: list('AUTOPLAY_SEEDS'),
     sessionRestoreAge: integer('SESSION_RESTORE_AGE', 21600),
     nodeFallback: flag('NODE_FALLBACK', true),
     nodeFallbackAfter: integer('NODE_FALLBACK_AFTER', 180),
@@ -73,7 +85,7 @@ const config = {
     statsRetentionDays: integer('STATS_RETENTION_DAYS', 90),
     statsInactiveDays: integer('STATS_INACTIVE_DAYS', 180),
     statsPruneIntervalHours: integer('STATS_PRUNE_INTERVAL_HOURS', 24),
-    owners: (raw.OWNER_IDS ? JSON.parse(raw.OWNER_IDS) : []) as string[],
+    owners: (env.OWNER_IDS ? JSON.parse(env.OWNER_IDS) : []) as string[],
     clientId: text('CLIENT_ID'),
     guildId: text('GUILD_ID'),
     logChannelId: text('LOG_CHANNEL_ID'),
@@ -92,22 +104,16 @@ const config = {
     links: {
         img: text('IMG_LINK', 'https://i.imgur.com/ud3EWNh.jpg'),
     },
-    icons: {
-        youtube: 'https://i.imgur.com/xzVHhFY.png',
-        spotify: 'https://i.imgur.com/qvdqtsc.png',
-        soundcloud: 'https://i.imgur.com/MVnJ7mj.png',
-        applemusic: 'https://i.imgur.com/Wi0oyYm.png',
-        deezer: 'https://i.imgur.com/xyZ43FG.png',
-    } as Record<string, string>,
+    icons: SOURCE_ICONS,
     production: flag('PRODUCTION', true),
     lavalink: toNodeOptions(
         {
             name: text('LAVALINK_NAME', 'Bootstrap Node'),
-            url: (raw.LAVALINK_URL ?? '').trim(),
-            auth: raw.LAVALINK_AUTH ?? '',
+            url: (env.LAVALINK_URL ?? '').trim(),
+            auth: env.LAVALINK_AUTH ?? '',
             secure: flag('LAVALINK_SECURE', false),
         },
-        parseFallbackNodes(raw.LAVALINK_FALLBACKS)
+        parseFallbackNodes(env.LAVALINK_FALLBACKS)
     ),
 };
 

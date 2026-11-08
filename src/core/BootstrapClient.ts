@@ -125,7 +125,7 @@ export default class BootstrapClient extends Client {
         };
         beat();
         const timer = setInterval(beat, 30_000);
-        (timer as unknown as { unref?: () => void }).unref?.();
+        timer.unref();
     }
 
     public async start(token: string): Promise<void> {
@@ -204,7 +204,7 @@ export default class BootstrapClient extends Client {
         };
         run();
         const timer = setInterval(run, intervalHours * 60 * 60 * 1000);
-        (timer as unknown as { unref?: () => void }).unref?.();
+        timer.unref();
     }
 
     public async reloadCommands(): Promise<number> {

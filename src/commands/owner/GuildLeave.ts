@@ -10,15 +10,21 @@ export default class GuildLeave extends Command {
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: true, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: true,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: false,
             options: [],
         });
     }
 
-    public async run(_client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const guild = this.client.guilds.cache.get(args[0]);
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
+        const guildId = args[0];
+        const guild = guildId ? client.guilds.cache.get(guildId) : undefined;
         if (!guild) return await ctx.sendMessage('Guild not found');
+
         try {
             await guild.leave();
             return await ctx.sendMessage(`Left guild ${guild.name}`);

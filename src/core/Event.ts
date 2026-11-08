@@ -8,9 +8,8 @@ export interface EventOptions {
 /**
  * Base event contract.
  *
- * The loader discovers event classes, constructs one instance per file, and
- * binds `run` to the corresponding client/player event. `one` marks listeners
- * that should fire only once.
+ * The loader constructs one instance per event file and binds `run` to the
+ * matching client or player event. `one` marks listeners that fire once.
  */
 export default class Event {
     public client: BootstrapClient;
@@ -23,7 +22,7 @@ export default class Event {
         this.client = client;
         this.file = file;
         this.name = options.name;
-        this.one = options.one ?? false;
+        this.one = options.one === true;
         this.fileName = file.replace(/\.[^.]+$/, '');
     }
 

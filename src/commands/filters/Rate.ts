@@ -1,61 +1,36 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineFilterCommand, numericFilter } from '../../lib/filterCommand.js';
 
-export default class Rate extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
+export default defineFilterCommand({
+    name: 'rate',
+    description: {
+        content: 'Changes the playback rate (speed and pitch)',
+        usage: 'rate <0.5-5>',
+        examples: ['rate 1.25'],
+    },
+    aliases: ['playbackrate'],
+    args: true,
+    // The live track is the target, so an idle player is not enough.
+    requireCurrent: true,
+    missingPlayer: 'Nothing is playing right now.',
+    options: [
+        {
             name: 'rate',
-            description: { content: 'Changes the playback rate (speed and pitch)', usage: 'rate <0.5-5>', examples: ['rate 1.25'] },
-            category: 'filters',
-            aliases: ['playbackrate'],
-            cooldown: 3,
-            args: true,
-            player: { voice: true, dj: true, active: true, djPerm: null },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: ['ManageGuild'],
-            },
-            slashCommand: false,
-            options: [
-                {
-                    name: 'rate',
-                    description: 'Rate multiplier between 0.5 and 5',
-                    type: ApplicationCommandOptionType.Number,
-                    required: true,
-                    minValue: 0.5,
-                    maxValue: 5,
-                },
-            ],
-        });
-    }
-
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const guild = ctx.guild;
-        if (!guild) return;
-        const player = client.queue.get(guild.id);
-        if (!player?.current) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
-            });
-        }
-        const rate = Number(args[0]);
-        if (!Number.isFinite(rate) || rate < 0.5 || rate > 5) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Rate must be between 0.5 and 5.')],
-            });
-        }
-        player.player.setTimescale({ rate, pitch: rate, speed: 1 });
-        player.filterValues.rate = rate;
-        if (!player.filters.includes('rate')) player.filters.push('rate');
-        return await ctx.sendMessage({
-            embeds: [
-                client
-                    .embed()
-                    .setColor(client.color.main)
-                    .setDescription(`Playback rate set to **${rate}x**.`),
-            ],
-        });
-    }
-}
+            description: 'Rate multiplier between 0.5 and 5',
+            type: ApplicationCommandOptionType.Number,
+            required: true,
+            minValue: 0.5,
+            maxValue: 5,
+        },
+    ],
+    run: numericFilter({
+        key: 'rate',
+        min: 0.5,
+        max: 5,
+        invalid: 'Rate must be between 0.5 and 5.',
+        outOfRange: 'Rate must be between 0.5 and 5.',
+        apply: (player, rate) => player.player.setTimescale({ rate, pitch: rate, speed: 1 }),
+        success: rate => `Playback rate set to **${rate}x**.`,
+    }),
+});

@@ -6,24 +6,29 @@ import path from 'node:path';
 import config from './config.js';
 import Logger from './core/Logger.js';
 import { loadBots } from './lib/BotsFile.js';
+import type { BotDefinition } from './lib/BotsFile.js';
 
 const logger = new Logger();
-const logoPath = path.resolve('src/lib/LavaLogo.txt');
+const CHILD_ENTRY = path.resolve('dist/ShardClient.js');
+const RESTART_DELAY_MS = 5_000;
 
-if (!fs.existsSync(logoPath)) {
-    logger.error('LavaLogo.txt file is missing');
-    process.exit(1);
+/** The banner is part of the operator's first impression; keep it fatal if absent. */
+function printBanner(): void {
+    const resource = path.resolve('src/lib/LavaLogo.txt');
+    if (!fs.existsSync(resource)) {
+        logger.error('LavaLogo.txt file is missing');
+        process.exit(1);
+    }
+    try {
+        console.log('\x1b[35m%s\x1b[0m', fs.readFileSync(resource, 'utf-8'));
+    } catch (error) {
+        logger.error('[CLIENT] An error has occurred :', error);
+    }
 }
-try {
-    console.log('\x1b[35m%s\x1b[0m', fs.readFileSync(logoPath, 'utf-8'));
-} catch (error) {
-    logger.error('[CLIENT] An error has occurred :', error);
-}
 
-const bots = config.botsFile ? loadBots(config.botsFile) : [];
-
-function launchBot(bot: (typeof bots)[number], index: number): void {
-    const child = fork(path.resolve('dist/ShardClient.js'), [], {
+/** One process per bot, with a fresh token and its own bridge/dashboard ports. */
+function launchBot(bot: BotDefinition, index: number): void {
+    const child = fork(CHILD_ENTRY, [], {
         env: {
             ...process.env,
             BOT_TOKEN: bot.token,
@@ -38,15 +43,17 @@ function launchBot(bot: (typeof bots)[number], index: number): void {
     });
     child.on('exit', code => {
         logger.error(`[CLIENT] ${bot.name} exited (${code ?? 'signal'}); restarting in 5s`);
-        setTimeout(() => launchBot(bot, index), 5000);
+        setTimeout(() => launchBot(bot, index), RESTART_DELAY_MS);
     });
 }
 
-if (bots.length) {
+function launchFleet(bots: BotDefinition[]): void {
     logger.start(`[CLIENT] launching ${bots.length} bot process(es) from ${config.botsFile}`);
     for (const [index, bot] of bots.entries()) launchBot(bot, index);
-} else {
-    const manager = new ShardingManager('./dist/ShardClient.js', {
+}
+
+function launchShards(): void {
+    const manager = new ShardingManager(CHILD_ENTRY, {
         respawn: true,
         token: config.token,
         totalShards: config.shardCount > 0 ? config.shardCount : 'auto',
@@ -62,3 +69,9 @@ if (bots.length) {
         );
     });
 }
+
+printBanner();
+
+const fleet = config.botsFile ? loadBots(config.botsFile) : [];
+if (fleet.length > 0) launchFleet(fleet);
+else launchShards();

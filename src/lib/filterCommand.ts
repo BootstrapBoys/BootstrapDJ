@@ -2,6 +2,7 @@ import type { CommandOptions } from '../core/Command.js';
 import type { ApplicationCommandOption, PermissionsString } from 'discord.js';
 
 import { BootstrapClient, Command, Context, Dispatcher } from '../core/index.js';
+import { replyFail, replyOk } from './reply.js';
 
 export type FilterRunContext = {
     client: BootstrapClient;
@@ -18,6 +19,8 @@ export interface FilterDefinition {
     active?: boolean;
     args?: boolean;
     options?: ApplicationCommandOption[];
+    /** Require a loaded track, not merely a player (parameter filters act on the live track). */
+    requireCurrent?: boolean;
     /** Omit for a silent no-player return; the default posts the standard error. */
     missingPlayer?: string | null;
     run: (input: FilterRunContext) => Promise<unknown>;
@@ -63,7 +66,7 @@ export function defineFilterCommand(definition: FilterDefinition): typeof Comman
                 return await ctx.sendMessage({ content: 'This command only works in a server.' });
             }
             const player = client.queue.get(ctx.guild.id);
-            if (!player) {
+            if (!player || (definition.requireCurrent && !player.current)) {
                 if (definition.missingPlayer === null) return;
                 return await ctx.sendMessage({
                     embeds: [
@@ -103,5 +106,33 @@ export function toggleFilter(
                 },
             ],
         });
+    };
+}
+
+export interface NumericFilterOptions {
+    key: string;
+    min: number;
+    max: number;
+    /** Copy shown when the argument is not a number at all. */
+    invalid: string;
+    /** Copy shown when the number falls outside [min, max]. */
+    outOfRange: string;
+    apply: (player: Dispatcher, value: number) => void;
+    success: (value: number) => string;
+}
+
+/** Shared run body for filters that take one bounded numeric argument. */
+export function numericFilter(options: NumericFilterOptions): FilterDefinition['run'] {
+    return async ({ client, ctx, player, args }) => {
+        const value = Number(args[0]);
+        if (!Number.isFinite(value)) return await replyFail(client, ctx, options.invalid);
+        if (value < options.min || value > options.max) {
+            return await replyFail(client, ctx, options.outOfRange);
+        }
+
+        options.apply(player, value);
+        if (!player.filters.includes(options.key)) player.filters.push(options.key);
+        player.filterValues[options.key] = value;
+        return await replyOk(client, ctx, options.success(value));
     };
 }

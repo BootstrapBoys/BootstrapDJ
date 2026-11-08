@@ -1,5 +1,9 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
+function latencyBlock(milliseconds: number): string {
+    return `\`\`\`ini\n[ ${milliseconds}ms ]\n\`\`\``;
+}
+
 export default class Ping extends Command {
     public constructor(client: BootstrapClient) {
         super(client, {
@@ -10,7 +14,11 @@ export default class Ping extends Command {
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [],
         });
@@ -18,19 +26,23 @@ export default class Ping extends Command {
 
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const author = ctx.author;
-        const me = client.user;
-        if (!author || !me) return;
-        const message = await ctx.sendDeferMessage('Pinging...');
+        const self = client.user;
+        if (!author || !self) return;
+
+        const probe = await ctx.sendDeferMessage('Pinging...');
+        const roundTrip = probe.createdTimestamp - ctx.createdTimestamp;
+
         const embed = client
             .embed()
-            .setAuthor({ name: 'Pong', iconURL: me.displayAvatarURL() })
+            .setAuthor({ name: 'Pong', iconURL: self.displayAvatarURL() })
             .setColor(client.color.main)
             .addFields(
-                { name: 'Bot Latency', value: `\`\`\`ini\n[ ${message.createdTimestamp - ctx.createdTimestamp}ms ]\n\`\`\``, inline: true },
-                { name: 'API Latency', value: `\`\`\`ini\n[ ${Math.round(client.ws.ping)}ms ]\n\`\`\``, inline: true }
+                { name: 'Bot Latency', value: latencyBlock(roundTrip), inline: true },
+                { name: 'API Latency', value: latencyBlock(Math.round(client.ws.ping)), inline: true }
             )
             .setFooter({ text: `Requested by ${author.tag}`, iconURL: author.avatarURL({}) ?? undefined })
             .setTimestamp();
+
         return await ctx.editMessage({ content: '', embeds: [embed] });
     }
 }

@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { replyFail, replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
     name: 'resume',
@@ -7,14 +8,9 @@ export default defineMusicCommand({
     dj: false,
     run: async ({ client, ctx, player }) => {
         if (!player) return;
-        if (!player.paused) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The player is not paused.')],
-            });
-        }
+        if (!player.paused) return await replyFail(client, ctx, 'The player is not paused.');
+
         player.pause();
-        return await ctx.sendMessage({
-            embeds: [client.embed().setColor(client.color.main).setDescription('Resumed the player')],
-        });
+        return await replyOk(client, ctx, 'Resumed the player');
     },
 });

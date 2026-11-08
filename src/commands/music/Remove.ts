@@ -1,10 +1,15 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { replyFail, replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
     name: 'remove',
-    description: { content: 'Removes a song from the queue', examples: ['remove 1'], usage: 'remove <song number>' },
+    description: {
+        content: 'Removes a song from the queue',
+        examples: ['remove 1'],
+        usage: 'remove <song number>',
+    },
     aliases: ['rm'],
     args: true,
     options: [
@@ -17,22 +22,13 @@ export default defineMusicCommand({
     ],
     run: async ({ client, ctx, player, args }) => {
         if (!player) return;
-        const index = Number(args[0]);
-        if (!player.queue.length) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('There are no songs in the queue.')],
-            });
-        }
-        if (!Number.isInteger(index) || index < 1 || index > player.queue.length) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('That is not a valid number.')],
-            });
-        }
-        player.remove(index - 1);
-        return await ctx.sendMessage({
-            embeds: [
-                client.embed().setColor(client.color.main).setDescription(`Removed song number ${index} from the queue`),
-            ],
-        });
+        if (!player.queue.length) return await replyFail(client, ctx, 'There are no songs in the queue.');
+
+        const position = Number(args[0]);
+        const valid = Number.isInteger(position) && position >= 1 && position <= player.queue.length;
+        if (!valid) return await replyFail(client, ctx, 'That is not a valid number.');
+
+        player.remove(position - 1);
+        return await replyOk(client, ctx, `Removed song number ${position} from the queue`);
     },
 });

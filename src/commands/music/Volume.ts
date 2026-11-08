@@ -1,10 +1,18 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { replyFail, replyOk } from '../../lib/reply.js';
+
+const MIN_VOLUME = 0;
+const MAX_VOLUME = 200;
 
 export default defineMusicCommand({
     name: 'volume',
-    description: { content: 'Sets the volume of the player', examples: ['volume 100'], usage: 'volume <number>' },
+    description: {
+        content: 'Sets the volume of the player',
+        examples: ['volume 100'],
+        usage: 'volume <number>',
+    },
     aliases: ['vol'],
     args: true,
     options: [
@@ -17,26 +25,20 @@ export default defineMusicCommand({
     ],
     run: async ({ client, ctx, player, args }) => {
         if (!player) return;
+
         const volume = Number(args[0]);
-        if (!Number.isFinite(volume)) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Please provide a valid number.')],
-            });
+        if (!Number.isFinite(volume)) return await replyFail(client, ctx, 'Please provide a valid number.');
+        if (volume < MIN_VOLUME) {
+            return await replyFail(client, ctx, `The volume can't be lower than ${MIN_VOLUME}.`);
         }
-        if (volume < 0) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The volume can\'t be lower than 0.')],
-            });
+        if (volume > MAX_VOLUME) {
+            return await replyFail(client, ctx, `The volume can't be higher than ${MAX_VOLUME}.`);
         }
-        if (volume > 200) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The volume can\'t be higher than 200.')],
-            });
-        }
+
         await player.player.setGlobalVolume(volume);
-        if (ctx.guild) await client.db.setGuildSetting(ctx.guild.id, 'defaultvolume', String(volume));
-        return await ctx.sendMessage({
-            embeds: [client.embed().setColor(client.color.main).setDescription(`Set the volume to ${volume}`)],
-        });
+        if (ctx.guild) {
+            await client.db.setGuildSetting(ctx.guild.id, 'defaultvolume', String(volume));
+        }
+        return await replyOk(client, ctx, `Set the volume to ${volume}`);
     },
 });

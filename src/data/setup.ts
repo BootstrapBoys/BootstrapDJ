@@ -1,7 +1,12 @@
 import type { PrismaClient, Setup, Stay } from '../generated/prisma/client.js';
 import { StatsStore } from './stats.js';
 
-/** Setup-channel rows and 24/7 voice stays. */
+/**
+ * Setup-channel rows and 24/7 voice stays.
+ *
+ * The setup row is read on every music command that posts to the configured
+ * channel, so the last lookup is cached; writes invalidate it.
+ */
 export class SetupStore extends StatsStore {
     private readonly setupCache = new Map<string, Setup | null>();
 
@@ -11,48 +16,24 @@ export class SetupStore extends StatsStore {
 
     public async set_247(guildId: string, textId: string, voiceId: string): Promise<void> {
         await this.prisma.stay.upsert({
-            where: {
-                guildId,
-            },
-            update: {
-                textId,
-                voiceId,
-            },
-            create: {
-                guildId,
-                textId,
-                voiceId,
-            },
+            where: { guildId },
+            create: { guildId, textId, voiceId },
+            update: { textId, voiceId },
         });
     }
 
     public async delete_247(guildId: string): Promise<void> {
-        await this.prisma.stay.delete({
-            where: {
-                guildId,
-            },
-        });
+        await this.prisma.stay.delete({ where: { guildId } });
     }
 
     public async get_247(guildId?: string): Promise<Stay | Stay[] | null> {
-        if (guildId) {
-            return await this.prisma.stay.findUnique({
-                where: {
-                    guildId,
-                },
-            });
-        } else {
-            return await this.prisma.stay.findMany();
-        }
+        if (!guildId) return await this.prisma.stay.findMany();
+        return await this.prisma.stay.findUnique({ where: { guildId } });
     }
 
     public async getSetup(guildId: string): Promise<Setup | null> {
         if (this.setupCache.has(guildId)) return this.setupCache.get(guildId) ?? null;
-        const setup = await this.prisma.setup.findUnique({
-            where: {
-                guildId,
-            },
-        });
+        const setup = await this.prisma.setup.findUnique({ where: { guildId } });
         this.setupCache.set(guildId, setup);
         return setup;
     }
@@ -65,29 +46,15 @@ export class SetupStore extends StatsStore {
 
     public async setSetup(guildId: string, textId: string, messageId: string): Promise<void> {
         await this.prisma.setup.upsert({
-            where: {
-                guildId,
-            },
-            update: {
-                textId,
-                messageId,
-            },
-            create: {
-                guildId,
-                textId,
-                messageId,
-            },
+            where: { guildId },
+            create: { guildId, textId, messageId },
+            update: { textId, messageId },
         });
         this.setupCache.delete(guildId);
     }
 
     public async deleteSetup(guildId: string): Promise<void> {
-        await this.prisma.setup.delete({
-            where: {
-                guildId,
-            },
-        });
+        await this.prisma.setup.delete({ where: { guildId } });
         this.setupCache.set(guildId, null);
     }
-
 }

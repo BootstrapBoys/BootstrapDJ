@@ -2,34 +2,40 @@ import signale, { type SignaleOptions } from 'signale';
 
 const { Signale } = signale;
 
-const baseOptions: SignaleOptions = {
-    disabled: false,
-    interactive: false,
-    logLevel: 'info',
-    scope: 'BootstrapDJ',
+type LabelSpec = NonNullable<NonNullable<SignaleOptions['types']>['info']>;
+
+function label(badge: string, color: string, text: string): LabelSpec {
+    return { badge, color, label: text };
+}
+
+/** One vocabulary for every module: label, badge, and terminal colour. */
+const VOCABULARY: SignaleOptions['types'] = {
+    info: label('ℹ', 'blue', 'info'),
+    warn: label('⚠', 'yellow', 'warn'),
+    error: label('✖', 'red', 'error'),
+    debug: label('🐛', 'magenta', 'debug'),
+    success: label('✔', 'green', 'success'),
+    log: label('📝', 'white', 'log'),
+    pause: label('⏸', 'yellow', 'pause'),
+    start: label('▶', 'green', 'start'),
 };
 
 /**
  * Process logger for the bot.
  *
  * Signale owns terminal formatting; this class owns the labels so every module
- * emits the same visual vocabulary. New log types should be added here rather
- * than falling back to console methods.
+ * emits the same visual vocabulary. New log types belong in VOCABULARY rather
+ * than in a bare console call.
  */
 export default class Logger extends Signale {
     public constructor() {
-        super({
-            ...baseOptions,
-            types: {
-                info: { badge: 'ℹ', color: 'blue', label: 'info' },
-                warn: { badge: '⚠', color: 'yellow', label: 'warn' },
-                error: { badge: '✖', color: 'red', label: 'error' },
-                debug: { badge: '🐛', color: 'magenta', label: 'debug' },
-                success: { badge: '✔', color: 'green', label: 'success' },
-                log: { badge: '📝', color: 'white', label: 'log' },
-                pause: { badge: '⏸', color: 'yellow', label: 'pause' },
-                start: { badge: '▶', color: 'green', label: 'start' },
-            },
-        });
+        const options: SignaleOptions = {
+            disabled: false,
+            interactive: false,
+            logLevel: 'info',
+            scope: 'BootstrapDJ',
+            types: { ...VOCABULARY },
+        };
+        super(options);
     }
 }

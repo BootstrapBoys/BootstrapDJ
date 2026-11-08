@@ -1,5 +1,6 @@
-import type BootstrapClient from './BootstrapClient.js';
 import type { ApplicationCommandOption, LocalizationMap, PermissionsString } from 'discord.js';
+
+import type BootstrapClient from './BootstrapClient.js';
 
 /** Player preconditions declared by a command and enforced before execution. */
 export interface CommandPlayerRules {
@@ -41,43 +42,52 @@ export interface CommandOptions {
     category?: string;
 }
 
-const FALLBACK_COPY: CommandCopy = {
+const DEFAULT_CLIENT_PERMISSIONS: PermissionsString[] = ['SendMessages', 'ViewChannel', 'EmbedLinks'];
+
+const DEFAULT_COPY: CommandCopy = Object.freeze({
     content: 'No description provided',
     usage: 'No usage provided',
     examples: [''],
-};
+});
 
-function normalizeCopy(input: CommandOptions['description']): CommandCopy {
+function firstString(...values: Array<string | undefined>): string | null {
+    for (const value of values) if (value) return value;
+    return null;
+}
+
+function copyOf(input: CommandOptions['description']): CommandCopy {
+    const content = firstString(input?.content) ?? DEFAULT_COPY.content;
+    const usage = firstString(input?.usage) ?? DEFAULT_COPY.usage;
+    const examples = input?.examples?.filter(example => example.length > 0) ?? [];
     return {
-        content: input?.content || FALLBACK_COPY.content,
-        usage: input?.usage || FALLBACK_COPY.usage,
-        examples: input?.examples?.length ? [...input.examples] : [...FALLBACK_COPY.examples],
+        content,
+        usage,
+        examples: examples.length > 0 ? examples : [...DEFAULT_COPY.examples],
     };
 }
 
-function normalizePlayerRules(input: CommandOptions['player']): CommandPlayerRules {
+function playerRules(input: CommandOptions['player']): CommandPlayerRules {
     return {
-        voice: Boolean(input?.voice),
-        dj: Boolean(input?.dj),
-        active: Boolean(input?.active),
-        djPerm: input?.djPerm ?? null,
+        voice: input?.voice === true,
+        dj: input?.dj === true,
+        active: input?.active === true,
+        djPerm: firstString(input?.djPerm ?? undefined),
     };
 }
 
-function normalizePermissions(input: CommandOptions['permissions']): CommandPermissions {
+function permissionRules(input: CommandOptions['permissions']): CommandPermissions {
     return {
-        dev: Boolean(input?.dev),
-        client: input?.client ?? ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-        user: input?.user ?? [],
+        dev: input?.dev === true,
+        client: input?.client ? [...input.client] : [...DEFAULT_CLIENT_PERMISSIONS],
+        user: input?.user ? [...input.user] : [],
     };
 }
 
 /**
- * Base contract for commands.
+ * Command contract.
  *
- * A subclass supplies metadata once and implements `run`. The command gate and
- * slash registrar consume the normalized public fields, so they never need to
- * know which concrete command they are handling.
+ * Metadata is normalized once, in the constructor, so the gate, help page, and
+ * slash registrar can read plain fields. Subclasses own behaviour only.
  */
 export default class Command {
     public client: BootstrapClient;
@@ -101,17 +111,17 @@ export default class Command {
         this.client = client;
         this.name = options.name;
         this.nameLocalizations = options.nameLocalizations ?? null;
-        this.description = normalizeCopy(options.description);
+        this.description = copyOf(options.description);
         this.descriptionLocalizations = options.descriptionLocalizations ?? null;
         this.aliases = options.aliases ? [...options.aliases] : [];
         this.cooldown = options.cooldown || 3;
-        this.args = Boolean(options.args);
-        this.player = normalizePlayerRules(options.player);
-        this.permissions = normalizePermissions(options.permissions);
-        this.slashCommand = Boolean(options.slashCommand);
-        this.defer = Boolean(options.defer);
+        this.args = options.args === true;
+        this.player = playerRules(options.player);
+        this.permissions = permissionRules(options.permissions);
+        this.slashCommand = options.slashCommand === true;
+        this.defer = options.defer === true;
         this.ephemeral = options.ephemeral ?? true;
-        this.options = options.options ?? [];
+        this.options = options.options ? [...options.options] : [];
         this.category = options.category ?? 'general';
     }
 

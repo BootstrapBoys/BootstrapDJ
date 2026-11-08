@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { replyDone, replyFail } from '../../lib/reply.js';
 
 export default defineMusicCommand({
     name: 'grab',
@@ -8,16 +9,13 @@ export default defineMusicCommand({
     voice: false,
     run: async ({ client, ctx, player }) => {
         const author = ctx.author;
-        if (!author) return;
-        if (!player) return;
+        if (!author || !player) return;
+
         const song = player.current;
-        if (!song) {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing playing right now')],
-            });
-        }
+        if (!song) return await replyFail(client, ctx, 'Nothing playing right now');
+
         const duration = song.info.isStream ? 'LIVE' : client.utils.formatTime(song.info.length);
-        const dm = client
+        const card = client
             .embed()
             .setTitle(`**${song.info.title}**`)
             .setURL(song.info.uri ?? null)
@@ -26,15 +24,12 @@ export default defineMusicCommand({
                 `**Duration:** ${duration}\n**Requested by:** ${song.info.requester}\n**Link:** [Click here](${song.info.uri})`
             )
             .setColor(client.color.main);
+
         try {
-            await author.send({ embeds: [dm] });
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.green).setDescription('**I sent you a DM.**')],
-            });
+            await author.send({ embeds: [card] });
+            return await replyDone(client, ctx, '**I sent you a DM.**');
         } catch {
-            return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('**I couldn\'t send you a DM.**')],
-            });
+            return await replyFail(client, ctx, '**I couldn\'t send you a DM.**');
         }
     },
 });

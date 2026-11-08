@@ -59,9 +59,3 @@ export default class Replay extends Command {
         });
     }
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
