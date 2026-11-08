@@ -1,10 +1,13 @@
 import type { PrismaClient, Setup, Stay } from '../generated/prisma/client.js';
+import { StatsStore } from './stats.js';
 
 /** Setup-channel rows and 24/7 voice stays. */
-export class SetupStore {
+export class SetupStore extends StatsStore {
     private readonly setupCache = new Map<string, Setup | null>();
 
-    public constructor(protected readonly prisma: PrismaClient) {}
+    public constructor(prisma: PrismaClient) {
+        super(prisma);
+    }
 
     public async set_247(guildId: string, textId: string, voiceId: string): Promise<void> {
         await this.prisma.stay.upsert({
