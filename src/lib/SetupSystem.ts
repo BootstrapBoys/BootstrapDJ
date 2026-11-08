@@ -324,9 +324,12 @@ async function buttonReply(
     color: ColorResolvable
 ): Promise<void> {
     const payload = { embeds: [new EmbedBuilder().setColor(color).setDescription(text)] };
-    const message = interaction.replied
-        ? await interaction.editReply(payload).catch(() => null)
-        : await interaction.followUp(payload).catch(() => null);
+    // A defer is not a reply: `followUp()` would add a second message and leave
+    // the deferred "thinking" placeholder up forever. Edit the deferred reply.
+    const message =
+        interaction.deferred || interaction.replied
+            ? await interaction.editReply(payload).catch(() => null)
+            : await interaction.reply(payload).catch(() => null);
     if (!message) return;
 
     const timer = setTimeout(() => {

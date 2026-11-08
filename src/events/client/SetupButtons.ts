@@ -234,7 +234,9 @@ export default class SetupButtons extends Event {
 
     public async run(interaction: SetupInteraction): Promise<void> {
         if (!interaction.deferred && !interaction.replied) {
-            await interaction.deferReply().catch(() => {});
+            // Buttons only produce transient feedback; deferring publicly leaves
+            // a visible "thinking" placeholder that editReply cannot remove.
+            await interaction.deferReply({ ephemeral: true }).catch(() => {});
         }
         if (!interaction.member.voice.channel) {
             return await this.deny(
