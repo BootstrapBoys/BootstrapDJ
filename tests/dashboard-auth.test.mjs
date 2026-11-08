@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test from 'node:test';
+
+import dotenv from 'dotenv';
 
 import config from '../dist/config.js';
 import {
@@ -104,4 +107,18 @@ test('token mode still authenticates its header and bearer forms', async () => {
         assert.equal(authorized(makeRequest({ 'x-dashboard-token': 'wrong' })), false);
         assert.equal(viewer(makeRequest()).owner, true);
     });
+});
+
+test('.env.example leaves dashboard OAuth blank so token mode is not locked out', () => {
+    const parsed = dotenv.parse(fs.readFileSync(new URL('../.env.example', import.meta.url)));
+
+    for (const key of [
+        'DASHBOARD_OAUTH_CLIENT_ID',
+        'DASHBOARD_OAUTH_CLIENT_SECRET',
+        'DASHBOARD_OAUTH_REDIRECT_URI',
+        'DASHBOARD_SESSION_SECRET',
+    ]) {
+        assert.equal(parsed[key], '', `${key} must stay blank in the example`);
+    }
+    assert.equal(parsed.DASHBOARD_TOKEN, '');
 });
