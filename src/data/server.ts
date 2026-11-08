@@ -1,5 +1,3 @@
-
-
 import {
     AutoplaySetting,
     BotPresence,
@@ -17,24 +15,35 @@ import {
     VoiceListen,
     VoiceListenOptOut,
 } from '../generated/prisma/client.js';
+import { GuildStore } from './guilds.js';
+import { PermissionStore } from './permissions.js';
 import { PlaylistStore } from './playlists.js';
+import { createPrismaClient, initializePrisma } from './prisma.js';
 import { SessionStore } from './sessions.js';
 import { UserStore } from './users.js';
 import { VoiceStore } from './voice.js';
-import { GuildStore } from './guilds.js';
-import { PermissionStore } from './permissions.js';
-export type { StatsPruneResult } from './stats.js';
-import { createPrismaClient, initializePrisma } from './prisma.js';
 
+export type { StatsPruneResult } from './stats.js';
+
+/**
+ * Composition root for persistence.
+ *
+ * Each table group has its own store; this class wires them together and keeps
+ * the `db.*` call surface that commands, events, plugins, and the dashboard
+ * already use. The permission/setup/statistics stores come in through the base
+ * class chain, the rest are composed here. New code may use the public store
+ * fields directly — this facade should not grow new behaviour of its own.
+ */
 export default class ServerData extends PermissionStore {
-    private playlists: PlaylistStore;
-    private guilds: GuildStore;
-    private sessions: SessionStore;
-    private users: UserStore;
-    private voice: VoiceStore;
+    public readonly playlists: PlaylistStore;
+    public readonly guilds: GuildStore;
+    public readonly sessions: SessionStore;
+    public readonly users: UserStore;
+    public readonly voice: VoiceStore;
     /** PRAGMAs are connection/file scoped; every bot process runs this once. */
     private initPromise: Promise<void> | null = null;
-    constructor(prisma?: PrismaClient) {
+
+    public constructor(prisma?: PrismaClient) {
         super(prisma ?? createPrismaClient());
         this.playlists = new PlaylistStore(this.prisma);
         this.guilds = new GuildStore(this.prisma);
@@ -44,9 +53,9 @@ export default class ServerData extends PermissionStore {
     }
 
     /**
-     * Enable SQLite's concurrent-reader mode. WAL is stored in the database
-     * file, so setting it once is enough; busy_timeout and synchronous are
-     * per-connection and must be set by every bot process.
+     * Enable SQLite's concurrent-reader mode. WAL lives in the database file, so
+     * setting it once is enough; busy_timeout and synchronous are per-connection
+     * and every bot process has to set them.
      */
     public async initialize(): Promise<void> {
         if (!this.initPromise) {
@@ -58,11 +67,8 @@ export default class ServerData extends PermissionStore {
         await this.initPromise;
     }
 
-    /**
-     * Bound statistics growth. Daily rollups are pruned to the dashboard's
-     * maximum range. Inactive track/listener rows are pruned, but the top 100
-     * per guild are always kept so all-time leaderboards survive.
-     */
+    // ---- guild rows -------------------------------------------------------
+
     public async get(guildId: string): Promise<Guild | null> {
         return await this.guilds.get(guildId);
     }
@@ -71,20 +77,16 @@ export default class ServerData extends PermissionStore {
         await this.guilds.setPrefix(guildId, prefix);
     }
 
+    /** DJ mode is the only permission-layer write the facade performs itself. */
     public async setDj(guildId: string, mode: boolean): Promise<void> {
         await this.prisma.dj.upsert({
-            where: {
-                guildId,
-            },
-            update: {
-                mode,
-            },
-            create: {
-                guildId,
-                mode,
-            },
+            where: { guildId },
+            create: { guildId, mode },
+            update: { mode },
         });
     }
+
+    // ---- presence and playback leases ------------------------------------
 
     public async heartbeatBot(botId: string, name: string): Promise<BotPresence> {
         return await this.sessions.heartbeat(botId, name);
@@ -126,11 +128,17 @@ export default class ServerData extends PermissionStore {
         return await this.sessions.recent(guildId, limit);
     }
 
+    // ---- per-user rows ----------------------------------------------------
+
     public async getUserPrefix(guildId: string, userId: string): Promise<string | null> {
         return await this.users.prefix(guildId, userId);
     }
 
-    public async setUserPrefix(guildId: string, userId: string, prefix: string): Promise<UserPrefix> {
+    public async setUserPrefix(
+        guildId: string,
+        userId: string,
+        prefix: string
+    ): Promise<UserPrefix> {
         return await this.users.setPrefix(guildId, userId, prefix);
     }
 
@@ -158,6 +166,8 @@ export default class ServerData extends PermissionStore {
         return await this.users.saveProfile(userId, data);
     }
 
+    // ---- guild settings and autoplay -------------------------------------
+
     public async getGuildSettings(guildId: string): Promise<Record<string, string>> {
         return await this.guilds.settings(guildId);
     }
@@ -170,7 +180,11 @@ export default class ServerData extends PermissionStore {
         return await this.guilds.setting(guildId, key);
     }
 
-    public async setGuildSetting(guildId: string, key: string, value: string): Promise<GuildSetting> {
+    public async setGuildSetting(
+        guildId: string,
+        key: string,
+        value: string
+    ): Promise<GuildSetting> {
         return await this.guilds.setSetting(guildId, key, value);
     }
 
@@ -192,6 +206,8 @@ export default class ServerData extends PermissionStore {
     public async deleteAutoplaySetting(guildId: string): Promise<void> {
         await this.guilds.deleteAutoplay(guildId);
     }
+
+    // ---- voice listener ---------------------------------------------------
 
     public async getVoiceListen(guildId: string): Promise<VoiceListen | null> {
         return await this.voice.get(guildId);
@@ -220,6 +236,8 @@ export default class ServerData extends PermissionStore {
     public async listVoiceOptOuts(guildId: string): Promise<VoiceListenOptOut[]> {
         return await this.voice.optOuts(guildId);
     }
+
+    // ---- saved playback sessions -----------------------------------------
 
     public async saveSession(session: {
         guildId: string;
@@ -251,11 +269,16 @@ export default class ServerData extends PermissionStore {
         await this.sessions.remove(guildId);
     }
 
+    // ---- playlists, songs, shares ----------------------------------------
+
+    /** Legacy spelling: kept because existing call sites use it verbatim. */
     public async getPLaylist(userId: string, name: string): Promise<Playlist | null> {
         return await this.playlists.get(userId, name);
     }
 
-    public async getPlaylists(userId: string): Promise<(Playlist & { _count: { songs: number } })[]> {
+    public async getPlaylists(
+        userId: string
+    ): Promise<(Playlist & { _count: { songs: number } })[]> {
         return await this.playlists.list(userId);
     }
 
@@ -279,7 +302,11 @@ export default class ServerData extends PermissionStore {
         return await this.playlists.songs(userId, name);
     }
 
-    public async createCollectionShare(ownerId: string, name: string, code: string): Promise<CollectionShare> {
+    public async createCollectionShare(
+        ownerId: string,
+        name: string,
+        code: string
+    ): Promise<CollectionShare> {
         return await this.playlists.createShare(ownerId, name, code);
     }
 
