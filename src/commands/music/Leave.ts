@@ -1,63 +1,26 @@
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineMusicCommand } from '../../lib/musicCommand.js';
 
-export default class Leave extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'leave',
-            description: {
-                content: 'Leaves the voice channel',
-                examples: ['leave'],
-                usage: 'leave',
-            },
-            category: 'music',
-            aliases: ['dc'],
-            cooldown: 3,
-            args: false,
-            player: {
-                voice: true,
-                dj: true,
-                active: false,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
-            slashCommand: true,
-            options: [],
-        });
-    }
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const guild = ctx.guild;
-        if (!guild) return;
-        const player = client.queue.get(guild.id);
-        const embed = this.client.embed();
-        if (player) {
-            ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.main)
-                        .setDescription(
-                            `Left <#${player.node.manager.connections.get(guild.id)?.channelId}>`
-                        ),
-                ],
-            });
-            player.destroy();
-        } else {
-            ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription(`I'm not in a voice channel`),
-                ],
+export default defineMusicCommand({
+    name: 'leave',
+    description: { content: 'Leaves the voice channel', examples: ['leave'], usage: 'leave' },
+    aliases: ['dc'],
+    active: false,
+    requirePlayer: false,
+    run: async ({ client, ctx, player }) => {
+        if (!ctx.guild) return;
+        if (!player) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription("I'm not in a voice channel")],
             });
         }
-    }
-}
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+        await ctx.sendMessage({
+            embeds: [
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setDescription(`Left <#${player.node.manager.connections.get(ctx.guild.id)?.channelId}>`),
+            ],
+        });
+        player.destroy();
+    },
+});

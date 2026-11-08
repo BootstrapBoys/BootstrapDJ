@@ -1,71 +1,39 @@
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineMusicCommand } from '../../lib/musicCommand.js';
 
-export default class Join extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'join',
-            description: {
-                content: 'Joins the voice channel',
-                examples: ['join'],
-                usage: 'join',
-            },
-            category: 'music',
-            aliases: ['j'],
-            cooldown: 3,
-            args: false,
-            player: {
-                voice: true,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
-            slashCommand: true,
-            options: [],
-        });
-    }
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const guild = ctx.guild;
-        if (!guild) return;
-        let player = client.queue.get(guild.id);
-        const embed = this.client.embed();
+export default defineMusicCommand({
+    name: 'join',
+    description: { content: 'Joins the voice channel', examples: ['join'], usage: 'join' },
+    aliases: ['j'],
+    dj: false,
+    active: false,
+    requirePlayer: false,
+    run: async ({ client, ctx, player }) => {
+        if (!ctx.guild) return;
         if (!player || player.isStale) {
-            const vc = ctx.voiceChannel;
-            player = await client.queue.create(
-                guild,
-                vc,
+            const created = await client.queue.create(
+                ctx.guild,
+                ctx.voiceChannel,
                 ctx.channel,
                 client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
             );
             return await ctx.sendMessage({
                 embeds: [
-                    embed
-                        .setColor(this.client.color.main)
-                        .setDescription(
-                            `Joined <#${player.node.manager.connections.get(guild.id)?.channelId}>`
-                        ),
-                ],
-            });
-        } else {
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.main)
-                        .setDescription(
-                            `I'm already connected to <#${player.node.manager.connections.get(guild.id)?.channelId}>`
-                        ),
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription(`Joined <#${created.node.manager.connections.get(ctx.guild.id)?.channelId}>`),
                 ],
             });
         }
-    }
-}
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+        return await ctx.sendMessage({
+            embeds: [
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setDescription(
+                        `I'm already connected to <#${player.node.manager.connections.get(ctx.guild.id)?.channelId}>`
+                    ),
+            ],
+        });
+    },
+});

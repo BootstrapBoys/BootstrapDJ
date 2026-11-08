@@ -1,76 +1,23 @@
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineMusicCommand } from '../../lib/musicCommand.js';
 
-export default class Loop extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'loop',
-            description: {
-                content: 'loop the current song or the queue',
-                examples: ['loop', 'loop queue', 'loop song'],
-                usage: 'loop',
-            },
-            category: 'general',
-            aliases: ['loop'],
-            cooldown: 3,
-            args: false,
-            player: {
-                voice: true,
-                dj: false,
-                active: true,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
-            slashCommand: true,
-            options: [],
+const NEXT_LOOP = { off: 'repeat', repeat: 'queue', queue: 'off' } as const;
+
+export default defineMusicCommand({
+    name: 'loop',
+    description: { content: 'loop the current song or the queue', examples: ['loop', 'loop queue', 'loop song'], usage: 'loop' },
+    aliases: ['loop'],
+    dj: false,
+    run: async ({ client, ctx, player }) => {
+        if (!player) return;
+        player.loop = NEXT_LOOP[player.loop];
+        const copy =
+            player.loop === 'repeat'
+                ? '**Looping the song**'
+                : player.loop === 'queue'
+                  ? '**Looping the queue**'
+                  : '**Looping is now off**';
+        return await ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.main).setDescription(copy)],
         });
-    }
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const embed = client.embed().setColor(client.color.main);
-        const guild = ctx.guild;
-        if (!guild) return;
-        const player = client.queue.get(guild.id);
-        if (!player)
-            return await ctx.sendMessage({
-                embeds: [
-                    this.client
-                        .embed()
-                        .setColor(this.client.color.red)
-                        .setDescription('There is no music playing in this server.'),
-                ],
-            });
-
-        switch (player.loop) {
-            case 'off':
-                player.loop = 'repeat';
-                return await ctx.sendMessage({
-                    embeds: [
-                        embed.setDescription(`**Looping the song**`).setColor(client.color.main),
-                    ],
-                });
-            case 'repeat':
-                player.loop = 'queue';
-                return await ctx.sendMessage({
-                    embeds: [
-                        embed.setDescription(`**Looping the queue**`).setColor(client.color.main),
-                    ],
-                });
-            case 'queue':
-                player.loop = 'off';
-                return await ctx.sendMessage({
-                    embeds: [
-                        embed.setDescription(`**Looping is now off**`).setColor(client.color.main),
-                    ],
-                });
-        }
-    }
-}
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+    },
+});

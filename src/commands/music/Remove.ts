@@ -1,99 +1,38 @@
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { ApplicationCommandOptionType } from 'discord.js';
 
-export default class Remove extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'remove',
-            description: {
-                content: 'Removes a song from the queue',
-                examples: ['remove 1'],
-                usage: 'remove <song number>',
-            },
-            category: 'music',
-            aliases: ['rm'],
-            cooldown: 3,
-            args: true,
-            player: {
-                voice: true,
-                dj: true,
-                active: true,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
-            slashCommand: true,
-            options: [
-                {
-                    name: 'song',
-                    description: 'The song number',
-                    type: 4,
-                    required: true,
-                },
-            ],
-        });
-    }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const guild = ctx.guild;
-        if (!guild) return;
-        const player = client.queue.get(guild.id);
-        if (!player)
+import { defineMusicCommand } from '../../lib/musicCommand.js';
+
+export default defineMusicCommand({
+    name: 'remove',
+    description: { content: 'Removes a song from the queue', examples: ['remove 1'], usage: 'remove <song number>' },
+    aliases: ['rm'],
+    args: true,
+    options: [
+        {
+            name: 'song',
+            description: 'The song number',
+            type: ApplicationCommandOptionType.Integer,
+            required: true,
+        },
+    ],
+    run: async ({ client, ctx, player, args }) => {
+        if (!player) return;
+        const index = Number(args[0]);
+        if (!player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [
-                    this.client
-                        .embed()
-                        .setColor(this.client.color.red)
-                        .setDescription('There is no music playing in this server.'),
-                ],
+                embeds: [client.embed().setColor(client.color.red).setDescription('There are no songs in the queue.')],
             });
-        const embed = this.client.embed();
-        if (!player.queue.length)
+        }
+        if (!Number.isInteger(index) || index < 1 || index > player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('There are no songs in the queue.'),
-                ],
+                embeds: [client.embed().setColor(client.color.red).setDescription('That is not a valid number.')],
             });
-        if (isNaN(Number(args[0])))
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('That is not a valid number.'),
-                ],
-            });
-        if (Number(args[0]) > player.queue.length)
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('That is not a valid number.'),
-                ],
-            });
-        if (Number(args[0]) < 1)
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('That is not a valid number.'),
-                ],
-            });
-        player.remove(Number(args[0]) - 1);
+        }
+        player.remove(index - 1);
         return await ctx.sendMessage({
             embeds: [
-                embed
-                    .setColor(this.client.color.main)
-                    .setDescription(`Removed song number ${Number(args[0])} from the queue`),
+                client.embed().setColor(client.color.main).setDescription(`Removed song number ${index} from the queue`),
             ],
         });
-    }
-}
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+    },
+});

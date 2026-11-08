@@ -1,100 +1,36 @@
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { ApplicationCommandOptionType } from 'discord.js';
 
-export default class Skipto extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'skipto',
-            description: {
-                content: 'Skips to a specific song in the queue',
-                examples: ['skipto 3'],
-                usage: 'skipto <number>',
-            },
-            category: 'music',
-            aliases: ['st'],
-            cooldown: 3,
-            args: true,
-            player: {
-                voice: true,
-                dj: true,
-                active: true,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
-            slashCommand: true,
-            options: [
-                {
-                    name: 'number',
-                    description: 'The number of the song you want to skip to',
-                    type: 4,
-                    required: true,
-                },
-            ],
-        });
-    }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const guild = ctx.guild;
-        if (!guild) return;
-        const player = client.queue.get(guild.id);
-        if (!player)
-            return await ctx.sendMessage({
-                embeds: [
-                    this.client
-                        .embed()
-                        .setColor(this.client.color.red)
-                        .setDescription('There is no music playing in this server.'),
-                ],
-            });
-        const embed = this.client.embed();
-        if (!player.queue.length)
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('There are no songs in the queue.'),
-                ],
-            });
-        if (isNaN(Number(args[0])))
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('Please provide a valid number.'),
-                ],
-            });
-        if (Number(args[0]) > player.queue.length)
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('Please provide a valid number.'),
-                ],
-            });
-        if (Number(args[0]) < 1)
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(this.client.color.red)
-                        .setDescription('Please provide a valid number.'),
-                ],
-            });
-        player.skip(Number(args[0]));
+import { defineMusicCommand } from '../../lib/musicCommand.js';
 
+export default defineMusicCommand({
+    name: 'skipto',
+    description: { content: 'Skips to a specific song in the queue', examples: ['skipto 3'], usage: 'skipto <number>' },
+    aliases: ['st'],
+    args: true,
+    options: [
+        {
+            name: 'number',
+            description: 'The number of the song you want to skip to',
+            type: ApplicationCommandOptionType.Integer,
+            required: true,
+        },
+    ],
+    run: async ({ client, ctx, player, args }) => {
+        if (!player) return;
+        const target = Number(args[0]);
+        if (!player.queue.length) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('There are no songs in the queue.')],
+            });
+        }
+        if (!Number.isInteger(target) || target < 1 || target > player.queue.length) {
+            return await ctx.sendMessage({
+                embeds: [client.embed().setColor(client.color.red).setDescription('Please provide a valid number.')],
+            });
+        }
+        player.skip(target);
         return await ctx.sendMessage({
-            embeds: [
-                embed
-                    .setColor(this.client.color.main)
-                    .setDescription(`Skipped to song number ${args[0]}`),
-            ],
+            embeds: [client.embed().setColor(client.color.main).setDescription(`Skipped to song number ${target}`)],
         });
-    }
-}
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+    },
+});
