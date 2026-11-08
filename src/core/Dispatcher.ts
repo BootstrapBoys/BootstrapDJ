@@ -14,14 +14,11 @@ import { findColdStart } from './player/AutoplayColdStart.js';
 import { relatedTracks as getRelatedTracks } from './player/YouTubeMix.js';
 import { previousTrack as goPrevious, resume247 as resumeSession, seekTo as seekPlayer, shuffleQueue, skipTracks, stopPlayback } from './player/TransportActions.js';
 import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
+import { isRecent as checkRecent, youtubeIdFor as findYouTubeId, resolveFresh as freshTrack, resolveTracks as resolveIdentifier } from './player/TrackResolution.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
 export type { SavedTrack } from './player/TrackCodec.js';
-
-/** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
- * rather than following config.searchEngine (which may be Deezer/Spotify). */
-const YOUTUBE_SEARCH = 'ytmsearch';
 
 export class Song implements Track {
     encoded: string;
@@ -279,21 +276,8 @@ export default class Dispatcher {
         }
     }
 
-    /** Re-resolve a saved track so its encoded payload matches this node. */
     private async resolveFresh(track: Song): Promise<Song | null> {
-        const uri = track.info?.uri;
-        const requester = track.info?.requester;
-        if (!uri || !requester) return null;
-        try {
-            const res = await this.node.rest.resolve(uri);
-            if (!res) return null;
-            if (res.loadType === LoadType.TRACK) return this.buildTrack(res.data, requester);
-            if (res.loadType === LoadType.SEARCH && res.data.length)
-                return this.buildTrack(res.data[0], requester);
-        } catch (error) {
-            this.client.logger.warn(`[queue] could not re-resolve ${uri}: ${error}`);
-        }
-        return null;
+        return await freshTrack(this, track);
     }
 
     public stopTrack(): Promise<unknown> {
@@ -662,19 +646,9 @@ export default class Dispatcher {
         return copy;
     }
 
-    /** Already current, queued, or heard in the recent past? */
     private isRecent(track: Song | Track): boolean {
-        const key = trackKey(track);
-        const signature = trackSignature(track);
-        if (!key && !signature) return false;
-        const matches = (candidate: Song | Track): boolean =>
-            (Boolean(key) && trackKey(candidate) === key) ||
-            (Boolean(signature) && trackSignature(candidate) === signature);
-        if (this.current && matches(this.current)) return true;
-        if (this.queue.some(matches)) return true;
-        return this.history.slice(-15).some(matches);
+        return checkRecent(this, track as Song);
     }
-
 
     private affinityWeight(track: Track, affinity: AutoplayAffinity): number {
         return affinityWeight(track, affinity);
@@ -720,30 +694,12 @@ export default class Dispatcher {
         return null;
     }
 
-    /** Resolve an identifier to a plain track list ([] on any failure). */
     private async resolveTracks(identifier: string): Promise<Track[]> {
-        const resolve = await this.node?.rest.resolve(identifier).catch(() => null);
-        return Array.isArray(resolve?.data) ? resolve.data : [];
+        return await resolveIdentifier(this, identifier);
     }
 
-    /** YouTube id for a track. The lookup deliberately uses a YouTube prefix
-     * rather than config.searchEngine: with a Deezer/Spotify engine configured,
-     * searching it for a video id returns none, the mix never resolves, and
-     * autoplay stays pinned to the seed artist. */
     private async youtubeIdFor(song: Song): Promise<string | null> {
-        const looksLikeId = (value?: string): boolean => Boolean(value && /^[\w-]{11}$/.test(value));
-        if (song.info.sourceName === 'youtube' && looksLikeId(song.info.identifier)) {
-            return song.info.identifier;
-        }
-        const resolve = await this.node?.rest
-            .resolve(`${YOUTUBE_SEARCH}:${song.info.title} ${song.info.author}`)
-            .catch(() => null);
-        const data = resolve?.data;
-        if (!Array.isArray(data)) return null;
-        const match = data.find(
-            track => track.info?.sourceName === 'youtube' && looksLikeId(track.info?.identifier)
-        );
-        return match?.info?.identifier ?? null;
+        return await findYouTubeId(this, song);
     }
 
     private async relatedTracks(seed: Song): Promise<Track[]> {
