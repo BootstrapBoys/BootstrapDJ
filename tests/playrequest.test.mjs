@@ -208,6 +208,15 @@ test('the guild maxqueue override replaces MAX_QUEUE_SIZE in both directions', a
     await runPlayRequest(strictClient, strictCtx, ['query'], 'queue');
     assert.equal(strict.queue.length, 1);
     assert.match(strictCtx.replies[0].embeds[0].data.description, /queue is full \(1 tracks\)/);
+
+    const blank = makePlayer([rawTrack('existing')]);
+    const blankClient = makeClient(blank, { loadType: LoadType.TRACK, data: rawTrack('A') });
+    blankClient.config.maxQueueSize = 1;
+    blankClient.db.getGuildSettings = async () => ({ maxqueue: ' ' });
+    const blankCtx = makeCtx();
+
+    await runPlayRequest(blankClient, blankCtx, ['query'], 'queue');
+    assert.equal(blank.queue.length, 1, 'a blank override falls back to MAX_QUEUE_SIZE');
 });
 
 test('per-user queue limits are enforced', async () => {

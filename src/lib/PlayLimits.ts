@@ -19,6 +19,9 @@ export type PlayLimits = {
 export async function getPlayLimits(client: BootstrapClient, guildId: string): Promise<PlayLimits> {
     const settings: Record<string, string> = await client.db.getGuildSettings(guildId).catch(() => ({}));
     const number = (value: string | undefined, fallback: number): number => {
+        // A blank stored value is "unset", not zero. Treating it as zero made
+        // an empty maxqueue row silently unlimited.
+        if (value === undefined || value.trim() === '') return fallback;
         const parsed = Number(value);
         return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
     };
