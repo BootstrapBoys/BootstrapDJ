@@ -18,8 +18,6 @@ import { fileURLToPath } from 'node:url';
 import type { NodeOption } from 'shoukaku';
 
 
-import { Command, Queue, ShoukakuClient } from './index.js';
-import Logger from './Logger.js';
 import config from '../config.js';
 import { startDashboard } from '../dashboard/server.js';
 import {
@@ -39,6 +37,8 @@ import loadPlugins from '../plugin/index.js';
 import { loadBots } from '../utils/BotsFile.js';
 import { findBestPublicNode, toNodeOption } from '../utils/PublicNodes.js';
 import { Utils } from '../utils/Utils.js';
+import { Command, Queue, ShoukakuClient } from './index.js';
+import Logger from './Logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

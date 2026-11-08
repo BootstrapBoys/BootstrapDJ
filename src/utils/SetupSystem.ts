@@ -12,10 +12,10 @@ import {
 import { existsSync } from 'node:fs';
 import { LoadType } from 'shoukaku';
 
-import { getButtons } from './Buttons.js';
-import { checkTrack, getPlayLimits } from './PlayLimits.js';
 import { Song } from '../structures/Dispatcher.js';
 import { BootstrapClient, Dispatcher } from '../structures/index.js';
+import { getButtons } from './Buttons.js';
+import { checkTrack, getPlayLimits } from './PlayLimits.js';
 
 const LIVE_BADGE_PATH = '/root/EarlTheEar/assets/live.png';
 

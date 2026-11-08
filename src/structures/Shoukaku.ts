@@ -1,7 +1,7 @@
 import { Connectors, NodeOption, Shoukaku } from 'shoukaku';
 
-import { BootstrapClient } from './index.js';
 import { nodePriority } from '../utils/NodeConfig.js';
+import { BootstrapClient } from './index.js';
 
 
 /**

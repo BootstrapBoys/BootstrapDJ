@@ -5,6 +5,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import http from 'node:http';
 
 import config from '../config.js';
+import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../utils/SettingsSchema.js';
 import { FILTERS } from './filters.js';
 import {
     type AccessResult,
@@ -13,7 +14,6 @@ import {
     NO_ACCESS,
     type PlayerSnapshot,
 } from './shardApi.js';
-import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../utils/SettingsSchema.js';
 
 
 
