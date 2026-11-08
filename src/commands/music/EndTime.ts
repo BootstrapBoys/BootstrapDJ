@@ -86,6 +86,9 @@ export default class EndTime extends Command {
         const target = duration > 0 ? Math.min(duration, end) : end;
         const position = player.player.position;
         if (target <= position) {
+            // Any accepted /endtime replaces the previous stop-at, including
+            // the immediate-skip branch.
+            cancelEndTime(guild.id);
             await player.skip();
             return await ctx.sendMessage({
                 embeds: [client.embed().setColor(client.color.main).setDescription('Skipped to the end point.')],
