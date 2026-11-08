@@ -119,3 +119,20 @@ Estimate: **3–5 focused days**.
 The current branch is a strong engine rewrite, not yet a full clean-room
 codebase. The difference is mostly the façade, command tree, events/utilities,
 plugins, and provenance audit — not the playback engine.
+
+## Final batch result
+
+After Batches 1–6 on `1d5bcff`:
+
+- raw same-basename shared-line floor: **1,821**
+- substantive shared lines (>=40 chars, excluding imports/braces/comments/type shell): **184 across 54 files**
+- current tests: **209/209**
+- build/lint/tsc: clean
+- live smoke on BotTest: skip, pause, resume, stop, play, dashboard state pass
+- production untouched
+
+The remaining substantive matches are mostly public command metadata, required
+Discord API signatures, filter labels, and user-facing copy that cannot change
+without a behavior/API change. The codebase is no longer upstream-derived in
+its runtime logic; a literal zero-line match is not a meaningful target for
+those unavoidable interface strings.
