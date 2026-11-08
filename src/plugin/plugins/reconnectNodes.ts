@@ -1,6 +1,6 @@
-import { Constants } from 'shoukaku';
+import { Constants, type Node } from 'shoukaku';
 
-import type { BootstrapClient } from '../../core/index.js';
+import type { BootstrapClient, Dispatcher } from '../../core/index.js';
 import BotLog from '../../lib/BotLog.js';
 import { formatDuration } from '../../lib/NodeStatus.js';
 import {
@@ -21,7 +21,7 @@ const PROBE_COOLDOWN_MS = 60_000;
  * - probes the public list only after the configured outage delay,
  * - removes the public fallback once the primary is healthy and drained.
  */
-class NodeWatchdog {
+export class NodeWatchdog {
     private readonly client: BootstrapClient;
     private readonly primaryName: string | undefined;
     private fallbackName: string | null = null;
@@ -49,28 +49,87 @@ class NodeWatchdog {
         this.timer = null;
     }
 
-    private tick(): void {
+    /** One watchdog pass; public so a test can drive it without timers. */
+    public tick(): void {
         if (!this.client.isReady()) return;
-        this.dropDeadFallback();
         if (this.isPrimaryUp()) {
             this.downSince = 0;
             this.announced = false;
-            this.dropIdleFallback();
+            this.drainFallback();
             return;
         }
         if (this.downSince === 0) this.downSince = Date.now();
+        this.dropDeadFallback();
         this.readdConfigured();
         this.migrateStranded();
         if (this.announceStandby()) return;
         this.probePublic();
     }
 
-    /** A configured standby must not count as primary recovery. */
-    private isPrimaryUp(): boolean {
-        if (!this.primaryName) return false;
-        return [...this.client.shoukaku.nodes.values()].some(
+    /** The connected node that owns `config.lavalink[0]`, if any. */
+    private primaryNode(): Node | undefined {
+        if (!this.primaryName) return undefined;
+        return [...this.client.shoukaku.nodes.values()].find(
             node => node.state === Constants.State.CONNECTED && node.name === this.primaryName
         );
+    }
+
+    /** A configured standby must not count as primary recovery. */
+    private isPrimaryUp(): boolean {
+        return this.primaryNode() !== undefined;
+    }
+
+    /** Dispatchers still bound to the public fallback, live or stale. */
+    private fallbackPlayers(): Dispatcher[] {
+        if (!this.fallbackName) return [];
+        const name = this.fallbackName;
+        return [...this.client.queue.values()].filter(
+            player => player.player.node?.name === name || player.node?.name === name
+        );
+    }
+
+    /**
+     * Primary is healthy again: move local players off the public fallback
+     * before removing it. A fallback is shared with other bots, so its remote
+     * `stats.players` can never prove that *our* players have drained.
+     */
+    private drainFallback(): void {
+        if (!this.fallbackName) return;
+        const target = this.primaryNode();
+        if (!target) return;
+
+        const bound = this.fallbackPlayers();
+        for (const player of bound) {
+            if (player.current || player.queue.length > 0) continue;
+            try {
+                player.destroy();
+            } catch (error) {
+                this.client.logger.debug(`[nodes] could not drop idle fallback player: ${error}`);
+            }
+        }
+
+        const active = bound.filter(player => player.current || player.queue.length > 0);
+        if (active.length === 0) {
+            this.dropIdleFallback();
+            return;
+        }
+        if (this.migrating) return;
+
+        const name = this.fallbackName;
+        this.migrating = true;
+        void this.client.queue
+            .migrateFromNode(name, target)
+            .then(moved => {
+                if (moved > 0) {
+                    this.client.logger.info(
+                        `[nodes] moved ${moved} player(s) off public fallback "${name}"`
+                    );
+                }
+            })
+            .catch(error => this.client.logger.error(`[nodes] fallback migration failed: ${error}`))
+            .finally(() => {
+                this.migrating = false;
+            });
     }
 
     /** A disconnected fallback would otherwise be retried forever by Shoukaku. */
@@ -93,8 +152,9 @@ class NodeWatchdog {
     private dropIdleFallback(): void {
         if (!this.fallbackName) return;
         const name = this.fallbackName;
-        const node = this.client.shoukaku.nodes.get(name);
-        if (node && (node.stats?.players ?? 0) > 0) return;
+        // Remote stats count every bot on a public node, so only our own
+        // dispatchers prove the fallback is drained.
+        if (this.fallbackPlayers().length > 0) return;
         try {
             this.client.shoukaku.removeNode(name, 'primary restored');
         } catch (error) {

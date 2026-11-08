@@ -197,6 +197,25 @@ export class Queue extends Map<string, Dispatcher> {
         return moved;
     }
 
+    /**
+     * Move only the players bound to one node. Used to drain a public fallback
+     * once the primary returns: migrating every guild would also yank players
+     * off healthy configured standbys.
+     */
+    public async migrateFromNode(fromName: string, node: Node | undefined): Promise<number> {
+        if (!node) return 0;
+        let moved = 0;
+        for (const dispatcher of Array.from(this.values())) {
+            const bound =
+                dispatcher.player.node?.name === fromName || dispatcher.node?.name === fromName;
+            if (!bound) continue;
+            const idle = !dispatcher.current && dispatcher.queue.length === 0;
+            if (idle) continue;
+            if (await this.rebuild(dispatcher, node)) moved += 1;
+        }
+        return moved;
+    }
+
     public async migrateToBestNode(): Promise<number> {
         return await this.migrateToNode(this.node);
     }
