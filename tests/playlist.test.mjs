@@ -7,6 +7,7 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '../dist/generated/prisma/client.js';
 
 import ServerData from '../dist/data/server.js';
+import { initializePrisma } from '../dist/data/prisma.js';
 
 // Never touch prisma/bootstrapdj.db (live data): a throwaway file is
 // given the two tables these tests exercise.
@@ -28,7 +29,7 @@ before(async () => {
         `CREATE UNIQUE INDEX "Playlist_userId_name_key" ON "Playlist"("userId", "name")`
     );
     await prisma.$executeRawUnsafe(
-        `CREATE TABLE "Song" ("id" TEXT NOT NULL PRIMARY KEY, "track" TEXT NOT NULL, "playlistId" TEXT NOT NULL, "trackKey" TEXT)`
+        `CREATE TABLE "Song" ("id" TEXT NOT NULL PRIMARY KEY, "track" TEXT NOT NULL, "playlistId" TEXT NOT NULL, "trackKey" TEXT, "position" INTEGER NOT NULL DEFAULT 0)`
     );
     await prisma.$executeRawUnsafe(
         `CREATE UNIQUE INDEX "Song_track_playlistId_key" ON "Song"("track", "playlistId")`
@@ -150,4 +151,67 @@ test('removeSong finds the stored row by canonical track key', async () => {
     assert.equal(await db.removeSong(user, 'Canonical', 'https://deezer.com/track/11'), true);
     assert.equal((await db.getSong(user, 'Canonical')).length, 1);
     assert.equal(await db.removeSong(user, 'Canonical', 'https://deezer.com/track/11'), false);
+});
+
+test('playlist rows keep insertion order and remove by visible index', async () => {
+    await db.createPlaylist(user, 'Ordered');
+    await db.addSong(user, 'Ordered', track('First', 'https://deezer.com/track/31'));
+    await db.addSong(user, 'Ordered', track('Second', 'https://deezer.com/track/32'));
+    await db.addSong(user, 'Ordered', track('Third', 'https://deezer.com/track/33'));
+
+    const songs = await db.getSong(user, 'Ordered');
+    assert.deepEqual(
+        songs.map(row => row.position),
+        [0, 1, 2]
+    );
+    assert.deepEqual(
+        songs.map(row => row.trackKey),
+        [
+            'https://deezer.com/track/31',
+            'https://deezer.com/track/32',
+            'https://deezer.com/track/33',
+        ]
+    );
+
+    assert.equal(await db.removeSongAt(user, 'Ordered', 2), true);
+    const remaining = await db.getSong(user, 'Ordered');
+    assert.deepEqual(
+        remaining.map(row => row.trackKey),
+        ['https://deezer.com/track/31', 'https://deezer.com/track/33']
+    );
+});
+
+test('startup backfill gives legacy rows stable positions and is idempotent', async () => {
+    await db.createPlaylist(user, 'Position Backfill');
+    const playlist = await db.getPLaylist(user, 'Position Backfill');
+    assert.ok(playlist);
+
+    for (const id of ['song-z', 'song-a', 'song-m']) {
+        await prisma.song.create({
+            data: {
+                id,
+                track: JSON.stringify(track(id, `https://deezer.com/track/${id}`)),
+                playlistId: playlist.id,
+                position: 0,
+            },
+        });
+    }
+
+    await initializePrisma(prisma);
+    const first = await db.getSong(user, 'Position Backfill');
+    assert.deepEqual(
+        first.map(row => row.id),
+        ['song-a', 'song-m', 'song-z']
+    );
+    assert.deepEqual(
+        first.map(row => row.position),
+        [0, 1, 2]
+    );
+
+    await initializePrisma(prisma);
+    const second = await db.getSong(user, 'Position Backfill');
+    assert.deepEqual(
+        second.map(row => row.id),
+        ['song-a', 'song-m', 'song-z']
+    );
 });

@@ -73,8 +73,20 @@ export class PlaylistStore {
             }
         }
         try {
-            await this.prisma.song.create({
-                data: { track: JSON.stringify(track), playlistId: playlist.id, trackKey: key },
+            await this.prisma.$transaction(async tx => {
+                const last = await tx.song.findFirst({
+                    where: { playlistId: playlist.id },
+                    orderBy: { position: 'desc' },
+                    select: { position: true },
+                });
+                await tx.song.create({
+                    data: {
+                        track: JSON.stringify(track),
+                        playlistId: playlist.id,
+                        trackKey: key,
+                        position: (last?.position ?? -1) + 1,
+                    },
+                });
             });
         } catch (error) {
             if ((error as { code?: string }).code === 'P2002') return false;
@@ -105,7 +117,7 @@ export class PlaylistStore {
         if (!playlist) return [];
         return await this.prisma.song.findMany({
             where: { playlistId: playlist.id },
-            orderBy: { id: 'asc' },
+            orderBy: [{ position: 'asc' }, { id: 'asc' }],
         });
     }
 
