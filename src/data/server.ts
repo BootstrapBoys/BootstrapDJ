@@ -27,6 +27,7 @@ import {
     VoiceListenOptOut,
 } from '../generated/prisma/client.js';
 import { PlaylistStore } from './playlists.js';
+import { SessionStore } from './sessions.js';
 import { createPrismaClient, initializePrisma } from './prisma.js';
 
 export interface StatsPruneResult {
@@ -40,6 +41,7 @@ export interface StatsPruneResult {
 export default class ServerData {
     private prisma: PrismaClient;
     private playlists: PlaylistStore;
+    private sessions: SessionStore;
     /** PRAGMAs are connection/file scoped; every bot process runs this once. */
     private initPromise: Promise<void> | null = null;
     /** Guild rows are read for every message and every command; cache them and
@@ -56,6 +58,7 @@ export default class ServerData {
         // file instead of the tracked database file.
         this.prisma = prisma ?? createPrismaClient();
         this.playlists = new PlaylistStore(this.prisma);
+        this.sessions = new SessionStore(this.prisma);
     }
 
     /**
@@ -445,57 +448,28 @@ export default class ServerData {
     }
 
     public async heartbeatBot(botId: string, name: string): Promise<BotPresence> {
-        return await this.prisma.botPresence.upsert({
-            where: { botId },
-            create: { botId, name, lastSeen: new Date() },
-            update: { name, lastSeen: new Date() },
-        });
+        return await this.sessions.heartbeat(botId, name);
     }
 
     public async getBotPresence(botId: string): Promise<BotPresence | null> {
-        return await this.prisma.botPresence.findUnique({ where: { botId } });
+        return await this.sessions.presence(botId);
     }
 
-    /** Atomically claim a guild's voice session for this bot. A live lease held
-     * by another bot is respected; an expired or same-bot lease is renewable. */
     public async claimSessionLease(
         guildId: string,
         botId: string,
         botName: string,
         ttlMs: number = 60_000
     ): Promise<boolean> {
-        const now = new Date();
-        const expiresAt = new Date(now.getTime() + ttlMs);
-        try {
-            return await this.prisma.$transaction(async tx => {
-                const lease = await tx.sessionLease.findUnique({ where: { guildId } });
-                if (
-                    lease &&
-                    lease.botId !== botId &&
-                    lease.expiresAt.getTime() > now.getTime()
-                ) {
-                    return false;
-                }
-                await tx.sessionLease.upsert({
-                    where: { guildId },
-                    create: { guildId, botId, botName, expiresAt },
-                    update: { botId, botName, expiresAt },
-                });
-                return true;
-            });
-        } catch {
-            // SQLite can report a busy transaction under a simultaneous claim;
-            // the next heartbeat retries instead of crashing playback.
-            return false;
-        }
+        return await this.sessions.claim(guildId, botId, botName, ttlMs);
     }
 
     public async getSessionLease(guildId: string): Promise<SessionLease | null> {
-        return await this.prisma.sessionLease.findUnique({ where: { guildId } });
+        return await this.sessions.lease(guildId);
     }
 
     public async releaseSessionLease(guildId: string, botId: string): Promise<void> {
-        await this.prisma.sessionLease.deleteMany({ where: { guildId, botId } });
+        await this.sessions.release(guildId, botId);
     }
 
     public async recordRecentTrack(
@@ -506,28 +480,11 @@ export default class ServerData {
         uri: string | null,
         requesterId: string | null
     ): Promise<void> {
-        await this.prisma.recentTrack.create({
-            data: { guildId, payload, title, author, uri, requesterId },
-        });
-        const cutoff = await this.prisma.recentTrack.findFirst({
-            where: { guildId },
-            orderBy: { id: 'desc' },
-            skip: 100,
-            select: { id: true },
-        });
-        if (cutoff) {
-            await this.prisma.recentTrack.deleteMany({
-                where: { guildId, id: { lt: cutoff.id } },
-            });
-        }
+        await this.sessions.recordRecent(guildId, payload, title, author, uri, requesterId);
     }
 
     public async getRecentTracks(guildId: string, limit: number): Promise<RecentTrack[]> {
-        return await this.prisma.recentTrack.findMany({
-            where: { guildId },
-            orderBy: { playedAt: 'desc' },
-            take: limit,
-        });
+        return await this.sessions.recent(guildId, limit);
     }
 
     public async getUserPrefix(guildId: string, userId: string): Promise<string | null> {
@@ -1003,7 +960,6 @@ export default class ServerData {
         this.setupCache.set(guildId, null);
     }
 
-    /** Save (or refresh) the guild's playback state for restart recovery. */
     public async saveSession(session: {
         guildId: string;
         textId: string;
@@ -1015,30 +971,23 @@ export default class ServerData {
         volume: number;
         paused: boolean;
     }): Promise<void> {
-        await this.prisma.session.upsert({
-            where: { guildId: session.guildId },
-            update: session,
-            create: session,
-        });
+        await this.sessions.save(session);
     }
 
     public async getSessions(): Promise<Session[]> {
-        return await this.prisma.session.findMany();
+        return await this.sessions.all();
     }
 
-    /** Watchdog discovery only needs ids; avoid loading every saved queue JSON. */
     public async getSessionGuildIds(): Promise<string[]> {
-        const rows = await this.prisma.session.findMany({ select: { guildId: true } });
-        return rows.map(row => row.guildId);
+        return await this.sessions.guildIds();
     }
 
     public async getSession(guildId: string): Promise<Session | null> {
-        return await this.prisma.session.findUnique({ where: { guildId } });
+        return await this.sessions.get(guildId);
     }
 
     public async deleteSession(guildId: string): Promise<void> {
-        // deleteMany: a missing row is not an error here.
-        await this.prisma.session.deleteMany({ where: { guildId } });
+        await this.sessions.remove(guildId);
     }
 
     public async getPLaylist(userId: string, name: string): Promise<Playlist | null> {
