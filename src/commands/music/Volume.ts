@@ -34,6 +34,7 @@ export default defineMusicCommand({
             });
         }
         await player.player.setGlobalVolume(volume);
+        if (ctx.guild) await client.db.setGuildSetting(ctx.guild.id, 'defaultvolume', String(volume));
         return await ctx.sendMessage({
             embeds: [client.embed().setColor(client.color.main).setDescription(`Set the volume to ${volume}`)],
         });
