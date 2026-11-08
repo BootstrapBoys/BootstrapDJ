@@ -2,18 +2,47 @@ import dotenv from 'dotenv';
 
 import { parseFallbackNodes, toNodeOptions } from './lib/NodeConfig.js';
 import { SearchEngine } from './types.js';
-// quiet: dotenv >=17 prints an 'injected env' banner on every boot.
+
 dotenv.config({ quiet: true });
 
-export default {
-    token: process.env.BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN || '',
-    botsFile: process.env.BOTS_FILE || '',
-    botId: process.env.BOT_ID || '',
-    botName: process.env.BOT_NAME || '',
-    botPriority: process.env.BOT_PRIORITY ? parseInt(process.env.BOT_PRIORITY) : -1,
-    botCoordinator: process.env.BOT_COORDINATOR ? parseBoolean(process.env.BOT_COORDINATOR) : false,
-    shardCount: process.env.SHARD_COUNT ? parseInt(process.env.SHARD_COUNT) : 0,
-    prefix: process.env.PREFIX || '!',
+const raw = process.env;
+
+function text(name: string, fallback: string = ''): string {
+    return raw[name] || fallback;
+}
+
+function integer(name: string, fallback: number): number {
+    const value = raw[name];
+    return value ? Number.parseInt(value, 10) : fallback;
+}
+
+function flag(name: string, fallback: boolean): boolean {
+    const value = raw[name];
+    if (value === undefined) return fallback;
+    return value.trim().toLowerCase() === 'true';
+}
+
+function commaList(name: string): string[] {
+    return (raw[name] ?? '')
+        .split(',')
+        .map(entry => entry.trim())
+        .filter(Boolean);
+}
+
+const statusMode = ((): 'static' | 'track' | 'count' => {
+    const value = raw.BOT_STATUS_MODE;
+    return value === 'track' || value === 'count' ? value : 'static';
+})();
+
+const config = {
+    token: raw.BOT_TOKEN || raw.DISCORD_TOKEN || raw.TOKEN || '',
+    botsFile: text('BOTS_FILE'),
+    botId: text('BOT_ID'),
+    botName: text('BOT_NAME'),
+    botPriority: raw.BOT_PRIORITY ? integer('BOT_PRIORITY', -1) : -1,
+    botCoordinator: flag('BOT_COORDINATOR', false),
+    shardCount: raw.SHARD_COUNT ? integer('SHARD_COUNT', 0) : 0,
+    prefix: text('PREFIX', '!'),
     color: {
         red: 0xff0000,
         green: 0x00ff00,
@@ -21,98 +50,65 @@ export default {
         yellow: 0xffff00,
         main: 0x2f3136,
     },
-    autoNode: process.env.AUTO_NODE ? parseBoolean(process.env.AUTO_NODE) : true, // auto node: node details are fetched from lavainfo-api (https://lavainfo-api.freedback-dip.workers.dev)
-    searchEngine: process.env.SEARCH_ENGINE || SearchEngine.YouTube, // slash/default search engine
-    // Prefix commands use YouTube by default so the Deezer-backed default does
-    // not constrain them; slash commands keep the per-guild searchtype.
-    prefixSearchEngine: process.env.PREFIX_SEARCH_ENGINE || SearchEngine.YouTube,
-    maxPlaylistSize: process.env.MAX_PLAYLIST_SIZE ? parseInt(process.env.MAX_PLAYLIST_SIZE) : 100, // max playlist size
-    botStatus: (process.env.BOT_STATUS || 'online') as 'online' | 'idle' | 'dnd' | 'invisible', // online, idle, dnd, invisible
-    botActivity: process.env.BOT_ACTIVITY || 'Bootstrap DJ', // set the bot activity
-    botActivityType: process.env.BOT_ACTIVITY_TYPE ? parseInt(process.env.BOT_ACTIVITY_TYPE) : 2, // 0 = PLAYING, 1 = STREAMING, 2 = LISTENING, 3 = WATCHING
-    // static: BOT_ACTIVITY only. track: the configured guild's current song.
-    // count: "music in N servers". Discord presence is account-wide, so no
-    // mode can show a different song per guild for the same bot account.
-    botStatusMode: (['static', 'track', 'count'].includes(process.env.BOT_STATUS_MODE || '')
-        ? process.env.BOT_STATUS_MODE
-        : 'static') as 'static' | 'track' | 'count',
-    maxQueueSize: process.env.MAX_QUEUE_SIZE ? parseInt(process.env.MAX_QUEUE_SIZE) : 100, // max queue size
-    deleteAfter: process.env.COMMAND_DELETE_AFTER ? parseInt(process.env.COMMAND_DELETE_AFTER) : 10, // seconds before a command reply is deleted (0 disables)
-    setupCleanupInterval: process.env.SETUP_CLEANUP_INTERVAL ? parseInt(process.env.SETUP_CLEANUP_INTERVAL) : 30, // seconds between song-request channel sweeps (0 disables)
-    autoplaySeed: process.env.AUTOPLAY_SEED || 'dj', // legacy single fallback when nothing has played yet
-    autoplayChart: process.env.AUTOPLAY_CHART ? parseBoolean(process.env.AUTOPLAY_CHART) : true, // use Deezer's chart before fallback seeds
-    autoplaySeeds: (process.env.AUTOPLAY_SEEDS ?? '')
-        .split(',')
-        .map(seed => seed.trim())
-        .filter(Boolean), // curated fallback queries, tried in random order
-    sessionRestoreAge: process.env.SESSION_RESTORE_AGE ? parseInt(process.env.SESSION_RESTORE_AGE) : 21600, // seconds a saved queue stays restorable (0 disables)
-    nodeFallback: process.env.NODE_FALLBACK ? parseBoolean(process.env.NODE_FALLBACK) : true, // use a probed public node when the primary is down
-    nodeFallbackAfter: process.env.NODE_FALLBACK_AFTER ? parseInt(process.env.NODE_FALLBACK_AFTER) : 180, // seconds of continuous outage before falling back
-    publicNodeListUrl:
-        process.env.PUBLIC_NODE_LIST_URL || 'https://lavalink-list.ajieblogs.eu.org/All', // public node list API
-    nodeAlertReminderMinutes: process.env.NODE_ALERT_REMINDER_MINUTES
-        ? parseInt(process.env.NODE_ALERT_REMINDER_MINUTES)
-        : 15, // minutes between 'still down' notices during a node outage (0 disables)
-    sessionEmptyWait: process.env.SESSION_EMPTY_WAIT ? parseInt(process.env.SESSION_EMPTY_WAIT) : 30, // seconds to wait for a listener before discarding the queue (0 = no wait)
-    // Stats retention. Daily history backs the dashboard's 90-day maximum;
-    // inactive track/listener aggregates are trimmed after this many days but
-    // each guild's top 100 rows are preserved. 0 disables that half of the job.
-    statsRetentionDays: process.env.STATS_RETENTION_DAYS ? parseInt(process.env.STATS_RETENTION_DAYS) : 90,
-    statsInactiveDays: process.env.STATS_INACTIVE_DAYS ? parseInt(process.env.STATS_INACTIVE_DAYS) : 180,
-    statsPruneIntervalHours: process.env.STATS_PRUNE_INTERVAL_HOURS ? parseInt(process.env.STATS_PRUNE_INTERVAL_HOURS) : 24,
-    owners: (process.env.OWNER_IDS ? JSON.parse(process.env.OWNER_IDS) : []) as string[], // bot owners
-    clientId: process.env.CLIENT_ID ?? '', // bot client id
-    guildId: process.env.GUILD_ID ?? '', // guild id
-    logChannelId: process.env.LOG_CHANNEL_ID || '', // log channel id
-    // Local web dashboard: filter toggles and the /settings editor.
-    dashboardPort: process.env.DASHBOARD_PORT ? parseInt(process.env.DASHBOARD_PORT) : 0,
-    dashboardHost: process.env.DASHBOARD_HOST || '127.0.0.1',
-    dashboardPublicUrl: process.env.DASHBOARD_PUBLIC_URL || '',
-    dashboardToken: process.env.DASHBOARD_TOKEN || '',
-    dashboardOAuthClientId: process.env.DASHBOARD_OAUTH_CLIENT_ID || process.env.CLIENT_ID || '',
-    dashboardOAuthClientSecret: process.env.DASHBOARD_OAUTH_CLIENT_SECRET || '',
-    dashboardOAuthRedirectUri: process.env.DASHBOARD_OAUTH_REDIRECT_URI || '',
-    dashboardSessionSecret: process.env.DASHBOARD_SESSION_SECRET || '',
-    // Voice listener (Earl the Ear): localhost control API + bridge.
-    earlControlUrl: process.env.EARL_CONTROL_URL || 'http://127.0.0.1:8791',
-    earlBridgeSecret: process.env.EARL_BRIDGE_SECRET || '',
-    voiceBridgePort: process.env.VOICE_BRIDGE_PORT ? parseInt(process.env.VOICE_BRIDGE_PORT) : 8790,
-    earlLiveBadgeUrl: process.env.EARL_LIVE_BADGE_URL || '', // guild emoji URL for the LIVE thumbnail
+    autoNode: flag('AUTO_NODE', true),
+    searchEngine: text('SEARCH_ENGINE', SearchEngine.YouTube),
+    prefixSearchEngine: text('PREFIX_SEARCH_ENGINE', SearchEngine.YouTube),
+    maxPlaylistSize: integer('MAX_PLAYLIST_SIZE', 100),
+    botStatus: text('BOT_STATUS', 'online') as 'online' | 'idle' | 'dnd' | 'invisible',
+    botActivity: text('BOT_ACTIVITY', 'Bootstrap DJ'),
+    botActivityType: integer('BOT_ACTIVITY_TYPE', 2),
+    botStatusMode: statusMode,
+    maxQueueSize: integer('MAX_QUEUE_SIZE', 100),
+    deleteAfter: integer('COMMAND_DELETE_AFTER', 10),
+    setupCleanupInterval: integer('SETUP_CLEANUP_INTERVAL', 30),
+    autoplaySeed: text('AUTOPLAY_SEED', 'dj'),
+    autoplayChart: flag('AUTOPLAY_CHART', true),
+    autoplaySeeds: commaList('AUTOPLAY_SEEDS'),
+    sessionRestoreAge: integer('SESSION_RESTORE_AGE', 21600),
+    nodeFallback: flag('NODE_FALLBACK', true),
+    nodeFallbackAfter: integer('NODE_FALLBACK_AFTER', 180),
+    publicNodeListUrl: text('PUBLIC_NODE_LIST_URL', 'https://lavalink-list.ajieblogs.eu.org/All'),
+    nodeAlertReminderMinutes: integer('NODE_ALERT_REMINDER_MINUTES', 15),
+    sessionEmptyWait: integer('SESSION_EMPTY_WAIT', 30),
+    statsRetentionDays: integer('STATS_RETENTION_DAYS', 90),
+    statsInactiveDays: integer('STATS_INACTIVE_DAYS', 180),
+    statsPruneIntervalHours: integer('STATS_PRUNE_INTERVAL_HOURS', 24),
+    owners: (raw.OWNER_IDS ? JSON.parse(raw.OWNER_IDS) : []) as string[],
+    clientId: text('CLIENT_ID'),
+    guildId: text('GUILD_ID'),
+    logChannelId: text('LOG_CHANNEL_ID'),
+    dashboardPort: integer('DASHBOARD_PORT', 0),
+    dashboardHost: text('DASHBOARD_HOST', '127.0.0.1'),
+    dashboardPublicUrl: text('DASHBOARD_PUBLIC_URL'),
+    dashboardToken: text('DASHBOARD_TOKEN'),
+    dashboardOAuthClientId: text('DASHBOARD_OAUTH_CLIENT_ID', text('CLIENT_ID')),
+    dashboardOAuthClientSecret: text('DASHBOARD_OAUTH_CLIENT_SECRET'),
+    dashboardOAuthRedirectUri: text('DASHBOARD_OAUTH_REDIRECT_URI'),
+    dashboardSessionSecret: text('DASHBOARD_SESSION_SECRET'),
+    earlControlUrl: text('EARL_CONTROL_URL', 'http://127.0.0.1:8791'),
+    earlBridgeSecret: text('EARL_BRIDGE_SECRET'),
+    voiceBridgePort: integer('VOICE_BRIDGE_PORT', 8790),
+    earlLiveBadgeUrl: text('EARL_LIVE_BADGE_URL'),
     links: {
-        img: process.env.IMG_LINK || 'https://i.imgur.com/ud3EWNh.jpg',
-    }, // image links
+        img: text('IMG_LINK', 'https://i.imgur.com/ud3EWNh.jpg'),
+    },
     icons: {
         youtube: 'https://i.imgur.com/xzVHhFY.png',
         spotify: 'https://i.imgur.com/qvdqtsc.png',
         soundcloud: 'https://i.imgur.com/MVnJ7mj.png',
         applemusic: 'https://i.imgur.com/Wi0oyYm.png',
         deezer: 'https://i.imgur.com/xyZ43FG.png',
-    } as Record<string, string>, // music icons
-    production: process.env.PRODUCTION ? parseBoolean(process.env.PRODUCTION) : true,
+    } as Record<string, string>,
+    production: flag('PRODUCTION', true),
     lavalink: toNodeOptions(
         {
-            name: process.env.LAVALINK_NAME || 'Bootstrap Node',
-            url: (process.env.LAVALINK_URL ?? '').trim(),
-            auth: process.env.LAVALINK_AUTH ?? '',
-            secure: process.env.LAVALINK_SECURE ? parseBoolean(process.env.LAVALINK_SECURE) : false,
+            name: text('LAVALINK_NAME', 'Bootstrap Node'),
+            url: (raw.LAVALINK_URL ?? '').trim(),
+            auth: raw.LAVALINK_AUTH ?? '',
+            secure: flag('LAVALINK_SECURE', false),
         },
-        parseFallbackNodes(process.env.LAVALINK_FALLBACKS)
-    ), // primary node followed by LAVALINK_FALLBACKS, in order
+        parseFallbackNodes(raw.LAVALINK_FALLBACKS)
+    ),
 };
 
-function parseBoolean(value: string | undefined): boolean {
-    if (typeof value === 'string') {
-        value = value.trim().toLowerCase();
-    }
-    switch (value) {
-        case 'true':
-            return true;
-        default:
-            return false;
-    }
-}
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+export default config;
