@@ -10,6 +10,7 @@ import { persistSession } from './player/SessionWriter.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
 import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
+import { findColdStart } from './player/AutoplayColdStart.js';
 import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
@@ -26,8 +27,6 @@ type MixCacheEntry = { at: number; tracks: Track[] };
 const relatedTracksCache = new Map<string, MixCacheEntry>();
 const AUTOPLAY_CACHE_LIMIT = 100;
 const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
-type AutoplaySource = 'chart' | 'curated' | 'legacy';
-
 export class Song implements Track {
     encoded: string;
     info: {
@@ -727,31 +726,6 @@ export default class Dispatcher {
         return null;
     }
 
-    /** Per-guild cold-start policy, falling back to the environment defaults. */
-    private async autoplayColdStartConfig(): Promise<{ source: AutoplaySource; seeds: string[] }> {
-        let setting: Awaited<ReturnType<BootstrapClient['db']['getAutoplaySetting']>> | null = null;
-        try {
-            setting = await this.client.db.getAutoplaySetting(this.guildId);
-        } catch {
-            // Older/test databases may not have the table yet.
-        }
-        const storedSeeds = (setting?.seeds ?? '')
-            .split(',')
-            .map(seed => seed.trim())
-            .filter(Boolean);
-        const seeds = storedSeeds.length ? storedSeeds : (this.client.config.autoplaySeeds ?? []);
-        const configured = setting?.source;
-        const source: AutoplaySource =
-            configured === 'chart' || configured === 'curated' || configured === 'legacy'
-                ? configured
-                : this.client.config.autoplayChart
-                  ? 'chart'
-                  : seeds.length
-                    ? 'curated'
-                    : 'legacy';
-        return { source, seeds };
-    }
-
     /** Try curated cold-start queries in random order. */
     private async curatedSeed(seeds: string[]): Promise<Song | null> {
         for (const query of this.shuffle(seeds)) {
@@ -880,22 +854,15 @@ export default class Dispatcher {
             const pick = await this.pickForSeed(seed);
             if (pick) return await this.queueAutoplay(pick);
         }
-        // Cold start: nothing has played and no seed was requested. The
-        // per-guild policy picks the first source; each source falls through to
-        // the next so a bad chart/query never leaves autoplay empty.
-        const cold = await this.autoplayColdStartConfig();
-        if (cold.source === 'chart') {
-            const chart = await this.chartSeed();
-            if (chart) return await this.queueAutoplay(chart);
-        }
-        if (cold.source === 'chart' || cold.source === 'curated') {
-            const curated = await this.curatedSeed(cold.seeds);
-            if (curated) return await this.queueAutoplay(curated);
-        }
-        if (this.client.config.autoplaySeed) {
-            const pick = await this.pickFromQuery(this.client.config.autoplaySeed);
-            if (pick) return await this.queueAutoplay(pick);
-        }
+        // Cold start: nothing has played and no seed was requested.
+        const cold = await findColdStart({
+            getConfig: () => this.client.db.getAutoplaySetting(this.guildId),
+            config: this.client.config,
+            chartSeed: () => this.chartSeed(),
+            curatedSeed: seeds => this.curatedSeed(seeds),
+            pickFromQuery: query => this.pickFromQuery(query),
+        });
+        if (cold) return await this.queueAutoplay(cold);
         this.client.logger.error(`[autoplay] no usable track found for guild ${this.guildId}`);
         return null;
     }
