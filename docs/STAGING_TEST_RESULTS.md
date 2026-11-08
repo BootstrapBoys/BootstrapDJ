@@ -6,8 +6,8 @@ Tester:
 
 | Stage | Result | Evidence |
 |---|---|---|
-| 1 — Static gates | PENDING | |
-| 2 — Boot and registration | PENDING | |
+| 1 — Static gates | PASS | build/lint/tsc, 209/209 tests at `1d5bcff` |
+| 2 — Boot and registration | PASS (smoke) | `tooling/staging-smoke.sh` at `366c29f`: ready, node, dashboard, production healthy |
 | 3 — Playback core | PENDING | |
 | 4 — Management/playlist/autoplay | PENDING | |
 | 5 — Session and restart | PENDING | |
