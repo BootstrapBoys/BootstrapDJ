@@ -18,7 +18,22 @@ function growthPercent(from, to) {
 
 export function summarize(samples, thresholds, meta = {}) {
     if (!samples.length) {
-        return { pass: false, reason: 'no samples', samples: 0, failures: ['no samples'] };
+        return {
+            pass: false,
+            samples: 0,
+            durationSec: 0,
+            startedAt: null,
+            endedAt: null,
+            baselineAt: null,
+            rssGrowthPct: 0,
+            heapGrowthPct: 0,
+            maxEventLoopP99Ms: 0,
+            maxEventLoopMaxMs: 0,
+            maxQueueDepth: 0,
+            crashCount: 0,
+            failures: ['no samples'],
+            meta,
+        };
     }
 
     const duration = samples.at(-1).elapsedSec ?? 0;

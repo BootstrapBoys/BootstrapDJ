@@ -86,7 +86,7 @@ async function main() {
     try {
         while (Date.now() < deadline && !stop) {
             try {
-                const data = await sampleMetrics(dashboardUrl, { headers });
+                const data = await sampleMetrics({ url: dashboardUrl, headers });
                 const players = Array.isArray(data.players) ? data.players : [];
                 const maxQueueDepth = players.reduce(
                     (max, player) => Math.max(max, (player.queue ?? 0) + (player.playing ? 1 : 0)),
