@@ -72,7 +72,7 @@ export default class Dj extends Command {
         };
     }
 
-    private reply(client: BootstrapClient, ctx: Context, description: string, error = false): Promise<unknown> {
+    private reply(client: BootstrapClient, ctx: Context, description: string, error: boolean = false): Promise<unknown> {
         return ctx.sendMessage({
             embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(description)],
         });
