@@ -8,6 +8,7 @@ import { normalizeAuthor, trackKey, trackSignature } from './player/TrackIdentit
 import { PresentationRegistry } from './player/PresentationRegistry.js';
 import { persistSession } from './player/SessionWriter.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
+import { DeezerClient } from './player/DeezerClient.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
@@ -17,35 +18,12 @@ export type { SavedTrack } from './player/TrackCodec.js';
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
 const YOUTUBE_SEARCH = 'ytmsearch';
 
-/** Deezer's public API needs no key and is the only related-artist source
- * available here. A niche artist's YouTube mix is often just that artist. */
-const DEEZER_API = 'https://api.deezer.com';
-
-type DeezerTrackRef = { id?: number; artist?: { id?: number } };
-type DeezerList = { data?: Array<{ id?: number; name?: string }> };
-
-/** Related artists change rarely and cost 2-3 HTTP calls; cache per artist. */
-const relatedArtistCache = new Map<string, string[]>();
-
 /** A seed's YouTube mix is stable for a while; re-resolving it on every pick
  * costs a search + playlist load. Keep the bounded set small and short-lived. */
 type MixCacheEntry = { at: number; tracks: Track[] };
 const relatedTracksCache = new Map<string, MixCacheEntry>();
 const AUTOPLAY_CACHE_LIMIT = 100;
 const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
-const AUTOPLAY_CHART_URL = 'https://api.deezer.com/chart/0/tracks?limit=50';
-const AUTOPLAY_CHART_TTL_MS = 30 * 60_000;
-
-type DeezerChartTrack = {
-    link?: string;
-    title?: string;
-    artist?: { name?: string };
-    explicit_lyrics?: boolean;
-    explicit_content_lyrics?: number;
-};
-
-let chartCache: { at: number; tracks: DeezerChartTrack[] } | null = null;
-
 /** Draw from the relevance-ordered head of a mix; its tail is loosely related. */
 const AUTOPLAY_HEAD = 12;
 
@@ -127,6 +105,12 @@ export default class Dispatcher {
 
     private get timers(): PlaybackTimers {
         return (this.timersStore ??= new PlaybackTimers());
+    }
+
+    private deezerStore?: DeezerClient;
+
+    private get deezer(): DeezerClient {
+        return (this.deezerStore ??= new DeezerClient());
     }
 
     /** Voice channel this dispatcher is bound to; needed for session restore. */
@@ -783,19 +767,9 @@ export default class Dispatcher {
     /** Cold-start seed from Deezer's chart, filtered to non-explicit tracks. */
     private async chartSeed(): Promise<Song | null> {
         if (!this.node || !this.client.user) return null;
-        let entry = chartCache;
-        if (!entry || Date.now() - entry.at >= AUTOPLAY_CHART_TTL_MS) {
-            const response = await this.fetchJson<{ data?: DeezerChartTrack[] }>(AUTOPLAY_CHART_URL);
-            const tracks = response?.data?.filter(track => track.link) ?? [];
-            if (!tracks.length) return null;
-            const clean = tracks.filter(
-                track => !track.explicit_lyrics && !track.explicit_content_lyrics
-            );
-            if (!clean.length) return null;
-            entry = { at: Date.now(), tracks: clean };
-            chartCache = entry;
-        }
-        for (const candidate of this.shuffle(entry.tracks).slice(0, 6)) {
+        const tracks = await this.deezer.chart();
+        if (!tracks.length) return null;
+        for (const candidate of this.shuffle(tracks).slice(0, 6)) {
             if (!candidate.link) continue;
             const resolved = await this.node.rest.resolve(candidate.link).catch(() => null);
             if (resolved?.loadType === LoadType.TRACK) {
@@ -893,7 +867,7 @@ export default class Dispatcher {
     private async pickForSeed(seed: Song): Promise<Song | null> {
         const mix = await this.relatedTracks(seed);
         const seedArtist = seed.info.author ?? '';
-        const related = this.shuffle((await this.relatedArtistNames(seed)).slice(0, AUTOPLAY_RELATED));
+        const related = this.shuffle((await this.deezer.relatedArtists(seed)).slice(0, AUTOPLAY_RELATED));
         const seedOnlyMix =
             mix.length > 0 &&
             mix.every(track => {
@@ -925,63 +899,6 @@ export default class Dispatcher {
 
         // Nothing related available: more from the same artist, never a stop.
         return await this.pickFromQuery(seed.info.author);
-    }
-
-    private async fetchJson<T>(url: string): Promise<T | null> {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
-        try {
-            const response = await fetch(url, { signal: controller.signal });
-            return response.ok ? ((await response.json()) as T) : null;
-        } catch {
-            return null;
-        } finally {
-            clearTimeout(timer);
-        }
-    }
-
-    /** Deezer track id for any seed: direct, by ISRC, or by artist+title. */
-    private async deezerTrackId(song: Song): Promise<string | null> {
-        if (song.info.sourceName === 'deezer' && /^\d+$/.test(song.info.identifier)) {
-            return song.info.identifier;
-        }
-        if (song.info.isrc) {
-            const byIsrc = await this.fetchJson<DeezerTrackRef>(
-                `${DEEZER_API}/track/isrc:${song.info.isrc}`
-            );
-            if (byIsrc?.id) return String(byIsrc.id);
-        }
-        const query = encodeURIComponent(`artist:"${song.info.author}" track:"${song.info.title}"`);
-        const found = await this.fetchJson<DeezerList>(`${DEEZER_API}/search?q=${query}&limit=1`);
-        const id = found?.data?.[0]?.id;
-        return id ? String(id) : null;
-    }
-
-    /** Artists Deezer considers similar to the seed's artist. */
-    private async relatedArtistNames(song: Song): Promise<string[]> {
-        const cacheKey = song.info.author?.toLowerCase() ?? '';
-        const cached = relatedArtistCache.get(cacheKey);
-        if (cached) return cached;
-
-        const trackId = await this.deezerTrackId(song);
-        if (!trackId) return [];
-        const track = await this.fetchJson<DeezerTrackRef>(`${DEEZER_API}/track/${trackId}`);
-        const artistId = track?.artist?.id;
-        if (!artistId) return [];
-        const related = await this.fetchJson<DeezerList>(
-            `${DEEZER_API}/artist/${artistId}/related?limit=10`
-        );
-        const names = (related?.data ?? [])
-            .map(artist => artist?.name)
-            .filter((name): name is string => Boolean(name));
-        if (related && cacheKey) {
-            if (relatedArtistCache.size >= AUTOPLAY_CACHE_LIMIT) {
-                const oldest = relatedArtistCache.keys().next().value;
-                if (oldest) relatedArtistCache.delete(oldest);
-            }
-            relatedArtistCache.set(cacheKey, names);
-        }
-        return names;
     }
 
     /** Explicit seed lanes, newest first. A restored session has no persisted
