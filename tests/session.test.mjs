@@ -114,6 +114,48 @@ test('saveSession upserts one row per guild', async () => {
     assert.equal(rows[0].autoplay, true);
 });
 
+test('a session snapshot in flight cannot recreate a row deleted after it', async () => {
+    const base = {
+        guildId: 'race-g1',
+        textId: 't1',
+        voiceId: 'v1',
+        current: JSON.stringify({ encoded: 'a', info: {} }),
+        queue: '[]',
+        loop: 'off',
+        autoplay: false,
+        volume: 100,
+        paused: false,
+    };
+    const originalSave = db.sessions.save.bind(db.sessions);
+    let releaseSave;
+    let markStarted;
+    const started = new Promise(resolveStarted => {
+        markStarted = resolveStarted;
+    });
+    db.sessions.save = async session => {
+        markStarted();
+        await new Promise(resolve => {
+            releaseSave = resolve;
+        });
+        await originalSave(session);
+    };
+
+    try {
+        // stop()/destroy() delete without awaiting the snapshot that is already
+        // on its way to SQLite.
+        const saving = db.saveSession(base);
+        await started;
+        const deleting = db.deleteSession('race-g1');
+        releaseSave();
+        await Promise.all([saving, deleting]);
+
+        assert.equal(await db.getSession('race-g1'), null);
+    } finally {
+        db.sessions.save = originalSave;
+        await db.deleteSession('race-g1');
+    }
+});
+
 test('session leases are exclusive and can be released', async () => {
     assert.equal(await db.claimSessionLease('g1', 'bot-a', 'Bot A', 60_000), true);
     assert.equal(await db.claimSessionLease('g1', 'bot-b', 'Bot B', 60_000), false);
