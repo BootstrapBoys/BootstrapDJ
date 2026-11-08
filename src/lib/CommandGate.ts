@@ -52,6 +52,18 @@ function deny(content: string): GateResult {
 }
 
 /**
+ * Developer access fails closed. A missing, empty or malformed owner list
+ * grants dev-only commands to nobody, so a broken `OWNER_IDS` can never expose
+ * `eval`, `shutdown` or `reload`.
+ */
+export function isOwner(
+    memberId: string,
+    owners: readonly string[] | null | undefined
+): boolean {
+    return Array.isArray(owners) && owners.length > 0 && owners.includes(memberId);
+}
+
+/**
  * Evaluate all pre-execution checks shared by MessageCreate and
  * InteractionCreate. Replies stay in the adapters so prefix output keeps its
  * auto-delete behaviour and slash output keeps its ephemeral flag.
@@ -129,8 +141,8 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
         }
     }
 
-    if (command.permissions.dev && client.config.owners) {
-        if (!client.config.owners.includes(member.id)) return { ok: false, silent: true };
+    if (command.permissions.dev && !isOwner(member.id, client.config.owners)) {
+        return { ok: false, silent: true };
     }
 
     if (command.player) {

@@ -31,6 +31,44 @@ function list(key: string): string[] {
         .filter(Boolean);
 }
 
+const SNOWFLAKE = /^\d{17,20}$/;
+
+/**
+ * `OWNER_IDS` is a JSON array of Discord snowflake strings.
+ *
+ * A malformed value must stop startup instead of leaving the developer gate
+ * open: `JSON.parse` used to be cast to `string[]`, so `null`, a JSON string or
+ * comma-separated ids either crashed a command or turned `.includes()` into a
+ * substring match. Throwing here is the fail-closed path.
+ */
+export function parseOwnerIds(raw: string | undefined): string[] {
+    if (!raw || !raw.trim()) return [];
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch {
+        throw new Error(
+            'OWNER_IDS must be a JSON array of Discord snowflake strings, for example ["123456789012345678"]'
+        );
+    }
+    if (!Array.isArray(parsed)) {
+        throw new Error(
+            'OWNER_IDS must be a JSON array of Discord snowflake strings, for example ["123456789012345678"]'
+        );
+    }
+    const owners: string[] = [];
+    for (const [index, value] of parsed.entries()) {
+        if (typeof value !== 'string' || !SNOWFLAKE.test(value.trim())) {
+            throw new Error(
+                `OWNER_IDS entry ${index} is not a Discord snowflake string (17-20 digits)`
+            );
+        }
+        const id = value.trim();
+        if (!owners.includes(id)) owners.push(id);
+    }
+    return owners;
+}
+
 const PALETTE = {
     red: 0xff0000,
     green: 0x00ff00,
@@ -85,7 +123,7 @@ const config = {
     statsRetentionDays: integer('STATS_RETENTION_DAYS', 90),
     statsInactiveDays: integer('STATS_INACTIVE_DAYS', 180),
     statsPruneIntervalHours: integer('STATS_PRUNE_INTERVAL_HOURS', 24),
-    owners: (env.OWNER_IDS ? JSON.parse(env.OWNER_IDS) : []) as string[],
+    owners: parseOwnerIds(env.OWNER_IDS),
     clientId: text('CLIENT_ID'),
     guildId: text('GUILD_ID'),
     logChannelId: text('LOG_CHANNEL_ID'),

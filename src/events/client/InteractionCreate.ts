@@ -7,7 +7,7 @@ import {
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Context, Event } from '../../core/index.js';
-import { evaluateCommand } from '../../lib/CommandGate.js';
+import { evaluateCommand, isOwner } from '../../lib/CommandGate.js';
 import { shouldReplyEphemeral } from '../../lib/ResponseMode.js';
 
 interface Choice {
@@ -194,7 +194,7 @@ export default class InteractionCreate extends Event {
         const query = String(raw).toLowerCase();
 
         if (interaction.commandName === 'guild' && focused.name === 'guild') {
-            if (!this.client.config.owners.includes(interaction.user.id)) {
+            if (!isOwner(interaction.user.id, this.client.config.owners)) {
                 return await this.respond(interaction, []);
             }
             return await this.respond(

@@ -166,6 +166,32 @@ test('gate checks bot, user and developer permissions', async () => {
         makeInput({ command: devOnly, member: makeMember({ id: 'dev', roles: [] }) })
     );
     assert.deepEqual(devAllowed, { ok: true });
+
+    // Fail closed: malformed, empty or missing owner lists grant nobody access.
+    for (const owners of [[], null, undefined, 'dev,other', { 0: 'dev' }]) {
+        const client = makeClient({ config: { owners } });
+        const rejected = await evaluateCommand(
+            makeInput({
+                command: devOnly,
+                client,
+                member: makeMember({ id: 'dev', roles: [] }),
+            })
+        );
+        assert.deepEqual(rejected, { ok: false, silent: true }, `owners=${String(owners)}`);
+    }
+
+    // `.includes()` must not turn a longer snowflake into a substring match.
+    const substringClient = makeClient({ config: { owners: ['123456789012345678'] } });
+    assert.deepEqual(
+        await evaluateCommand(
+            makeInput({
+                command: devOnly,
+                client: substringClient,
+                member: makeMember({ id: '12345678901234567', roles: [] }),
+            })
+        ),
+        { ok: false, silent: true }
+    );
 });
 
 test('gate enforces voice membership, stage and same-channel rules', async () => {
