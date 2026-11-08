@@ -28,6 +28,7 @@ import {
 } from '../generated/prisma/client.js';
 import { PlaylistStore } from './playlists.js';
 import { SessionStore } from './sessions.js';
+import { UserStore } from './users.js';
 import { createPrismaClient, initializePrisma } from './prisma.js';
 
 export interface StatsPruneResult {
@@ -42,6 +43,7 @@ export default class ServerData {
     private prisma: PrismaClient;
     private playlists: PlaylistStore;
     private sessions: SessionStore;
+    private users: UserStore;
     /** PRAGMAs are connection/file scoped; every bot process runs this once. */
     private initPromise: Promise<void> | null = null;
     /** Guild rows are read for every message and every command; cache them and
@@ -59,6 +61,7 @@ export default class ServerData {
         this.prisma = prisma ?? createPrismaClient();
         this.playlists = new PlaylistStore(this.prisma);
         this.sessions = new SessionStore(this.prisma);
+        this.users = new UserStore(this.prisma);
     }
 
     /**
@@ -488,27 +491,19 @@ export default class ServerData {
     }
 
     public async getUserPrefix(guildId: string, userId: string): Promise<string | null> {
-        const row = await this.prisma.userPrefix.findUnique({
-            where: { guildId_userId: { guildId, userId } },
-        });
-        return row?.prefix ?? null;
+        return await this.users.prefix(guildId, userId);
     }
 
     public async setUserPrefix(guildId: string, userId: string, prefix: string): Promise<UserPrefix> {
-        return await this.prisma.userPrefix.upsert({
-            where: { guildId_userId: { guildId, userId } },
-            create: { guildId, userId, prefix },
-            update: { prefix },
-        });
+        return await this.users.setPrefix(guildId, userId, prefix);
     }
 
     public async resetUserPrefix(guildId: string, userId: string): Promise<boolean> {
-        const result = await this.prisma.userPrefix.deleteMany({ where: { guildId, userId } });
-        return result.count > 0;
+        return await this.users.resetPrefix(guildId, userId);
     }
 
     public async getProfile(userId: string): Promise<Profile | null> {
-        return await this.prisma.profile.findUnique({ where: { userId } });
+        return await this.users.profile(userId);
     }
 
     public async setProfile(
@@ -524,11 +519,7 @@ export default class ServerData {
             serverVisible?: boolean;
         }
     ): Promise<Profile> {
-        return await this.prisma.profile.upsert({
-            where: { userId },
-            create: { userId, ...data },
-            update: data,
-        });
+        return await this.users.saveProfile(userId, data);
     }
 
     public async recordTrackPlay(
