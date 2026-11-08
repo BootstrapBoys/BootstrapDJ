@@ -23,6 +23,29 @@ finding with a regression test. Final gate: 242/242 tests, `npm run build`,
 | BUG-009 | fixed | per-node incidents; primary failover runs outside the alert gate |
 | BUG-010 | fixed | transient restore failures keep the row with bounded backoff |
 
+## Fix status — P2 dashboard / plugin / data batch
+
+The dashboard, plugin, bridge and data-store subset of P2 is fixed on
+`experimental/rewrite`, with one regression suite per area:
+
+| Finding | Fix |
+|---|---|
+| XFF rate-limit bypass and unbounded buckets | `X-Forwarded-For` is trusted only from a loopback proxy (last hop); the bucket map has a 5k hard cap and LRU pruning |
+| GET amplification | `/api/*` reads are rate-limited per verified client, not just POSTs |
+| Stale guild access cache for writes | mutating routes re-check access and invalidate the guild's cached entries; cached objects are copied |
+| Dashboard autoplay source forced curated | one validated `AutoplaySetting` upsert merges source and seeds; editing seeds preserves a stored `chart`/`legacy` source |
+| Settings validation / partial writes | every key and value is validated before a single Prisma transaction writes the form; bad input returns 400 |
+| `.env.example` OAuth lockout | the example leaves all four OAuth values blank; a non-blank redirect URI no longer forces incomplete OAuth |
+| Settings cache copy / TTL | cache reads return copies; guild and settings entries expire (30 s / 5 s) so another bot process' write is eventually seen |
+| Plugin shutdown never invoked | `loadPlugins` keeps the plugin list, `shutdownPlugins` runs reverse-order teardown with error isolation, and antiCrash calls it on a signal |
+| Public fallback never drained | the watchdog removes a fallback only when no local dispatcher is bound; active players migrate to the primary and idle ones are torn down first |
+| Earl validates after joining, opt-out after DJ, bypasses limits | verb/argument validation and dedupe run before `queue.create`; opt-out precedes the DJ gate; `PlayLimits` covers tracks and playlists; a playlist persists once |
+| Autocomplete rejection | a failed playlist/search lookup answers `[]` instead of timing out |
+
+Skipped: playlist track ordering is stored in the Prisma `Song` table without a
+stable position column. Fixing random UUID order needs a schema change, which
+this batch explicitly excludes.
+
 ## P0 — fix immediately
 
 ### BUG-001 — OWNER_IDS parse is fail-open
