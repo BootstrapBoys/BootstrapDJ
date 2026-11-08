@@ -3,27 +3,21 @@ import { LavalinkResponse, LoadType, Node } from 'shoukaku';
 
 import { isFallbackNode } from '../lib/PublicNodes.js';
 import { BootstrapClient, Dispatcher } from './index.js';
-
-type ResumableState = {
-    current: Dispatcher['current'];
-    queue: Dispatcher['queue'];
-    history: Dispatcher['history'];
-    loop: Dispatcher['loop'];
-    autoplay: boolean;
-    seed: Dispatcher['seed'];
-    seeds: Dispatcher['seeds'];
-    volume: number;
-    position: number;
-    paused: boolean;
-};
+import { NodeMigrator } from './player/NodeMigrator.js';
 
 export class Queue extends Map<string, Dispatcher> {
     public client: BootstrapClient;
     private readonly rebuilding = new Set<string>();
+    private readonly migrator: NodeMigrator;
 
     public constructor(client: BootstrapClient) {
         super();
         this.client = client;
+        this.migrator = new NodeMigrator(
+            client,
+            (guild, voice, channel, node) => this.spawn(guild, voice, channel, node),
+            client.logger
+        );
     }
 
     public get node(): Node | undefined {
@@ -108,93 +102,13 @@ export class Queue extends Map<string, Dispatcher> {
         return dispatcher;
     }
 
-    private snapshot(dispatcher: Dispatcher): ResumableState {
-        return {
-            current: dispatcher.current,
-            queue: dispatcher.queue.slice(),
-            history: dispatcher.history.slice(),
-            loop: dispatcher.loop,
-            autoplay: dispatcher.autoplay,
-            seed: dispatcher.seed,
-            seeds: dispatcher.seeds.slice(),
-            volume: dispatcher.volume,
-            position:
-                dispatcher.resumePosition ??
-                (Number.isFinite(dispatcher.player.position) ? dispatcher.player.position : 0),
-            paused: dispatcher.paused,
-        };
-    }
-
     public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
         if (this.rebuilding.has(dispatcher.guildId)) return null;
         this.rebuilding.add(dispatcher.guildId);
         try {
-            return await this.doRebuild(dispatcher, node);
+            return await this.migrator.rebuild(dispatcher, node);
         } finally {
             this.rebuilding.delete(dispatcher.guildId);
-        }
-    }
-
-    private async doRebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
-        if (!node || !dispatcher.channelId || !dispatcher.voiceId) return null;
-        const guild = this.client.guilds.cache.get(dispatcher.guildId);
-        const voice = guild?.channels.cache.get(dispatcher.voiceId);
-        const channel = guild?.channels.cache.get(dispatcher.channelId);
-        if (!guild || !voice || !channel) {
-            this.client.logger.warn(
-                `[queue] cannot rebuild ${dispatcher.guildId}: guild=${Boolean(guild)} voice=${Boolean(voice)} channel=${Boolean(channel)}`
-            );
-            return null;
-        }
-
-        const state = this.snapshot(dispatcher);
-        this.client.logger.info(
-            `[queue] rebuilding ${dispatcher.guildId} on "${node.name}" (was "${dispatcher.player.node?.name}")`
-        );
-        await dispatcher.destroyAndWait(true);
-
-        try {
-            const rebuilt = await this.spawn(guild, voice, channel, node);
-            rebuilt.current = null;
-            rebuilt.queue = state.current ? [state.current, ...state.queue] : state.queue;
-            rebuilt.history = state.history;
-            rebuilt.loop = state.loop;
-            rebuilt.autoplay = state.autoplay;
-            rebuilt.seed = state.seed;
-            rebuilt.seeds = state.seeds;
-            void rebuilt.player.setGlobalVolume(state.volume).catch(() => {});
-            this.client.shoukaku.emitPlayerEvent('playerCreate', rebuilt.player);
-
-            let resumedAt = 0;
-            if (state.current) {
-                await rebuilt.play();
-                if (state.position > 1000 && rebuilt.player.track) {
-                    try {
-                        await rebuilt.player.seekTo(state.position);
-                        resumedAt = state.position;
-                    } catch (error) {
-                        this.client.logger.warn(`[queue] seek to ${state.position}ms failed: ${error}`);
-                    }
-                }
-                if (state.paused) {
-                    try {
-                        await rebuilt.player.setPaused(true);
-                        rebuilt.paused = true;
-                    } catch (error) {
-                        this.client.logger.warn(`[queue] could not restore paused state: ${error}`);
-                    }
-                }
-                rebuilt.resumePosition = null;
-            }
-            this.client.logger.info(
-                `[queue] moved ${guild.id} to "${node.name}" (${state.queue.length} queued${
-                    resumedAt ? `, resumed at ${Math.round(resumedAt / 1000)}s` : ''
-                })`
-            );
-            return rebuilt;
-        } catch (error) {
-            this.client.logger.error(`[queue] could not move ${guild.id} to "${node.name}": ${error}`);
-            return null;
         }
     }
 

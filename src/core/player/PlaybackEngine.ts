@@ -58,6 +58,7 @@ export interface PlaybackSessionPort {
 }
 
 export interface PlaybackLoggerPort {
+    info(message: string): void;
     warn(message: string): void;
     error(message: string): void;
 }
