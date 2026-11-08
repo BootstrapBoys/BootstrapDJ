@@ -6,7 +6,7 @@ import { isFinishedTrackReason } from '../lib/TrackEndReason.js';
 import { BootstrapClient } from './index.js';
 import { normalizeAuthor, trackKey, trackSignature } from './player/TrackIdentity.js';
 import { PresentationRegistry } from './player/PresentationRegistry.js';
-import { toSaved } from './player/TrackCodec.js';
+import { persistSession } from './player/SessionWriter.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
@@ -577,21 +577,13 @@ export default class Dispatcher {
     public async persist(): Promise<void> {
         if (!this.voiceId || this.restoring) return;
         try {
-            if (!this.current && !this.queue.length) {
-                await this.client.db.deleteSession(this.guildId);
-                return;
-            }
-            await this.client.db.saveSession({
+            await persistSession(this.client.db, {
                 guildId: this.guildId,
                 textId: this.channelId,
                 voiceId: this.voiceId,
-                current: this.current
-                    ? JSON.stringify({
-                          ...toSaved(this.current),
-                          position: this.player.position,
-                      })
-                    : null,
-                queue: JSON.stringify(this.queue.map(toSaved)),
+                current: this.current,
+                queue: this.queue,
+                position: this.player.position,
                 loop: this.loop,
                 autoplay: this.autoplay,
                 volume: this.player.volume,
