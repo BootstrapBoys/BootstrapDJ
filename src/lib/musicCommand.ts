@@ -20,6 +20,10 @@ export interface MusicCommandDefinition {
     user?: PermissionsString[];
     options?: ApplicationCommandOption[];
     slashCommand?: boolean;
+    ephemeral?: boolean;
+    defer?: boolean;
+    voice?: boolean;
+    clientPermissions?: PermissionsString[];
     /** Defaults to true; Join/Leave opt out because they create or destroy the player. */
     requirePlayer?: boolean;
     run: (input: MusicRunContext) => Promise<unknown>;
@@ -46,17 +50,19 @@ export function defineMusicCommand(definition: MusicCommandDefinition): typeof C
                 cooldown: 3,
                 args: definition.args ?? false,
                 player: {
-                    voice: true,
+                    voice: definition.voice ?? true,
                     dj: definition.dj ?? true,
                     active: definition.active ?? true,
                     djPerm: null,
                 },
                 permissions: {
                     dev: false,
-                    client: CLIENT_PERMISSIONS,
+                    client: definition.clientPermissions ?? CLIENT_PERMISSIONS,
                     user: definition.user ?? [],
                 },
                 slashCommand: definition.slashCommand ?? true,
+                ephemeral: definition.ephemeral ?? true,
+                defer: definition.defer ?? false,
                 options: definition.options ?? [],
             });
         }

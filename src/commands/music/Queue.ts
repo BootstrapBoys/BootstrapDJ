@@ -1,73 +1,37 @@
 import { EmbedBuilder } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineMusicCommand } from '../../lib/musicCommand.js';
 
-export default class Queue extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'queue',
-            description: {
-                content: 'Shows the current queue',
-                examples: ['queue'],
-                usage: 'queue',
-            },
-            category: 'music',
-            aliases: ['q'],
-            cooldown: 3,
-            args: false,
-            player: {
-                voice: true,
-                dj: false,
-                active: true,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
-            slashCommand: true,
-            ephemeral: false,
-            options: [],
-        });
-    }
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const guild = ctx.guild;
-        if (!guild) return;
-        const player = client.queue.get(guild.id);
-        if (!player)
-            return await ctx.sendMessage({
-                embeds: [
-                    this.client
-                        .embed()
-                        .setColor(this.client.color.red)
-                        .setDescription('There is no music playing in this server.'),
-                ],
-            });
+type QueueEntry = { info: { title: string; uri?: string; requester: unknown; length: number; isStream: boolean } };
+
+function lineFor(track: QueueEntry, index: number, formatTime: (ms: number) => string): string {
+    const duration = track.info.isStream ? 'LIVE' : formatTime(track.info.length);
+    return `${index + 1}. [${track.info.title}](${track.info.uri}) - Request By: ${track.info.requester} - Duration: ${duration}`;
+}
+
+export default defineMusicCommand({
+    name: 'queue',
+    description: { content: 'Shows the current queue', examples: ['queue'], usage: 'queue' },
+    aliases: ['q'],
+    dj: false,
+    ephemeral: false,
+    run: async ({ client, ctx, player }) => {
+        if (!player) return;
         const current = player.current;
-        if (player.queue.length === 0) {
-            if (!current)
+        if (!player.queue.length) {
+            if (!current) {
                 return await ctx.sendMessage({
-                    embeds: [
-                        this.client
-                            .embed()
-                            .setColor(this.client.color.red)
-                            .setDescription(`Nothing playing right now`),
-                    ],
+                    embeds: [client.embed().setColor(client.color.red).setDescription('Nothing playing right now')],
                 });
+            }
+            const duration = current.info.isStream ? 'LIVE' : client.utils.formatTime(current.info.length);
             return await ctx.sendMessage({
                 embeds: [
-                    this.client
+                    client
                         .embed()
-                        .setColor(this.client.color.main)
+                        .setColor(client.color.main)
                         .setDescription(
-                            `Now playing: [${current.info.title}](${
-                                current.info.uri
-                            }) - Request By: ${current.info.requester} - Duration: ${
-                                current.info.isStream
-                                    ? 'LIVE'
-                                    : this.client.utils.formatTime(current.info.length)
-                            }`
+                            `Now playing: [${current.info.title}](${current.info.uri}) - Request By: ${current.info.requester} - Duration: ${duration}`
                         )
                         .addFields(
                             { name: 'Queued tracks', value: '0', inline: true },
@@ -78,26 +42,21 @@ export default class Queue extends Command {
                 ],
             });
         }
-        const queue = player.queue.map(
-            (track, index) =>
-                `${index + 1}. [${track.info.title}](${track.info.uri}) - Request By: ${
-                    track?.info.requester
-                } - Duration: ${
-                    track.info.isStream ? 'LIVE' : this.client.utils.formatTime(track.info.length)
-                }`
+
+        const lines = player.queue.map((track, index) =>
+            lineFor(track, index, ms => client.utils.formatTime(ms))
         );
         const total = player.queue.reduce((sum, track) => sum + (track.info.length || 0), 0);
-        const chunks = client.utils.chunk(queue, 10);
-        if (chunks.length === 0) chunks.push([]);
-        const pages: EmbedBuilder[] = [];
-        for (let i = 0; i < chunks.length; i++) {
-            const embed = this.client
+        const chunks = client.utils.chunk(lines, 10);
+        if (!chunks.length) chunks.push([]);
+        const pages: EmbedBuilder[] = chunks.map((chunk, index) => {
+            const embed = client
                 .embed()
-                .setColor(this.client.color.main)
-                .setAuthor({ name: 'Queue', iconURL: guild.iconURL({}) ?? undefined })
-                .setDescription(chunks[i].join('\n'))
-                .setFooter({ text: `Page ${i + 1} of ${chunks.length}` });
-            if (i === 0) {
+                .setColor(client.color.main)
+                .setAuthor({ name: 'Queue', iconURL: ctx.guild?.iconURL({}) ?? undefined })
+                .setDescription(chunk.join('\n'))
+                .setFooter({ text: `Page ${index + 1} of ${chunks.length}` });
+            if (index === 0) {
                 embed.addFields(
                     { name: 'Queued tracks', value: String(player.queue.length), inline: true },
                     { name: 'Queue length', value: client.utils.formatTime(total), inline: true },
@@ -105,15 +64,8 @@ export default class Queue extends Command {
                     { name: 'Loop', value: player.loop, inline: true }
                 );
             }
-            pages.push(embed);
-        }
-
+            return embed;
+        });
         return await client.utils.paginate(ctx, pages);
-    }
-}
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+    },
+});
