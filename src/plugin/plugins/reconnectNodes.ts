@@ -15,10 +15,11 @@ const CHECK_INTERVAL_MS = 30_000;
 const PROBE_COOLDOWN_MS = 60_000;
 
 /**
- * Keeps a node available: re-adds the operator's own node when it drops, and
- * after NODE_FALLBACK_AFTER seconds of continuous outage probes the public
- * list for a usable fallback. Once the primary is back, new players go to it
- * (lowest penalty) and the fallback is removed when its players drain.
+ * Watchdog for Lavalink availability:
+ * - re-adds operator nodes while the primary is down,
+ * - moves stranded players onto a connected standby,
+ * - probes the public list only after the configured outage delay,
+ * - removes the public fallback once the primary is healthy and drained.
  */
 const reconnectNodes: BotPlugin = {
     name: 'Node Watchdog',
@@ -28,12 +29,10 @@ const reconnectNodes: BotPlugin = {
         let fallbackName: string | null = null;
         let downSince = 0;
         let probing = false;
-        let fallbackAnnounced = false;
+        let announced = false;
         let lastProbeAt = 0;
-
-        // The primary specifically — a connected standby must NOT count, or we
-        // stop re-adding the primary and never return to it.
         const primaryName = client.config.lavalink[0]?.name;
+
         const primaryUp = (): boolean =>
             Boolean(primaryName) &&
             [...client.shoukaku.nodes.values()].some(
@@ -44,7 +43,6 @@ const reconnectNodes: BotPlugin = {
             if (!fallbackName) return;
             const node = client.shoukaku.nodes.get(fallbackName);
             if (node && (node.stats?.players ?? 0) > 0) return;
-
             try {
                 client.shoukaku.removeNode(fallbackName, 'primary restored');
             } catch (error) {
@@ -56,39 +54,25 @@ const reconnectNodes: BotPlugin = {
             fallbackName = null;
         };
 
-        const timer = setInterval(() => {
-            if (!client.isReady()) return;
-
-            // A dead public node must leave the map, otherwise Shoukaku keeps
-            // retrying it and every attempt logs another destroy.
-            const fallbackNode = fallbackName ? client.shoukaku.nodes.get(fallbackName) : null;
-            if (fallbackName && (!fallbackNode || fallbackNode.state === Constants.State.DISCONNECTED)) {
-                if (fallbackNode) {
-                    try {
-                        client.shoukaku.removeNode(fallbackName, 'fallback disconnected');
-                    } catch (error) {
-                        client.logger.debug(`[nodes] could not remove fallback ${fallbackName}: ${error}`);
-                    }
+        const dropDeadFallback = (): void => {
+            if (!fallbackName) return;
+            const node = client.shoukaku.nodes.get(fallbackName);
+            if (node && node.state !== Constants.State.DISCONNECTED) return;
+            if (node) {
+                try {
+                    client.shoukaku.removeNode(fallbackName, 'fallback disconnected');
+                } catch (error) {
+                    client.logger.debug(`[nodes] could not remove fallback ${fallbackName}: ${error}`);
                 }
-                fallbackName = null;
             }
+            fallbackName = null;
+        };
 
-            if (primaryUp()) {
-                downSince = 0;
-                fallbackAnnounced = false;
-                dropIdleFallback();
-                return;
-            }
-
-            if (!downSince) downSince = Date.now();
-
-            // 1. keep trying the operator's own nodes, even while a standby or
-            // public fallback is serving playback
+        const reAddConfigured = (): void => {
             for (const option of client.config.lavalink) {
                 if (!option.url) continue;
                 const existing = client.shoukaku.nodes.get(option.name);
                 if (existing && existing.state !== Constants.State.DISCONNECTED) continue;
-
                 try {
                     if (existing) client.shoukaku.removeNode(option.name, 'watchdog');
                     client.shoukaku.addNode(option);
@@ -97,42 +81,39 @@ const reconnectNodes: BotPlugin = {
                     client.logger.error(`[nodes] could not re-add ${option.name}: ${error}`);
                 }
             }
+        };
 
-            // If the primary is down but players are still bound to it, move
-            // them onto the standby that is serving (retry each tick until the
-            // rebuild succeeds; failures log their reason).
-            if (!primaryUp() && client.queue.hasNode) {
-                const target = client.queue.node;
-                const stranded = [...client.queue.values()].some(
-                    dispatcher => dispatcher.player.node?.name !== target?.name
-                );
-                if (stranded && target) {
-                    void client.queue
-                        .migrateToNode(target)
-                        .catch(error => client.logger.error(`[nodes] migration retry failed: ${error}`));
-                }
+        const migrateStranded = (): void => {
+            if (primaryUp() || !client.queue.hasNode) return;
+            const target = client.queue.node;
+            const stranded = [...client.queue.values()].some(
+                dispatcher => dispatcher.player.node?.name !== target?.name
+            );
+            if (stranded && target) {
+                void client.queue
+                    .migrateToNode(target)
+                    .catch(error => client.logger.error(`[nodes] migration retry failed: ${error}`));
             }
+        };
 
-            // A configured standby is serving; tell the channel once per outage
-            // (the public fallback already announces itself when it is added).
-            if (client.queue.hasNode) {
-                const active = client.queue.node?.name;
-                if (active && !isFallbackNode(active) && !fallbackAnnounced) {
-                    const announced = `Primary node is down — standby node "${active}" is handling playback.`;
-                    client.logger.warn(announced);
-                    BotLog.send(client, announced, 'warn');
-                    fallbackAnnounced = true;
-                }
-                return;
+        const announceStandby = (): boolean => {
+            if (!client.queue.hasNode) return false;
+            const active = client.queue.node?.name;
+            if (active && !isFallbackNode(active) && !announced) {
+                const message = `Primary node is down — standby node "${active}" is handling playback.`;
+                client.logger.warn(message);
+                BotLog.send(client, message, 'warn');
+                announced = true;
             }
+            return true;
+        };
 
-            // 2. public fallback once the outage is long enough
-            if (probing) return;
-            if (!client.config.nodeFallback) return;
+        const probePublic = (): void => {
+            if (probing || !client.config.nodeFallback) return;
             if (Date.now() - lastProbeAt < PROBE_COOLDOWN_MS) return;
-            if (!shouldFallback(Date.now() - downSince, client.config.nodeFallbackAfter, fallbackName !== null))
+            if (!shouldFallback(Date.now() - downSince, client.config.nodeFallbackAfter, fallbackName !== null)) {
                 return;
-
+            }
             probing = true;
             lastProbeAt = Date.now();
             void (async () => {
@@ -149,11 +130,9 @@ const reconnectNodes: BotPlugin = {
                         Date.now() - downSince
                     )} — using public fallback "${option.name}" (${best.latencyMs}ms, ${best.players} players).`;
                     client.logger.warn(message);
-                    // One notice per outage: later candidates are console-only,
-                    // otherwise a flaky public list turns into Discord spam.
-                    if (!fallbackAnnounced) {
+                    if (!announced) {
                         BotLog.send(client, message, 'warn');
-                        fallbackAnnounced = true;
+                        announced = true;
                     }
                 } catch (error) {
                     client.logger.error(`[nodes] public fallback failed: ${error}`);
@@ -161,6 +140,22 @@ const reconnectNodes: BotPlugin = {
                     probing = false;
                 }
             })();
+        };
+
+        const timer = setInterval(() => {
+            if (!client.isReady()) return;
+            dropDeadFallback();
+            if (primaryUp()) {
+                downSince = 0;
+                announced = false;
+                dropIdleFallback();
+                return;
+            }
+            if (!downSince) downSince = Date.now();
+            reAddConfigured();
+            migrateStranded();
+            if (announceStandby()) return;
+            probePublic();
         }, CHECK_INTERVAL_MS);
 
         (timer as unknown as { unref?: () => void }).unref?.();
