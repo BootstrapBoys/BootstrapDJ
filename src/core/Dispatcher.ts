@@ -867,7 +867,7 @@ export default class Dispatcher {
     private async pickForSeed(seed: Song): Promise<Song | null> {
         const mix = await this.relatedTracks(seed);
         const seedArtist = seed.info.author ?? '';
-        const related = this.shuffle((await this.deezer.relatedArtists(seed)).slice(0, AUTOPLAY_RELATED));
+        const related = this.shuffle((await this.relatedArtistNames(seed)).slice(0, AUTOPLAY_RELATED));
         const seedOnlyMix =
             mix.length > 0 &&
             mix.every(track => {
@@ -899,6 +899,11 @@ export default class Dispatcher {
 
         // Nothing related available: more from the same artist, never a stop.
         return await this.pickFromQuery(seed.info.author);
+    }
+
+    /** Kept as a seam for picker tests; the HTTP/cache work lives in DeezerClient. */
+    private async relatedArtistNames(song: Song): Promise<string[]> {
+        return await this.deezer.relatedArtists(song);
     }
 
     /** Explicit seed lanes, newest first. A restored session has no persisted
