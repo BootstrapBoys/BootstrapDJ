@@ -1,261 +1,219 @@
-import { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
+import { ButtonInteraction, EmbedBuilder, StringSelectMenuInteraction } from 'discord.js';
 
-import { BootstrapClient, Event } from '../../core/index.js';
+import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
 import { buttonReply } from '../../lib/SetupSystem.js';
 import { checkDj } from '../player/TrackStart.js';
 
+type SetupInteraction = ButtonInteraction<'cached'> | StringSelectMenuInteraction<'cached'>;
+
+const VOLUME_STEP = 10;
+const SEEK_STEP_MS = 10_000;
+
+/**
+ * Handles the persistent control buttons on the song-request mock player.
+ *
+ * Every click is checked against voice state, DJ permission, and the message
+ * identity. The mock is long-lived; a /nowplaying reply must not be rewritten
+ * with the setup layout, and skip/previous must not race TrackStart's render.
+ */
 export default class SetupButtons extends Event {
-    constructor(client: BootstrapClient, file: string) {
-        super(client, file, {
-            name: 'setupButtons',
-        });
+    public constructor(client: BootstrapClient, file: string) {
+        super(client, file, { name: 'setupButtons' });
     }
-    public async run(
-        interaction: ButtonInteraction<'cached'> | StringSelectMenuInteraction<'cached'>
-    ): Promise<void> {
-        if (!interaction.replied) await interaction.deferReply().catch(() => { });
 
-        if (!interaction.member.voice.channel)
-            return await buttonReply(
-                interaction,
-                `You are not connected to a voice channel to use this button.`,
-                this.client.color.red
-            );
-        if (
-            interaction.guild.members.cache.get(this.client.user?.id ?? '')?.voice.channel &&
-            interaction.guild.members.cache.get(this.client.user?.id ?? '')?.voice.channelId !==
-            interaction.member.voice.channelId
-        )
-            return await buttonReply(
-                interaction,
-                `You are not connected to ${interaction.guild.members.me?.voice.channel} to use this buttons.`,
-                this.client.color.red
-            );
-        const player = this.client.queue.get(interaction.guildId);
-        if (!player)
-            return await buttonReply(
-                interaction,
-                `There is no music playing in this server.`,
-                this.client.color.red
-            );
-        if (!player.current)
-            return await buttonReply(
-                interaction,
-                `There is no music playing in this server.`,
-                this.client.color.red
-            );
-        const { title, uri, length } = player.current.info;
-        const message = interaction.message;
-        const icon = player
-            ? player.current.info.artworkUrl
-            : this.client.user?.displayAvatarURL({ extension: 'png' });
-        let iconUrl: string | undefined = this.client.config.icons[player.current.info.sourceName];
-        if (!iconUrl) iconUrl = this.client.user?.displayAvatarURL({ extension: 'png' });
+    private async deny(interaction: SetupInteraction, text: string): Promise<void> {
+        await buttonReply(interaction, text, this.client.color.red);
+    }
 
-        const embed = this.client
+    private async confirm(interaction: SetupInteraction, text: string): Promise<void> {
+        await buttonReply(interaction, text, this.client.color.main);
+    }
+
+    private async isTrackScoped(
+        interaction: SetupInteraction,
+        player: Dispatcher,
+        messageId: string
+    ): Promise<boolean> {
+        const setup = await this.client.db.getSetup(interaction.guildId);
+        return setup?.messageId !== messageId || player.hasTrackScopedNowPlayingMessage(messageId);
+    }
+
+    private nowPlayingEmbed(player: Dispatcher): EmbedBuilder | null {
+        const current = player.current;
+        if (!current) return null;
+        const sourceIcon =
+            this.client.config.icons[current.info.sourceName] ??
+            this.client.user?.displayAvatarURL({ extension: 'png' });
+        return this.client
             .embed()
-            .setAuthor({ name: `Now Playing`, iconURL: iconUrl })
+            .setAuthor({ name: 'Now Playing', iconURL: sourceIcon })
             .setDescription(
-                `[${title}](${uri}) - ${player.current.info.isStream ? 'LIVE' : this.client.utils.formatTime(length)
-                } - Requested by ${player.current.info.requester}`
+                `[${current.info.title}](${current.info.uri}) - ${
+                    current.info.isStream ? 'LIVE' : this.client.utils.formatTime(current.info.length)
+                } - Requested by ${current.info.requester}`
             )
-            .setImage(icon ?? null);
+            .setImage(current.info.artworkUrl ?? null);
+    }
+
+    private async editFeedback(
+        interaction: SetupInteraction,
+        player: Dispatcher,
+        messageId: string,
+        text: string
+    ): Promise<void> {
+        if (await this.isTrackScoped(interaction, player, messageId)) return;
+        const embed = this.nowPlayingEmbed(player);
+        if (!embed) return;
+        await interaction.message
+            .edit({
+                embeds: [
+                    embed.setFooter({
+                        text,
+                        iconURL: interaction.member.displayAvatarURL({}),
+                    }),
+                ],
+            })
+            .catch(() => {});
+    }
+
+    public async run(interaction: SetupInteraction): Promise<void> {
+        if (!interaction.replied) await interaction.deferReply().catch(() => {});
+        if (!interaction.member.voice.channel) {
+            return await this.deny(interaction, 'You are not connected to a voice channel to use this button.');
+        }
+
+        const botMember = interaction.guild.members.me;
+        if (botMember?.voice.channel && botMember.voice.channelId !== interaction.member.voice.channelId) {
+            return await this.deny(
+                interaction,
+                `You are not connected to ${botMember.voice.channel} to use these buttons.`
+            );
+        }
+
+        const player = this.client.queue.get(interaction.guildId);
+        if (!player?.current) {
+            return await this.deny(interaction, 'There is no music playing in this server.');
+        }
         if (!interaction.isButton()) return;
         if (!(await checkDj(this.client, interaction))) {
-            await buttonReply(
-                interaction,
-                `You need to have the DJ role to use this command.`,
-                this.client.color.red
-            );
-            return;
+            return await this.deny(interaction, 'You need to have the DJ role to use this command.');
         }
-        if (message) {
-            // The setup mock is persisted by ID. Every other message using these
-            // control IDs is a /nowplaying reply, even when another bot process
-            // handled the interaction and cannot see the local dispatcher map.
-            const setup = await this.client.db.getSetup(interaction.guildId);
-            const isCommandResponse =
-                setup?.messageId !== message.id ||
-                player.hasTrackScopedNowPlayingMessage(message.id);
-            switch (interaction.customId) {
-                case 'LOW_VOL_BUT': {
-                    const vol = Math.max(0, Math.min(200, player.player.volume - 10));
-                    void player.player.setGlobalVolume(vol).catch(() => {});
-                    await buttonReply(interaction, `Volume set to ${vol}%`, this.client.color.main);
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `Volume: ${vol}%`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
-                    break;
-                }
-                case 'HIGH_VOL_BUT': {
-                    const vol2 = Math.max(0, Math.min(200, player.player.volume + 10));
-                    void player.player.setGlobalVolume(vol2).catch(() => {});
-                    await buttonReply(
-                        interaction,
-                        `Volume set to ${vol2}%`,
-                        this.client.color.main
-                    );
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `Volume: ${vol2}%`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
-                    break;
-                }
-                case 'PAUSE_BUT': {
-                    const name = player.player.paused ? `Resumed` : `Paused`;
-                    player.pause();
-                    await buttonReply(interaction, `${name} the music.`, this.client.color.main);
-                    // A /nowplaying reply has its own compact embed; never
-                    // replace it with the setup-mock layout.
-                    if (!isCommandResponse) {
-                        await message.edit({
-                            embeds: [
-                                embed.setFooter({
-                                    text: `${name} by ${interaction.member.displayName}`,
-                                    iconURL: interaction.member.displayAvatarURL({}),
-                                }),
-                            ],
-                        });
-                    }
-                    break;
-                }
-                case 'SKIP_BUT':
-                    if (player.queue.length === 0)
-                        return await buttonReply(
-                            interaction,
-                            `There is no music to skip.`,
-                            this.client.color.main
-                        );
-                    // Do NOT edit the mock here: skip() ends the track and the
-                    // TrackStart event renders the next one. This handler's
-                    // embed was built from the track being skipped, so editing
-                    // it would overwrite the new render with the old track.
-                    player.skip();
-                    await buttonReply(interaction, `Skipped the music.`, this.client.color.main);
-                    break;
-                case 'STOP_BUT':
-                    player.stop();
-                    await buttonReply(interaction, `Stopped the music.`, this.client.color.main);
-                    await message.edit({
-                        embeds: [
-                            embed
-                                .setFooter({
-                                    text: `Stopped by ${interaction.member.displayName}`,
-                                    iconURL: interaction.member.displayAvatarURL({}),
-                                })
-                                .setDescription(`Nothing playing right now`)
-                                .setImage(this.client.config.links.img)
-                                .setAuthor({
-                                    name: this.client.user?.username ?? 'BootstrapDJ',
-                                    iconURL: this.client.user?.displayAvatarURL({
-                                        extension: 'png',
-                                    }),
-                                }),
-                        ],
-                    });
-                    break;
-                case 'LOOP_BUT': {
-                    // Cycle off → queue → repeat; the previous implementation
-                    // picked a random mode, so the button often did nothing.
-                    const order = ['off', 'queue', 'repeat'] as const;
-                    const next = order[(order.indexOf(player.loop) + 1) % order.length];
-                    player.setLoop(next);
-                    await buttonReply(
-                        interaction,
-                        `Loop set to ${player.loop}.`,
-                        this.client.color.main
-                    );
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `Loop set to ${player.loop} by ${interaction.member.displayName}`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
-                    break;
-                }
-                case 'SHUFFLE_BUT':
-                    player.setShuffle();
-                    await buttonReply(
-                        interaction,
-                        `Shuffled the queue.`,
-                        this.client.color.main
-                    );
-                    break;
-                case 'PREV_BUT':
-                    if (!player.previous)
-                        return await buttonReply(
-                            interaction,
-                            `There is no previous track.`,
-                            this.client.color.main
-                        );
-                    // Same race as skip: previousTrack() restarts playback and
-                    // TrackStart renders the mock; a stale edit here would win.
-                    await buttonReply(
-                        interaction,
-                        `Playing the previous track.`,
-                        this.client.color.main
-                    );
-                    player.previousTrack();
-                    break;
-                case 'REWIND_BUT': {
-                    const time = player.player.position - 10000;
-                    if (time < 0)
-                        return await buttonReply(
-                            interaction,
-                            `You cannot rewind the music more than the length of the song.`,
-                            this.client.color.main
-                        );
-                    player.seek(time);
-                    await buttonReply(interaction, `Rewinded the music.`, this.client.color.main);
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `Rewinded by ${interaction.member.displayName}`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
-                    break;
-                }
-                case 'FORWARD_BUT': {
-                    const time2 = player.player.position + 10000;
-                    if (time2 > player.current.info.length)
-                        return await buttonReply(
-                            interaction,
-                            `You cannot forward the music more than the length of the song.`,
-                            this.client.color.main
-                        );
-                    player.seek(time2);
-                    await buttonReply(interaction, `Forwarded the music.`, this.client.color.main);
-                    await message.edit({
-                        embeds: [
-                            embed.setFooter({
-                                text: `Forwarded by ${interaction.member.displayName}`,
-                                iconURL: interaction.member.displayAvatarURL({}),
-                            }),
-                        ],
-                    });
-                    break;
-                }
-                default:
-                    await buttonReply(
-                        interaction,
-                        `This button is not available.`,
-                        this.client.color.main
-                    );
-                    break;
+
+        const messageId = interaction.message.id;
+        switch (interaction.customId) {
+            case 'LOW_VOL_BUT':
+            case 'HIGH_VOL_BUT': {
+                const delta = interaction.customId === 'LOW_VOL_BUT' ? -VOLUME_STEP : VOLUME_STEP;
+                const volume = Math.max(0, Math.min(200, player.player.volume + delta));
+                void player.player.setGlobalVolume(volume).catch(() => {});
+                await this.confirm(interaction, `Volume set to ${volume}%`);
+                await this.editFeedback(interaction, player, messageId, `Volume: ${volume}%`);
+                return;
             }
+            case 'PAUSE_BUT': {
+                const nextState = player.player.paused ? 'Resumed' : 'Paused';
+                player.pause();
+                await this.confirm(interaction, `${nextState} the music.`);
+                if (!(await this.isTrackScoped(interaction, player, messageId))) {
+                    await this.editFeedback(
+                        interaction,
+                        player,
+                        messageId,
+                        `${nextState} by ${interaction.member.displayName}`
+                    );
+                }
+                return;
+            }
+            case 'SKIP_BUT':
+                if (!player.queue.length) return await this.confirm(interaction, 'There is no music to skip.');
+                player.skip();
+                await this.confirm(interaction, 'Skipped the music.');
+                return;
+            case 'STOP_BUT': {
+                const embed = this.nowPlayingEmbed(player);
+                player.stop();
+                await this.confirm(interaction, 'Stopped the music.');
+                if (embed) {
+                    await interaction.message
+                        .edit({
+                            embeds: [
+                                embed
+                                    .setFooter({
+                                        text: `Stopped by ${interaction.member.displayName}`,
+                                        iconURL: interaction.member.displayAvatarURL({}),
+                                    })
+                                    .setDescription('Nothing playing right now')
+                                    .setImage(this.client.config.links.img)
+                                    .setAuthor({
+                                        name: this.client.user?.username ?? 'BootstrapDJ',
+                                        iconURL: this.client.user?.displayAvatarURL({ extension: 'png' }),
+                                    }),
+                            ],
+                        })
+                        .catch(() => {});
+                }
+                return;
+            }
+            case 'LOOP_BUT': {
+                const modes = ['off', 'queue', 'repeat'] as const;
+                const nextMode = modes[(modes.indexOf(player.loop) + 1) % modes.length];
+                player.setLoop(nextMode);
+                await this.confirm(interaction, `Loop set to ${player.loop}.`);
+                await this.editFeedback(
+                    interaction,
+                    player,
+                    messageId,
+                    `Loop set to ${player.loop} by ${interaction.member.displayName}`
+                );
+                return;
+            }
+            case 'SHUFFLE_BUT':
+                player.setShuffle();
+                await this.confirm(interaction, 'Shuffled the queue.');
+                return;
+            case 'PREV_BUT':
+                if (!player.previous) return await this.confirm(interaction, 'There is no previous track.');
+                await this.confirm(interaction, 'Playing the previous track.');
+                player.previousTrack();
+                return;
+            case 'REWIND_BUT': {
+                const position = player.player.position - SEEK_STEP_MS;
+                if (position < 0) {
+                    return await this.confirm(
+                        interaction,
+                        'You cannot rewind the music more than the length of the song.'
+                    );
+                }
+                player.seek(position);
+                await this.confirm(interaction, 'Rewound the music.');
+                await this.editFeedback(
+                    interaction,
+                    player,
+                    messageId,
+                    `Rewound by ${interaction.member.displayName}`
+                );
+                return;
+            }
+            case 'FORWARD_BUT': {
+                const position = player.player.position + SEEK_STEP_MS;
+                if (position > player.current.info.length) {
+                    return await this.confirm(
+                        interaction,
+                        'You cannot forward the music more than the length of the song.'
+                    );
+                }
+                player.seek(position);
+                await this.confirm(interaction, 'Forwarded the music.');
+                await this.editFeedback(
+                    interaction,
+                    player,
+                    messageId,
+                    `Forwarded by ${interaction.member.displayName}`
+                );
+                return;
+            }
+            default:
+                await this.confirm(interaction, 'This button is not available.');
         }
     }
 }
