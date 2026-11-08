@@ -166,4 +166,4 @@ runtime version mismatch.
 
 ## Status
 
-P0, all P1, assigned P2, and high-value P3 findings are fixed with regression tests. Final code checkpoint: `f5103b9`; tests: 351/351. Remaining known exceptions: playlist UUID ordering requires a schema position column; repo-wide `npm run format` is red on pre-existing files; 24-hour soak and long-run performance capture remain.
+P0, all P1, assigned P2, and high-value P3 findings are fixed with regression tests. Final code checkpoint: `f5103b9`; tests: 351/351. Playlist ordering is now implemented with `Song.position` and a startup backfill; repo formatting is green and enforced in CI. Remaining: 24-hour soak and long-run performance capture.

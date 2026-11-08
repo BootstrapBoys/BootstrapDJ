@@ -202,6 +202,10 @@ Rollback:
 | Old client reads new column | SQLite tolerates extra columns; rollback via DB backup |
 | Playlist imports reorder | copy through `addSong()` in source order |
 
+## Status
+
+Implemented on `experimental/rewrite`: formatting commit `7e7ed43`; schema/order commit `98a64dc`. BotTest DB migrated after backup `/root/BotTestDBBackups/20261108-201101.db`; existing `SmokeList` backfilled to strict positions `0..19`; live append produced 39 tracks at `0..38`. Production not migrated; deploy remains pending approval.
+
 ## Estimate
 
 - Schema + data changes: 2–4 hours
