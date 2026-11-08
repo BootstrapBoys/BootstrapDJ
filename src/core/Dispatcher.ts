@@ -11,6 +11,7 @@ import { PlaybackTimers } from './player/PlaybackTimers.js';
 import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
 import { findColdStart } from './player/AutoplayColdStart.js';
+import { relatedTracks as getRelatedTracks } from './player/YouTubeMix.js';
 import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
@@ -21,12 +22,6 @@ export type { SavedTrack } from './player/TrackCodec.js';
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
 const YOUTUBE_SEARCH = 'ytmsearch';
 
-/** A seed's YouTube mix is stable for a while; re-resolving it on every pick
- * costs a search + playlist load. Keep the bounded set small and short-lived. */
-type MixCacheEntry = { at: number; tracks: Track[] };
-const relatedTracksCache = new Map<string, MixCacheEntry>();
-const AUTOPLAY_CACHE_LIMIT = 100;
-const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
 export class Song implements Track {
     encoded: string;
     info: {
@@ -761,29 +756,11 @@ export default class Dispatcher {
         return match?.info?.identifier ?? null;
     }
 
-    /** YouTube's mix for a seed track — the only source here that spans
-     * artists; an artist search returns the same name over and over. */
     private async relatedTracks(seed: Song): Promise<Track[]> {
-        const key = trackKey(seed);
-        const cached = key ? relatedTracksCache.get(key) : undefined;
-        if (cached && Date.now() - cached.at < AUTOPLAY_MIX_TTL_MS) return cached.tracks;
-
-        const id = await this.youtubeIdFor(seed);
-        if (!id) return [];
-        const resolve = await this.node?.rest
-            .resolve(`https://www.youtube.com/watch?v=${id}&list=RD${id}`)
-            .catch(() => null);
-        if (!resolve || resolve.loadType !== LoadType.PLAYLIST) return [];
-        const playlist = resolve.data as { tracks?: Track[] };
-        const tracks = playlist.tracks ?? [];
-        if (key && tracks.length) {
-            if (relatedTracksCache.size >= AUTOPLAY_CACHE_LIMIT) {
-                const oldest = relatedTracksCache.keys().next().value;
-                if (oldest) relatedTracksCache.delete(oldest);
-            }
-            relatedTracksCache.set(key, { at: Date.now(), tracks });
-        }
-        return tracks;
+        return await getRelatedTracks(seed, {
+            youtubeIdFor: song => this.youtubeIdFor(song),
+            node: this.node,
+        });
     }
 
     private async pickForSeed(seed: Song): Promise<Song | null> {
