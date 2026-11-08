@@ -3,6 +3,7 @@ import type { Player } from 'shoukaku';
 import type { BootstrapClient } from '../../core/index.js';
 import { Event } from '../../core/index.js';
 import { updateSetup } from '../../lib/SetupSystem.js';
+import { clearVoteSkip } from '../../commands/music/VoteSkip.js';
 
 /**
  * Destroy can happen without a TrackEnd: an empty voice channel, /leave, or a
@@ -17,6 +18,7 @@ export default class PlayerDestroy extends Event {
 
     public async run(player: Player): Promise<void> {
         const guildId = player.guildId;
+        clearVoteSkip(guildId);
         const guild = this.client.guilds.cache.get(guildId);
         if (!guild) return;
 

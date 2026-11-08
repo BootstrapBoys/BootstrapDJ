@@ -459,3 +459,12 @@ test('dispatcher persist writes the full snapshot through the engine', async () 
     assert.equal(JSON.parse(saved.current).position, 1234);
     assert.equal(JSON.parse(saved.queue).length, 1);
 });
+
+test('a new start clears the stopped flag so the next destroy emits playerDestroy', async () => {
+    const h = harness({ queue: [makeSong('fresh')], stopped: true });
+
+    await h.engine.play();
+
+    assert.equal(h.calls.play, 1);
+    assert.equal(h.state.stopped, false);
+});

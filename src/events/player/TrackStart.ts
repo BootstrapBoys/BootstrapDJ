@@ -15,6 +15,7 @@ import type { BootstrapClient, Dispatcher } from '../../core/index.js';
 import { Event } from '../../core/index.js';
 import { loudnessOf, volumeForLoudness } from '../../lib/Loudness.js';
 import { trackStart } from '../../lib/SetupSystem.js';
+import { clearVoteSkip } from '../../commands/music/VoteSkip.js';
 
 type DjInteraction = ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'>;
 
@@ -162,6 +163,7 @@ export default class TrackStart extends Event {
     }
 
     public async run(player: Player, track: Song, dispatcher: Dispatcher): Promise<void> {
+        clearVoteSkip(player.guildId);
         dispatcher.nowPlayingCollector?.stop('replaced');
         dispatcher.nowPlayingCollector = null;
         dispatcher.clearNowPlayingCommandMessages();

@@ -68,7 +68,7 @@ export default class TrackEnd extends Event {
         dispatcher: Dispatcher,
         reason?: string
     ): Promise<void> {
-        this.record(dispatcher, track);
+        if (isFinishedTrackReason(reason)) this.record(dispatcher, track);
         dispatcher.previous = dispatcher.current;
         dispatcher.current = null;
         this.client.utils.updateStatus(this.client, dispatcher.guildId);

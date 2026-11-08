@@ -6,6 +6,11 @@ type Vote = { key: string; voters: Set<string> };
 
 const votes = new Map<string, Vote>();
 
+/** A new track or a replaced player invalidates every vote cast on the old one. */
+export function clearVoteSkip(guildId: string): void {
+    votes.delete(guildId);
+}
+
 export default class VoteSkip extends Command {
     constructor(client: BootstrapClient) {
         super(client, {

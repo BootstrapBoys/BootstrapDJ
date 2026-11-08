@@ -87,9 +87,11 @@ export function fromSaved(saved: SavedTrack, user: User): Song {
     return new Song(playable, user, saved.autoplay);
 }
 
-export interface NowPlayingCollector {
+export interface CollectorHandle {
     stop(reason?: string): void;
 }
+
+export type NowPlayingCollector = CollectorHandle;
 
 /**
  * Public guild player façade. It stores playback state (events, commands, the
@@ -135,6 +137,8 @@ export default class Dispatcher {
     public nowPlayingCollector: NowPlayingCollector | null = null;
     /** "Leave in …" prompt shown when the queue drains. */
     public queueEmptyPrompt: Message | null = null;
+    /** Collector behind that prompt; clearing the prompt must stop it too. */
+    public queueEmptyCollector: CollectorHandle | null = null;
     /** /playleave: tear the player down once the queue drains. */
     public leaveOnEnd = false;
     /** 24/7: pause at track end when nobody is listening. */
@@ -361,10 +365,13 @@ export default class Dispatcher {
         this.coordinator.clearIdleTimeout();
     }
 
-    /** Dismiss the queued "leave in …" prompt, if one is still showing. */
+    /** Dismiss the queued "leave in …" prompt and stop its collector. */
     public clearQueueEmptyPrompt(): void {
+        const collector = this.queueEmptyCollector;
         const stale = this.queueEmptyPrompt;
+        this.queueEmptyCollector = null;
         this.queueEmptyPrompt = null;
+        collector?.stop('cleared');
         if (stale) void stale.delete().catch(() => {});
     }
 
@@ -457,7 +464,9 @@ export default class Dispatcher {
     }
 
     private dropFiller(): void {
-        if (this.autoplay) this.purgeAutoplay();
+        // admitRequest persists the final queue; a purge save here would write
+        // the same row twice for one request.
+        if (this.autoplay) this.purgeAutoplay(false);
     }
 
     private admitRequest(song: Song, front: boolean, remember: boolean, save: boolean): void {
@@ -549,10 +558,11 @@ export default class Dispatcher {
         this.lookaheadRetry = timer;
     }
 
-    public purgeAutoplay(): number {
+    public purgeAutoplay(save: boolean = true): number {
         const cleaned = purgeAutoplayQueue(this.queue);
+        if (!cleaned.removed) return 0;
         this.queue = cleaned.queue;
-        void this.persist();
+        if (save) void this.persist();
         return cleaned.removed;
     }
 
@@ -742,11 +752,13 @@ export default class Dispatcher {
         this.autoplay = enabled;
         this.lookaheadFailures = 0;
         this.clearLookaheadRetry();
-        void this.persist();
         if (!enabled) {
-            this.purgeAutoplay();
+            // One snapshot after both the flag and the filler purge.
+            this.purgeAutoplay(false);
+            void this.persist();
             return null;
         }
+        void this.persist();
         const idle = !this.current && !this.queue.length;
         return await (idle ? this.Autoplay() : this.ensureLookahead());
     }

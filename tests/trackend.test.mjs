@@ -5,7 +5,7 @@ import { makeSong } from './helpers.mjs';
 import TrackEnd from '../dist/events/player/TrackEnd.js';
 
 function makeHarness() {
-    const calls = { deleted: 0, played: 0 };
+    const calls = { deleted: 0, played: 0, stats: 0 };
     const track = makeSong('last', { uri: 'https://x/last' });
     const dispatcher = {
         guildId: 'guild-1',
@@ -33,7 +33,9 @@ function makeHarness() {
         logger: { warn: () => {}, error: () => {} },
         utils: { updateStatus: () => {} },
         db: {
-            recordTrackPlay: async () => {},
+            recordTrackPlay: async () => {
+                calls.stats += 1;
+            },
             getSetup: async () => null,
             get_247: async () => null,
         },
@@ -49,6 +51,7 @@ test('a naturally drained queue deletes the saved session', async () => {
 
     assert.equal(harness.calls.played, 1);
     assert.equal(harness.calls.deleted, 1);
+    assert.equal(harness.calls.stats, 1, 'a finished play is counted');
 });
 
 test('a queue that still has a track keeps the saved session', async () => {
@@ -73,4 +76,14 @@ test('autoplay that found nothing also clears the ended snapshot', async () => {
     await harness.event.run({}, harness.track, harness.dispatcher, 'finished');
 
     assert.equal(harness.calls.deleted, 1);
+});
+
+test('skips, stops and replacements do not count as plays in statistics', async () => {
+    for (const reason of ['REPLACED', 'STOPPED', 'LOAD_FAILED']) {
+        const harness = makeHarness();
+
+        await harness.event.run({}, harness.track, harness.dispatcher, reason);
+
+        assert.equal(harness.calls.stats, 0, `${reason} must not count`);
+    }
 });

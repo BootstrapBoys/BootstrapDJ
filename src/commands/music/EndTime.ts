@@ -1,7 +1,48 @@
 import { ApplicationCommandOptionType } from 'discord.js';
+import type { Player } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 import { parseTime } from '../../lib/QueueTools.js';
+
+interface PendingEndTime {
+    timer: NodeJS.Timeout;
+    player: Player;
+    listener: () => void;
+}
+
+/** One pending stop-at per guild; a new /endtime replaces the old one. */
+const pending = new Map<string, PendingEndTime>();
+
+/** Drop the guild's pending stop-at timer and its player listener. */
+export function cancelEndTime(guildId: string): void {
+    const entry = pending.get(guildId);
+    if (!entry) return;
+    pending.delete(guildId);
+    clearTimeout(entry.timer);
+    entry.player.off('end', entry.listener);
+}
+
+/** Arm the single stop-at timer; a prior timer/listener is always removed. */
+export function scheduleEndTime(
+    guildId: string,
+    player: Player,
+    delayMs: number,
+    onElapsed: () => void
+): void {
+    cancelEndTime(guildId);
+    const listener = (): void => {
+        clearTimeout(timer);
+        pending.delete(guildId);
+    };
+    const timer = setTimeout(() => {
+        pending.delete(guildId);
+        player.off('end', listener);
+        onElapsed();
+    }, Math.max(0, delayMs));
+    timer.unref();
+    player.once('end', listener);
+    pending.set(guildId, { timer, player, listener });
+}
 
 export default class EndTime extends Command {
     constructor(client: BootstrapClient) {
@@ -50,11 +91,9 @@ export default class EndTime extends Command {
                 embeds: [client.embed().setColor(client.color.main).setDescription('Skipped to the end point.')],
             });
         }
-        const timer = setTimeout(() => {
+        scheduleEndTime(guild.id, player.player, target - position, () => {
             void player.skip();
-        }, target - position);
-        timer.unref();
-        player.player.once('end', () => clearTimeout(timer));
+        });
         return await ctx.sendMessage({
             embeds: [
                 client

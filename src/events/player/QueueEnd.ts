@@ -46,6 +46,7 @@ export default class QueueEnd extends Event {
             time: seconds * 1000,
             max: 1,
         });
+        dispatcher.queueEmptyCollector = collector;
         collector.on('collect', async interaction => {
             if (interaction.customId === 'timeout-leave') {
                 await interaction.reply({
@@ -60,6 +61,9 @@ export default class QueueEnd extends Event {
             collector.stop('confirmed');
         });
         collector.on('end', async (_collected, reason) => {
+            if (dispatcher.queueEmptyCollector === collector) {
+                dispatcher.queueEmptyCollector = null;
+            }
             if (dispatcher.queueEmptyPrompt === prompt) dispatcher.queueEmptyPrompt = null;
             await prompt.delete().catch(() => null);
             if (reason === 'time' && !dispatcher.queue.length && !dispatcher.autoplay) {

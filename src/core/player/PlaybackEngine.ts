@@ -174,6 +174,11 @@ export class PlaybackEngine {
         }
         if (!this.state.current) return;
 
+        // `/stop` marks the dispatcher so the destroy that follows does not
+        // emit playerDestroy. The next successful start owns a live player
+        // again, so a later teardown must emit normally.
+        this.state.stopped = false;
+
         try {
             await this.ports.player.play(this.state.current);
             const startedKey = this.state.current.info?.uri ?? this.state.current.encoded;
