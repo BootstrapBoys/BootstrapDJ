@@ -20,7 +20,7 @@ export default defineMusicCommand({
     dj: false,
     run: async ({ client, ctx, player }) => {
         if (!player) return;
-        player.loop = NEXT_LOOP[player.loop];
+        player.setLoop(NEXT_LOOP[player.loop]);
         return await replyOk(client, ctx, LOOP_COPY[player.loop]);
     },
 });

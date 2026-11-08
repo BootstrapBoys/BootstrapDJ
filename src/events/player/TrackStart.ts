@@ -294,7 +294,7 @@ export default class TrackStart extends Event {
                 case 'loop': {
                     const modes: readonly Dispatcher['loop'][] = ['off', 'repeat', 'queue'];
                     const next = modes[(modes.indexOf(dispatcher.loop) + 1) % modes.length];
-                    dispatcher.loop = next;
+                    dispatcher.setLoop(next);
                     const label =
                         next === 'queue'
                             ? 'Looping Queue'
@@ -318,7 +318,7 @@ export async function checkDj(
     const dj = await client.db.getDj(interaction.guildId);
     if (!dj?.mode) return true;
     const roles = await client.db.getRoles(interaction.guildId);
-    if (!roles) return false;
+    if (!roles.length) return false;
     const hasDjRole = interaction.member.roles.cache.some(role =>
         roles.some(entry => entry.roleId === role.id)
     );

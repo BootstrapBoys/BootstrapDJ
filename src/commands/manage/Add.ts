@@ -67,7 +67,7 @@ export default class Add extends Command {
         const author = ctx.author;
         if (!author) return;
         const name = (args[0] ?? '').trim();
-        const query = (args[1] ?? '').trim();
+        const query = args.slice(1).join(' ').trim();
         if (!name) return await this.fail(client, ctx, 'Please provide a playlist');
         if (!query) return await this.fail(client, ctx, 'Please provide a song');
 

@@ -4,8 +4,6 @@ import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 type Scope = 'server' | 'user';
 
-const FIELDS = ['action', 'trigger', 'expansion', 'scope'] as const;
-
 export default class Mappings extends Command {
     public constructor(client: BootstrapClient) {
         super(client, {
@@ -65,11 +63,47 @@ export default class Mappings extends Command {
         });
     }
 
-    private field(ctx: Context, field: (typeof FIELDS)[number]): string {
+    private read(ctx: Context): {
+        action: string;
+        scope: Scope;
+        trigger: string;
+        expansion: string;
+    } {
         if (ctx.isInteraction && ctx.interaction) {
-            return (ctx.interaction.options.getString(field) ?? '').trim();
+            const scopeRaw = (ctx.interaction.options.getString('scope') ?? '').trim();
+            return {
+                action: (ctx.interaction.options.getString('action') ?? 'list').toLowerCase(),
+                scope: scopeRaw === 'user' ? 'user' : 'server',
+                trigger: (ctx.interaction.options.getString('trigger') ?? '').trim().toLowerCase(),
+                expansion: (ctx.interaction.options.getString('expansion') ?? '').trim(),
+            };
         }
-        return (ctx.args[FIELDS.indexOf(field)] ?? '').trim();
+
+        const args = ctx.args;
+        const action = (args[0] ?? 'list').trim().toLowerCase();
+        let scopeRaw = '';
+        let trigger = '';
+        let expansion = '';
+        if (action === 'clear') {
+            scopeRaw = args[1] ?? '';
+        } else if (action === 'remove') {
+            trigger = args[1] ?? '';
+            scopeRaw = args[2] ?? '';
+        } else if (action === 'add') {
+            trigger = args[1] ?? '';
+            // The expansion is every remaining word. A trailing server/user
+            // token is the scope; anything else is part of the command.
+            const words = args.slice(2);
+            const last = words[words.length - 1]?.toLowerCase();
+            if (last === 'server' || last === 'user') scopeRaw = words.pop() ?? '';
+            expansion = words.join(' ');
+        }
+        return {
+            action,
+            scope: scopeRaw.trim().toLowerCase() === 'user' ? 'user' : 'server',
+            trigger: trigger.trim().toLowerCase(),
+            expansion: expansion.trim(),
+        };
     }
 
     private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
@@ -84,8 +118,8 @@ export default class Mappings extends Command {
         const member = ctx.member;
         if (!guild || !author || !(member instanceof GuildMember)) return;
 
-        const action = (this.field(ctx, 'action') || 'list').toLowerCase();
-        const scope: Scope = this.field(ctx, 'scope') === 'user' ? 'user' : 'server';
+        const request = this.read(ctx);
+        const { action, scope, trigger, expansion } = request;
         if (scope === 'server' && !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
             return await this.reply(client, ctx, 'You need Manage Server for server mappings.', true);
         }
@@ -120,7 +154,6 @@ export default class Mappings extends Command {
                 break;
         }
 
-        const trigger = this.field(ctx, 'trigger').toLowerCase();
         if (!/^[a-z0-9_-]{1,32}$/.test(trigger)) {
             return await this.reply(client, ctx, 'Triggers must be 1–32 letters, numbers, `_` or `-`.', true);
         }
@@ -139,7 +172,6 @@ export default class Mappings extends Command {
             });
         }
 
-        const expansion = this.field(ctx, 'expansion');
         if (!expansion) return await this.reply(client, ctx, 'Provide the command expansion.', true);
         const target = expansion.split(/\s+/)[0]?.replace(/^[^\w]+/, '').toLowerCase();
         if (!target || !client.commands.has(target)) {

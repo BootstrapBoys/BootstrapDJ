@@ -62,7 +62,7 @@ export default class Move extends Command {
         }
 
         const from = Number(args[0]);
-        const to = Number(args[2]?.toLowerCase() === 'to' ? args[3] : args[1]);
+        const to = Number(args[1]?.toLowerCase() === 'to' ? args[2] : args[1]);
         if (!Number.isInteger(from) || !Number.isInteger(to)) {
             return await ctx.sendMessage({
                 embeds: [

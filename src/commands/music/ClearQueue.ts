@@ -9,7 +9,7 @@ export default defineMusicCommand({
         if (!player) return;
         if (!player.queue.length) return await replyFail(client, ctx, 'There are no songs in the queue.');
 
-        player.queue = [];
+        player.clearQueue();
         return await replyOk(client, ctx, 'Cleared the queue');
     },
 });

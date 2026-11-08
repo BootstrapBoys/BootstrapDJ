@@ -186,7 +186,9 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
             const dj = await client.db.getDj(guildId);
             if (dj && dj.mode) {
                 const djRole = await client.db.getRoles(guildId);
-                if (!djRole) return deny('DJ role is not set.');
+                // `getRoles` returns an array; an empty array is truthy and
+                // used to fall through to the misleading role-missing reply.
+                if (!djRole.length) return deny('DJ role is not set.');
                 const hasDjRole = djRole.some(role => member.roleIds.includes(role.roleId));
                 if (!hasDjRole && !manageGuild) {
                     return deny('You need to have the DJ role to use this command.');

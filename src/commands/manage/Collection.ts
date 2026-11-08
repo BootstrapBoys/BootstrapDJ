@@ -121,13 +121,6 @@ export default class Collection extends Command {
         });
     }
 
-    private option(ctx: Context, name: string, position: number): string {
-        if (ctx.isInteraction && ctx.interaction) {
-            return (ctx.interaction.options.getString(name) ?? '').trim();
-        }
-        return (ctx.args[position] ?? '').trim();
-    }
-
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
         return ctx.sendMessage({ embeds: [client.embed().setColor(client.color.red).setDescription(text)] });
     }
@@ -137,25 +130,54 @@ export default class Collection extends Command {
     }
 
     private read(ctx: Context): Request {
-        const positional = (ctx.args[0] ?? '').trim();
-        const action = (positional || this.option(ctx, 'action', 0) || 'list').toLowerCase();
         const request: Request = {
-            action,
-            name: this.option(ctx, 'name', 1),
-            query: this.option(ctx, 'query', 2),
-            target: this.option(ctx, 'target', 3),
+            action: 'list',
+            name: '',
+            query: '',
+            target: '',
             index: 0,
-            code: this.option(ctx, 'code', 5),
+            code: '',
             authorId: ctx.author?.id ?? '',
         };
-        request.index = ctx.isInteraction
-            ? (ctx.interaction?.options.getInteger('index') ?? 0)
-            : Number(ctx.args[4] ?? 0);
-        // Prefix import/unshare pass the code as the first argument after the
-        // action, with no name slot.
-        if (!ctx.isInteraction && (action === 'import' || action === 'unshare')) {
-            request.code = this.option(ctx, 'code', 1);
-            request.name = '';
+        if (ctx.isInteraction && ctx.interaction) {
+            const interaction = ctx.interaction;
+            return {
+                ...request,
+                action: (interaction.options.getString('action') ?? 'list').toLowerCase(),
+                name: (interaction.options.getString('name') ?? '').trim(),
+                query: (interaction.options.getString('query') ?? '').trim(),
+                target: (interaction.options.getString('target') ?? '').trim(),
+                index: interaction.options.getInteger('index') ?? 0,
+                code: (interaction.options.getString('code') ?? '').trim(),
+            };
+        }
+
+        const args = ctx.args;
+        const action = (args[0] ?? 'list').trim().toLowerCase();
+        request.action = action;
+        if (action === 'import' || action === 'unshare') {
+            // Prefix import/unshare pass the code first, with no name slot.
+            request.code = (args[1] ?? '').trim();
+            request.name = action === 'import' ? (args[2] ?? '').trim() : '';
+            return request;
+        }
+        if (action === 'list' || action === 'shares') return request;
+
+        request.name = (args[1] ?? '').trim();
+        if (action === 'add' || action === 'removesong') {
+            // Everything after the collection name is the search query.
+            request.query = args.slice(2).join(' ').trim();
+        } else if (action === 'remove') {
+            request.index = Number(args[2] ?? 0);
+        } else if (
+            action === 'rename' ||
+            action === 'copy' ||
+            action === 'clone' ||
+            action === 'merge'
+        ) {
+            // Prefix puts the target immediately after the source name; the
+            // slash option order has two empty slots before it.
+            request.target = (args[2] ?? '').trim();
         }
         return request;
     }

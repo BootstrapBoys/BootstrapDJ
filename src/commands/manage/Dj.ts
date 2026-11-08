@@ -108,12 +108,29 @@ export default class Dj extends Command {
                     return await this.reply(client, ctx, `The dj role <@&${role.id}> is not added`);
                 }
                 await client.db.removeRole(guild.id, role.id);
+                const remaining = await client.db.getRoles(guild.id);
+                // DJ mode with no roles left locks out every non-manager.
+                if (remaining.length === 0 && record?.mode) {
+                    await client.db.setDj(guild.id, false);
+                    return await this.reply(
+                        client,
+                        ctx,
+                        `The dj role <@&${role.id}> has been removed. DJ mode is now disabled because no DJ roles remain.`
+                    );
+                }
                 return await this.reply(client, ctx, `The dj role <@&${role.id}> has been removed`);
             }
             case 'clear':
                 if (!record) return await this.reply(client, ctx, 'There are no dj roles to clear');
                 await client.db.clearRoles(guild.id);
-                return await this.reply(client, ctx, 'All dj roles have been removed');
+                if (record.mode) await client.db.setDj(guild.id, false);
+                return await this.reply(
+                    client,
+                    ctx,
+                    record.mode
+                        ? 'All dj roles have been removed and DJ mode is now disabled'
+                        : 'All dj roles have been removed'
+                );
             case 'toggle': {
                 if (!record) return await this.reply(client, ctx, 'There are no dj roles to toggle');
                 const enabled = !record.mode;

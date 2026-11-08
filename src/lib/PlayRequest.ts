@@ -147,9 +147,10 @@ export async function runPlayRequest(
                 }
                 playlistDuration += trackLength;
                 const pl = player.buildTrack(track, author);
-                const rejected = checkTrack(player, pl, author.id, limits);
+                const pending = mode === 'next' ? accepted : [];
+                const rejected = checkTrack(player, pl, author.id, limits, pending);
                 if (rejected) continue;
-                if (player.queue.length >= client.config.maxQueueSize) {
+                if (player.queue.length + pending.length >= client.config.maxQueueSize) {
                     // Keep the tracks already accepted; the old early return
                     // left them in memory but never persisted them.
                     void player.persist();

@@ -39,8 +39,8 @@ export default class Requested extends Command {
             });
         }
         const target = ctx.isInteraction
-            ? ctx.interaction?.options.getUser('user') ?? ctx.author
-            : ctx.author;
+            ? (ctx.interaction?.options.getUser('user') ?? ctx.author)
+            : (ctx.message?.mentions.users.first() ?? ctx.author);
         if (!target) return;
         const tracks = player.queue.filter(track => {
             const requester = track.info.requester as { id?: string } | undefined;

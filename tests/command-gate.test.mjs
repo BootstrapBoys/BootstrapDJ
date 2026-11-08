@@ -254,6 +254,26 @@ test('gate checks active players and DJ roles', async () => {
         /DJ role/
     );
 
+    const emptyRoles = makeClient({
+        db: {
+            ...makeClient().db,
+            getDj: async () => ({ mode: true }),
+            getRoles: async () => [],
+        },
+    });
+    assert.match(
+        (
+            await evaluateCommand(
+                makeInput({
+                    command: djCommand,
+                    client: emptyRoles,
+                    member: makeMember({ denied: [PermissionFlagsBits.ManageGuild] }),
+                })
+            )
+        ).response.content,
+        /DJ role is not set/
+    );
+
     const manager = makeMember({ roles: [] });
     manager.hasPermission = permission =>
         permission === PermissionFlagsBits.ManageGuild || permission === 'SendMessages' || permission === 'ViewChannel' || permission === 'EmbedLinks';

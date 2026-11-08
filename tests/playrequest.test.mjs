@@ -241,3 +241,35 @@ test('playnext inserts ahead of an existing queue in both prefix and slash conte
         'existing-2',
     ]);
 });
+
+test('playnext playlists obey per-user limits while the batch is still pending', async () => {
+    const player = makePlayer();
+    const client = makeClient(player, {
+        loadType: LoadType.PLAYLIST,
+        data: { tracks: [rawTrack('A'), rawTrack('B'), rawTrack('C')] },
+    });
+    client.db.getGuildSettings = async () => ({ maxuserqueue: '1' });
+    const ctx = makeCtx();
+
+    await runPlayRequest(client, ctx, ['query'], 'next');
+
+    assert.deepEqual(player.queue.map(track => track.info.title), ['A']);
+    assert.match(ctx.replies[0].embeds[0].data.description, /Added 1 songs/);
+});
+
+test('playnext playlists obey the configured queue cap while the batch is pending', async () => {
+    const player = makePlayer();
+    const client = makeClient(player, {
+        loadType: LoadType.PLAYLIST,
+        data: {
+            tracks: [rawTrack('A'), rawTrack('B'), rawTrack('C'), rawTrack('D'), rawTrack('E')],
+        },
+    });
+    client.db.getGuildSettings = async () => ({ maxqueue: '2' });
+    const ctx = makeCtx();
+
+    await runPlayRequest(client, ctx, ['query'], 'next');
+
+    assert.deepEqual(player.queue.map(track => track.info.title), ['A', 'B']);
+    assert.match(ctx.replies[0].embeds[0].data.description, /Added 2 songs/);
+});

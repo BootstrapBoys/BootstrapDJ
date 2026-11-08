@@ -55,12 +55,20 @@ export default class Profile extends Command {
         return ctx.args[index] ?? null;
     }
 
+    /** Prefix values are free text; `profile set bio Music first` is one value. */
+    private value(ctx: Context): string {
+        if (ctx.isInteraction && ctx.interaction) {
+            return (ctx.interaction.options.getString('value') ?? '').trim();
+        }
+        return ctx.args.slice(2).join(' ').trim();
+    }
+
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
         const action = (this.option(ctx, 'action', 0) ?? 'view').toLowerCase();
         const key = (this.option(ctx, 'key', 1) ?? '').toLowerCase();
-        const value = (this.option(ctx, 'value', 2) ?? '').trim();
+        const value = this.value(ctx);
 
         if (action === 'view') {
             const target =

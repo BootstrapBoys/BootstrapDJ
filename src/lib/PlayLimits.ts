@@ -39,7 +39,8 @@ export function checkTrack(
     player: Dispatcher,
     track: Song,
     requesterId: string,
-    limits: PlayLimits
+    limits: PlayLimits,
+    pending: readonly Song[] = []
 ): string | null {
     const lengthSeconds = track.info.isStream ? 0 : Math.round(track.info.length / 1000);
     if (limits.maxTrackLength > 0 && lengthSeconds > limits.maxTrackLength) {
@@ -48,11 +49,15 @@ export function checkTrack(
     if (limits.minTrackLength > 0 && lengthSeconds > 0 && lengthSeconds < limits.minTrackLength) {
         return `That track is shorter than this server's ${formatDuration(limits.minTrackLength * 1000)} minimum.`;
     }
-    const queued = player.queue.length + (player.current ? 1 : 0);
+    // `/playnext <playlist>` builds its batch before inserting it, so the
+    // queue alone would let every track pass the queue/user caps.
+    const queued = player.queue.length + (player.current ? 1 : 0) + pending.length;
     if (limits.maxQueue > 0 && queued >= limits.maxQueue) {
         return `The queue is full (${limits.maxQueue} tracks).`;
     }
-    const requested = player.queue.filter(item => item.info.requester?.id === requesterId);
+    const requested = [...player.queue, ...pending].filter(
+        item => item.info.requester?.id === requesterId
+    );
     if (limits.maxUserQueue > 0 && requested.length >= limits.maxUserQueue) {
         return `You already have ${limits.maxUserQueue} tracks queued.`;
     }
