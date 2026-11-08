@@ -4,6 +4,7 @@ import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } fro
 
 import { isFinishedTrackReason } from '../lib/TrackEndReason.js';
 import { BootstrapClient } from './index.js';
+import { normalizeAuthor, trackKey, trackSignature } from './player/TrackIdentity.js';
 
 /** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
@@ -707,13 +708,13 @@ export default class Dispatcher {
         const seenArtists = new Set<string>();
         const leftovers: Song[] = [];
         for (const track of this.shuffle(tracks)) {
-            const signature = this.trackSignature(track) || this.trackKey(track);
-            const key = this.trackKey(track);
+            const signature = trackSignature(track) || trackKey(track);
+            const key = trackKey(track);
             if (!signature || seenTracks.has(`s:${signature}`)) continue;
             if (key && seenTracks.has(`k:${key}`)) continue;
             seenTracks.add(`s:${signature}`);
             if (key) seenTracks.add(`k:${key}`);
-            const artist = this.normalizeAuthor(track.info?.author) || signature;
+            const artist = normalizeAuthor(track.info?.author) || signature;
             if (!seenArtists.has(artist) && unique.length < AUTOPLAY_SEEDS) {
                 seenArtists.add(artist);
                 unique.push(track);
@@ -735,13 +736,13 @@ export default class Dispatcher {
      * duplicates and without letting an old request fall off the front. */
     private rememberSeed(song: Song): void {
         this.seed = song;
-        const signature = this.trackSignature(song);
+        const signature = trackSignature(song);
         this.seeds = [
             song,
             ...this.seeds.filter(
                 existing =>
-                    this.trackSignature(existing) !== signature &&
-                    this.trackKey(existing) !== this.trackKey(song)
+                    trackSignature(existing) !== signature &&
+                    trackKey(existing) !== trackKey(song)
             ),
         ].slice(0, AUTOPLAY_SEEDS);
     }
@@ -773,25 +774,6 @@ export default class Dispatcher {
         return before - this.queue.length;
     }
 
-    /** Stable identity: the URI survives re-searching, `encoded` does not
-     * (LavaSrc embeds a per-search token, so the same track looks new). */
-    private trackKey(track: Song | Track): string {
-        const info = track?.info;
-        if (info?.uri) return info.uri;
-        if (info?.identifier && info?.sourceName) return `${info.sourceName}:${info.identifier}`;
-        return track?.encoded ?? '';
-    }
-
-    /** Secondary identity for the same recording from another source. A Deezer
-     * request and a YouTube mix entry for it have different URIs, so URI-only
-     * dedupe lets autoplay queue the track that is currently playing. */
-    private trackSignature(track: Song | Track): string {
-        const info = track?.info;
-        const title = (info?.title ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
-        const author = this.normalizeAuthor(info?.author);
-        return title && author ? `${title}|${author}` : '';
-    }
-
     private shuffle<T>(items: T[]): T[] {
         const copy = [...items];
         for (let i = copy.length - 1; i > 0; i--) {
@@ -803,31 +785,28 @@ export default class Dispatcher {
 
     /** Already current, queued, or heard in the recent past? */
     private isRecent(track: Song | Track): boolean {
-        const key = this.trackKey(track);
-        const signature = this.trackSignature(track);
+        const key = trackKey(track);
+        const signature = trackSignature(track);
         if (!key && !signature) return false;
         const matches = (candidate: Song | Track): boolean =>
-            (Boolean(key) && this.trackKey(candidate) === key) ||
-            (Boolean(signature) && this.trackSignature(candidate) === signature);
+            (Boolean(key) && trackKey(candidate) === key) ||
+            (Boolean(signature) && trackSignature(candidate) === signature);
         if (this.current && matches(this.current)) return true;
         if (this.queue.some(matches)) return true;
         return this.history.slice(-15).some(matches);
     }
 
-    private normalizeAuthor(value?: string): string {
-        return (value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
-    }
 
     /** How close a candidate is to what the user actually asked for. */
     private affinityWeight(track: Track, affinity: AutoplayAffinity): number {
-        const author = this.normalizeAuthor(track.info?.author);
+        const author = normalizeAuthor(track.info?.author);
         if (!author) return 1;
-        const seed = this.normalizeAuthor(affinity.seedArtist);
+        const seed = normalizeAuthor(affinity.seedArtist);
         if (seed && (author === seed || author.includes(seed) || seed.includes(author))) {
             return AUTOPLAY_SEED_WEIGHT;
         }
         const related = affinity.relatedArtists.some(name => {
-            const normalized = this.normalizeAuthor(name);
+            const normalized = normalizeAuthor(name);
             return normalized && (author === normalized || author.includes(normalized) || normalized.includes(author));
         });
         return related ? AUTOPLAY_RELATED_WEIGHT : 1;
@@ -952,7 +931,7 @@ export default class Dispatcher {
     /** YouTube's mix for a seed track — the only source here that spans
      * artists; an artist search returns the same name over and over. */
     private async relatedTracks(seed: Song): Promise<Track[]> {
-        const key = this.trackKey(seed);
+        const key = trackKey(seed);
         const cached = key ? relatedTracksCache.get(key) : undefined;
         if (cached && Date.now() - cached.at < AUTOPLAY_MIX_TTL_MS) return cached.tracks;
 
@@ -981,8 +960,8 @@ export default class Dispatcher {
         const seedOnlyMix =
             mix.length > 0 &&
             mix.every(track => {
-                const author = this.normalizeAuthor(track.info?.author);
-                const normalizedSeed = this.normalizeAuthor(seedArtist);
+                const author = normalizeAuthor(track.info?.author);
+                const normalizedSeed = normalizeAuthor(seedArtist);
                 return !author || author === normalizedSeed || author.includes(normalizedSeed) || normalizedSeed.includes(author);
             });
 
@@ -1077,7 +1056,7 @@ export default class Dispatcher {
         const add = (track?: Song | null, includeAutoplay = false): void => {
             if (!track?.info?.author) return;
             if (track.autoplay && !includeAutoplay) return;
-            const signature = this.trackSignature(track) || this.trackKey(track);
+            const signature = trackSignature(track) || trackKey(track);
             if (!signature || seen.has(signature)) return;
             seen.add(signature);
             pool.push(track);
@@ -1101,7 +1080,7 @@ export default class Dispatcher {
         const candidates: Song[] = [];
         const add = (track?: Song | null): void => {
             if (!track?.info?.author) return;
-            const signature = this.trackSignature(track) || this.trackKey(track);
+            const signature = trackSignature(track) || trackKey(track);
             if (!signature || seen.has(signature)) return;
             seen.add(signature);
             candidates.push(track);
