@@ -216,7 +216,7 @@ export class Queue extends Map<string, Dispatcher> {
             return 0;
         }
         let moved = 0;
-        for (const dispatcher of [...this.values()]) {
+        for (const dispatcher of Array.from(this.values())) {
             if (!dispatcher.current && !dispatcher.queue.length) continue;
             if (dispatcher.player.node?.name === node.name && !dispatcher.isStale) continue;
             if (await this.rebuild(dispatcher, node)) moved += 1;

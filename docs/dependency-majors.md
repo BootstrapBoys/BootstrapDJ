@@ -1,35 +1,42 @@
-# Dependency majors — retry notes
+# Dependency majors — status
 
 Checked 2026-11-08 on `experimental/rewrite`.
 
-## TypeScript
+## TypeScript 7 — unblocked
 
-**Current:** `~6.0.3`.
+TypeScript is now `^7.0.2`.
 
-`tsconfig.json` now uses `"module": "node16"` and `"moduleResolution": "node16"`.
-TypeScript 6 deprecates `node10`; the old `"node"` setting raises `TS5107`
-under 6 and is removed in 7.
+The blocker was `typescript-eslint`: even its canary declares
+`typescript >=4.8.4 <6.1.0`. This project replaced ESLint/typescript-eslint
+with:
 
-**TypeScript 7 remains blocked** by the lint stack:
+- `oxlint@^1.92.0` for syntax and style checks
+- `oxlint-tsgolint@^7.0.2006` for type-aware rules on the TypeScript 7
+  `typescript-go` compiler
+- `tsc` for the build/typecheck
 
-- `typescript-eslint@8.72.1` (and its current canary) declares
-  `typescript >=4.8.4 <6.1.0`.
-- TS 7.0.2 is the current npm `latest`.
-- Retry after typescript-eslint publishes support for TS 7, then re-run
-  `npm run build`, `npx eslint .`, and `npm test`.
+`tsconfig.json` uses `"module": "node16"` and `"moduleResolution": "node16"`.
 
-## Prisma
+Verified:
 
-**Current:** `7.10.1` for `prisma`, `@prisma/client`, and
+- `npm run lint` — 0 warnings, 0 errors
+- `npm run build` — passes
+- `npm test` — 153/153
+
+Trade-off: Oxlint does not currently implement every `typescript-eslint` rule.
+The old `typedef` and `eslint-plugin-import-x` ordering rules are gone;
+Prettier remains for formatting, and `tsc` strict mode covers type safety.
+
+## Prisma 8 — still blocked
+
+Prisma is `7.10.1` for `prisma`, `@prisma/client`, and
 `@prisma/adapter-better-sqlite3`.
-
-**Prisma 8 remains blocked** by mismatched publication:
 
 - `prisma` CLI has `8.0.0-rc.33` on npm.
 - `@prisma/client@8.0.0-rc.33` does not exist; `latest` is `7.10.1`.
 - `@prisma/adapter-better-sqlite3@8.0.0-rc.33` does not exist; `latest` is
   `7.10.1`, with only `8.1.0-dev.10` dev builds.
 
-Do not mix the 8.x CLI with a 7.x client. Retry when the client and adapter
-publish a matching 8.x release, then run `prisma generate`, `prisma db push`,
-the full test suite, and a session-restore smoke test.
+Retry when the client and adapter publish a matching 8.x release, then run
+`prisma generate`, `prisma db push`, the full test suite, and a session-restore
+smoke test.

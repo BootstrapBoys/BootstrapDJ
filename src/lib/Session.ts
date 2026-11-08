@@ -155,7 +155,7 @@ async function handoffTick(client: BootstrapClient): Promise<void> {
     if (!botUser) return;
     const botName = client.config.botName || botUser.username;
 
-    for (const guildId of [...client.queue.keys()]) {
+    for (const guildId of Array.from(client.queue.keys())) {
         const refreshed = await client.db
             .claimSessionLease(guildId, botUser.id, botName, LEASE_TTL_MS)
             .catch(() => false);

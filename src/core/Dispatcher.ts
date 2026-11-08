@@ -521,7 +521,7 @@ export default class Dispatcher {
 
     /** Delete every track-scoped now-playing response (track end/skip/stop). */
     public clearNowPlayingCommandMessages(): void {
-        for (const [message, timer] of [...this.nowPlayingCommandMessages]) {
+        for (const [message, timer] of Array.from(this.nowPlayingCommandMessages)) {
             if (timer) clearTimeout(timer);
             this.nowPlayingCommandMessages.delete(message);
             void message.delete().catch(() => {});
