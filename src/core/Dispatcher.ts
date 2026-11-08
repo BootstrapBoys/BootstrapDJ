@@ -12,6 +12,7 @@ import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
 import { findColdStart } from './player/AutoplayColdStart.js';
 import { relatedTracks as getRelatedTracks } from './player/YouTubeMix.js';
+import { previousTrack as goPrevious, resume247 as resumeSession, seekTo as seekPlayer, shuffleQueue, skipTracks, stopPlayback } from './player/TransportActions.js';
 import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
@@ -204,7 +205,7 @@ export default class Dispatcher {
     }
     /** Shoukaku's player methods return promises nobody awaits; a player on a
      * dead session would otherwise raise unhandled rejections for every click. */
-    private callPlayer(action: string, run: () => Promise<unknown>): void {
+    public callPlayer(action: string, run: () => Promise<unknown>): void {
         void run().catch(error => {
             this.client.logger.warn(`[queue] ${action} failed for ${this.guildId}: ${error}`);
         });
@@ -295,6 +296,18 @@ export default class Dispatcher {
         return null;
     }
 
+    public stopTrack(): Promise<unknown> {
+        return this.player.stopTrack();
+    }
+
+    public seekPlayer(time: number): Promise<unknown> {
+        return this.player.seekTo(time);
+    }
+
+    public deleteSession(): Promise<void> {
+        return this.client.db.deleteSession(this.guildId).catch(() => {});
+    }
+
     public pause(): void {
         if (!this.player) return;
         if (!this.paused) {
@@ -365,17 +378,11 @@ export default class Dispatcher {
     }
     public previousTrack(): void {
         if (!this.player) return;
-        if (!this.previous) return;
-        this.queue.unshift(this.previous);
-        this.callPlayer('stop', () => this.player.stopTrack());
+        goPrevious(this);
     }
     /** A listener joined a 24/7 session after it paused at track end. */
     public resume247(): void {
-        this.pauseWhenEmpty = false;
-        if (!this.paused247) return;
-        this.paused247 = false;
-        if (!this.queue.length && this.previous) this.queue.unshift(this.previous);
-        if (this.queue.length) void this.play();
+        resumeSession(this);
     }
 
     /** Sample voice membership once a minute for listener-time statistics. */
@@ -491,39 +498,22 @@ export default class Dispatcher {
     }
     public setShuffle(): void {
         if (!this.player) return;
-        const queue = this.queue;
-        for (let i = queue.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [queue[i], queue[j]] = [queue[j], queue[i]];
-        }
-        this.queue = queue;
+        shuffleQueue(this);
     }
+
     public async skip(skipto = 1): Promise<void> {
         if (!this.player) return;
-        if (skipto > 1) {
-            if (skipto > this.queue.length) {
-                this.queue.length = 0;
-            } else {
-                this.queue.splice(0, skipto - 1);
-            }
-        }
-        this.callPlayer('stop', () => this.player.stopTrack());
+        skipTracks(this, skipto);
     }
+
     public seek(time: number): void {
         if (!this.player) return;
-        this.callPlayer('seek', () => this.player.seekTo(time));
+        seekPlayer(this, time);
     }
+
     public stop(): void {
         if (!this.player) return;
-        this.queue.length = 0;
-        this.history = [];
-        this.loop = 'off';
-        this.autoplay = false;
-        this.seed = null;
-        this.seeds = [];
-        this.stopped = true;
-        void this.client.db.deleteSession(this.guildId).catch(() => {});
-        this.callPlayer('stop', () => this.player.stopTrack());
+        stopPlayback(this);
     }
     /**
      * Snapshot playback state so a crash or restart can resume it. The row is
