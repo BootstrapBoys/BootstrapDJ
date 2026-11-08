@@ -8,16 +8,8 @@ const updateStatusPlugin: BotPlugin = {
     version: '1.0.0',
     author: 'Zebz213',
     initialize: (client: BootstrapClient) => {
-        client.on(Events.ClientReady, () => {
-            client.utils.updateStatus(client);
-        });
+        client.once(Events.ClientReady, () => client.utils.updateStatus(client));
     },
 };
 
 export default updateStatusPlugin;
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
