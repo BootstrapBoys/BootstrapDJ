@@ -30,6 +30,7 @@ import { PlaylistStore } from './playlists.js';
 import { SessionStore } from './sessions.js';
 import { UserStore } from './users.js';
 import { VoiceStore } from './voice.js';
+import { GuildStore } from './guilds.js';
 import { createPrismaClient, initializePrisma } from './prisma.js';
 
 export interface StatsPruneResult {
@@ -42,26 +43,20 @@ export interface StatsPruneResult {
 
 export default class ServerData {
     private prisma: PrismaClient;
+    private setupCache = new Map<string, Setup | null>();
     private playlists: PlaylistStore;
+    private guilds: GuildStore;
     private sessions: SessionStore;
     private users: UserStore;
     private voice: VoiceStore;
     /** PRAGMAs are connection/file scoped; every bot process runs this once. */
     private initPromise: Promise<void> | null = null;
-    /** Guild rows are read for every message and every command; cache them and
-     * invalidate on write (single-process bot, so no cross-process staleness). */
-    private guildCache = new Map<string, Guild>();
-    private setupCache = new Map<string, Setup | null>();
-    /** Per-guild settings are read on every message/command; cache briefly and
-     * invalidate on writes. Other bot processes may write too, so use a TTL
-     * rather than treating the cache as authoritative. */
-    private settingsCache = new Map<string, { at: number; data: Record<string, string> }>();
-
     constructor(prisma?: PrismaClient) {
         // Injectable so tests can pass a client wired to a throwaway SQLite
         // file instead of the tracked database file.
         this.prisma = prisma ?? createPrismaClient();
         this.playlists = new PlaylistStore(this.prisma);
+        this.guilds = new GuildStore(this.prisma);
         this.sessions = new SessionStore(this.prisma);
         this.users = new UserStore(this.prisma);
         this.voice = new VoiceStore(this.prisma);
@@ -204,34 +199,11 @@ export default class ServerData {
     }
 
     public async get(guildId: string): Promise<Guild | null> {
-        const cached = this.guildCache.get(guildId);
-        if (cached) return cached;
-        const data = await this.prisma.guild.upsert({
-            where: { guildId },
-            update: {},
-            create: {
-                guildId,
-                prefix: config.prefix,
-            },
-        });
-        this.guildCache.set(guildId, data);
-        return data;
+        return await this.guilds.get(guildId);
     }
 
     public async setPrefix(guildId: string, prefix: string): Promise<void> {
-        await this.prisma.guild.upsert({
-            where: {
-                guildId,
-            },
-            update: {
-                prefix,
-            },
-            create: {
-                guildId,
-                prefix,
-            },
-        });
-        this.guildCache.delete(guildId);
+        await this.guilds.setPrefix(guildId, prefix);
     }
 
     public async set_247(guildId: string, textId: string, voiceId: string): Promise<void> {
@@ -744,57 +716,38 @@ export default class ServerData {
     }
 
     public async getGuildSettings(guildId: string): Promise<Record<string, string>> {
-        const cached = this.settingsCache.get(guildId);
-        if (cached && Date.now() - cached.at < 5000) return cached.data;
-        const rows = await this.prisma.guildSetting.findMany({ where: { guildId } });
-        const data = Object.fromEntries(rows.map((row: GuildSetting) => [row.key, row.value]));
-        this.settingsCache.set(guildId, { at: Date.now(), data });
-        return data;
+        return await this.guilds.settings(guildId);
     }
 
-    /** Invalidate the per-process settings cache after another shard writes. */
     public clearGuildSettingsCache(guildId: string): void {
-        this.settingsCache.delete(guildId);
+        this.guilds.clearSettingsCache(guildId);
     }
 
     public async getGuildSetting(guildId: string, key: string): Promise<string | null> {
-        const settings = await this.getGuildSettings(guildId);
-        return settings[key] ?? null;
+        return await this.guilds.setting(guildId, key);
     }
 
     public async setGuildSetting(guildId: string, key: string, value: string): Promise<GuildSetting> {
-        const row = await this.prisma.guildSetting.upsert({
-            where: { guildId_key: { guildId, key } },
-            create: { guildId, key, value },
-            update: { value },
-        });
-        this.settingsCache.delete(guildId);
-        return row;
+        return await this.guilds.setSetting(guildId, key, value);
     }
 
     public async resetGuildSettings(guildId: string): Promise<number> {
-        const result = await this.prisma.guildSetting.deleteMany({ where: { guildId } });
-        this.settingsCache.delete(guildId);
-        return result.count;
+        return await this.guilds.resetSettings(guildId);
     }
 
     public async getAutoplaySetting(guildId: string): Promise<AutoplaySetting | null> {
-        return await this.prisma.autoplaySetting.findUnique({ where: { guildId } });
+        return await this.guilds.autoplay(guildId);
     }
 
     public async setAutoplaySetting(
         guildId: string,
         data: { source: string; seeds: string }
     ): Promise<AutoplaySetting> {
-        return await this.prisma.autoplaySetting.upsert({
-            where: { guildId },
-            update: data,
-            create: { guildId, ...data },
-        });
+        return await this.guilds.setAutoplay(guildId, data);
     }
 
     public async deleteAutoplaySetting(guildId: string): Promise<void> {
-        await this.prisma.autoplaySetting.deleteMany({ where: { guildId } });
+        await this.guilds.deleteAutoplay(guildId);
     }
 
     public async get_247(guildId?: string): Promise<Stay | Stay[] | null> {
