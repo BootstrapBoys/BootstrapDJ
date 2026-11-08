@@ -27,6 +27,51 @@ Current baseline:
 No level replaces another. A green unit suite does not approve a playback or
 migration change without L3.
 
+## Highest-Value Additions
+
+These are worth building into the first version, not deferring:
+
+1. **A test control plane instead of UI automation.** Drive the BotTest player
+   through the authenticated bridge (`POST /voice/command`) and read state from
+   the dashboard API. Reserve CDP/Discord UI automation for presentation checks
+   only; UI automation is brittle and slow for soak runs.
+2. **A metrics endpoint on the dashboard.** Add `GET /api/metrics`, behind the
+   existing dashboard auth, returning process memory, event-loop percentiles,
+   active resources, player/queue counts, uptime, and guild count. It is the
+   only reliable way to sample event-loop lag from inside the bot.
+3. **Schema migration tests.** Apply the Prisma schema to a temp DB, seed legacy
+   rows, run startup initialization twice, and assert required columns,
+   backfills, and idempotence. This would have caught the playlist-order class of
+   bug.
+4. **A release gate, not just a test list.** A release candidate must pass L0–L3,
+   a 1-hour soak smoke, and (for playback/session/schema changes) the full 24-hour
+   soak. Record the commit SHA and artifact path in the release note.
+5. **Coverage on changed lines.** Keep the global target, but block a PR when
+   changed lines drop below 70% or a critical lifecycle branch is untested.
+6. **Secret and artifact hygiene.** Redact tokens/ARLs, never upload `.env`, raw
+   production DBs, or Discord identifiers beyond the test guild. Scan artifacts
+   for secret patterns before retention.
+7. **Flake policy.** Quarantine a flaky test with an owner and expiry; never
+   silently skip. Infrastructure retries are allowed; product assertions are not.
+8. **A test-only precondition check.** The soak runner must refuse to start
+   unless `PRODUCTION=false`, the guild equals the test guild, the DB is not the
+   production path, and the bridge and dashboard are loopback-only.
+9. **Performance budgets in CI.** Assert the fast unit suite stays under its
+   time budget and the build stays deterministic; fail if the suite regresses by
+   more than 25% over a 5-run baseline.
+
+## Execution Workflow
+
+| Step | Deliverable | Gate |
+|---|---|---|
+| 1 | Metrics endpoint + tests | unit + dashboard 200 |
+| 2 | Soak runner, workload, report, thresholds | 5-minute dry run |
+| 3 | Coverage script + CI step | CI green |
+| 4 | BotTest smoke wrapper | unattended nightly |
+| 5 | Chaos wrapper | failover/restart pass |
+| 6 | 1-hour soak smoke | summary + no threshold breach |
+| 7 | 24-hour soak | weekly artifact + report |
+
 ## What to Automate First
 
 1. **CI quality gate** — already present; add coverage reporting.

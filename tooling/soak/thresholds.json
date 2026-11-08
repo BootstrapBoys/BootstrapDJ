@@ -1,0 +1,9 @@
+{
+    "maxRssGrowthPct": 10,
+    "maxHeapGrowthPct": 15,
+    "maxEventLoopP99Ms": 50,
+    "maxEventLoopMaxMs": 500,
+    "maxQueueDepth": 50,
+    "maxCrashCount": 0,
+    "minSamples": 10
+}

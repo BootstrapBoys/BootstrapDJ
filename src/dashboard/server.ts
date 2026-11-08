@@ -33,6 +33,7 @@ import {
     remotePlayerAction,
 } from './cluster.js';
 import { renderDashboard, renderLoginPage } from './page.js';
+import { collectMetrics } from './metrics.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
 import { effectiveSettings, initialState, saveSettings, SettingValidationError } from './state.js';
 
@@ -317,6 +318,11 @@ export async function route(
         const session = oauthEnabled() ? readSession(req) : null;
         const guilds = await remoteGuilds(client, session?.id ?? null);
         sendJson(res, 200, { csrf, guilds, viewer: viewer(req) });
+        return;
+    }
+
+    if (method === 'GET' && path === '/api/metrics') {
+        sendJson(res, 200, collectMetrics(client));
         return;
     }
 
