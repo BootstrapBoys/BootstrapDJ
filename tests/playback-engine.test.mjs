@@ -358,3 +358,33 @@ test('stop then play keeps the player volume untouched', async () => {
     assert.equal(h.state.volume, 25);
     assert.deepEqual(h.calls.volumes, []);
 });
+
+test('dispatcher persist writes the full snapshot through the engine', async () => {
+    const dispatcher = makeDispatcher({
+        voiceId: 'voice-1',
+        channelId: 'text-1',
+        current: makeSong('current', { uri: 'https://x/current' }),
+        queue: [makeSong('queued')],
+        loop: 'repeat',
+        autoplay: true,
+        paused: true,
+        player: { position: 1234, volume: 42 },
+    });
+    let saved = null;
+    dispatcher.client.db.saveSession = async payload => {
+        saved = payload;
+    };
+    dispatcher.client.db.deleteSession = async () => {};
+
+    await dispatcher.persist();
+
+    assert.equal(saved.guildId, 'test-guild');
+    assert.equal(saved.textId, 'text-1');
+    assert.equal(saved.voiceId, 'voice-1');
+    assert.equal(saved.loop, 'repeat');
+    assert.equal(saved.autoplay, true);
+    assert.equal(saved.paused, true);
+    assert.equal(saved.volume, 42);
+    assert.equal(JSON.parse(saved.current).position, 1234);
+    assert.equal(JSON.parse(saved.queue).length, 1);
+});

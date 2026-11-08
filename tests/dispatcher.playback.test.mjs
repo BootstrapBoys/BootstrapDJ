@@ -163,3 +163,19 @@ test('stop clears queue, history, loop, autoplay, seeds, and deletes the session
     assert.equal(deleted, 1);
     assert.equal(dispatcher.calls.stop, 1);
 });
+
+test('pause arms the configured pause timeout through the engine adapter', async () => {
+    const dispatcher = playbackDispatcher();
+    dispatcher.client.db.getGuildSettings = async () => ({ timeoutpause: '2' });
+
+    dispatcher.pause();
+    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
+
+    assert.notEqual(dispatcher.timers.pause, null);
+
+    dispatcher.pause();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(dispatcher.timers.pause, null);
+});
