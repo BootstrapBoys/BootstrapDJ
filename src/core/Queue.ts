@@ -18,7 +18,10 @@ const ENGINE_PREFIX = /^[a-z]+search:/i;
  */
 export class Queue extends Map<string, Dispatcher> {
     public client: BootstrapClient;
-    private readonly rebuilding = new Set<string>();
+    /** In-flight rebuild per guild: `create()` must never return its victim. */
+    private readonly rebuilds = new Map<string, Promise<Dispatcher | null>>();
+    /** Coalesces concurrent first-time spawns for the same guild. */
+    private readonly creating = new Map<string, Promise<Dispatcher>>();
     private readonly migrator: NodeMigrator;
 
     public constructor(client: BootstrapClient) {
@@ -97,8 +100,15 @@ export class Queue extends Map<string, Dispatcher> {
         if (!voice) throw new Error('No voice channel was provided');
         if (!channel) throw new Error('No text channel was provided');
 
+        // A rebuild already owns this guild. Await the replacement instead of
+        // handing out the dispatcher that is being torn down.
+        const rebuilding = this.rebuilds.get(guild.id);
+        if (rebuilding) {
+            const rebuilt = await rebuilding;
+            if (rebuilt) return rebuilt;
+        }
+
         const existing = this.get(guild.id);
-        if (existing && this.rebuilding.has(guild.id)) return existing;
         if (existing && !existing.isStale) return existing;
         if (existing) {
             const rebuilt = await this.rebuild(existing, givenNode ?? this.node);
@@ -108,7 +118,26 @@ export class Queue extends Map<string, Dispatcher> {
             return rebuilt;
         }
 
-        const node = givenNode ?? this.node;
+        // Two commands can race to create the first player; one spawn wins and
+        // the other receives the same dispatcher instead of overwriting it.
+        const pending = this.creating.get(guild.id);
+        if (pending) return await pending;
+
+        const creation = this.spawnAndPrepare(guild, voice, channel, givenNode ?? this.node);
+        this.creating.set(guild.id, creation);
+        try {
+            return await creation;
+        } finally {
+            if (this.creating.get(guild.id) === creation) this.creating.delete(guild.id);
+        }
+    }
+
+    private async spawnAndPrepare(
+        guild: Guild,
+        voice: Channel,
+        channel: Channel,
+        node: Node | undefined
+    ): Promise<Dispatcher> {
         if (!node) throw new Error('No Lavalink node is available right now');
         const dispatcher = await this.spawn(guild, voice, channel, node);
         await this.applyDefaults(dispatcher);
@@ -117,12 +146,16 @@ export class Queue extends Map<string, Dispatcher> {
     }
 
     public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
-        if (this.rebuilding.has(dispatcher.guildId)) return null;
-        this.rebuilding.add(dispatcher.guildId);
+        const inflight = this.rebuilds.get(dispatcher.guildId);
+        if (inflight) return await inflight;
+        const run = this.migrator.rebuild(dispatcher, node);
+        this.rebuilds.set(dispatcher.guildId, run);
         try {
-            return await this.migrator.rebuild(dispatcher, node);
+            return await run;
         } finally {
-            this.rebuilding.delete(dispatcher.guildId);
+            if (this.rebuilds.get(dispatcher.guildId) === run) {
+                this.rebuilds.delete(dispatcher.guildId);
+            }
         }
     }
 
