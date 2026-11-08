@@ -8,6 +8,8 @@ import { normalizeAuthor, trackKey, trackSignature } from './TrackIdentity.js';
 const AUTOPLAY_HEAD = 12;
 const AUTOPLAY_SEED_WEIGHT = 3;
 const AUTOPLAY_RELATED_WEIGHT = 2;
+const AUTOPLAY_RELATED = 6;
+const AUTOPLAY_SPREAD_CHANCE = 0.35;
 
 export type AutoplayAffinity = {
     seedArtist: string;
@@ -63,3 +65,40 @@ export function chooseFrom(
 
 /** Stable identity helpers kept alongside the picker for its callers. */
 export { trackKey, trackSignature };
+
+export interface SeedPickHost {
+    relatedTracks(seed: Song): Promise<Track[]>;
+    relatedArtistNames(seed: Song): Promise<string[]>;
+    pickFromQuery(query: string): Promise<Song | null>;
+    chooseFrom(tracks: Track[], affinity?: AutoplayAffinity): Song | null;
+    shuffle<T>(items: T[]): T[];
+}
+
+/** Pick one track for a seed: weighted mix first, related lane occasionally,
+ * then same-artist fallback. Never returns a failure for a thin mix. */
+export async function pickForSeed(seed: Song, host: SeedPickHost): Promise<Song | null> {
+    const mix = await host.relatedTracks(seed);
+    const seedArtist = seed.info.author ?? '';
+    const related = host.shuffle((await host.relatedArtistNames(seed)).slice(0, AUTOPLAY_RELATED));
+    const seedOnlyMix =
+        mix.length > 0 &&
+        mix.every(track => {
+            const author = normalizeAuthor(track.info?.author);
+            const normalizedSeed = normalizeAuthor(seedArtist);
+            return !author || author === normalizedSeed || author.includes(normalizedSeed) || normalizedSeed.includes(author);
+        });
+
+    if (seedOnlyMix && related.length && Math.random() < AUTOPLAY_SPREAD_CHANCE) {
+        const spreadPick = await host.pickFromQuery(related[0]);
+        if (spreadPick) return spreadPick;
+    }
+    if (mix.length) {
+        const fromMix = host.chooseFrom(mix, { seedArtist, relatedArtists: related });
+        if (fromMix) return fromMix;
+    }
+    for (const name of related) {
+        const pick = await host.pickFromQuery(name);
+        if (pick) return pick;
+    }
+    return await host.pickFromQuery(seed.info.author);
+}

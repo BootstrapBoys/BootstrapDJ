@@ -10,7 +10,7 @@ import { persistSession } from './player/SessionWriter.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
 import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
-import { affinityWeight, type AutoplayAffinity, chooseFrom } from './player/AutoplayPicker.js';
+import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
@@ -26,14 +26,6 @@ type MixCacheEntry = { at: number; tracks: Track[] };
 const relatedTracksCache = new Map<string, MixCacheEntry>();
 const AUTOPLAY_CACHE_LIMIT = 100;
 const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
-/** Related artists are listed closest-first; use a wider nearest neighbourhood
- * so a session can leave the seeded artists without jumping genres. */
-const AUTOPLAY_RELATED = 6;
-
-/** A seed-only radio would otherwise never leave that artist. Occasionally
- * take a related-artist lane before the mix so the session can breathe. */
-const AUTOPLAY_SPREAD_CHANCE = 0.35;
-
 type AutoplaySource = 'chart' | 'curated' | 'legacy';
 
 export class Song implements Track {
@@ -821,40 +813,13 @@ export default class Dispatcher {
     }
 
     private async pickForSeed(seed: Song): Promise<Song | null> {
-        const mix = await this.relatedTracks(seed);
-        const seedArtist = seed.info.author ?? '';
-        const related = this.shuffle((await this.relatedArtistNames(seed)).slice(0, AUTOPLAY_RELATED));
-        const seedOnlyMix =
-            mix.length > 0 &&
-            mix.every(track => {
-                const author = normalizeAuthor(track.info?.author);
-                const normalizedSeed = normalizeAuthor(seedArtist);
-                return !author || author === normalizedSeed || author.includes(normalizedSeed) || normalizedSeed.includes(author);
-            });
-
-        // A seed-only radio otherwise pins the queue to one artist forever:
-        // take a related lane occasionally, then fall through to the mix.
-        if (seedOnlyMix && related.length && Math.random() < AUTOPLAY_SPREAD_CHANCE) {
-            const spreadPick = await this.pickFromQuery(related[0]);
-            if (spreadPick) return spreadPick;
-        }
-
-        // Weight the mix toward the seed artist first, related artists second.
-        // The old "any other artist present" gate let a radio with 24 unknown
-        // tracks walk away from the request after one pick.
-        if (mix.length) {
-            const fromMix = this.chooseFrom(mix, { seedArtist, relatedArtists: related });
-            if (fromMix) return fromMix;
-        }
-
-        // No usable mix tracks: hop to a related artist, closest first.
-        for (const name of related) {
-            const pick = await this.pickFromQuery(name);
-            if (pick) return pick;
-        }
-
-        // Nothing related available: more from the same artist, never a stop.
-        return await this.pickFromQuery(seed.info.author);
+        return await pickForSeed(seed, {
+            relatedTracks: trackSeed => this.relatedTracks(trackSeed),
+            relatedArtistNames: trackSeed => this.relatedArtistNames(trackSeed),
+            pickFromQuery: query => this.pickFromQuery(query),
+            chooseFrom: (tracks, affinity) => this.chooseFrom(tracks, affinity),
+            shuffle: items => this.shuffle(items),
+        });
     }
 
     /** Kept as a seam for picker tests; the HTTP/cache work lives in DeezerClient. */
