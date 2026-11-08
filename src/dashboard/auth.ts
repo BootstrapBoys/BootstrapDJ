@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type http from 'node:http';
+import { isIP } from 'node:net';
 
 import config from '../config.js';
 
@@ -37,6 +38,9 @@ const OAUTH_STATE_COOKIE = 'bdj_oauth_state';
 /** Sessions revoked in this process. Rotating the secret revokes all of them. */
 const revokedSessions = new Map<string, number>();
 const rateBuckets = new Map<string, { count: number; reset: number }>();
+
+/** Hard ceiling for rate-limit buckets so a hostile client cannot grow them. */
+export const RATE_BUCKET_MAX = 5_000;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -103,10 +107,51 @@ export function oauthConfigured(): boolean {
     );
 }
 
-function clientAddress(req: http.IncomingMessage): string {
-    const forwarded = req.headers['x-forwarded-for'];
-    const first = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0];
-    return first?.trim() || req.socket.remoteAddress || 'unknown';
+/** Normalize an IP literal, dropping an optional port and IPv6 brackets. */
+function normalizeAddress(value: string | undefined): string | null {
+    let candidate = (value ?? '').trim();
+    if (!candidate) return null;
+    if (candidate.startsWith('[')) {
+        const end = candidate.indexOf(']');
+        if (end > 0) candidate = candidate.slice(1, end);
+    } else {
+        const first = candidate.indexOf(':');
+        if (first > 0 && first === candidate.lastIndexOf(':')) {
+            // Exactly one colon: IPv4 with a port, never a bare IPv6 literal.
+            candidate = candidate.slice(0, first);
+        }
+    }
+    if (isIP(candidate) === 0) return null;
+    return candidate.toLowerCase();
+}
+
+export function isLoopbackAddress(value: string): boolean {
+    const address = value.replace(/^::ffff:/i, '').toLowerCase();
+    if (address === '::1' || address === 'localhost') return true;
+    return /^127(?:\.\d{1,3}){3}$/.test(address);
+}
+
+/**
+ * Client identity for rate limiting.
+ *
+ * `X-Forwarded-For` is only trusted when the immediate peer is loopback (a
+ * reverse proxy on the same host). Trusting it from any peer let a caller mint
+ * a new bucket per request and bypass every limit. When the header is used, the
+ * last hop is the address the proxy actually saw; earlier entries are
+ * caller-controlled.
+ */
+export function clientAddress(req: http.IncomingMessage): string {
+    const socket = normalizeAddress(req.socket.remoteAddress ?? '');
+    if (!socket) return 'unknown';
+    if (!isLoopbackAddress(socket)) return socket;
+
+    const header = req.headers['x-forwarded-for'];
+    const raw = Array.isArray(header) ? header[header.length - 1] : header;
+    const hops = (raw ?? '')
+        .split(',')
+        .map(hop => normalizeAddress(hop))
+        .filter((hop): hop is string => hop !== null);
+    return hops.length > 0 ? hops[hops.length - 1] : socket;
 }
 
 /** A bind that only accepts local callers. */
@@ -143,6 +188,22 @@ export function anonymousDashboardAllowed(): boolean {
     });
 }
 
+/** Drop expired buckets, then keep the map under the hard ceiling. */
+function pruneRateBuckets(now: number): void {
+    for (const [key, bucket] of rateBuckets) {
+        if (bucket.reset <= now) rateBuckets.delete(key);
+    }
+    while (rateBuckets.size > RATE_BUCKET_MAX) {
+        const oldest = rateBuckets.keys().next();
+        if (oldest.done) break;
+        rateBuckets.delete(oldest.value);
+    }
+}
+
+export function rateBucketCount(): number {
+    return rateBuckets.size;
+}
+
 export function rateLimited(
     req: http.IncomingMessage,
     name: string,
@@ -151,17 +212,17 @@ export function rateLimited(
 ): boolean {
     const now = Date.now();
     const key = `${name}:${clientAddress(req)}`;
-    const bucket = rateBuckets.get(key);
+    let bucket = rateBuckets.get(key);
     if (!bucket || bucket.reset <= now) {
         rateBuckets.set(key, { count: 1, reset: now + windowMs });
+        pruneRateBuckets(now);
         return false;
     }
     bucket.count += 1;
-    if (rateBuckets.size > 500) {
-        for (const [entry, value] of rateBuckets) {
-            if (value.reset <= now) rateBuckets.delete(entry);
-        }
-    }
+    // Re-insert to refresh LRU order so an active bucket is not evicted.
+    rateBuckets.delete(key);
+    rateBuckets.set(key, bucket);
+    pruneRateBuckets(now);
     return bucket.count > limit;
 }
 

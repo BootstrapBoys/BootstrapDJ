@@ -22,6 +22,7 @@ import {
     setOAuthState,
     viewer,
 } from './auth.js';
+import { GuildAccessCache } from './accessCache.js';
 import {
     clearSettingsCaches,
     readAccess,
@@ -39,12 +40,13 @@ const MAX_BODY_BYTES = 64_000;
 const RATE_WINDOW_MS = 60_000;
 const AUTH_ATTEMPTS_PER_MINUTE = 30;
 const MUTATIONS_PER_MINUTE = 180;
+const READS_PER_MINUTE = 300;
 const ACCESS_TTL_MS = 60_000;
 const ACCESS_CACHE_MAX = 1000;
 const AUTH_PATHS = new Set(['/auth/discord', '/auth/callback', '/auth/logout']);
 
 /** Per-viewer guild authorization, refreshed on a short TTL. */
-const accessCache = new Map<string, { at: number; access: GuildAccess }>();
+const accessCache = new GuildAccessCache(ACCESS_TTL_MS, ACCESS_CACHE_MAX);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -127,27 +129,24 @@ function bodyText(value: unknown, fallback: string = ''): string {
 async function resolveAccess(
     client: BootstrapClient,
     req: http.IncomingMessage,
-    guildId: string
+    guildId: string,
+    fresh: boolean = false
 ): Promise<GuildAccess> {
     const oauth = oauthEnabled();
     const session = oauth ? readSession(req) : null;
     if (oauth && !session) return NO_ACCESS;
 
     const cacheKey = (session?.id ?? 'token') + ':' + guildId;
-    const cached = accessCache.get(cacheKey);
-    if (cached && Date.now() - cached.at < ACCESS_TTL_MS) return cached.access;
+    if (!fresh) {
+        const cached = accessCache.get(cacheKey);
+        if (cached) return cached;
+    }
 
     const result = await readAccess(client, session?.id ?? null, guildId);
     if (!result.found || !result.access.member) return NO_ACCESS;
 
-    const now = Date.now();
-    accessCache.set(cacheKey, { at: now, access: result.access });
-    if (accessCache.size > ACCESS_CACHE_MAX) {
-        for (const [key, entry] of accessCache) {
-            if (now - entry.at >= ACCESS_TTL_MS) accessCache.delete(key);
-        }
-    }
-    return result.access;
+    accessCache.set(cacheKey, result.access);
+    return { ...result.access };
 }
 
 async function guildAllowed(
@@ -257,6 +256,15 @@ async function route(
         tooManyRequests(res, 'too many requests');
         return;
     }
+    // Reads hit Discord caches, the database and every shard; an unauthenticated
+    // caller must not be able to amplify one request into that work.
+    if (
+        (method === 'GET' || method === 'HEAD') &&
+        rateLimited(req, 'read', READS_PER_MINUTE, RATE_WINDOW_MS)
+    ) {
+        tooManyRequests(res, 'too many requests');
+        return;
+    }
 
     if (method === 'GET' && path === '/auth/discord' && oauthEnabled()) {
         const state = randomBytes(24).toString('hex');
@@ -349,7 +357,7 @@ async function route(
     if (method === 'POST' && path === '/api/settings') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        if (!(await resolveAccess(client, req, guildId)).settings) {
+        if (!(await resolveAccess(client, req, guildId, true)).settings) {
             guildDenied(res);
             return;
         }
@@ -360,6 +368,7 @@ async function route(
         } else {
             await saveSetting(client, guildId, bodyText(body.key), bodyText(body.value));
         }
+        accessCache.invalidateGuild(guildId);
         await clearSettingsCaches(client, guildId);
         sendJson(res, 200, { ok: true, settings: await effectiveSettings(client, guildId) });
         return;
@@ -368,7 +377,7 @@ async function route(
     if (method === 'POST' && path === '/api/filter') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        if (!(await resolveAccess(client, req, guildId)).settings) {
+        if (!(await resolveAccess(client, req, guildId, true)).settings) {
             guildDenied(res);
             return;
         }
@@ -380,6 +389,7 @@ async function route(
             Boolean(body.enabled),
             value
         );
+        accessCache.invalidateGuild(guildId);
         sendJson(res, 200, { ok: true, filters: { active } });
         return;
     }
@@ -417,26 +427,30 @@ async function route(
     if (method === 'POST' && path === '/api/stats/clear') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        if (!(await guildAllowed(client, req, guildId))) {
+        const access = await resolveAccess(client, req, guildId, true);
+        if (!access.member) {
             guildDenied(res);
             return;
         }
-        if (!(await resolveAccess(client, req, guildId)).owner) {
+        if (!access.owner) {
             sendJson(res, 403, { error: 'Only the server owner can clear statistics' });
             return;
         }
-        sendJson(res, 200, { ok: true, removed: await client.db.clearStats(guildId) });
+        const removed = await client.db.clearStats(guildId);
+        accessCache.invalidateGuild(guildId);
+        sendJson(res, 200, { ok: true, removed });
         return;
     }
 
     if (method === 'POST' && path === '/api/player') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        if (!(await resolveAccess(client, req, guildId)).controls) {
+        if (!(await resolveAccess(client, req, guildId, true)).controls) {
             guildDenied(res);
             return;
         }
         await remotePlayerAction(client, guildId, bodyText(body.action), Number(body.value ?? 0));
+        accessCache.invalidateGuild(guildId);
         const updated = await remotePlayer(client, guildId);
         sendJson(res, 200, { ok: true, player: updated.player });
         return;
