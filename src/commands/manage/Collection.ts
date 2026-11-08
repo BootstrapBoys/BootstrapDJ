@@ -57,10 +57,11 @@ export default class Collection extends Command {
     private get(ctx: Context, name: string, index: number): string | null {
         if (ctx.isInteraction && ctx.interaction) {
             const value = ctx.interaction.options.get(name);
-            if (value === null || value === undefined) return null;
-            return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-                ? String(value)
-                : null;
+            if (value !== null && value !== undefined) {
+                return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+                    ? String(value)
+                    : null;
+            }
         }
         return ctx.args[index] ?? null;
     }
@@ -93,6 +94,7 @@ export default class Collection extends Command {
         if (!author) return;
         const action = (this.get(ctx, 'action', 0) ?? 'list').toLowerCase();
         let name = (this.get(ctx, 'name', 1) ?? '').trim();
+        client.logger.info(`[playlist] action=${action} name=${name} args=${ctx.args.join('|')}`);
         const query = (this.get(ctx, 'query', 2) ?? '').trim();
         const target = (this.get(ctx, 'target', 3) ?? '').trim();
         const index = Number(this.get(ctx, 'index', 4) ?? 0);
