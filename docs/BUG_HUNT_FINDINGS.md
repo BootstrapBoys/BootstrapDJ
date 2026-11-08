@@ -163,3 +163,7 @@ permissions, channel formatting, stats skip counting, queue max mismatch, bulk
 persist, vote-skip state, session write ordering, guild data retention, bridge
 mention injection, dashboard validation/error codes, cache TTLs, dependency
 runtime version mismatch.
+
+## Status
+
+P0, all P1, assigned P2, and high-value P3 findings are fixed with regression tests. Final code checkpoint: `f5103b9`; tests: 351/351. Remaining known exceptions: playlist UUID ordering requires a schema position column; repo-wide `npm run format` is red on pre-existing files; 24-hour soak and long-run performance capture remain.
