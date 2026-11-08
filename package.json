@@ -18,6 +18,7 @@
         "soak": "node tooling/soak/run.mjs",
         "soak:bottest": "bash tooling/bottest-soak.sh",
         "soak:report": "node tooling/soak/report.mjs",
+        "chaos:failover": "bash tooling/chaos/failover.sh",
         "clean": "rm -rf dist",
         "lint": "oxlint --type-aware --type-check --deny-warnings .",
         "lint:fix": "oxlint --type-aware --type-check --fix .",

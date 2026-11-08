@@ -304,6 +304,11 @@ Total: **7–12 focused days**, then weekly soak maintenance.
 - CI runs format, lint, build, and coverage (`test:coverage`).
 - BotTest 5-minute dry run passed: 31 samples, RSS -17.7%, heap -18.0%,
   event-loop p99 21.4 ms, no uptime resets.
+- Fake-Lavalink contract tests cover search prefixing, URL passthrough, fallback
+  retry, transport failure, and no-node behavior.
+- `tooling/chaos/failover.sh` is implemented with `CHAOS_ALLOW`,
+  `ISOLATED_TEST_NODES`, production, soak-active, and PM2 process guards. It was
+  not run during the active soak.
 - Full 24-hour workload soak started 2026-11-08T20:40:53Z on BotTest, using the
   bot itself as the voice member for bridge-driven commands. Artifact:
   `/root/BotTest/artifacts/soak/2026-11-08T20-40-53-391Z`; result pending.
