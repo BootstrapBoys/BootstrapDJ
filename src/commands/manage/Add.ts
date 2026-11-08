@@ -4,129 +4,65 @@ import { LoadType, Track } from 'shoukaku';
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
+function tracksFrom(result: { loadType: LoadType; data: unknown }): Track[] {
+    if (result.loadType === LoadType.PLAYLIST) return (result.data as { tracks: Track[] }).tracks;
+    if (result.loadType === LoadType.TRACK) return [result.data as Track];
+    if (result.loadType === LoadType.SEARCH) {
+        const data = result.data as Track[];
+        return data.length ? [data[0]] : [];
+    }
+    return [];
+}
+
 export default class Add extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'add',
-            description: {
-                content: 'Adds a song to the playlist',
-                examples: ['add <playlist> <song>'],
-                usage: 'add <playlist> <song>',
-            },
+            description: { content: 'Adds a song to the playlist', examples: ['add <playlist> <song>'], usage: 'add <playlist> <song>' },
             category: 'playlist',
             aliases: ['add'],
             cooldown: 3,
             args: true,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
+            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
             slashCommand: false,
             defer: true,
             options: [
-                {
-                    name: 'playlist',
-                    description: 'The playlist you want to add',
-                    type: ApplicationCommandOptionType.String,
-                    required: true,
-                    autocomplete: true,
-                },
-                {
-                    name: 'song',
-                    description: 'The song you want to add',
-                    type: ApplicationCommandOptionType.String,
-                    required: true,
-                },
+                { name: 'playlist', description: 'The playlist you want to add', type: ApplicationCommandOptionType.String, required: true, autocomplete: true },
+                { name: 'song', description: 'The song you want to add', type: ApplicationCommandOptionType.String, required: true },
             ],
         });
     }
+
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const author = ctx.author;
-        if (!author) return;
-        const playlist = args[0];
-        const song = args[1];
-
-        if (!playlist)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'Please provide a playlist',
-                        color: client.color.red,
-                    },
-                ],
-            });
-
-        if (!song)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'Please provide a song',
-                        color: client.color.red,
-                    },
-                ],
-            });
-
-        const playlistData = await client.db.getPLaylist(author.id, playlist);
-
-        if (!playlistData)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'That playlist doesn\'t exist',
-                        color: client.color.red,
-                    },
-                ],
-            });
-
-        const res = await client.queue.search(song, await resolveSearchEngine(client, ctx));
-        if (!res)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'No songs found',
-                        color: client.color.red,
-                    },
-                ],
-            });
-
-        // Normalise every load type to an array of tracks; res.data is a single
-        // track for TRACK, an array for SEARCH, and { tracks } for PLAYLIST.
-        let tracks: Track[] = [];
-        if (res.loadType === LoadType.PLAYLIST) tracks = res.data.tracks;
-        else if (res.loadType === LoadType.TRACK) tracks = [res.data];
-        else if (res.loadType === LoadType.SEARCH && res.data.length) tracks = [res.data[0]];
-
-        if (!tracks.length)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'No songs found',
-                        color: client.color.red,
-                    },
-                ],
-            });
+        if (!ctx.author) return;
+        const [name, query] = args;
+        if (!name) {
+            return await ctx.sendMessage({ embeds: [{ description: 'Please provide a playlist', color: client.color.red }] });
+        }
+        if (!query) {
+            return await ctx.sendMessage({ embeds: [{ description: 'Please provide a song', color: client.color.red }] });
+        }
+        const playlist = await client.db.getPLaylist(ctx.author.id, name);
+        if (!playlist) {
+            return await ctx.sendMessage({ embeds: [{ description: 'That playlist doesn\'t exist', color: client.color.red }] });
+        }
+        const result = await client.queue.search(query, await resolveSearchEngine(client, ctx));
+        const tracks = result ? tracksFrom(result) : [];
+        if (!tracks.length) {
+            return await ctx.sendMessage({ embeds: [{ description: 'No songs found', color: client.color.red }] });
+        }
 
         let added = 0;
         let duplicates = 0;
         for (const track of tracks) {
-            const created = await client.db.addSong(author.id, playlist, track);
-            if (created) added++;
+            if (await client.db.addSong(ctx.author.id, name, track)) added++;
             else duplicates++;
         }
-
-        await ctx.sendMessage({
+        return await ctx.sendMessage({
             embeds: [
                 {
-                    description: `Added ${added} to ${playlistData.name}${
-                        duplicates ? ` (${duplicates} already in the playlist)` : ''
-                    }`,
+                    description: `Added ${added} to ${playlist.name}${duplicates ? ` (${duplicates} already in the playlist)` : ''}`,
                     color: client.color.green,
                 },
             ],

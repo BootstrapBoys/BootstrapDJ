@@ -4,73 +4,39 @@ import os from 'node:os';
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Info extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'info',
-            description: {
-                content: 'Information about the bot',
-                examples: ['info'],
-                usage: 'info',
-            },
+            description: { content: 'Information about the bot', examples: ['info'], usage: 'info' },
             category: 'info',
             aliases: ['botinfo', 'bi', 'about'],
             cooldown: 3,
             args: false,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: [],
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
+            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
             slashCommand: false,
             options: [],
         });
     }
+
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const osType = os.type();
-        const osRelease = os.release();
-        const osUptime = os.uptime();
-        const osHostname = os.hostname();
-        const cpuArch = os.arch();
-        const cpuCores = os.cpus().length;
-        const totalMem = os.totalmem();
-        const freeMem = os.freemem();
-        const usedMem = totalMem - freeMem;
-        const nodeVersion = process.version;
-        const discordJsVersion = version;
-        const botGuilds = client.guilds.cache.size;
-        const botChannels = client.channels.cache.size;
-        const botUsers = client.users.cache.size;
-        const botCommands = client.commands.size;
-
-        const botInfo = `Bot Information:
-- **Operating System**: ${osType} ${osRelease}
-- **Uptime**: ${client.utils.formatTime(osUptime)}
-- **Hostname**: ${osHostname}
-- **CPU Architecture**: ${cpuArch} (${cpuCores} cores)
-- **Memory Usage**: ${client.utils.formatBytes(usedMem)} / ${client.utils.formatBytes(
-            totalMem
-        )} (${Math.round((usedMem / totalMem) * 100)}%)
-- **Node Version**: ${nodeVersion}
-- **Discord Version**: ${discordJsVersion}
-- **Connected to** ${botGuilds} guilds, ${botChannels} channels, and ${botUsers} users
-- **Total Commands**: ${botCommands}
-  `;
-
-        const embed = this.client.embed();
+        const total = os.totalmem();
+        const used = total - os.freemem();
+        const percent = Math.round((used / total) * 100);
+        const lines = [
+            'Bot Information:',
+            `- **Operating System**: ${os.type()} ${os.release()}`,
+            `- **Uptime**: ${client.utils.formatTime(os.uptime())}`,
+            `- **Hostname**: ${os.hostname()}`,
+            `- **CPU Architecture**: ${os.arch()} (${os.cpus().length} cores)`,
+            `- **Memory Usage**: ${client.utils.formatBytes(used)} / ${client.utils.formatBytes(total)} (${percent}%)`,
+            `- **Node Version**: ${process.version}`,
+            `- **Discord Version**: ${version}`,
+            `- **Connected to** ${client.guilds.cache.size} guilds, ${client.channels.cache.size} channels, and ${client.users.cache.size} users`,
+            `- **Total Commands**: ${client.commands.size}`,
+        ];
         return await ctx.sendMessage({
-            embeds: [embed.setColor(this.client.color.main).setDescription(botInfo)],
+            embeds: [client.embed().setColor(client.color.main).setDescription(lines.join('\n'))],
         });
     }
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
