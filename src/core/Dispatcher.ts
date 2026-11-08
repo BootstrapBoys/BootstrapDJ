@@ -14,6 +14,7 @@ import {
 import { ShoukakuPlayerPort } from './player/ShoukakuPlayerPort.js';
 import { SessionPort } from './player/SessionPort.js';
 import { DispatcherLoggerPort } from './player/DispatcherLoggerPort.js';
+import { DestroyCoordinator, type DestroyHost } from './player/DestroyCoordinator.js';
 import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
 import { findColdStart } from './player/AutoplayColdStart.js';
@@ -111,8 +112,6 @@ export default class Dispatcher {
     /** Failed final attempts per track, so an unplayable track is skipped. */
     /** Exposed on the runtime object; tests and characterization suites read it. */
     public failedTracks = new Map<string, number>();
-    /** Settles when the Shoukaku player teardown finishes; rebuilds await it. */
-    private leavePromise: Promise<void> | null = null;
     public nowPlayingMessage: Message | null;
     public nowPlayingCollector: NowPlayingCollector | null;
     /** "Leave in …" prompt shown when the queue drains; cleared on leave/requeue. */
@@ -131,13 +130,25 @@ export default class Dispatcher {
     public skipRecentRecording = false;
     /** Playback decisions live here; this class keeps the public state and wiring. */
     private engineStore?: PlaybackEngine;
+    private coordinatorStore?: DestroyCoordinator;
+
+    private get coordinator(): DestroyCoordinator {
+        this.coordinatorStore ??= new DestroyCoordinator(
+            new DispatcherDestroyHost(this, this.timers, this.client),
+            new DispatcherLoggerPort(this.client.logger)
+        );
+        return this.coordinatorStore;
+    }
 
     private get engine(): PlaybackEngine {
         this.engineStore ??= new PlaybackEngine(new DispatcherPlaybackState(this), {
             player: new ShoukakuPlayerPort(() => this.player),
             sessions: new SessionPort(this.client.db),
             logger: new DispatcherLoggerPort(this.client.logger),
-            host: new DispatcherPlaybackHost(this, this.client.db, this.timers),
+            host: new DispatcherPlaybackHost(this, this.client.db, {
+                arm: (seconds, onElapsed) => this.coordinator.armPauseTimeout(seconds, onElapsed),
+                clear: () => this.coordinator.clearPauseTimeout(),
+            }),
         });
         return this.engineStore;
     }
@@ -286,18 +297,11 @@ export default class Dispatcher {
     }
 
     public armIdleTimeout(seconds: number): void {
-        this.clearIdleTimeout();
-        if (!Number.isFinite(seconds) || seconds <= 0) return;
-        this.timers.idle = setTimeout(() => {
-            this.timers.idle = null;
-            if (!this.queue.length && !this.autoplay && !this.current) this.destroy();
-        }, seconds * 1000);
-        (this.timers.idle as unknown as { unref?: () => void }).unref?.();
+        this.coordinator.armIdleTimeout(seconds);
     }
 
     public clearIdleTimeout(): void {
-        if (this.timers.idle) clearTimeout(this.timers.idle);
-        this.timers.idle = null;
+        this.coordinator.clearIdleTimeout();
     }
 
     /** Remove the "leave in …" prompt when playback resumes or the player goes away. */
@@ -320,57 +324,7 @@ export default class Dispatcher {
     }
 
     public destroy(preserveSession: boolean = false): void {
-        // A delayed timer or collector may still hold the old dispatcher after
-        // a rebuild installed a replacement; never tear down the live player.
-        if (this.client.queue.get(this.guildId) !== this) {
-            if (this.timers.persist) clearInterval(this.timers.persist);
-            this.timers.persist = null;
-            if (this.timers.stats) clearInterval(this.timers.stats);
-            this.timers.stats = null;
-            if (this.timers.pause) clearTimeout(this.timers.pause);
-            this.timers.pause = null;
-            this.clearIdleTimeout();
-            this.nowPlayingCollector?.stop('destroy');
-            this.nowPlayingCollector = null;
-            this.clearNowPlayingCommandMessages();
-            this.clearQueueEmptyPrompt();
-            return;
-        }
-        if (this.client.shuttingDown) {
-            if (this.timers.persist) clearInterval(this.timers.persist);
-            this.timers.persist = null;
-            if (this.timers.stats) clearInterval(this.timers.stats);
-            this.timers.stats = null;
-            this.clearQueueEmptyPrompt();
-            return;
-        }
-        if (this.timers.persist) clearInterval(this.timers.persist);
-        this.timers.persist = null;
-        if (this.timers.stats) clearInterval(this.timers.stats);
-        this.timers.stats = null;
-        if (this.timers.pause) clearTimeout(this.timers.pause);
-        this.timers.pause = null;
-        this.clearIdleTimeout();
-        this.nowPlayingCollector?.stop('destroy');
-        this.nowPlayingCollector = null;
-        this.clearNowPlayingCommandMessages();
-        this.clearQueueEmptyPrompt();
-        if (!preserveSession) void this.client.db.deleteSession(this.guildId).catch(() => {});
-        this.queue.length = 0;
-        this.history = [];
-        this.pauseWhenEmpty = false;
-        this.paused247 = false;
-        this.leavePromise = (async () => {
-            try {
-                await this.client.shoukaku.leaveVoiceChannel(this.guildId);
-            } catch (error) {
-                this.client.logger.warn(`[player] leave failed for ${this.guildId}: ${error}`);
-            }
-        })();
-        this.client.queue.delete(this.guildId);
-        this.client.utils.updateStatus(this.client, this.guildId);
-        if (this.stopped) return;
-        this.client.shoukaku.emitPlayerEvent('playerDestroy', this.player);
+        this.coordinator.destroy(preserveSession);
     }
 
     /**
@@ -379,8 +333,7 @@ export default class Dispatcher {
      * leave request, leaving the queue populated but silent.
      */
     public async destroyAndWait(preserveSession: boolean = false): Promise<void> {
-        this.destroy(preserveSession);
-        await this.leavePromise;
+        await this.coordinator.destroyAndWait(preserveSession);
     }
     public setShuffle(): void {
         if (!this.player) return;
@@ -763,11 +716,16 @@ interface PauseSettingsStore {
     getGuildSettings(guildId: string): Promise<{ timeoutpause?: unknown }>;
 }
 
+interface PauseTimeoutPort {
+    arm(seconds: number, onElapsed: () => void): void;
+    clear(): void;
+}
+
 class DispatcherPlaybackHost implements PlaybackHost {
     public constructor(
         private readonly dispatcher: Dispatcher,
         private readonly db: PauseSettingsStore,
-        private readonly timers: PlaybackTimers
+        private readonly pauseTimeouts: PauseTimeoutPort
     ) {}
 
     public get guildId(): string {
@@ -811,17 +769,84 @@ class DispatcherPlaybackHost implements PlaybackHost {
     }
 
     public armPauseTimeout(seconds: number, onElapsed: () => void): void {
-        this.timers.pause = setTimeout(onElapsed, seconds * 1000);
-        (this.timers.pause as unknown as { unref?: () => void }).unref?.();
+        this.pauseTimeouts.arm(seconds, onElapsed);
     }
 
     public clearPauseTimeout(): void {
-        if (this.timers.pause) clearTimeout(this.timers.pause);
-        this.timers.pause = null;
+        this.pauseTimeouts.clear();
     }
 
     public destroy(): void {
         this.dispatcher.destroy();
+    }
+}
+
+
+class DispatcherDestroyHost implements DestroyHost {
+    public constructor(
+        private readonly dispatcher: Dispatcher,
+        public readonly timers: PlaybackTimers,
+        private readonly client: BootstrapClient
+    ) {}
+
+    public get guildId(): string {
+        return this.dispatcher.guildId;
+    }
+
+    public get stopped(): boolean {
+        return this.dispatcher.stopped;
+    }
+
+    public isCurrent(): boolean {
+        return this.client.queue.get(this.dispatcher.guildId) === this.dispatcher;
+    }
+
+    public isShuttingDown(): boolean {
+        return this.client.shuttingDown;
+    }
+
+    public isIdle(): boolean {
+        return !this.dispatcher.queue.length && !this.dispatcher.autoplay && !this.dispatcher.current;
+    }
+
+    public stopNowPlayingCollector(): void {
+        this.dispatcher.nowPlayingCollector?.stop('destroy');
+        this.dispatcher.nowPlayingCollector = null;
+    }
+
+    public clearNowPlayingCommandMessages(): void {
+        this.dispatcher.clearNowPlayingCommandMessages();
+    }
+
+    public clearQueueEmptyPrompt(): void {
+        this.dispatcher.clearQueueEmptyPrompt();
+    }
+
+    public resetPlayback(): void {
+        this.dispatcher.queue.length = 0;
+        this.dispatcher.history = [];
+        this.dispatcher.pauseWhenEmpty = false;
+        this.dispatcher.paused247 = false;
+    }
+
+    public deleteSession(): Promise<void> {
+        return this.dispatcher.deleteSession();
+    }
+
+    public leave(): Promise<void> {
+        return this.client.shoukaku.leaveVoiceChannel(this.dispatcher.guildId);
+    }
+
+    public removeFromQueue(): void {
+        this.client.queue.delete(this.dispatcher.guildId);
+    }
+
+    public updateStatus(): void {
+        this.client.utils.updateStatus(this.client, this.dispatcher.guildId);
+    }
+
+    public emitPlayerDestroy(): void {
+        this.client.shoukaku.emitPlayerEvent('playerDestroy', this.dispatcher.player);
     }
 }
 
