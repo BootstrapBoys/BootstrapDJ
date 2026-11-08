@@ -349,7 +349,7 @@ Completed on `experimental/rewrite` after the original snapshot:
 | 3 — transport | `f1d8b09` | `play`/`pause`/`skip`/`seek`/`stop`/`previous`/`shuffle`/`isPlaying` are engine delegates; retry backoff and failure-drop pinned by tests |
 | 4 — restore | `35bc4ae` | `SessionRestorer` + `SessionLease` extracted; `lib/Session.ts` is a re-export surface; restore/expiry/empty-channel/24-7/failure tests |
 | 5 — lifecycle | `f67a566`, `4f76b33` | `DestroyCoordinator` owns teardown and timers; `NodeMigrator` owns snapshot/transfer/resume; 16 lifecycle tests |
-| 6 — integration | `fea7fec` | dead `TransportActions` removed; queue default-volume tests; architecture doc; 206 tests, build/lint/tsc/git diff clean |
+| 6 — integration | `fea7fec` | dead `TransportActions` removed; queue default-volume tests; architecture doc; 209 tests, build/lint/tsc/git diff clean |
 
 Behavior intentionally preserved:
 
