@@ -1,215 +1,192 @@
-import { Message, MessageReplyOptions, PermissionFlagsBits } from 'discord.js';
+import { GuildMember, Message, MessageReplyOptions, PermissionFlagsBits } from 'discord.js';
 
 import { BootstrapClient, Context, Event } from '../../core/index.js';
-import { evaluateCommand } from '../../lib/CommandGate.js';
+import { evaluateCommand, type GateMember } from '../../lib/CommandGate.js';
 import { matchPrefixCommand } from '../../lib/PrefixCommand.js';
 
+function escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function memberContext(member: GuildMember): GateMember {
+    return {
+        id: member.id,
+        roleIds: [...member.roles.cache.keys()],
+        hasPermission: (permission: bigint) => member.permissions.has(permission),
+        voiceChannel: member.voice.channel
+            ? { id: member.voice.channel.id, type: member.voice.channel.type }
+            : null,
+    };
+}
+
 export default class MessageCreate extends Event {
-    constructor(client: BootstrapClient, file: string) {
-        super(client, file, {
-            name: 'messageCreate',
-        });
+    public constructor(client: BootstrapClient, file: string) {
+        super(client, file, { name: 'messageCreate' });
     }
-    public async run(message: Message): Promise<unknown> {
-        if (message.author.bot) return;
-        // Narrows to Message<true>: guild, member and guildId are then non-null.
-        if (!message.inGuild()) return;
-        const me = message.guild.members.me;
-        const member = message.member;
-        const botId = this.client.user?.id;
-        if (!me || !member || !botId) return;
 
-        // Handler replies (permissions, cooldown, missing args) are sent straight
-        // to the channel, so Context never arms them. Give them the same lifetime
-        // as command output instead of leaving them behind.
-        const replySafe = async (content: string | MessageReplyOptions): Promise<Message> => {
-            const sent = await message.reply(content);
-            this.client.utils.scheduleDelete(this.client, sent);
-            return sent;
-        };
-
-        const guild = await this.client.db.get(message.guildId);
-        if (!guild) return;
-        const userPrefix = await this.client.db.getUserPrefix(message.guildId, message.author.id);
-        const setup = await this.client.db.getSetup(message.guildId);
-        if (setup && setup.textId === message.channelId) {
-            // The request channel normally treats everything as a search query.
-            // Let known prefix commands fall through to the normal command path
-            // instead, so !playnext, !skip, !queue, etc. behave the same there.
-            if (!(await this.hasPrefixCommand(message, guild.prefix, userPrefix))) {
-                return this.client.emit('setupSystem', message);
-            }
-        }
-
-        const mention = new RegExp(`^<@!?${botId}>( |)$`);
-        if (message.content.match(mention)) {
-            await replySafe({
-                content: `Hey, my prefix for this server is \`${guild.prefix}\` Want more info? then do \`${guild.prefix}help\`\nStay Safe, Stay Awesome!`,
-            });
-            return;
-        }
-        const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const serverPrefixes = guild.prefix
+    private prefixList(guildPrefix: string, userPrefix: string | null): string[] {
+        const server = guildPrefix
             .split(',')
             .map(prefix => prefix.trim())
-            .filter(Boolean)
-            .sort((left, right) => right.length - left.length);
-        const prefixes = (userPrefix ? [...new Set([...serverPrefixes, userPrefix])] : serverPrefixes).sort(
-            (left, right) => right.length - left.length
-        );
-        const prefixRegex = new RegExp(
-            `^(<@!?${botId}>|${prefixes.map(prefix => escapeRegex(prefix)).join('|')})\\s*`
-        );
-        const match = message.content.match(prefixRegex);
-        if (!match) return;
-        const guildSettings = await this.client.db.getGuildSettings(message.guildId);
-        const [matchedPrefix] = match;
-
-        const args = message.content.slice(matchedPrefix.length).trim().split(/ +/g);
-
-        let cmd = args.shift()?.toLowerCase();
-        if (!cmd) return;
-        const mapping = await this.client.db.getCommandMapping(message.guildId, cmd, message.author.id);
-        if (mapping) {
-            const expanded = mapping.expansion.trim().split(/ +/g);
-            const mappedCommand = expanded.shift()?.toLowerCase();
-            if (mappedCommand) {
-                cmd = mappedCommand;
-                args.unshift(...expanded);
-            }
-        }
-        let command =
-            this.client.commands.get(cmd) ||
-            this.client.commands.get(this.client.aliases.get(cmd) as string);
-        if (!command) {
-            const custom = await this.client.db.getCommandAlias(message.guildId, cmd, message.author.id);
-            if (custom) command = this.client.commands.get(custom.command);
-        }
-        if (!command) {
-            if (guildSettings.autocorrect === 'true') {
-                const suggestion = this.closestCommand(cmd);
-                if (suggestion) {
-                    command = this.client.commands.get(suggestion);
-                    if (command) {
-                        const prefix = guild.prefix.split(',')[0]?.trim() || this.client.config.prefix;
-                        await replySafe({ content: `Corrected \`${prefix}${cmd}\` to \`${prefix}${suggestion}\`.` });
-                        cmd = suggestion;
-                    }
-                }
-            }
-            if (!command) return;
-        }
-        const gate = await evaluateCommand({
-            client: this.client,
-            command,
-            guildId: message.guildId,
-            guildName: message.guild.name,
-            member: {
-                id: message.author.id,
-                roleIds: [...member.roles.cache.keys()],
-                hasPermission: permission => member.permissions.has(permission),
-                voiceChannel: member.voice.channel
-                    ? { id: member.voice.channel.id, type: member.voice.channel.type }
-                    : null,
-            },
-            me: {
-                id: me.id,
-                roleIds: [...me.roles.cache.keys()],
-                hasPermission: permission => me.permissions.has(permission),
-                voiceChannel: me.voice.channel
-                    ? { id: me.voice.channel.id, type: me.voice.channel.type }
-                    : null,
-            },
-            channel: message.channel,
-            canViewChannel:
-                message.channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) === true,
-            settings: guildSettings,
-            args,
-            commandKey: cmd,
-            isPrefix: true,
-        });
-        if (!gate.ok) {
-            if (gate.silent || !gate.response) return;
-            if (gate.dm) {
-                await message.author.send(gate.response).catch(() => {});
-                return;
-            }
-            return await replySafe(gate.response);
-        }
-
-        const ctx = new Context(message, args);
-        ctx.deleteAfter = Number(guildSettings.deleteafter) || null;
-        ctx.setArgs(args);
-
-        void this.client.db.recordCommand(message.guildId, command.name).catch(() => {});
-        try {
-            // `return command.run(...)` without await lets async rejections skip
-            // this catch and surface as unhandled rejections instead.
-            return await command.run(this.client, ctx, ctx.args);
-        } catch (error) {
-            this.client.logger.error(error);
-            await replySafe({ content: `An error occurred: \`${error}\`` });
-            return;
-        }
-    }
-    /** Does this setup-channel message start with a real prefix command? */
-    private async hasPrefixCommand(
-        message: Message<true>,
-        guildPrefix: string,
-        userPrefix: string | null
-    ): Promise<boolean> {
-        const prefixes = [...guildPrefix.split(',').map(prefix => prefix.trim()).filter(Boolean)];
-        if (userPrefix) prefixes.push(userPrefix);
-        const match = matchPrefixCommand(message.content, prefixes);
-        if (!match) return false;
-        const { name } = match;
-        if (this.client.commands.has(name) || this.client.aliases.has(name)) return true;
-        const mapping = await this.client.db
-            .getCommandMapping(message.guildId, name, message.author.id)
-            .catch(() => null);
-        if (mapping) {
-            const mapped = mapping.expansion.trim().split(/ +/)[0]?.toLowerCase();
-            if (mapped && (this.client.commands.has(mapped) || this.client.aliases.has(mapped))) {
-                return true;
-            }
-        }
-        const custom = await this.client.db
-            .getCommandAlias(message.guildId, name, message.author.id)
-            .catch(() => null);
-        return Boolean(custom && this.client.commands.has(custom.command));
+            .filter(Boolean);
+        const all = userPrefix ? [...new Set([...server, userPrefix])] : server;
+        return all.sort((left, right) => right.length - left.length);
     }
 
-    private closestCommand(input: string): string | null {
-        const distance = (a: string, b: string): number => {
-            const rows = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
-            for (let j = 1; j <= b.length; j++) rows[0][j] = j;
-            for (let i = 1; i <= a.length; i++) {
-                for (let j = 1; j <= b.length; j++) {
-                    rows[i][j] = Math.min(
-                        rows[i - 1][j] + 1,
-                        rows[i][j - 1] + 1,
-                        rows[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+    private closest(input: string): string | null {
+        const distance = (left: string, right: string): number => {
+            const table = Array.from({ length: left.length + 1 }, () =>
+                Array<number>(right.length + 1).fill(0)
+            );
+            for (let row = 0; row <= left.length; row++) table[row][0] = row;
+            for (let column = 0; column <= right.length; column++) table[0][column] = column;
+            for (let row = 1; row <= left.length; row++) {
+                for (let column = 1; column <= right.length; column++) {
+                    table[row][column] = Math.min(
+                        table[row - 1][column] + 1,
+                        table[row][column - 1] + 1,
+                        table[row - 1][column - 1] + (left[row - 1] === right[column - 1] ? 0 : 1)
                     );
                 }
             }
-            return rows[a.length][b.length];
+            return table[left.length][right.length];
         };
+
         let best: string | null = null;
-        let score = 3;
+        let bestScore = 3;
         for (const name of this.client.commands.keys()) {
-            const value = distance(input, name);
-            if (value < score) {
-                score = value;
+            const score = distance(input, name);
+            if (score < bestScore) {
+                bestScore = score;
                 best = name;
             }
         }
         return best;
     }
 
-}
+    private reply(message: Message<true>) {
+        return async (content: string | MessageReplyOptions): Promise<Message> => {
+            const sent = await message.reply(content);
+            this.client.utils.scheduleDelete(this.client, sent);
+            return sent;
+        };
+    }
 
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+    private async isSetupCommand(
+        message: Message<true>,
+        guildPrefix: string,
+        userPrefix: string | null
+    ): Promise<boolean> {
+        const match = matchPrefixCommand(message.content, this.prefixList(guildPrefix, userPrefix));
+        if (!match) return false;
+        if (this.client.commands.has(match.name) || this.client.aliases.has(match.name)) return true;
+
+        const mapping = await this.client.db
+            .getCommandMapping(message.guildId, match.name, message.author.id)
+            .catch(() => null);
+        const mapped = mapping?.expansion.trim().split(/ +/)[0]?.toLowerCase();
+        if (mapped && (this.client.commands.has(mapped) || this.client.aliases.has(mapped))) return true;
+
+        const alias = await this.client.db
+            .getCommandAlias(message.guildId, match.name, message.author.id)
+            .catch(() => null);
+        return Boolean(alias && this.client.commands.has(alias.command));
+    }
+
+    public async run(message: Message): Promise<unknown> {
+        if (message.author.bot || !message.inGuild()) return;
+        const me = message.guild.members.me;
+        const member = message.member;
+        const botId = this.client.user?.id;
+        if (!me || !member || !botId) return;
+
+        const reply = this.reply(message);
+        const guild = await this.client.db.get(message.guildId);
+        if (!guild) return;
+        const userPrefix = await this.client.db.getUserPrefix(message.guildId, message.author.id);
+        const setup = await this.client.db.getSetup(message.guildId);
+        if (setup?.textId === message.channelId) {
+            if (!(await this.isSetupCommand(message, guild.prefix, userPrefix))) {
+                return this.client.emit('setupSystem', message);
+            }
+        }
+
+        if (new RegExp(`^<@!?${botId}>( |)$`).test(message.content)) {
+            return await reply({
+                content: `Hey, my prefix for this server is \`${guild.prefix}\` Want more info? then do \`${guild.prefix}help\`\nStay Safe, Stay Awesome!`,
+            });
+        }
+
+        const prefixes = this.prefixList(guild.prefix, userPrefix);
+        const prefixRegex = new RegExp(
+            `^(<@!?${botId}>|${prefixes.map(prefix => escapeRegex(prefix)).join('|')})\\s*`
+        );
+        const match = message.content.match(prefixRegex);
+        if (!match) return;
+
+        const args = message.content.slice(match[0].length).trim().split(/ +/g);
+        let key = args.shift()?.toLowerCase();
+        if (!key) return;
+        const settings = await this.client.db.getGuildSettings(message.guildId);
+
+        const mapping = await this.client.db.getCommandMapping(message.guildId, key, message.author.id);
+        if (mapping) {
+            const expanded = mapping.expansion.trim().split(/ +/g);
+            const mapped = expanded.shift()?.toLowerCase();
+            if (mapped) {
+                key = mapped;
+                args.unshift(...expanded);
+            }
+        }
+
+        let command = this.client.commands.get(key) ?? this.client.commands.get(this.client.aliases.get(key) ?? '');
+        if (!command) {
+            const alias = await this.client.db.getCommandAlias(message.guildId, key, message.author.id);
+            if (alias) command = this.client.commands.get(alias.command);
+        }
+        if (!command && settings.autocorrect === 'true') {
+            const suggestion = this.closest(key);
+            if (suggestion) {
+                command = this.client.commands.get(suggestion);
+                if (command) {
+                    const prefix = guild.prefix.split(',')[0]?.trim() || this.client.config.prefix;
+                    await reply({ content: `Corrected \`${prefix}${key}\` to \`${prefix}${suggestion}\`.` });
+                    key = suggestion;
+                }
+            }
+        }
+        if (!command) return;
+
+        const gate = await evaluateCommand({
+            client: this.client,
+            command,
+            guildId: message.guildId,
+            guildName: message.guild.name,
+            member: memberContext(member),
+            me: memberContext(me),
+            channel: message.channel,
+            canViewChannel:
+                message.channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) === true,
+            settings,
+            args,
+            commandKey: key,
+            isPrefix: true,
+        });
+        if (!gate.ok) {
+            if (gate.silent || !gate.response) return;
+            if (gate.dm) return await message.author.send(gate.response).catch(() => {});
+            return await reply(gate.response);
+        }
+
+        const ctx = new Context(message, args);
+        ctx.deleteAfter = Number(settings.deleteafter) || null;
+        ctx.setArgs(args);
+        void this.client.db.recordCommand(message.guildId, command.name).catch(() => {});
+        try {
+            return await command.run(this.client, ctx, ctx.args);
+        } catch (error) {
+            this.client.logger.error(error);
+            await reply({ content: `An error occurred: \`${error}\`` });
+        }
+    }
+}
