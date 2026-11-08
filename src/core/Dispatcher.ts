@@ -7,6 +7,14 @@ import { BootstrapClient } from './index.js';
 import { PresentationRegistry } from './player/PresentationRegistry.js';
 import { persistSession } from './player/SessionWriter.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
+import {
+    PlaybackEngine,
+    type PlaybackHost,
+    type PlaybackState,
+} from './player/PlaybackEngine.js';
+import { ShoukakuPlayerPort } from './player/ShoukakuPlayerPort.js';
+import { SessionPort } from './player/SessionPort.js';
+import { DispatcherLoggerPort } from './player/DispatcherLoggerPort.js';
 import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
 import { findColdStart } from './player/AutoplayColdStart.js';
@@ -104,7 +112,8 @@ export default class Dispatcher {
     public seeds: Song[];
     private toppingUp = false;
     /** Failed final attempts per track, so an unplayable track is skipped. */
-    private failedTracks = new Map<string, number>();
+    /** Exposed on the runtime object; tests and characterization suites read it. */
+    public failedTracks = new Map<string, number>();
     /** Settles when the Shoukaku player teardown finishes; rebuilds await it. */
     private leavePromise: Promise<void> | null = null;
     public nowPlayingMessage: Message | null;
@@ -123,6 +132,18 @@ export default class Dispatcher {
     public restoring = false;
     /** Set for the first track start after a restore so it is not recorded twice. */
     public skipRecentRecording = false;
+    /** Playback decisions live here; this class keeps the public state and wiring. */
+    private engineStore?: PlaybackEngine;
+
+    private get engine(): PlaybackEngine {
+        this.engineStore ??= new PlaybackEngine(new DispatcherPlaybackState(this), {
+            player: new ShoukakuPlayerPort(() => this.player),
+            sessions: new SessionPort(this.client.db),
+            logger: new DispatcherLoggerPort(this.client.logger),
+            host: new DispatcherPlaybackHost(this, this.client.db, this.timers),
+        });
+        return this.engineStore;
+    }
 
     constructor(options: DispatcherOptions) {
         this.client = options.client;
@@ -276,7 +297,7 @@ export default class Dispatcher {
         }
     }
 
-    private async resolveFresh(track: Song): Promise<Song | null> {
+    public async resolveFresh(track: Song): Promise<Song | null> {
         return await freshTrack(this, track);
     }
 
@@ -500,8 +521,7 @@ export default class Dispatcher {
     }
 
     public setLoop(loop: 'off' | 'repeat' | 'queue'): void {
-        this.loop = loop;
-        void this.persist();
+        this.engine.setLoop(loop);
     }
 
     public buildTrack(track: Song | Track, user: User): Song {
@@ -742,6 +762,182 @@ export default class Dispatcher {
         // sure one pick is waiting behind whatever is queued.
         if (!this.current && !this.queue.length) return await this.Autoplay();
         return await this.ensureLookahead();
+    }
+}
+
+
+class DispatcherPlaybackState implements PlaybackState {
+    public constructor(private readonly dispatcher: Dispatcher) {}
+
+    public get current(): Song | null {
+        return this.dispatcher.current;
+    }
+
+    public set current(value: Song | null) {
+        this.dispatcher.current = value;
+    }
+
+    public get queue(): Song[] {
+        return this.dispatcher.queue;
+    }
+
+    public set queue(value: Song[]) {
+        this.dispatcher.queue = value;
+    }
+
+    public get history(): Song[] {
+        return this.dispatcher.history;
+    }
+
+    public set history(value: Song[]) {
+        this.dispatcher.history = value;
+    }
+
+    public get previous(): Song | null {
+        return this.dispatcher.previous;
+    }
+
+    public set previous(value: Song | null) {
+        this.dispatcher.previous = value;
+    }
+
+    public get loop(): 'off' | 'repeat' | 'queue' {
+        return this.dispatcher.loop;
+    }
+
+    public set loop(value: 'off' | 'repeat' | 'queue') {
+        this.dispatcher.loop = value;
+    }
+
+    public get autoplay(): boolean {
+        return this.dispatcher.autoplay;
+    }
+
+    public set autoplay(value: boolean) {
+        this.dispatcher.autoplay = value;
+    }
+
+    public get volume(): number {
+        return this.dispatcher.player?.volume ?? 0;
+    }
+
+    public get paused(): boolean {
+        return this.dispatcher.paused;
+    }
+
+    public set paused(value: boolean) {
+        this.dispatcher.paused = value;
+    }
+
+    public get stopped(): boolean {
+        return this.dispatcher.stopped;
+    }
+
+    public set stopped(value: boolean) {
+        this.dispatcher.stopped = value;
+    }
+
+    public get seed(): Song | null {
+        return this.dispatcher.seed;
+    }
+
+    public set seed(value: Song | null) {
+        this.dispatcher.seed = value;
+    }
+
+    public get seeds(): Song[] {
+        return this.dispatcher.seeds;
+    }
+
+    public set seeds(value: Song[]) {
+        this.dispatcher.seeds = value;
+    }
+
+    public get pauseWhenEmpty(): boolean {
+        return this.dispatcher.pauseWhenEmpty;
+    }
+
+    public set pauseWhenEmpty(value: boolean) {
+        this.dispatcher.pauseWhenEmpty = value;
+    }
+
+    public get paused247(): boolean {
+        return this.dispatcher.paused247;
+    }
+
+    public set paused247(value: boolean) {
+        this.dispatcher.paused247 = value;
+    }
+
+    public get failedTracks(): Map<string, number> {
+        return this.dispatcher.failedTracks;
+    }
+}
+
+interface PauseSettingsStore {
+    get_247(guildId: string): Promise<unknown>;
+    getGuildSettings(guildId: string): Promise<{ timeoutpause?: unknown }>;
+}
+
+class DispatcherPlaybackHost implements PlaybackHost {
+    public constructor(
+        private readonly dispatcher: Dispatcher,
+        private readonly db: PauseSettingsStore,
+        private readonly timers: PlaybackTimers
+    ) {}
+
+    public get guildId(): string {
+        return this.dispatcher.guildId;
+    }
+
+    public get exists(): boolean {
+        return this.dispatcher.exists;
+    }
+
+    public get stale(): boolean {
+        return this.dispatcher.isStale;
+    }
+
+    public sessionTarget(): { textId: string; voiceId: string } | null {
+        if (!this.dispatcher.voiceId || this.dispatcher.restoring) return null;
+        return { textId: this.dispatcher.channelId, voiceId: this.dispatcher.voiceId };
+    }
+
+    public persist(): Promise<void> {
+        return this.dispatcher.persist();
+    }
+
+    public scheduleRetry(delayMs: number, task: () => void): void {
+        setTimeout(task, delayMs);
+    }
+
+    public resolveFresh(track: Song): Promise<Song | null> {
+        return this.dispatcher.resolveFresh(track);
+    }
+
+    public restartIfIdle(): void {
+        void this.dispatcher.isPlaying();
+    }
+
+    public async pausePolicy(): Promise<{ stay: boolean; seconds: number }> {
+        const stay = await this.db.get_247(this.dispatcher.guildId);
+        if (stay) return { stay: true, seconds: 0 };
+        const settings = await this.db.getGuildSettings(this.dispatcher.guildId);
+        return { stay: false, seconds: Number(settings.timeoutpause ?? 0) };
+    }
+
+    public armPauseTimeout(seconds: number, onElapsed: () => void): void {
+        this.timers.pause = setTimeout(onElapsed, seconds * 1000);
+        (this.timers.pause as unknown as { unref?: () => void }).unref?.();
+    }
+
+    public clearPauseTimeout(): void {
+        if (this.timers.pause) clearTimeout(this.timers.pause);
+        this.timers.pause = null;
+    }
+
+    public destroy(): void {
+        this.dispatcher.destroy();
     }
 }
 
