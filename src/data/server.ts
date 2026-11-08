@@ -1,7 +1,5 @@
 
 
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-
 import config from '../config.js';
 import {
     AutoplaySetting,
@@ -28,27 +26,8 @@ import {
     VoiceListen,
     VoiceListenOptOut,
 } from '../generated/prisma/client.js';
-
-/**
- * Stable identity for a Lavalink track. `encoded` cannot be used: the Deezer
- * source embeds a per-search token in it, so two searches for the same track
- * produce different strings. The canonical URI is stable; identifier+source is
- * the fallback for entries without one.
- */
-function trackKey(track: unknown): string | null {
-    const info = (track as { info?: { uri?: string; identifier?: string; sourceName?: string } })
-        ?.info;
-    if (!info) return null;
-    if (info.uri) return info.uri;
-    if (info.identifier && info.sourceName) return `${info.sourceName}:${info.identifier}`;
-    return null;
-}
-
-/** Prisma 7 requires a driver adapter; the path is relative to the cwd. */
-function createPrismaClient(): PrismaClient {
-    const url = process.env.DATABASE_URL || 'file:./prisma/bootstrapdj.db';
-    return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
-}
+import { PlaylistStore } from './playlists.js';
+import { createPrismaClient, initializePrisma } from './prisma.js';
 
 export interface StatsPruneResult {
     daily: number;
@@ -60,6 +39,7 @@ export interface StatsPruneResult {
 
 export default class ServerData {
     private prisma: PrismaClient;
+    private playlists: PlaylistStore;
     /** PRAGMAs are connection/file scoped; every bot process runs this once. */
     private initPromise: Promise<void> | null = null;
     /** Guild rows are read for every message and every command; cache them and
@@ -75,40 +55,7 @@ export default class ServerData {
         // Injectable so tests can pass a client wired to a throwaway SQLite
         // file instead of the tracked database file.
         this.prisma = prisma ?? createPrismaClient();
-    }
-
-    /**
-     * Populate `trackKey` for playlist rows written before the column existed.
-     * Guarded by PRAGMA table_info so old test fixtures and pre-push databases
-     * can still initialize; the add/remove paths also fall back to null-key rows.
-     */
-    private async backfillSongKeys(): Promise<void> {
-        const table = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
-            `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Song'`
-        );
-        if (!table.length) return;
-        const columns = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
-            `PRAGMA table_info('Song')`
-        );
-        if (!columns.some(column => column.name === 'trackKey')) return;
-        const rows = await this.prisma.song.findMany({
-            where: { trackKey: null },
-            select: { id: true, track: true },
-        });
-        const writes = [];
-        for (const row of rows) {
-            try {
-                const parsed: unknown = JSON.parse(row.track);
-                const entries = Array.isArray(parsed) ? parsed : [parsed];
-                const key = entries.map(trackKey).find((candidate): candidate is string => candidate !== null);
-                if (key) writes.push(this.prisma.song.update({ where: { id: row.id }, data: { trackKey: key } }));
-            } catch {
-                // Leave malformed legacy rows untouched; removal falls back to raw text.
-            }
-        }
-        for (let index = 0; index < writes.length; index += 100) {
-            await this.prisma.$transaction(writes.slice(index, index + 100));
-        }
+        this.playlists = new PlaylistStore(this.prisma);
     }
 
     /**
@@ -118,12 +65,7 @@ export default class ServerData {
      */
     public async initialize(): Promise<void> {
         if (!this.initPromise) {
-            this.initPromise = (async () => {
-                await this.prisma.$queryRawUnsafe('PRAGMA busy_timeout = 10000');
-                await this.prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL');
-                await this.prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL');
-                await this.backfillSongKeys();
-            })().catch(error => {
+            this.initPromise = initializePrisma(this.prisma).catch(error => {
                 this.initPromise = null;
                 throw error;
             });
@@ -1100,190 +1042,54 @@ export default class ServerData {
     }
 
     public async getPLaylist(userId: string, name: string): Promise<Playlist | null> {
-        return await this.prisma.playlist.findUnique({
-            where: {
-                userId_name: {
-                    userId,
-                    name,
-                },
-            },
-        });
+        return await this.playlists.get(userId, name);
     }
 
-    public async getPlaylists(
-        userId: string
-    ): Promise<(Playlist & { _count: { songs: number } })[]> {
-        return await this.prisma.playlist.findMany({
-            where: { userId },
-            orderBy: { name: 'asc' },
-            include: { _count: { select: { songs: true } } },
-        });
+    public async getPlaylists(userId: string): Promise<(Playlist & { _count: { songs: number } })[]> {
+        return await this.playlists.list(userId);
     }
 
     public async createPlaylist(userId: string, name: string): Promise<void> {
-        await this.prisma.playlist.create({
-            data: {
-                userId,
-                name,
-            },
-        });
+        await this.playlists.create(userId, name);
     }
 
     public async deletePlaylist(userId: string, name: string): Promise<boolean> {
-        const playlist = await this.getPLaylist(userId, name);
-        if (!playlist) return false;
-        // Song.playlistId has no ON DELETE CASCADE, so deleting the parent
-        // throws P2003 while rows still reference it. Remove the children in
-        // the same transaction, otherwise a partial failure leaves an orphaned
-        // playlist that looks deleted to the caller.
-        await this.prisma.$transaction([
-            this.prisma.song.deleteMany({ where: { playlistId: playlist.id } }),
-            this.prisma.playlist.delete({ where: { id: playlist.id } }),
-        ]);
-        return true;
+        return await this.playlists.remove(userId, name);
     }
 
     public async addSong(userId: string, name: string, track: unknown): Promise<boolean> {
-        const playlist = await this.prisma.playlist.upsert({
-            where: { userId_name: { userId, name } },
-            create: { userId, name },
-            update: {},
-        });
-        // Compare on the canonical track identity; see trackKey().
-        const key = trackKey(track);
-        if (key) {
-            const existing = await this.prisma.song.findFirst({
-                where: { playlistId: playlist.id, trackKey: key },
-                select: { id: true },
-            });
-            if (existing) return false;
-            // Rows written before trackKey existed are backfilled at startup;
-            // this fallback covers an in-flight/failed backfill.
-            const legacy = await this.prisma.song.findMany({
-                where: { playlistId: playlist.id, trackKey: null },
-                select: { id: true, track: true },
-            });
-            const duplicate = legacy.find(row => {
-                try {
-                    const parsed = JSON.parse(row.track);
-                    const entries = Array.isArray(parsed) ? parsed : [parsed];
-                    return entries.some(entry => trackKey(entry) === key);
-                } catch {
-                    return false;
-                }
-            });
-            if (duplicate) {
-                await this.prisma.song.update({
-                    where: { id: duplicate.id },
-                    data: { trackKey: key },
-                });
-                return false;
-            }
-        }
-        try {
-            await this.prisma.song.create({
-                data: {
-                    track: JSON.stringify(track),
-                    playlistId: playlist.id,
-                    trackKey: key,
-                },
-            });
-        } catch (error) {
-            if ((error as { code?: string }).code === 'P2002') return false;
-            throw error;
-        }
-        return true;
+        return await this.playlists.addSong(userId, name, track);
     }
 
-    /** Remove the row containing the track identified by its canonical key.
-     * Rows store a JSON blob, and legacy rows may contain an array, so an exact
-     * `track: song` delete can miss a re-searched version of the same song. */
     public async removeSong(userId: string, name: string, songKey: string): Promise<boolean> {
-        const playlist = await this.getPLaylist(userId, name);
-        if (!playlist) return false;
-        const direct = await this.prisma.song.findFirst({
-            where: { playlistId: playlist.id, trackKey: songKey },
-            select: { id: true },
-        });
-        if (direct) {
-            await this.prisma.song.delete({ where: { id: direct.id } });
-            return true;
-        }
-        const rows = await this.prisma.song.findMany({
-            where: { playlistId: playlist.id, trackKey: null },
-            select: { id: true, track: true },
-        });
-        const row = rows.find(candidate => {
-            try {
-                const parsed = JSON.parse(candidate.track);
-                const entries = Array.isArray(parsed) ? parsed : [parsed];
-                return entries.some(entry => trackKey(entry) === songKey);
-            } catch {
-                return candidate.track === songKey;
-            }
-        });
-        if (!row) return false;
-        await this.prisma.song.delete({ where: { id: row.id } });
-        return true;
+        return await this.playlists.removeSong(userId, name, songKey);
     }
 
     public async getSong(userId: string, name: string): Promise<Song[]> {
-        const playlist = await this.getPLaylist(userId, name);
-        if (playlist) {
-            const songs = await this.prisma.song.findMany({
-                where: {
-                    playlistId: playlist.id,
-                },
-                orderBy: { id: 'asc' },
-            });
-            return songs;
-        }
-        return [];
+        return await this.playlists.songs(userId, name);
     }
 
     public async createCollectionShare(ownerId: string, name: string, code: string): Promise<CollectionShare> {
-        return await this.prisma.collectionShare.create({ data: { code, ownerId, name } });
+        return await this.playlists.createShare(ownerId, name, code);
     }
 
     public async getCollectionShare(code: string): Promise<CollectionShare | null> {
-        return await this.prisma.collectionShare.findUnique({ where: { code } });
+        return await this.playlists.getShare(code);
     }
 
     public async deleteCollectionShare(ownerId: string, code: string): Promise<boolean> {
-        const result = await this.prisma.collectionShare.deleteMany({ where: { code, ownerId } });
-        return result.count > 0;
+        return await this.playlists.deleteShare(ownerId, code);
     }
 
     public async listCollectionShares(ownerId: string): Promise<CollectionShare[]> {
-        return await this.prisma.collectionShare.findMany({
-            where: { ownerId },
-            orderBy: { createdAt: 'desc' },
-        });
+        return await this.playlists.listShares(ownerId);
     }
 
     public async removeSongAt(userId: string, name: string, index: number): Promise<boolean> {
-        const songs = await this.getSong(userId, name);
-        const row = songs[index - 1];
-        if (!row) return false;
-        await this.prisma.song.delete({ where: { id: row.id } });
-        return true;
+        return await this.playlists.removeAt(userId, name, index);
     }
 
     public async clearPlaylist(userId: string, name: string): Promise<void> {
-        const playlist = await this.getPLaylist(userId, name);
-        if (playlist) {
-            await this.prisma.song.deleteMany({
-                where: {
-                    playlistId: playlist.id,
-                },
-            });
-        }
+        await this.playlists.clear(userId, name);
     }
-
 }
-
-
-
-
-
-
