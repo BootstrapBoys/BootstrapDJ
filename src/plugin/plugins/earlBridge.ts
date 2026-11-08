@@ -11,7 +11,8 @@ import {
 } from 'discord.js';
 import { LoadType, type Track } from 'shoukaku';
 
-import type { BootstrapClient, Dispatcher } from '../../core/index.js';
+import type { BootstrapClient, Dispatcher, Song } from '../../core/index.js';
+import { checkTrack, getPlayLimits } from '../../lib/PlayLimits.js';
 import { updateSetup } from '../../lib/SetupSystem.js';
 import { hasDjAccess, isVoiceOptedOut } from '../../lib/VoiceAccess.js';
 import type { EarlCommandBody, EarlCommandResult } from '../../types.js';
@@ -237,7 +238,7 @@ function resolveCommand(text: string): ParsedCommand {
  * through `Queue`/`Dispatcher`, so voice requests share playlist, autoplay and
  * persistence behavior with slash and prefix commands.
  */
-class EarlBridge {
+export class EarlBridge {
     private readonly client: BootstrapClient;
     private readonly secret: string;
     private readonly recent = new Map<string, number>();
@@ -460,13 +461,43 @@ class EarlBridge {
                 message: 'You need to be in the voice channel to use voice commands.',
             };
         }
-        if (!(await hasDjAccess(this.client, guild.id, member))) {
-            return { status: 403, message: 'You need the DJ role to use voice commands.' };
-        }
         if (await isVoiceOptedOut(this.client, guild.id, userId)) {
             // No reply at all: an opted-out member must not be acknowledged.
             return { status: 200, message: '' };
         }
+        if (!(await hasDjAccess(this.client, guild.id, member))) {
+            return { status: 403, message: 'You need the DJ role to use voice commands.' };
+        }
+
+        // Resolve and validate the verb before joining: a misheard phrase must
+        // not pull the bot into voice just to report that it is not a command.
+        const { verb, query } = resolveCommand(text);
+        if (!VOICE_VERBS.has(verb)) {
+            return { status: 200, message: `I heard “${text}” but that is not a command I know.` };
+        }
+        if ((verb === 'play' || verb === 'playnext') && !query) {
+            return { status: 200, message: 'What should I play?' };
+        }
+        const args = query ? query.split(' ').filter(Boolean) : [];
+        if (verb === 'volume') {
+            const level = Number.parseInt(args[0] ?? '', 10);
+            if (!Number.isFinite(level) || level < 0 || level > 200) {
+                return { status: 200, message: 'Volume must be between 0 and 200.' };
+            }
+        }
+
+        // Voice capture can overlap itself; a repeated identical command within
+        // 6s must not enqueue the same song twice. Empty message = no reply.
+        const key = `${guildId}:${userId}:${text.trim().toLowerCase()}`;
+        const now = Date.now();
+        for (const [entry, at] of this.recent) {
+            if (now - at > DEDUPE_WINDOW_MS) this.recent.delete(entry);
+        }
+        const previous = this.recent.get(key);
+        if (previous !== undefined && now - previous < REPEAT_WINDOW_MS) {
+            return { status: 200, message: '' };
+        }
+        this.recent.set(key, now);
 
         const channel = await this.textChannel(guild, body.textChannelId);
         if (!channel) return { status: 400, message: 'No text channel is configured for replies.' };
@@ -488,30 +519,11 @@ class EarlBridge {
         const active = player;
         if (!active) return { status: 500, message: 'I could not join the voice channel.' };
 
-        // Voice capture can overlap itself; a repeated identical command within
-        // 6s must not enqueue the same song twice. Empty message = no reply.
-        const key = `${guildId}:${userId}:${text.trim().toLowerCase()}`;
-        const now = Date.now();
-        for (const [entry, at] of this.recent) {
-            if (now - at > DEDUPE_WINDOW_MS) this.recent.delete(entry);
-        }
-        const previous = this.recent.get(key);
-        if (previous !== undefined && now - previous < REPEAT_WINDOW_MS) {
-            return { status: 200, message: '' };
-        }
-        this.recent.set(key, now);
-
-        const { verb, query } = resolveCommand(text);
-        if (!VOICE_VERBS.has(verb)) {
-            return { status: 200, message: `I heard “${text}” but that is not a command I know.` };
-        }
-        const args = query ? query.split(' ').filter(Boolean) : [];
         const context: CommandContext = { guild, member, player: active };
 
         switch (verb) {
             case 'play':
             case 'playnext': {
-                if (!query) return { status: 200, message: 'What should I play?' };
                 return await this.enqueueQuery(context, query, verb === 'playnext');
             }
             case 'skip': {
@@ -586,29 +598,99 @@ class EarlBridge {
             return { status: 200, message: 'No results found.' };
         }
 
-        const add = (track: Track): void => {
-            const song = context.player.buildTrack(track, context.member.user);
-            if (next) context.player.enqueueNext(song);
-            else context.player.enqueue(song);
-        };
+        const limits = await getPlayLimits(this.client, context.guild.id);
+        const requester = context.member.user;
+        const build = (track: Track): Song => context.player.buildTrack(track, requester);
+        const reject = (song: Song): string | null =>
+            checkTrack(context.player, song, requester.id, limits);
+        const queueFull = (): boolean =>
+            context.player.queue.length >= this.client.config.maxQueueSize;
 
         let message: string;
         if (response.loadType === LoadType.TRACK) {
-            add(response.data);
-            message = `Added **${response.data.info.title}**${next ? ' next' : ''}.`;
+            const song = build(response.data);
+            const rejected = reject(song);
+            if (rejected) return { status: 200, message: rejected };
+            if (queueFull()) {
+                return {
+                    status: 200,
+                    message: `The queue is too long. The maximum length is ${this.client.config.maxQueueSize} songs.`,
+                };
+            }
+            if (next) context.player.enqueueNext(song);
+            else context.player.enqueue(song);
+            message = `Added **${song.info.title}**${next ? ' next' : ''}.`;
         } else if (response.loadType === LoadType.SEARCH) {
             const first = response.data[0];
             if (!first) return { status: 200, message: 'No results found.' };
-            add(first);
-            message = `Added **${first.info.title}**${next ? ' next' : ''}.`;
-        } else if (response.loadType === LoadType.PLAYLIST) {
-            let added = 0;
-            for (const track of response.data.tracks) {
-                if (context.player.queue.length >= this.client.config.maxQueueSize) break;
-                add(track);
-                added += 1;
+            const song = build(first);
+            const rejected = reject(song);
+            if (rejected) return { status: 200, message: rejected };
+            if (queueFull()) {
+                return {
+                    status: 200,
+                    message: `The queue is too long. The maximum length is ${this.client.config.maxQueueSize} songs.`,
+                };
             }
-            message = `Added ${added} tracks from **${response.data.info.name}**${next ? ' next' : ''}.`;
+            if (next) context.player.enqueueNext(song);
+            else context.player.enqueue(song);
+            message = `Added **${song.info.title}**${next ? ' next' : ''}.`;
+        } else if (response.loadType === LoadType.PLAYLIST) {
+            const playlistLimit = this.client.config.maxPlaylistSize;
+            const candidates =
+                playlistLimit > 0 ? response.data.tracks.slice(0, playlistLimit) : response.data.tracks;
+            const accepted: Song[] = [];
+            let playlistDuration = 0;
+            let skipped = 0;
+            for (const track of candidates) {
+                if (limits.maxPlaylistTracks > 0 && accepted.length >= limits.maxPlaylistTracks) {
+                    skipped += 1;
+                    break;
+                }
+                const length = track.info.isStream ? 0 : track.info.length;
+                if (
+                    limits.maxPlaylistLength > 0 &&
+                    playlistDuration + length > limits.maxPlaylistLength * 1000
+                ) {
+                    skipped += 1;
+                    break;
+                }
+                playlistDuration += length;
+                const queued = context.player.queue.length + (context.player.current ? 1 : 0);
+                if (limits.maxQueue > 0 && queued + accepted.length >= limits.maxQueue) {
+                    skipped += 1;
+                    break;
+                }
+                if (
+                    this.client.config.maxQueueSize > 0 &&
+                    context.player.queue.length + accepted.length >= this.client.config.maxQueueSize
+                ) {
+                    skipped += 1;
+                    break;
+                }
+                const song = build(track);
+                if (reject(song)) {
+                    skipped += 1;
+                    continue;
+                }
+                accepted.push(song);
+            }
+            if (accepted.length === 0) {
+                return { status: 200, message: 'No tracks from that playlist fit this server’s limits.' };
+            }
+            // Batch insert: persist once after the whole playlist, and reverse
+            // the enqueueNext order so the playlist keeps its original order.
+            const ordered = next ? [...accepted].reverse() : accepted;
+            for (const song of ordered) {
+                if (next) context.player.enqueueNext(song, true, false);
+                else context.player.enqueue(song, true, false);
+            }
+            await context.player.persist();
+            message = `Added ${accepted.length} track${
+                accepted.length === 1 ? '' : 's'
+            } from **${response.data.info.name}**${next ? ' next' : ''}${
+                skipped ? ` (${skipped} skipped by server limits)` : ''
+            }.`;
         } else {
             return { status: 200, message: 'Nothing to add.' };
         }
