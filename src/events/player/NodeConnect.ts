@@ -28,7 +28,7 @@ export default class NodeConnect extends Event {
             );
             return;
         }
-        const recoveredMs = endIncident();
+        const recoveredMs = endIncident(node);
         const message =
             recoveredMs === null
                 ? `Lavalink node "${node}" is ready!`

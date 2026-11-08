@@ -27,7 +27,7 @@ export default class NodeReconnect extends Event {
             return;
         }
 
-        const recoveredMs = endIncident();
+        const recoveredMs = endIncident(node);
         const message =
             recoveredMs === null
                 ? `Lavalink node "${node}" reconnected.`

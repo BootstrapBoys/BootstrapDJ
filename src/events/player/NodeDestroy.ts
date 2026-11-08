@@ -55,7 +55,12 @@ export default class NodeDestroy extends Event {
 
         const info = describeCloseCode(code);
         const detail = reason.trim() ? ` — ${reason.trim()}` : '';
-        const incident = beginIncident();
+        // Losing the primary node always attempts a migration. The incident
+        // only suppresses duplicate alert messages: a NodeError or standby
+        // event that opened it must not block failover.
+        this.failOver(node);
+
+        const incident = beginIncident(node);
         if (!incident.started) {
             this.client.logger.debug(
                 `[nodes] still down (${formatDuration(incident.durationMs)}): ${info.summary} (code ${code})`
@@ -67,6 +72,5 @@ export default class NodeDestroy extends Event {
         if (info.expected) this.client.logger.warn(message);
         else this.client.logger.error(message);
         BotLog.send(this.client, message, info.expected ? 'warn' : 'error');
-        this.failOver(node);
     }
 }

@@ -71,38 +71,49 @@ export function formatDuration(ms: number): string {
     return restMinutes ? `${hours}h ${restMinutes}m` : `${hours}h`;
 }
 
-let incidentStartedAt: number | null = null;
-let lastNoticeAt = 0;
+interface NodeIncident {
+    startedAt: number;
+    lastNoticeAt: number;
+}
 
-export function beginIncident(now: number = Date.now()): IncidentStatus {
-    if (incidentStartedAt !== null) return { started: false, durationMs: now - incidentStartedAt };
-    incidentStartedAt = now;
-    lastNoticeAt = now;
+/**
+ * Incidents are per node. A single module-global incident let a standby or a
+ * NodeError suppress the primary's later NodeDestroy alert and failover.
+ */
+const incidents = new Map<string, NodeIncident>();
+
+export function beginIncident(node: string, now: number = Date.now()): IncidentStatus {
+    const existing = incidents.get(node);
+    if (existing) return { started: false, durationMs: now - existing.startedAt };
+    incidents.set(node, { startedAt: now, lastNoticeAt: now });
     return { started: true, durationMs: 0 };
 }
 
-export function isIncidentActive(): boolean {
-    return incidentStartedAt !== null;
+export function isIncidentActive(node: string): boolean {
+    return incidents.has(node);
 }
 
 /** True at most once per interval, so a long outage gets one reminder, not spam. */
-export function takeReminder(reminderMs: number, now: number = Date.now()): boolean {
-    if (incidentStartedAt === null || reminderMs <= 0) return false;
-    if (now - lastNoticeAt < reminderMs) return false;
-    lastNoticeAt = now;
+export function takeReminder(
+    node: string,
+    reminderMs: number,
+    now: number = Date.now()
+): boolean {
+    const incident = incidents.get(node);
+    if (!incident || reminderMs <= 0) return false;
+    if (now - incident.lastNoticeAt < reminderMs) return false;
+    incident.lastNoticeAt = now;
     return true;
 }
 
-/** Returns how long the outage lasted, or null when there was no incident. */
-export function endIncident(now: number = Date.now()): number | null {
-    if (incidentStartedAt === null) return null;
-    const duration = now - incidentStartedAt;
-    incidentStartedAt = null;
-    lastNoticeAt = 0;
-    return duration;
+/** Returns how long that node's outage lasted, or null when it had none. */
+export function endIncident(node: string, now: number = Date.now()): number | null {
+    const incident = incidents.get(node);
+    if (!incident) return null;
+    incidents.delete(node);
+    return now - incident.startedAt;
 }
 
 export function resetNodeStatus(): void {
-    incidentStartedAt = null;
-    lastNoticeAt = 0;
+    incidents.clear();
 }

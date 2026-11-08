@@ -9,7 +9,7 @@ export default class NodeDisconnect extends Event {
     }
 
     public async run(node: string, count: number): Promise<void> {
-        const incident = beginIncident();
+        const incident = beginIncident(node);
         if (!incident.started) {
             this.client.logger.debug(
                 `[nodes] disconnect #${count} (${formatDuration(incident.durationMs)} into the outage)`

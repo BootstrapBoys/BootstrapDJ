@@ -38,9 +38,9 @@ export default class NodeError extends Event {
             return;
         }
 
-        const incident = beginIncident();
+        const incident = beginIncident(node);
         if (!incident.started) {
-            if (takeReminder(this.client.config.nodeAlertReminderMinutes * 60_000)) {
+            if (takeReminder(node, this.client.config.nodeAlertReminderMinutes * 60_000)) {
                 const reminder = `Lavalink node "${node}" is still unreachable after ${formatDuration(
                     incident.durationMs
                 )}: ${this.reason(error)}.`;

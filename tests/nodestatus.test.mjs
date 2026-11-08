@@ -43,33 +43,55 @@ test('formatDuration reads naturally from seconds to hours', () => {
     assert.equal(formatDuration(5_400_000), '1h 30m');
 });
 
-test('an incident opens once and reports its duration on recovery', () => {
+test('an incident opens once per node and reports its duration on recovery', () => {
     resetNodeStatus();
     const start = 1_000_000;
 
-    const first = beginIncident(start);
+    const first = beginIncident('primary', start);
     assert.equal(first.started, true);
-    assert.equal(isIncidentActive(), true);
+    assert.equal(isIncidentActive('primary'), true);
 
-    const second = beginIncident(start + 5_000);
+    const second = beginIncident('primary', start + 5_000);
     assert.equal(second.started, false);
     assert.equal(second.durationMs, 5_000);
 
-    assert.equal(endIncident(start + 65_000), 65_000);
-    assert.equal(isIncidentActive(), false);
-    assert.equal(endIncident(start + 70_000), null);
+    assert.equal(endIncident('primary', start + 65_000), 65_000);
+    assert.equal(isIncidentActive('primary'), false);
+    assert.equal(endIncident('primary', start + 70_000), null);
+});
+
+test('incidents on different nodes never suppress each other', () => {
+    resetNodeStatus();
+    const start = 1_500_000;
+
+    assert.equal(beginIncident('primary', start).started, true);
+    assert.equal(beginIncident('standby', start).started, true);
+    assert.equal(isIncidentActive('primary'), true);
+    assert.equal(isIncidentActive('standby'), true);
+
+    assert.equal(endIncident('primary', start + 10_000), 10_000);
+    assert.equal(isIncidentActive('primary'), false);
+    assert.equal(isIncidentActive('standby'), true, 'ending one node must not clear another');
+
+    assert.equal(beginIncident('standby', start + 15_000).durationMs, 15_000);
+    assert.equal(endIncident('standby', start + 20_000), 20_000);
+    assert.equal(isIncidentActive('standby'), false);
 });
 
 test('reminders fire at most once per interval', () => {
     resetNodeStatus();
     const start = 2_000_000;
-    beginIncident(start);
+    beginIncident('primary', start);
 
-    assert.equal(takeReminder(60_000, start + 30_000), false);
-    assert.equal(takeReminder(60_000, start + 61_000), true);
-    assert.equal(takeReminder(60_000, start + 90_000), false);
-    assert.equal(takeReminder(60_000, start + 130_000), true);
-    assert.equal(takeReminder(0, start + 999_000), false);
+    assert.equal(takeReminder('primary', 60_000, start + 30_000), false);
+    assert.equal(takeReminder('primary', 60_000, start + 61_000), true);
+    assert.equal(takeReminder('primary', 60_000, start + 90_000), false);
+    assert.equal(takeReminder('primary', 60_000, start + 130_000), true);
+    assert.equal(takeReminder('primary', 0, start + 999_000), false);
+
+    // A reminder for one node is not charged to another node's incident.
+    beginIncident('standby', start + 130_000);
+    assert.equal(takeReminder('standby', 60_000, start + 130_000), false);
 
     resetNodeStatus();
 });
