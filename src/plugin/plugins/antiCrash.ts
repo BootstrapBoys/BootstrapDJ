@@ -1,41 +1,74 @@
-import { BootstrapClient } from '../../core/index.js';
-import { BotPlugin } from '../index.js';
+import type { BootstrapClient } from '../../core/index.js';
+import type { BotPlugin } from '../index.js';
 
-let shuttingDown = false;
+const SIGNALS: readonly NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGQUIT'];
 
-const antiCrash: BotPlugin = {
-    name: 'AntiCrash Plugin',
-    version: '1.0.0',
-    author: 'Zebz213',
-    initialize: (client: BootstrapClient) => {
-        process.on('unhandledRejection', (reason, promise) => {
-            client.logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-        });
-        process.on('uncaughtException', error => {
-            client.logger.error('Uncaught Exception thrown:', error);
-            process.exit(1);
-        });
+/**
+ * Process-level safety net:
+ * - a rejected promise is logged and the bot keeps serving,
+ * - an uncaught exception is logged and the process exits so a supervisor can
+ *   restart it from the persisted session,
+ * - a termination signal drains playback snapshots before disconnecting.
+ */
+function createPlugin(): BotPlugin {
+    let installed = false;
+    let removeHandlers: (() => void) | null = null;
 
-        const shutdown = async (): Promise<void> => {
-            if (shuttingDown) return;
-            shuttingDown = true;
-            client.shuttingDown = true;
-            client.logger.star('Saving playback state...');
-            await Promise.all(
-                Array.from(client.queue.values()).map(dispatcher =>
-                    dispatcher.persist().catch(() => {})
-                )
-            );
-            client.logger.star('Disconnecting from Discord...');
-            await client.destroy();
-            client.logger.success('Successfully disconnected from Discord!');
-            process.exit();
-        };
+    return {
+        name: 'AntiCrash Plugin',
+        version: '1.0.0',
+        author: 'Zebz213',
+        initialize: (client: BootstrapClient) => {
+            if (installed) return;
+            installed = true;
 
-        for (const signal of ['SIGINT', 'SIGTERM', 'SIGQUIT'] as const) {
-            process.on(signal, shutdown);
-        }
-    },
-};
+            let draining = false;
 
-export default antiCrash;
+            const onRejection = (reason: unknown, promise: Promise<unknown>): void => {
+                client.logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+            };
+            const onException = (error: Error): void => {
+                client.logger.error('Uncaught Exception thrown:', error);
+                process.exit(1);
+            };
+
+            const drain = async (): Promise<void> => {
+                if (draining) return;
+                draining = true;
+                client.shuttingDown = true;
+                client.logger.star('Saving playback state...');
+                const players = [...client.queue.values()];
+                await Promise.all(players.map(player => player.persist().catch(() => {})));
+                client.logger.star('Disconnecting from Discord...');
+                try {
+                    await client.destroy();
+                    client.logger.success('Successfully disconnected from Discord!');
+                } catch (error) {
+                    client.logger.error('Failed to disconnect from Discord:', error);
+                }
+                process.exit(0);
+            };
+
+            const onSignal = (): void => {
+                void drain();
+            };
+
+            process.on('unhandledRejection', onRejection);
+            process.on('uncaughtException', onException);
+            for (const signal of SIGNALS) process.on(signal, onSignal);
+
+            removeHandlers = () => {
+                process.off('unhandledRejection', onRejection);
+                process.off('uncaughtException', onException);
+                for (const signal of SIGNALS) process.off(signal, onSignal);
+            };
+        },
+        shutdown: () => {
+            removeHandlers?.();
+            removeHandlers = null;
+            installed = false;
+        },
+    };
+}
+
+export default createPlugin();

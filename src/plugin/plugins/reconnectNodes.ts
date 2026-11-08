@@ -1,6 +1,6 @@
 import { Constants } from 'shoukaku';
 
-import { BootstrapClient } from '../../core/index.js';
+import type { BootstrapClient } from '../../core/index.js';
 import BotLog from '../../lib/BotLog.js';
 import { formatDuration } from '../../lib/NodeStatus.js';
 import {
@@ -9,157 +9,211 @@ import {
     shouldFallback,
     toNodeOption,
 } from '../../lib/PublicNodes.js';
-import { BotPlugin } from '../index.js';
+import type { BotPlugin } from '../index.js';
 
 const CHECK_INTERVAL_MS = 30_000;
 const PROBE_COOLDOWN_MS = 60_000;
 
 /**
- * Watchdog for Lavalink availability:
- * - re-adds operator nodes while the primary is down,
- * - moves stranded players onto a connected standby,
+ * Keeps Lavalink reachable:
+ * - re-adds configured nodes while the primary is down,
+ * - moves players that are stranded on a dead node to the serving node,
  * - probes the public list only after the configured outage delay,
  * - removes the public fallback once the primary is healthy and drained.
  */
-const reconnectNodes: BotPlugin = {
-    name: 'Node Watchdog',
-    version: '1.1.0',
-    author: 'Zebz213',
-    initialize: (client: BootstrapClient) => {
-        let fallbackName: string | null = null;
-        let downSince = 0;
-        let probing = false;
-        let announced = false;
-        let lastProbeAt = 0;
-        const primaryName = client.config.lavalink[0]?.name;
+class NodeWatchdog {
+    private readonly client: BootstrapClient;
+    private readonly primaryName: string | undefined;
+    private fallbackName: string | null = null;
+    private downSince = 0;
+    private lastProbeAt = 0;
+    private probing = false;
+    private migrating = false;
+    private announced = false;
+    private timer: ReturnType<typeof setInterval> | null = null;
 
-        const primaryUp = (): boolean =>
-            Boolean(primaryName) &&
-            [...client.shoukaku.nodes.values()].some(
-                node => node.state === Constants.State.CONNECTED && node.name === primaryName
-            );
+    public constructor(client: BootstrapClient) {
+        this.client = client;
+        this.primaryName = client.config.lavalink[0]?.name;
+    }
 
-        const dropIdleFallback = (): void => {
-            if (!fallbackName) return;
-            const node = client.shoukaku.nodes.get(fallbackName);
-            if (node && (node.stats?.players ?? 0) > 0) return;
+    public start(): void {
+        if (this.timer) return;
+        this.timer = setInterval(() => this.tick(), CHECK_INTERVAL_MS);
+        this.timer.unref();
+    }
+
+    public stop(): void {
+        if (!this.timer) return;
+        clearInterval(this.timer);
+        this.timer = null;
+    }
+
+    private tick(): void {
+        if (!this.client.isReady()) return;
+        this.dropDeadFallback();
+        if (this.isPrimaryUp()) {
+            this.downSince = 0;
+            this.announced = false;
+            this.dropIdleFallback();
+            return;
+        }
+        if (this.downSince === 0) this.downSince = Date.now();
+        this.readdConfigured();
+        this.migrateStranded();
+        if (this.announceStandby()) return;
+        this.probePublic();
+    }
+
+    /** A configured standby must not count as primary recovery. */
+    private isPrimaryUp(): boolean {
+        if (!this.primaryName) return false;
+        return [...this.client.shoukaku.nodes.values()].some(
+            node => node.state === Constants.State.CONNECTED && node.name === this.primaryName
+        );
+    }
+
+    /** A disconnected fallback would otherwise be retried forever by Shoukaku. */
+    private dropDeadFallback(): void {
+        if (!this.fallbackName) return;
+        const node = this.client.shoukaku.nodes.get(this.fallbackName);
+        if (node && node.state !== Constants.State.DISCONNECTED) return;
+        if (node) {
             try {
-                client.shoukaku.removeNode(fallbackName, 'primary restored');
+                this.client.shoukaku.removeNode(this.fallbackName, 'fallback disconnected');
             } catch (error) {
-                client.logger.error(`[nodes] could not remove fallback ${fallbackName}: ${error}`);
+                this.client.logger.debug(
+                    `[nodes] could not remove fallback ${this.fallbackName}: ${error}`
+                );
             }
-            const message = `A configured Lavalink node is back — removed public fallback "${fallbackName}".`;
-            client.logger.success(message);
-            BotLog.send(client, message, 'success');
-            fallbackName = null;
-        };
+        }
+        this.fallbackName = null;
+    }
 
-        const dropDeadFallback = (): void => {
-            if (!fallbackName) return;
-            const node = client.shoukaku.nodes.get(fallbackName);
-            if (node && node.state !== Constants.State.DISCONNECTED) return;
-            if (node) {
-                try {
-                    client.shoukaku.removeNode(fallbackName, 'fallback disconnected');
-                } catch (error) {
-                    client.logger.debug(`[nodes] could not remove fallback ${fallbackName}: ${error}`);
-                }
+    private dropIdleFallback(): void {
+        if (!this.fallbackName) return;
+        const name = this.fallbackName;
+        const node = this.client.shoukaku.nodes.get(name);
+        if (node && (node.stats?.players ?? 0) > 0) return;
+        try {
+            this.client.shoukaku.removeNode(name, 'primary restored');
+        } catch (error) {
+            this.client.logger.error(`[nodes] could not remove fallback ${name}: ${error}`);
+            this.fallbackName = null;
+            return;
+        }
+        this.fallbackName = null;
+        const message = `A configured Lavalink node is back — removed public fallback "${name}".`;
+        this.client.logger.success(message);
+        BotLog.send(this.client, message, 'success');
+    }
+
+    private readdConfigured(): void {
+        for (const option of this.client.config.lavalink) {
+            if (!option.url) continue;
+            const existing = this.client.shoukaku.nodes.get(option.name);
+            if (existing && existing.state !== Constants.State.DISCONNECTED) continue;
+            try {
+                if (existing) this.client.shoukaku.removeNode(option.name, 'watchdog');
+                this.client.shoukaku.addNode(option);
+                this.client.logger.warn(`[nodes] no connected node — re-adding ${option.name}`);
+            } catch (error) {
+                this.client.logger.error(`[nodes] could not re-add ${option.name}: ${error}`);
             }
-            fallbackName = null;
-        };
+        }
+    }
 
-        const reAddConfigured = (): void => {
-            for (const option of client.config.lavalink) {
-                if (!option.url) continue;
-                const existing = client.shoukaku.nodes.get(option.name);
-                if (existing && existing.state !== Constants.State.DISCONNECTED) continue;
-                try {
-                    if (existing) client.shoukaku.removeNode(option.name, 'watchdog');
-                    client.shoukaku.addNode(option);
-                    client.logger.warn(`[nodes] no connected node — re-adding ${option.name}`);
-                } catch (error) {
-                    client.logger.error(`[nodes] could not re-add ${option.name}: ${error}`);
-                }
-            }
-        };
+    /** Rebuild players bound to a dead node onto whichever node is serving. */
+    private migrateStranded(): void {
+        if (this.migrating || !this.client.queue.hasNode) return;
+        const target = this.client.queue.node;
+        if (!target) return;
+        const stranded = [...this.client.queue.values()].some(
+            dispatcher => dispatcher.isStale || dispatcher.node.name !== target.name
+        );
+        if (!stranded) return;
+        this.migrating = true;
+        void this.client.queue
+            .migrateToNode(target)
+            .catch(error => this.client.logger.error(`[nodes] migration retry failed: ${error}`))
+            .finally(() => {
+                this.migrating = false;
+            });
+    }
 
-        const migrateStranded = (): void => {
-            if (primaryUp() || !client.queue.hasNode) return;
-            const target = client.queue.node;
-            const stranded = [...client.queue.values()].some(
-                dispatcher => dispatcher.player.node?.name !== target?.name
-            );
-            if (stranded && target) {
-                void client.queue
-                    .migrateToNode(target)
-                    .catch(error => client.logger.error(`[nodes] migration retry failed: ${error}`));
-            }
-        };
+    /** A configured standby is carrying playback, so no public probe is needed. */
+    private announceStandby(): boolean {
+        if (!this.client.queue.hasNode) return false;
+        const active = this.client.queue.node?.name;
+        if (active && !isFallbackNode(active) && !this.announced) {
+            const message = `Primary node is down — standby node "${active}" is handling playback.`;
+            this.client.logger.warn(message);
+            BotLog.send(this.client, message, 'warn');
+            this.announced = true;
+        }
+        return true;
+    }
 
-        const announceStandby = (): boolean => {
-            if (!client.queue.hasNode) return false;
-            const active = client.queue.node?.name;
-            if (active && !isFallbackNode(active) && !announced) {
-                const message = `Primary node is down — standby node "${active}" is handling playback.`;
-                client.logger.warn(message);
-                BotLog.send(client, message, 'warn');
-                announced = true;
-            }
-            return true;
-        };
+    private probePublic(): void {
+        if (this.probing || !this.client.config.nodeFallback) return;
+        if (Date.now() - this.lastProbeAt < PROBE_COOLDOWN_MS) return;
+        if (
+            !shouldFallback(
+                Date.now() - this.downSince,
+                this.client.config.nodeFallbackAfter,
+                this.fallbackName !== null
+            )
+        ) {
+            return;
+        }
+        this.probing = true;
+        this.lastProbeAt = Date.now();
+        void this.findFallback();
+    }
 
-        const probePublic = (): void => {
-            if (probing || !client.config.nodeFallback) return;
-            if (Date.now() - lastProbeAt < PROBE_COOLDOWN_MS) return;
-            if (!shouldFallback(Date.now() - downSince, client.config.nodeFallbackAfter, fallbackName !== null)) {
+    private async findFallback(): Promise<void> {
+        try {
+            const best = await findBestPublicNode(this.client.config.publicNodeListUrl);
+            if (!best) {
+                this.client.logger.warn('[nodes] no public fallback answered the probe');
                 return;
             }
-            probing = true;
-            lastProbeAt = Date.now();
-            void (async () => {
-                try {
-                    const best = await findBestPublicNode(client.config.publicNodeListUrl);
-                    if (!best) {
-                        client.logger.warn('[nodes] no public fallback answered the probe');
-                        return;
-                    }
-                    const option = toNodeOption(best.entry);
-                    client.shoukaku.addNode(option);
-                    fallbackName = option.name;
-                    const message = `Primary node still down after ${formatDuration(
-                        Date.now() - downSince
-                    )} — using public fallback "${option.name}" (${best.latencyMs}ms, ${best.players} players).`;
-                    client.logger.warn(message);
-                    if (!announced) {
-                        BotLog.send(client, message, 'warn');
-                        announced = true;
-                    }
-                } catch (error) {
-                    client.logger.error(`[nodes] public fallback failed: ${error}`);
-                } finally {
-                    probing = false;
-                }
-            })();
-        };
-
-        const timer = setInterval(() => {
-            if (!client.isReady()) return;
-            dropDeadFallback();
-            if (primaryUp()) {
-                downSince = 0;
-                announced = false;
-                dropIdleFallback();
-                return;
+            const option = toNodeOption(best.entry);
+            this.client.shoukaku.addNode(option);
+            this.fallbackName = option.name;
+            const message = `Primary node still down after ${formatDuration(
+                Date.now() - this.downSince
+            )} — using public fallback "${option.name}" (${best.latencyMs}ms, ${best.players} players).`;
+            this.client.logger.warn(message);
+            if (!this.announced) {
+                BotLog.send(this.client, message, 'warn');
+                this.announced = true;
             }
-            if (!downSince) downSince = Date.now();
-            reAddConfigured();
-            migrateStranded();
-            if (announceStandby()) return;
-            probePublic();
-        }, CHECK_INTERVAL_MS);
+        } catch (error) {
+            this.client.logger.error(`[nodes] public fallback failed: ${error}`);
+        } finally {
+            this.probing = false;
+        }
+    }
+}
 
-        (timer as unknown as { unref?: () => void }).unref?.();
-    },
-};
+function createPlugin(): BotPlugin {
+    let watchdog: NodeWatchdog | null = null;
 
-export default reconnectNodes;
+    return {
+        name: 'Node Watchdog',
+        version: '1.1.0',
+        author: 'Zebz213',
+        initialize: (client: BootstrapClient) => {
+            if (watchdog) return;
+            watchdog = new NodeWatchdog(client);
+            watchdog.start();
+        },
+        shutdown: () => {
+            watchdog?.stop();
+            watchdog = null;
+        },
+    };
+}
+
+export default createPlugin();
