@@ -9,6 +9,7 @@ import { LoadType } from 'shoukaku';
 import { BootstrapClient, Context, Event } from '../../core/index.js';
 import { evaluateCommand, isOwner } from '../../lib/CommandGate.js';
 import { refreshStalePlayer } from '../../lib/PlayerResolver.js';
+import { COMMAND_FAILURE_MESSAGE } from '../../lib/reply.js';
 import { deleteAfterSeconds, shouldReplyEphemeral } from '../../lib/ResponseMode.js';
 
 interface Choice {
@@ -185,7 +186,7 @@ export default class InteractionCreate extends Event {
             this.client.logger.error(error);
             const code = errorCode(error);
             if (code === 10062 || code === 40060) return;
-            const content = `An error occurred: \`${error}\``;
+            const content = COMMAND_FAILURE_MESSAGE;
             try {
                 await (interaction.deferred || interaction.replied
                     ? interaction.editReply({ content })

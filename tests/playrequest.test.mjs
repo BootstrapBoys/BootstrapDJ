@@ -149,6 +149,11 @@ test('empty, error and null search responses reply once', async () => {
         const ctx = makeCtx();
         await runPlayRequest(makeClient(makePlayer(), response), ctx, ['query'], 'queue');
         assert.equal(ctx.replies.length, 1);
+        assert.doesNotMatch(
+            ctx.replies[0].embeds[0].data.description,
+            /boom/,
+            'a Lavalink error body must not be echoed to the user'
+        );
     }
 });
 
@@ -177,11 +182,32 @@ test('track limits and queue caps reject before enqueueing', async () => {
 
     const capped = makePlayer([rawTrack('existing')]);
     const cappedClient = makeClient(capped, { loadType: LoadType.TRACK, data: rawTrack('A') });
-    cappedClient.config.maxQueueSize = 0;
+    cappedClient.config.maxQueueSize = 1;
     const cappedCtx = makeCtx();
     await runPlayRequest(cappedClient, cappedCtx, ['query'], 'queue');
     assert.equal(capped.queue.length, 1);
-    assert.match(cappedCtx.replies[0].embeds[0].data.description, /queue is too long/);
+    assert.match(cappedCtx.replies[0].embeds[0].data.description, /queue is full/);
+});
+
+test('the guild maxqueue override replaces MAX_QUEUE_SIZE in both directions', async () => {
+    const roomy = makePlayer([rawTrack('existing')]);
+    const roomyClient = makeClient(roomy, { loadType: LoadType.TRACK, data: rawTrack('A') });
+    roomyClient.config.maxQueueSize = 1;
+    roomyClient.db.getGuildSettings = async () => ({ maxqueue: '5' });
+    const roomyCtx = makeCtx();
+
+    await runPlayRequest(roomyClient, roomyCtx, ['query'], 'queue');
+    assert.deepEqual(roomy.queue.map(track => track.info.title), ['existing', 'A']);
+
+    const strict = makePlayer([rawTrack('existing')]);
+    const strictClient = makeClient(strict, { loadType: LoadType.TRACK, data: rawTrack('A') });
+    strictClient.config.maxQueueSize = 100;
+    strictClient.db.getGuildSettings = async () => ({ maxqueue: '1' });
+    const strictCtx = makeCtx();
+
+    await runPlayRequest(strictClient, strictCtx, ['query'], 'queue');
+    assert.equal(strict.queue.length, 1);
+    assert.match(strictCtx.replies[0].embeds[0].data.description, /queue is full \(1 tracks\)/);
 });
 
 test('per-user queue limits are enforced', async () => {

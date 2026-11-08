@@ -603,20 +603,12 @@ export class EarlBridge {
         const build = (track: Track): Song => context.player.buildTrack(track, requester);
         const reject = (song: Song): string | null =>
             checkTrack(context.player, song, requester.id, limits);
-        const queueFull = (): boolean =>
-            context.player.queue.length >= this.client.config.maxQueueSize;
 
         let message: string;
         if (response.loadType === LoadType.TRACK) {
             const song = build(response.data);
             const rejected = reject(song);
             if (rejected) return { status: 200, message: rejected };
-            if (queueFull()) {
-                return {
-                    status: 200,
-                    message: `The queue is too long. The maximum length is ${this.client.config.maxQueueSize} songs.`,
-                };
-            }
             if (next) context.player.enqueueNext(song);
             else context.player.enqueue(song);
             message = `Added **${song.info.title}**${next ? ' next' : ''}.`;
@@ -626,12 +618,6 @@ export class EarlBridge {
             const song = build(first);
             const rejected = reject(song);
             if (rejected) return { status: 200, message: rejected };
-            if (queueFull()) {
-                return {
-                    status: 200,
-                    message: `The queue is too long. The maximum length is ${this.client.config.maxQueueSize} songs.`,
-                };
-            }
             if (next) context.player.enqueueNext(song);
             else context.player.enqueue(song);
             message = `Added **${song.info.title}**${next ? ' next' : ''}.`;
@@ -658,13 +644,6 @@ export class EarlBridge {
                 playlistDuration += length;
                 const queued = context.player.queue.length + (context.player.current ? 1 : 0);
                 if (limits.maxQueue > 0 && queued + accepted.length >= limits.maxQueue) {
-                    skipped += 1;
-                    break;
-                }
-                if (
-                    this.client.config.maxQueueSize > 0 &&
-                    context.player.queue.length + accepted.length >= this.client.config.maxQueueSize
-                ) {
                     skipped += 1;
                     break;
                 }

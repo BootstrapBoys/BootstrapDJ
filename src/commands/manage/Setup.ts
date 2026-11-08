@@ -26,7 +26,7 @@ export default class Setup extends Command {
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks', 'ManageChannels'],
-                user: ['ManageGuild'],
+                user: ['ManageGuild', 'ManageRoles'],
             },
             slashCommand: true,
             options: [

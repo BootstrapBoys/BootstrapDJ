@@ -169,6 +169,9 @@ export default class GuildCommand extends Command {
                     embeds: [client.embed().setColor(client.color.red).setDescription('That guild was not found.')],
                 });
             }
+            // fetchOwner plus an invite creation can exceed Discord's three
+            // second reply deadline; acknowledge first.
+            await ctx.defer();
             return await ctx.sendMessage({ embeds: [await this.buildEmbed(guild)] });
         }
         const totalPages = Math.ceil(guilds.length / PAGE_SIZE);

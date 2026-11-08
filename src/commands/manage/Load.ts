@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
+import { getPlayLimits, queueHasRoom } from '../../lib/PlayLimits.js';
 
 type StoredRow = Awaited<ReturnType<BootstrapClient['db']['getSong']>>[number];
 
@@ -66,6 +67,7 @@ export default class Load extends Command {
 
         let player = client.queue.get(guild.id);
         if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
+        const limits = await getPlayLimits(client, guild.id);
 
         const queued: Song[] = [];
         let skipped = 0;
@@ -76,7 +78,7 @@ export default class Load extends Command {
                 continue;
             }
             for (const entry of entries) {
-                if (player.queue.length >= client.config.maxQueueSize) {
+                if (!queueHasRoom(player, limits)) {
                     skipped += 1;
                     continue;
                 }

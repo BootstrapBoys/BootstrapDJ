@@ -95,6 +95,7 @@ function makeHarness({ content, setupTextId = 'setup-channel' }) {
     const event = new MessageCreate(client, 'MessageCreate.js');
     return {
         event,
+        client,
         message,
         replies,
         counts: () => ({ setupEmitted, commandRuns }),
@@ -124,4 +125,20 @@ test('deleteafter=0 reaches the context as an explicit disable', async () => {
     const harness = makeHarness({ content: '!skip' });
     await harness.event.run(harness.message);
     assert.equal(harness.ctx().deleteAfter, 0);
+});
+
+test('a command crash replies generically and keeps the raw error in the log', async () => {
+    const harness = makeHarness({ content: '!skip' });
+    const logged = [];
+    harness.client.logger.error = error => logged.push(error);
+    harness.client.commands.get('skip').run = async () => {
+        throw new Error('database password leaked in a stack trace');
+    };
+
+    await harness.event.run(harness.message);
+
+    const { COMMAND_FAILURE_MESSAGE } = await import('../dist/lib/reply.js');
+    assert.deepEqual(harness.replies, [{ content: COMMAND_FAILURE_MESSAGE }]);
+    assert.doesNotMatch(JSON.stringify(harness.replies), /database password/);
+    assert.equal(logged.length, 1);
 });

@@ -7,7 +7,14 @@ export default defineFilterCommand({
     active: false,
     missingPlayer: 'Nothing is playing right now.',
     run: async ({ client, ctx, player }) => {
-        player.player.clearFilters();
+        try {
+            await player.player.clearFilters();
+        } catch (error) {
+            client.logger.warn(`[filter] reset write failed: ${error}`);
+            return await ctx.sendMessage({
+                embeds: [{ description: 'Could not reset the filters.', color: client.color.red }],
+            });
+        }
         player.filters = [];
         player.filterValues = {};
         return await ctx.sendMessage({

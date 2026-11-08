@@ -4,6 +4,7 @@ import { BootstrapClient, Context, Event } from '../../core/index.js';
 import { evaluateCommand, type GateMember } from '../../lib/CommandGate.js';
 import { matchPrefixCommand } from '../../lib/PrefixCommand.js';
 import { refreshStalePlayer } from '../../lib/PlayerResolver.js';
+import { COMMAND_FAILURE_MESSAGE } from '../../lib/reply.js';
 import { deleteAfterSeconds } from '../../lib/ResponseMode.js';
 
 function escapeRegex(value: string): string {
@@ -226,7 +227,7 @@ export default class MessageCreate extends Event {
             return await command.run(this.client, ctx, ctx.args);
         } catch (error) {
             this.client.logger.error(error);
-            await reply({ content: `An error occurred: \`${error}\`` });
+            await reply({ content: COMMAND_FAILURE_MESSAGE });
         }
     }
 }

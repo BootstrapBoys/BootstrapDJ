@@ -169,3 +169,11 @@ test('guild inspector is owner-only and slash-visible', async () => {
     assert.equal(command.options[0].name, 'guild');
     assert.equal(command.options[0].autocomplete, true);
 });
+
+test('setup requires both ManageGuild and ManageRoles', async () => {
+    const SetupClass = (await import('../dist/commands/manage/Setup.js')).default;
+    const command = new SetupClass(fakeClient);
+
+    assert.ok(command.permissions.user.includes('ManageGuild'));
+    assert.ok(command.permissions.user.includes('ManageRoles'));
+});

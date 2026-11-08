@@ -88,21 +88,31 @@ export function defineFilterCommand(definition: FilterDefinition): typeof Comman
     };
 }
 
+export type FilterEffect = (player: Dispatcher) => void | Promise<unknown>;
+export type NumericFilterEffect = (player: Dispatcher, value: number) => void | Promise<unknown>;
+
 /** Toggle a filter and report the resulting state. */
 export function toggleFilter(
     key: string,
     label: string,
-    enable: (player: Dispatcher) => void,
-    disable: (player: Dispatcher) => void
+    enable: FilterEffect,
+    disable: FilterEffect
 ): FilterDefinition['run'] {
     return async ({ client, ctx, player }) => {
         const active = player.filters.includes(key);
-        if (active) {
-            disable(player);
-            player.filters.splice(player.filters.indexOf(key), 1);
-        } else {
-            enable(player);
-            player.filters.push(key);
+        try {
+            // Lavalink writes are async; the reply must not claim success
+            // before the player accepted the change.
+            if (active) {
+                await disable(player);
+                player.filters.splice(player.filters.indexOf(key), 1);
+            } else {
+                await enable(player);
+                player.filters.push(key);
+            }
+        } catch (error) {
+            client.logger.warn(`[filter] ${key} toggle failed: ${error}`);
+            return await replyFail(client, ctx, `Could not update the ${label} filter.`);
         }
         return await ctx.sendMessage({
             embeds: [
@@ -123,7 +133,7 @@ export interface NumericFilterOptions {
     invalid: string;
     /** Copy shown when the number falls outside [min, max]. */
     outOfRange: string;
-    apply: (player: Dispatcher, value: number) => void;
+    apply: NumericFilterEffect;
     success: (value: number) => string;
 }
 
@@ -136,7 +146,12 @@ export function numericFilter(options: NumericFilterOptions): FilterDefinition['
             return await replyFail(client, ctx, options.outOfRange);
         }
 
-        options.apply(player, value);
+        try {
+            await options.apply(player, value);
+        } catch (error) {
+            client.logger.warn(`[filter] ${options.key} write failed: ${error}`);
+            return await replyFail(client, ctx, `Could not update the ${options.key} filter.`);
+        }
         if (!player.filters.includes(options.key)) player.filters.push(options.key);
         player.filterValues[options.key] = value;
         return await replyOk(client, ctx, options.success(value));

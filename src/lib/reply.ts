@@ -2,6 +2,10 @@ import type { EmbedBuilder } from 'discord.js';
 
 import type { BootstrapClient, Context } from '../core/index.js';
 
+/** Generic command failure. Raw errors belong in the log, not a user reply. */
+export const COMMAND_FAILURE_MESSAGE =
+    'Something went wrong while running that command. Please try again.';
+
 /** Colored one-line embed used by command replies. */
 export function embedLine(
     client: BootstrapClient,

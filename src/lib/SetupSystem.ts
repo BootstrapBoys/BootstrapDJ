@@ -163,15 +163,6 @@ async function enqueueSingle(
         await sendTransient(client, channel, rejection, client.color.red);
         return false;
     }
-    if (player.queue.length >= client.config.maxQueueSize) {
-        await sendTransient(
-            client,
-            channel,
-            `The queue is too long. The maximum length is ${client.config.maxQueueSize} songs.`,
-            client.color.red
-        );
-        return false;
-    }
     player.enqueue(track);
     await player.isPlaying();
     await sendTransient(
@@ -254,15 +245,6 @@ async function setupStart(
         for (const raw of wanted) {
             const track = player.buildTrack(raw, message.author);
             if (checkTrack(player, track, message.author.id, limits)) continue;
-            if (player.queue.length >= client.config.maxQueueSize) {
-                await sendTransient(
-                    client,
-                    channel,
-                    `The queue is too long. The maximum length is ${client.config.maxQueueSize} songs.`,
-                    client.color.red
-                );
-                return;
-            }
             player.enqueue(track, true, false);
             accepted += 1;
         }

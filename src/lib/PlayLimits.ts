@@ -34,6 +34,20 @@ export async function getPlayLimits(client: BootstrapClient, guildId: string): P
     };
 }
 
+/**
+ * One guild-aware queue cap for every enqueue path. `maxQueue` is the
+ * effective setting (guild override or `MAX_QUEUE_SIZE`); `0` means unlimited.
+ */
+export function queueHasRoom(
+    player: Dispatcher,
+    limits: PlayLimits,
+    pending: number = 0
+): boolean {
+    if (limits.maxQueue <= 0) return true;
+    const queued = player.queue.length + (player.current ? 1 : 0) + pending;
+    return queued < limits.maxQueue;
+}
+
 /** Returns a user-facing rejection reason, or null when the track fits. */
 export function checkTrack(
     player: Dispatcher,

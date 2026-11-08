@@ -69,12 +69,12 @@ export async function runPlayRequest(
             };
             const detail = exception?.cause || exception?.message || 'unknown';
             client.logger.error(`Lavalink load error for ${query}: ${detail}`);
-            const description =
-                mode === 'next'
-                    ? 'There was an error while searching.'
-                    : `There was an error while searching.\n\`${detail.slice(0, 200)}\``;
             await ctx.sendMessage({
-                embeds: [embed.setColor(client.color.red).setDescription(description)],
+                embeds: [
+                    embed
+                        .setColor(client.color.red)
+                        .setDescription('There was an error while searching.'),
+                ],
             });
             return;
         }
@@ -93,18 +93,6 @@ export async function runPlayRequest(
             if (rejected) {
                 await ctx.sendMessage({
                     embeds: [embed.setColor(client.color.red).setDescription(rejected)],
-                });
-                return;
-            }
-            if (player.queue.length >= client.config.maxQueueSize) {
-                await ctx.sendMessage({
-                    embeds: [
-                        embed
-                            .setColor(client.color.red)
-                            .setDescription(
-                                `The queue is too long. The maximum length is ${client.config.maxQueueSize} songs.`
-                            ),
-                    ],
                 });
                 return;
             }
@@ -150,21 +138,6 @@ export async function runPlayRequest(
                 const pending = mode === 'next' ? accepted : [];
                 const rejected = checkTrack(player, pl, author.id, limits, pending);
                 if (rejected) continue;
-                if (player.queue.length + pending.length >= client.config.maxQueueSize) {
-                    // Keep the tracks already accepted; the old early return
-                    // left them in memory but never persisted them.
-                    void player.persist();
-                    await ctx.sendMessage({
-                        embeds: [
-                            embed
-                                .setColor(client.color.red)
-                                .setDescription(
-                                    `The queue is too long. The maximum length is ${client.config.maxQueueSize} songs.`
-                                ),
-                        ],
-                    });
-                    return;
-                }
                 accepted.push(pl);
                 if (mode === 'queue') player.enqueue(pl, false, false);
             }
@@ -204,18 +177,6 @@ export async function runPlayRequest(
             if (rejected) {
                 await ctx.sendMessage({
                     embeds: [embed.setColor(client.color.red).setDescription(rejected)],
-                });
-                return;
-            }
-            if (player.queue.length >= client.config.maxQueueSize) {
-                await ctx.sendMessage({
-                    embeds: [
-                        embed
-                            .setColor(client.color.red)
-                            .setDescription(
-                                `The queue is too long. The maximum length is ${client.config.maxQueueSize} songs.`
-                            ),
-                    ],
                 });
                 return;
             }
