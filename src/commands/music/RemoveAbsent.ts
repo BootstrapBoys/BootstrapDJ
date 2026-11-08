@@ -1,7 +1,7 @@
 import { ChannelType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { requesterId } from '../../utils/QueueTools.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { requesterId } from '../../lib/QueueTools.js';
 
 export default class RemoveAbsent extends Command {
     constructor(client: BootstrapClient) {

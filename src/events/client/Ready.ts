@@ -1,9 +1,9 @@
 import { Events } from 'discord.js';
 
 import config from '../../config.js';
-import { BootstrapClient, Event } from '../../structures/index.js';
-import { restoreSessions, startSessionHandoffs, waitForNode } from '../../utils/Session.js';
-import { resetSetupChannel, startSetupJanitor } from '../../utils/SetupSystem.js';
+import { BootstrapClient, Event } from '../../core/index.js';
+import { restoreSessions, startSessionHandoffs, waitForNode } from '../../lib/Session.js';
+import { resetSetupChannel, startSetupJanitor } from '../../lib/SetupSystem.js';
 
 let channelsPurged = false;
 export default class Ready extends Event {

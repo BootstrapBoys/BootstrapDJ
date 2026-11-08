@@ -1,14 +1,14 @@
 import { Constants } from 'shoukaku';
 
-import { BootstrapClient } from '../../structures/index.js';
-import BotLog from '../../utils/BotLog.js';
-import { formatDuration } from '../../utils/NodeStatus.js';
+import { BootstrapClient } from '../../core/index.js';
+import BotLog from '../../lib/BotLog.js';
+import { formatDuration } from '../../lib/NodeStatus.js';
 import {
     findBestPublicNode,
     isFallbackNode,
     shouldFallback,
     toNodeOption,
-} from '../../utils/PublicNodes.js';
+} from '../../lib/PublicNodes.js';
 import { BotPlugin } from '../index.js';
 
 const CHECK_INTERVAL_MS = 30_000;

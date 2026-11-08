@@ -1,6 +1,6 @@
 import { ChannelType, PermissionFlagsBits, VoiceState } from 'discord.js';
 
-import { BootstrapClient, Event } from '../../structures/index.js';
+import { BootstrapClient, Event } from '../../core/index.js';
 
 export default class VoiceStateUpdate extends Event {
     /** One pending empty-channel teardown per guild. A second leave/rejoin must

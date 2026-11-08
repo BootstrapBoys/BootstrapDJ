@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { dedupeQueue, parseTime, removeRange, sortQueue } from '../dist/utils/QueueTools.js';
+import { dedupeQueue, parseTime, removeRange, sortQueue } from '../dist/lib/QueueTools.js';
 import { makeSong } from './helpers.mjs';
 
 test('queue sorting is stable and supports every field', () => {

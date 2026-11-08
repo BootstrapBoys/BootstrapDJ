@@ -1,5 +1,5 @@
-import type BootstrapClient from '../structures/BootstrapClient.js';
-import type Command from '../structures/Command.js';
+import type BootstrapClient from '../core/BootstrapClient.js';
+import type Command from '../core/Command.js';
 import { ChannelType, Collection, EmbedBuilder, PermissionFlagsBits, type PermissionsString } from 'discord.js';
 
 /** The parts of a guild member the gate needs, kept structural for tests. */

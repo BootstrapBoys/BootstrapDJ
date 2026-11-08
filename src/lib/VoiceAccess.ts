@@ -1,6 +1,6 @@
 import { GuildMember, PermissionFlagsBits } from 'discord.js';
 
-import { BootstrapClient } from '../structures/index.js';
+import { BootstrapClient } from '../core/index.js';
 
 /** True when the member may control playback: DJ mode off, Manage Server, or a
  * configured DJ role. Mirrors the check in InteractionCreate so voice commands

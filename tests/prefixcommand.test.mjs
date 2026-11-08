@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { matchPrefixCommand } from '../dist/utils/PrefixCommand.js';
+import { matchPrefixCommand } from '../dist/lib/PrefixCommand.js';
 
 test('prefix matching selects the longest configured prefix', () => {
     assert.deepEqual(matchPrefixCommand('!!playnext song', ['!', '!!']), {

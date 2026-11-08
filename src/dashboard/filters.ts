@@ -1,4 +1,4 @@
-import type Dispatcher from '../structures/Dispatcher.js';
+import type Dispatcher from '../core/Dispatcher.js';
 
 export type FilterDef = {
     id: string;

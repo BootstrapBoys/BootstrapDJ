@@ -1,6 +1,6 @@
 import { EmbedBuilder, Guild, TextChannel } from 'discord.js';
 
-import { BootstrapClient, Event } from '../../structures/index.js';
+import { BootstrapClient, Event } from '../../core/index.js';
 
 export default class GuildCreate extends Event {
     constructor(client: BootstrapClient, file: string) {

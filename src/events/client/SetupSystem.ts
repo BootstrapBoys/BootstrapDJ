@@ -1,7 +1,7 @@
 import { Message, PermissionsBitField, TextChannel } from 'discord.js';
 
-import { BootstrapClient, Event } from '../../structures/index.js';
-import { oops, setupStart } from '../../utils/SetupSystem.js';
+import { BootstrapClient, Event } from '../../core/index.js';
+import { oops, setupStart } from '../../lib/SetupSystem.js';
 
 export default class SetupSystem extends Event {
     constructor(client: BootstrapClient, file: string) {

@@ -1,6 +1,6 @@
 import { APIRole, ApplicationCommandOptionType, Role } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Dj extends Command {
     constructor(client: BootstrapClient) {

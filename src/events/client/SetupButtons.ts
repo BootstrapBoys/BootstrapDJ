@@ -1,7 +1,7 @@
 import { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
 
-import { BootstrapClient, Event } from '../../structures/index.js';
-import { buttonReply } from '../../utils/SetupSystem.js';
+import { BootstrapClient, Event } from '../../core/index.js';
+import { buttonReply } from '../../lib/SetupSystem.js';
 import { checkDj } from '../player/TrackStart.js';
 
 export default class SetupButtons extends Event {

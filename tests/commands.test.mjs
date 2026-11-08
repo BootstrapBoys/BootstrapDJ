@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import Command from '../dist/structures/Command.js';
+import Command from '../dist/core/Command.js';
 
 // Commands only read their client in run(), never in the constructor, so a
 // bare object is enough to exercise option plumbing.

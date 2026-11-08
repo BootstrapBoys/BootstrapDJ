@@ -1,5 +1,5 @@
 
-import type { BootstrapClient } from '../structures/index.js';
+import type { BootstrapClient } from '../core/index.js';
 import type { Client, Serialized } from 'discord.js';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import http from 'node:http';
@@ -13,7 +13,7 @@ import {
     NO_ACCESS,
     type PlayerSnapshot,
 } from './shardApi.js';
-import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../utils/SettingsSchema.js';
+import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../lib/SettingsSchema.js';
 
 
 

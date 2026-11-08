@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { nodePriority, parseFallbackNodes, toNodeOptions } from '../dist/utils/NodeConfig.js';
+import { nodePriority, parseFallbackNodes, toNodeOptions } from '../dist/lib/NodeConfig.js';
 
 test('LAVALINK_FALLBACKS parses a JSON array of nodes', () => {
     const nodes = parseFallbackNodes(

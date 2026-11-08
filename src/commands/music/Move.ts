@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Move extends Command {
     constructor(client: BootstrapClient) {

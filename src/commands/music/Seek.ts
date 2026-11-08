@@ -1,5 +1,5 @@
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { parseTime } from '../../utils/QueueTools.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { parseTime } from '../../lib/QueueTools.js';
 
 export default class Seek extends Command {
     constructor(client: BootstrapClient) {

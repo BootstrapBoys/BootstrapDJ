@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { requesterFilter } from '../../utils/QueueTools.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { requesterFilter } from '../../lib/QueueTools.js';
 
 export default class RemoveUser extends Command {
     constructor(client: BootstrapClient) {

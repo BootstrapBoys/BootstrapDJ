@@ -1,7 +1,7 @@
 import { ClientOptions, GatewayIntentBits } from 'discord.js';
 
 import config from './config.js';
-import BootstrapClient from './structures/BootstrapClient.js';
+import BootstrapClient from './core/BootstrapClient.js';
 
 const {
     GuildMembers,

@@ -1,4 +1,4 @@
-import { BootstrapClient } from '../../structures/index.js';
+import { BootstrapClient } from '../../core/index.js';
 import { BotPlugin } from '../index.js';
 
 const antiCrash: BotPlugin = {

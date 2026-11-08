@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
-import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
+import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
 
 export default class Load extends Command {
     constructor(client: BootstrapClient) {

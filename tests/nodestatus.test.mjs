@@ -10,7 +10,7 @@ import {
     isIncidentActive,
     resetNodeStatus,
     takeReminder,
-} from '../dist/utils/NodeStatus.js';
+} from '../dist/lib/NodeStatus.js';
 
 test('a 1001 close reads as a restart, not a crash', () => {
     const info = describeCloseCode(1001);

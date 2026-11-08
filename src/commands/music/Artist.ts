@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { resolveSearchEngine } from '../../utils/SearchEngine.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class Artist extends Command {
     constructor(client: BootstrapClient) {

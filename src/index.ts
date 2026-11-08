@@ -4,18 +4,18 @@ import * as fs from 'node:fs';
 import path from 'node:path';
 
 import config from './config.js';
-import Logger from './structures/Logger.js';
-import { loadBots } from './utils/BotsFile.js';
+import Logger from './core/Logger.js';
+import { loadBots } from './lib/BotsFile.js';
 
 const logger = new Logger();
 
-if (!fs.existsSync('./src/utils/LavaLogo.txt')) {
+if (!fs.existsSync('./src/lib/LavaLogo.txt')) {
     logger.error('LavaLogo.txt file is missing');
     process.exit(1);
 }
 
 try {
-    const logFile = fs.readFileSync('./src/utils/LavaLogo.txt', 'utf-8');
+    const logFile = fs.readFileSync('./src/lib/LavaLogo.txt', 'utf-8');
     console.log('\x1b[35m%s\x1b[0m', logFile);
 } catch (err) {
     logger.error('[CLIENT] An error has occurred :', err);

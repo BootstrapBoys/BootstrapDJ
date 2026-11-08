@@ -1,4 +1,4 @@
-import Dispatcher, { Song } from '../dist/structures/Dispatcher.js';
+import Dispatcher, { Song } from '../dist/core/Dispatcher.js';
 
 export const fakeUser = { id: '1', tag: 'tester#0001' };
 

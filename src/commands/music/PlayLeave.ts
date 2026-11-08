@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
-import { resolveSearchEngine } from '../../utils/SearchEngine.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { checkTrack, getPlayLimits } from '../../lib/PlayLimits.js';
+import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class PlayLeave extends Command {
     constructor(client: BootstrapClient) {

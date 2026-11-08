@@ -1,9 +1,9 @@
 import { ChannelType, User } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
+import Dispatcher, { fromSaved, SavedTrack, Song } from '../core/Dispatcher.js';
+import { BootstrapClient } from '../core/index.js';
 import { Session } from '../generated/prisma/client.js';
-import Dispatcher, { fromSaved, SavedTrack, Song } from '../structures/Dispatcher.js';
-import { BootstrapClient } from '../structures/index.js';
 
 /** True when at least one human is connected; bots do not count as listeners. */
 export function hasListeners(

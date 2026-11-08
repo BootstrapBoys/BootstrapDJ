@@ -1,5 +1,5 @@
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { dedupeQueue } from '../../utils/QueueTools.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { dedupeQueue } from '../../lib/QueueTools.js';
 
 export default class RemoveDuplicates extends Command {
     constructor(client: BootstrapClient) {

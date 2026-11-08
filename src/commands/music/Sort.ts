@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { SortDirection, SortField, sortQueue } from '../../utils/QueueTools.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { SortDirection, SortField, sortQueue } from '../../lib/QueueTools.js';
 
 export default class Sort extends Command {
     constructor(client: BootstrapClient) {

@@ -6,9 +6,9 @@ import path from 'node:path';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '../dist/generated/prisma/client.js';
 
-import ServerData from '../dist/database/server.js';
-import { fromSaved, toSaved } from '../dist/structures/Dispatcher.js';
-import { hasListeners, isRestorable, waitForListeners, waitForNode } from '../dist/utils/Session.js';
+import ServerData from '../dist/data/server.js';
+import { fromSaved, toSaved } from '../dist/core/Dispatcher.js';
+import { hasListeners, isRestorable, waitForListeners, waitForNode } from '../dist/lib/Session.js';
 import { fakeUser, makeSong } from './helpers.mjs';
 
 const dbPath = path.join(os.tmpdir(), `bootstrapdj-session-${process.pid}-${Date.now()}.db`);

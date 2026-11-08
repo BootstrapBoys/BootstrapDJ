@@ -34,11 +34,11 @@ import {
     guildAccessFor,
     type PlayerSnapshot,
 } from '../dashboard/shardApi.js';
-import ServerData from '../database/server.js';
+import ServerData from '../data/server.js';
+import { loadBots } from '../lib/BotsFile.js';
+import { findBestPublicNode, toNodeOption } from '../lib/PublicNodes.js';
+import { Utils } from '../lib/Utils.js';
 import loadPlugins from '../plugin/index.js';
-import { loadBots } from '../utils/BotsFile.js';
-import { findBestPublicNode, toNodeOption } from '../utils/PublicNodes.js';
-import { Utils } from '../utils/Utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { shouldReplyEphemeral } from '../dist/utils/ResponseMode.js';
+import { shouldReplyEphemeral } from '../dist/lib/ResponseMode.js';
 
 test('slash replies stay private by default', () => {
     assert.equal(shouldReplyEphemeral(true, {}), true);

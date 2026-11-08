@@ -7,9 +7,9 @@ import {
 } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
-import { BootstrapClient, Context, Event } from '../../structures/index.js';
-import { evaluateCommand } from '../../utils/CommandGate.js';
-import { shouldReplyEphemeral } from '../../utils/ResponseMode.js';
+import { BootstrapClient, Context, Event } from '../../core/index.js';
+import { evaluateCommand } from '../../lib/CommandGate.js';
+import { shouldReplyEphemeral } from '../../lib/ResponseMode.js';
 
 export default class InteractionCreate extends Event {
     private static readonly PLAYLIST_CACHE_MS = 5000;

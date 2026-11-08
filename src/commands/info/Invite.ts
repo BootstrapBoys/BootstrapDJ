@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Invite extends Command {
     constructor(client: BootstrapClient) {

@@ -1,8 +1,8 @@
 import { ApplicationCommandOptionType, TextChannel } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { updateSetup } from '../../utils/SetupSystem.js';
-import { hasDjAccess } from '../../utils/VoiceAccess.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { updateSetup } from '../../lib/SetupSystem.js';
+import { hasDjAccess } from '../../lib/VoiceAccess.js';
 
 export default class Listen extends Command {
     constructor(client: BootstrapClient) {

@@ -1,5 +1,5 @@
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { getNowPlayingButtons } from '../../utils/Buttons.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { getNowPlayingButtons } from '../../lib/Buttons.js';
 
 export default class Nowplaying extends Command {
     constructor(client: BootstrapClient) {

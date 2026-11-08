@@ -1,7 +1,7 @@
 import { version } from 'discord.js';
 import os from 'node:os';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Info extends Command {
     constructor(client: BootstrapClient) {

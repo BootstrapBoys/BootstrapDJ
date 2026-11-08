@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { removeRange } from '../../utils/QueueTools.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { removeRange } from '../../lib/QueueTools.js';
 
 export default class MassRemove extends Command {
     constructor(client: BootstrapClient) {

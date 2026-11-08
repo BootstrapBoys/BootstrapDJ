@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { fromSaved, SavedTrack } from '../../structures/Dispatcher.js';
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
-import { trackIdentity } from '../../utils/QueueTools.js';
+import { fromSaved, SavedTrack } from '../../core/Dispatcher.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { checkTrack, getPlayLimits } from '../../lib/PlayLimits.js';
+import { trackIdentity } from '../../lib/QueueTools.js';
 
 export default class PlayRecent extends Command {
     constructor(client: BootstrapClient) {

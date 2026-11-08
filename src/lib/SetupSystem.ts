@@ -14,8 +14,8 @@ import { LoadType } from 'shoukaku';
 
 import { getButtons } from './Buttons.js';
 import { checkTrack, getPlayLimits } from './PlayLimits.js';
-import { Song } from '../structures/Dispatcher.js';
-import { BootstrapClient, Dispatcher } from '../structures/index.js';
+import { Song } from '../core/Dispatcher.js';
+import { BootstrapClient, Dispatcher } from '../core/index.js';
 
 const LIVE_BADGE_PATH = '/root/EarlTheEar/assets/live.png';
 

@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 import type { ApplicationCommandOption } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 const SIMPLE: Record<string, string> = {
     '8d': '8d',

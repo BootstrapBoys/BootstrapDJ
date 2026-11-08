@@ -1,7 +1,7 @@
 import { EmbedBuilder, Guild, TextChannel } from 'discord.js';
 
-import { BootstrapClient, Event } from '../../structures/index.js';
-import { stopSetupJanitor } from '../../utils/SetupSystem.js';
+import { BootstrapClient, Event } from '../../core/index.js';
+import { stopSetupJanitor } from '../../lib/SetupSystem.js';
 
 export default class GuildDelete extends Event {
     constructor(client: BootstrapClient, file: string) {

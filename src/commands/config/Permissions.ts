@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionType, Role, User } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Permissions extends Command {
     constructor(client: BootstrapClient) {

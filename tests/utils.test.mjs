@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { Utils } from '../dist/utils/Utils.js';
+import { Utils } from '../dist/lib/Utils.js';
 
 test('livestreams report LIVE instead of dividing by zero', () => {
     assert.equal(Utils.progressBar(0, 0), '🔴 LIVE');

@@ -2,8 +2,8 @@ import { ApplicationCommandOptionType, ChannelType } from 'discord.js';
 import { randomBytes } from 'node:crypto';
 import { LoadType } from 'shoukaku';
 
-import { BootstrapClient, Command, Context, Song } from '../../structures/index.js';
-import { resolveSearchEngine } from '../../utils/SearchEngine.js';
+import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
+import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class Collection extends Command {
     constructor(client: BootstrapClient) {

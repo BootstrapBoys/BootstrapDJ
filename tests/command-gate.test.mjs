@@ -3,8 +3,8 @@ import { test } from 'node:test';
 
 import { ChannelType, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
-import Command from '../dist/structures/Command.js';
-import { evaluateCommand } from '../dist/utils/CommandGate.js';
+import Command from '../dist/core/Command.js';
+import { evaluateCommand } from '../dist/lib/CommandGate.js';
 
 function makeCommand(overrides = {}) {
     return new Command(

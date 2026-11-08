@@ -1,4 +1,4 @@
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 const TIPS = [
     'Use `/playnext` to jump a request to the front of the queue.',

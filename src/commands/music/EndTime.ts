@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { parseTime } from '../../utils/QueueTools.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { parseTime } from '../../lib/QueueTools.js';
 
 export default class EndTime extends Command {
     constructor(client: BootstrapClient) {

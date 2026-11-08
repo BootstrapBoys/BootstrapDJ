@@ -14,7 +14,7 @@ import {
     VoiceChannel,
 } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 const PAGE_SIZE = 25;
 

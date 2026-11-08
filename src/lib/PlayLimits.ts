@@ -1,6 +1,6 @@
-import type Dispatcher from '../structures/Dispatcher.js';
-import type { Song } from '../structures/Dispatcher.js';
-import type { BootstrapClient } from '../structures/index.js';
+import type Dispatcher from '../core/Dispatcher.js';
+import type { Song } from '../core/Dispatcher.js';
+import type { BootstrapClient } from '../core/index.js';
 
 import { formatDuration } from './NodeStatus.js';
 

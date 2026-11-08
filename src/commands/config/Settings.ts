@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../../utils/SettingsSchema.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../../lib/SettingsSchema.js';
 
 function isKnown(key: string): key is keyof typeof DEFAULTS {
     return isKnownSetting(key);

@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 
+import { parseFallbackNodes, toNodeOptions } from './lib/NodeConfig.js';
 import { SearchEngine } from './types.js';
-import { parseFallbackNodes, toNodeOptions } from './utils/NodeConfig.js';
 // quiet: dotenv >=17 prints an 'injected env' banner on every boot.
 dotenv.config({ quiet: true });
 

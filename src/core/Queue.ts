@@ -2,7 +2,7 @@ import { Channel, Guild } from 'discord.js';
 import { LavalinkResponse, LoadType, Node } from 'shoukaku';
 
 import { BootstrapClient, Dispatcher } from './index.js';
-import { isFallbackNode } from '../utils/PublicNodes.js';
+import { isFallbackNode } from '../lib/PublicNodes.js';
 export class Queue extends Map<string, Dispatcher> {
     public client: BootstrapClient;
     constructor(client: BootstrapClient) {

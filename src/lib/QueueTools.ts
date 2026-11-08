@@ -1,4 +1,4 @@
-import { Song } from '../structures/Dispatcher.js';
+import { Song } from '../core/Dispatcher.js';
 
 export type SortField = 'title' | 'author' | 'duration' | 'requester';
 export type SortDirection = 'asc' | 'desc';

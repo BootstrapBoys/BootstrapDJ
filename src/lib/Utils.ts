@@ -11,7 +11,7 @@ import {
 import { LavalinkResponse, LoadType, Track } from 'shoukaku';
 
 import config from '../config.js';
-import { BootstrapClient, Context } from '../structures/index.js';
+import { BootstrapClient, Context } from '../core/index.js';
 
 export class Utils {
     /** First playable track from any Lavalink load response. */

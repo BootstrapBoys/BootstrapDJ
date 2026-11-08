@@ -49,7 +49,7 @@ test('nowplaying replies with the compact control buttons', async () => {
     );
 });
 
-import Dispatcher from '../dist/structures/Dispatcher.js';
+import Dispatcher from '../dist/core/Dispatcher.js';
 
 test('track-scoped nowplaying messages are cleared on track end', () => {
     const dispatcher = Object.create(Dispatcher.prototype);

@@ -6,7 +6,7 @@ import path from 'node:path';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '../dist/generated/prisma/client.js';
 
-import ServerData from '../dist/database/server.js';
+import ServerData from '../dist/data/server.js';
 
 // Never touch prisma/bootstrapdj.db (live data): a throwaway file is
 // given the two tables these tests exercise.

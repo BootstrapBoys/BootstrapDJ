@@ -1,6 +1,6 @@
-import { BootstrapClient, Event } from '../../structures/index.js';
-import BotLog from '../../utils/BotLog.js';
-import { beginIncident, formatDuration } from '../../utils/NodeStatus.js';
+import { BootstrapClient, Event } from '../../core/index.js';
+import BotLog from '../../lib/BotLog.js';
+import { beginIncident, formatDuration } from '../../lib/NodeStatus.js';
 
 export default class NodeDisconnect extends Event {
     constructor(client: BootstrapClient, file: string) {

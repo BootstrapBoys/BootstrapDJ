@@ -1,5 +1,5 @@
-import type { Song } from '../structures/Dispatcher.js';
-import type { BootstrapClient, Context } from '../structures/index.js';
+import type { Song } from '../core/Dispatcher.js';
+import type { BootstrapClient, Context } from '../core/index.js';
 import { LoadType } from 'shoukaku';
 
 import { checkTrack, getPlayLimits } from './PlayLimits.js';

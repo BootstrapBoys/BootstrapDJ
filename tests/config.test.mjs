@@ -6,7 +6,7 @@ import test from 'node:test';
 
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '../dist/generated/prisma/client.js';
-import ServerData from '../dist/database/server.js';
+import ServerData from '../dist/data/server.js';
 
 const dir = await mkdtemp(path.join(tmpdir(), 'bootstrapdj-config-'));
 const dbPath = path.join(dir, 'config.db');

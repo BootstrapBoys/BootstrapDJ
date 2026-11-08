@@ -1,9 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { Player } from 'shoukaku';
 
-import { Song } from '../../structures/Dispatcher.js';
-import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
-import { formatDuration } from '../../utils/NodeStatus.js';
+import { Song } from '../../core/Dispatcher.js';
+import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import { formatDuration } from '../../lib/NodeStatus.js';
 
 export default class QueueEnd extends Event {
     constructor(client: BootstrapClient, file: string) {

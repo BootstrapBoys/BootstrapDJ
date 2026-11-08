@@ -13,10 +13,10 @@ import {
 } from 'discord.js';
 import { Player } from 'shoukaku';
 
-import { Song, toSaved } from '../../structures/Dispatcher.js';
-import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
-import { loudnessOf, volumeForLoudness } from '../../utils/Loudness.js';
-import { trackStart } from '../../utils/SetupSystem.js';
+import { Song, toSaved } from '../../core/Dispatcher.js';
+import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import { loudnessOf, volumeForLoudness } from '../../lib/Loudness.js';
+import { trackStart } from '../../lib/SetupSystem.js';
 
 const NOW_PLAYING_COLLECTOR_MS = 12 * 60 * 60 * 1000;
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { isFinishedTrackReason } from '../dist/utils/TrackEndReason.js';
+import { isFinishedTrackReason } from '../dist/lib/TrackEndReason.js';
 
 test('natural track end detection is case-insensitive', () => {
     assert.equal(isFinishedTrackReason('finished'), true);

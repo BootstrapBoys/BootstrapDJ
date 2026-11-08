@@ -1,6 +1,6 @@
 import { ChannelType } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 type Vote = { key: string; voters: Set<string> };
 

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { EmbedBuilder } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
-import { runPlayRequest } from '../dist/utils/PlayRequest.js';
+import { runPlayRequest } from '../dist/lib/PlayRequest.js';
 
 function rawTrack(title, length = 1000) {
     return {

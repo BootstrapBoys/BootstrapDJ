@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionType, GuildMember, PermissionFlagsBits } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Alias extends Command {
     constructor(client: BootstrapClient) {

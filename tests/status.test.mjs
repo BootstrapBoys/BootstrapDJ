@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
 import config from '../dist/config.js';
-import { Utils } from '../dist/utils/Utils.js';
+import { Utils } from '../dist/lib/Utils.js';
 
 const originalMode = config.botStatusMode;
 const originalGuild = config.guildId;

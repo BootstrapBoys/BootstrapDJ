@@ -9,7 +9,7 @@ import {
     scoreNode,
     shouldFallback,
     toNodeOption,
-} from '../dist/utils/PublicNodes.js';
+} from '../dist/lib/PublicNodes.js';
 
 test('parsePublicNodes keeps only usable v4 entries', () => {
     const nodes = parsePublicNodes([

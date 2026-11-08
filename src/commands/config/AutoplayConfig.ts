@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionType, GuildMember, PermissionFlagsBits } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 type AutoplaySource = 'chart' | 'curated' | 'legacy';
 type AutoplaySettingRow = Awaited<ReturnType<BootstrapClient['db']['getAutoplaySetting']>>;

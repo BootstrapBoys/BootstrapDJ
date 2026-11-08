@@ -3,9 +3,9 @@ import { ChannelType, Events, Guild, GuildMember, PermissionFlagsBits, TextChann
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { LoadType } from 'shoukaku';
 
-import { BootstrapClient, Dispatcher } from '../../structures/index.js';
-import { updateSetup } from '../../utils/SetupSystem.js';
-import { hasDjAccess, isVoiceOptedOut } from '../../utils/VoiceAccess.js';
+import { BootstrapClient, Dispatcher } from '../../core/index.js';
+import { updateSetup } from '../../lib/SetupSystem.js';
+import { hasDjAccess, isVoiceOptedOut } from '../../lib/VoiceAccess.js';
 import { BotPlugin } from '../index.js';
 
 type VoiceCommandBody = EarlCommandBody;

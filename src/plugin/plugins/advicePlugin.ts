@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 
-import { BootstrapClient } from '../../structures/index.js';
+import { BootstrapClient } from '../../core/index.js';
 import { BotPlugin } from '../index.js';
 
 const advicePlugin: BotPlugin = {

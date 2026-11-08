@@ -1,7 +1,7 @@
 import { Player } from 'shoukaku';
 
-import { BootstrapClient, Event } from '../../structures/index.js';
-import { updateSetup } from '../../utils/SetupSystem.js';
+import { BootstrapClient, Event } from '../../core/index.js';
+import { updateSetup } from '../../lib/SetupSystem.js';
 
 /**
  * A dispatcher can be destroyed without reaching TrackEnd: the channel empties

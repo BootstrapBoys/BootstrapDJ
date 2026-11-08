@@ -1,8 +1,8 @@
 import { Message, MessageReplyOptions, PermissionFlagsBits } from 'discord.js';
 
-import { BootstrapClient, Context, Event } from '../../structures/index.js';
-import { evaluateCommand } from '../../utils/CommandGate.js';
-import { matchPrefixCommand } from '../../utils/PrefixCommand.js';
+import { BootstrapClient, Context, Event } from '../../core/index.js';
+import { evaluateCommand } from '../../lib/CommandGate.js';
+import { matchPrefixCommand } from '../../lib/PrefixCommand.js';
 
 export default class MessageCreate extends Event {
     constructor(client: BootstrapClient, file: string) {

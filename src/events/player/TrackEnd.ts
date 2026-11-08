@@ -1,10 +1,10 @@
 import { ChannelType } from 'discord.js';
 import { Player } from 'shoukaku';
 
-import { Song } from '../../structures/Dispatcher.js';
-import { BootstrapClient, Dispatcher, Event } from '../../structures/index.js';
-import { updateSetup } from '../../utils/SetupSystem.js';
-import { isFinishedTrackReason } from '../../utils/TrackEndReason.js';
+import { Song } from '../../core/Dispatcher.js';
+import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import { updateSetup } from '../../lib/SetupSystem.js';
+import { isFinishedTrackReason } from '../../lib/TrackEndReason.js';
 
 export default class TrackEnd extends Event {
     constructor(client: BootstrapClient, file: string) {

@@ -1,9 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
 import { LoadType, Track } from 'shoukaku';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { checkTrack, getPlayLimits } from '../../utils/PlayLimits.js';
-import { resolveSearchEngine } from '../../utils/SearchEngine.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { checkTrack, getPlayLimits } from '../../lib/PlayLimits.js';
+import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 const PAGE_SIZE = 25;
 

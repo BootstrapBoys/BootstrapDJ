@@ -1,8 +1,8 @@
-import { BootstrapClient, Event } from '../../structures/index.js';
-import BotLog from '../../utils/BotLog.js';
-import { isPrimaryNode } from '../../utils/NodeConfig.js';
-import { beginIncident, formatDuration, formatNodeError, takeReminder } from '../../utils/NodeStatus.js';
-import { isFallbackNode } from '../../utils/PublicNodes.js';
+import { BootstrapClient, Event } from '../../core/index.js';
+import BotLog from '../../lib/BotLog.js';
+import { isPrimaryNode } from '../../lib/NodeConfig.js';
+import { beginIncident, formatDuration, formatNodeError, takeReminder } from '../../lib/NodeStatus.js';
+import { isFallbackNode } from '../../lib/PublicNodes.js';
 
 export default class NodeError extends Event {
     constructor(client: BootstrapClient, file: string) {

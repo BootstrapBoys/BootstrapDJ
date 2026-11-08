@@ -1,4 +1,4 @@
-import type { BootstrapClient, Context } from '../structures/index.js';
+import type { BootstrapClient, Context } from '../core/index.js';
 
 /**
  * Resolve the engine for a user-facing search. Prefix commands deliberately

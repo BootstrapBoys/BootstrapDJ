@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { resolveSearchEngine } from '../dist/utils/SearchEngine.js';
+import { resolveSearchEngine } from '../dist/lib/SearchEngine.js';
 
 const client = {
     config: { searchEngine: 'dzsearch', prefixSearchEngine: 'ytsearch' },

@@ -1,6 +1,6 @@
 import { TextChannel } from 'discord.js';
 
-import { BootstrapClient } from '../structures/index.js';
+import { BootstrapClient } from '../core/index.js';
 
 export default class BotLog {
     public static send(client: BootstrapClient, message: string, type: string): void {

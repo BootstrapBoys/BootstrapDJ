@@ -5,9 +5,9 @@ import {
     PermissionFlagsBits,
 } from 'discord.js';
 
-import { BootstrapClient, Command, Context } from '../../structures/index.js';
-import { getButtons } from '../../utils/Buttons.js';
-import { startSetupJanitor, stopSetupJanitor } from '../../utils/SetupSystem.js';
+import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { getButtons } from '../../lib/Buttons.js';
+import { startSetupJanitor, stopSetupJanitor } from '../../lib/SetupSystem.js';
 
 export default class Setup extends Command {
     constructor(client: BootstrapClient) {
