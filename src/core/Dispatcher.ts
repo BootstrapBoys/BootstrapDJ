@@ -1,245 +1,273 @@
-/* eslint-disable @typescript-eslint/typedef */
-import { ChannelType, Message, User } from 'discord.js';
-import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
+import { ChannelType, type Message, type User } from 'discord.js';
+import {
+    LoadType,
+    type Node,
+    type Player,
+    type Track,
+    type TrackEndEvent,
+    type TrackExceptionEvent,
+} from 'shoukaku';
 
 import { isFinishedTrackReason } from '../lib/TrackEndReason.js';
-import { BootstrapClient } from './index.js';
-import { PresentationRegistry } from './player/PresentationRegistry.js';
+import type { BootstrapClient } from './index.js';
+import { PlaybackEngine } from './player/PlaybackEngine.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
-import {
-    PlaybackEngine,
-    type PlaybackHost,
-    type PlaybackState,
-} from './player/PlaybackEngine.js';
 import { ShoukakuPlayerPort } from './player/ShoukakuPlayerPort.js';
 import { SessionPort } from './player/SessionPort.js';
 import { DispatcherLoggerPort } from './player/DispatcherLoggerPort.js';
-import { DestroyCoordinator, type DestroyHost } from './player/DestroyCoordinator.js';
+import { DestroyCoordinator } from './player/DestroyCoordinator.js';
+import {
+    DispatcherDestroyHost,
+    DispatcherPlaybackHost,
+    DispatcherPlaybackState,
+} from './player/DispatcherAdapters.js';
+import { PresentationRegistry } from './player/PresentationRegistry.js';
 import { DeezerClient } from './player/DeezerClient.js';
-import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
+import { AUTOPLAY_SEEDS, buildSeedCandidates } from './player/AutoplaySeeds.js';
 import { findColdStart } from './player/AutoplayColdStart.js';
 import { relatedTracks as getRelatedTracks } from './player/YouTubeMix.js';
-import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
-import { isRecent as checkRecent, youtubeIdFor as findYouTubeId, resolveFresh as freshTrack, resolveTracks as resolveIdentifier } from './player/TrackResolution.js';
-import { fairPlayQueue, playlistSeeds, purgeAutoplayQueue, rememberSeedState } from './player/QueueOps.js';
+import {
+    affinityWeight,
+    type AutoplayAffinity,
+    chooseFrom,
+    pickForSeed,
+} from './player/AutoplayPicker.js';
+import {
+    isRecent as checkRecent,
+    youtubeIdFor as findYouTubeId,
+    resolveFresh as freshTrack,
+    resolveTracks as resolveIdentifier,
+} from './player/TrackResolution.js';
+import {
+    fairPlayQueue,
+    playlistSeeds,
+    purgeAutoplayQueue,
+    rememberSeedState,
+} from './player/QueueOps.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
 export type { SavedTrack } from './player/TrackCodec.js';
 
+/** Listener-time accounting window: the stats sampler runs once a minute. */
+const LISTENER_SAMPLE_SECONDS = 60;
+
+/**
+ * A resolved Lavalink track that remembers who requested it. `autoplay` marks
+ * filler the bot chose itself, so a user request can displace it.
+ */
 export class Song implements Track {
-    encoded: string;
-    info: {
-        identifier: string;
-        isSeekable: boolean;
-        author: string;
-        length: number;
-        isStream: boolean;
-        position: number;
-        title: string;
-        uri?: string;
-        artworkUrl?: string;
-        isrc?: string;
-        sourceName: string;
-        requester: User;
-    };
-    pluginInfo: unknown;
-    /** True when the bot queued this itself (autoplay filler, not a user request). */
+    public encoded: string;
+    public info: Track['info'] & { requester: User };
+    public pluginInfo: unknown;
     public autoplay = false;
 
-    constructor(track: Song | Track, user: User, autoplay = false) {
+    public constructor(track: Song | Track, user: User, autoplay = false) {
         if (!track) throw new Error('Track is not provided');
-        this.encoded = track.encoded;
-        this.autoplay = autoplay;
-        this.info = {
-            ...track.info,
-            requester: user,
-        };
+        const source = track;
+        this.encoded = source.encoded;
+        this.autoplay = Boolean(autoplay);
+        this.info = { ...source.info, requester: user };
     }
 }
-/** Rebuild a playable Song; the requester becomes whoever restored it. */
+
+/** Rehydrate a saved track for the user who owns the restored session. */
 export function fromSaved(saved: SavedTrack, user: User): Song {
-    return new Song(
-        { encoded: saved.encoded, info: { ...saved.info, position: 0 }, pluginInfo: {} },
-        user,
-        saved.autoplay
-    );
+    const playable: Track = {
+        encoded: saved.encoded,
+        info: { ...saved.info, position: 0 },
+        pluginInfo: {},
+    };
+    return new Song(playable, user, saved.autoplay);
 }
 
 export interface NowPlayingCollector {
     stop(reason?: string): void;
 }
 
+/**
+ * Public guild player façade. It stores playback state (events, commands, the
+ * dashboard and tests read it), forwards Shoukaku player events, and delegates
+ * transport, teardown and restore decisions to the focused player modules.
+ */
 export default class Dispatcher {
-    private client: BootstrapClient;
+    private readonly client: BootstrapClient;
     public guildId: string;
     public channelId: string;
-    private timersStore?: PlaybackTimers;
-
-    private get timers(): PlaybackTimers {
-        return (this.timersStore ??= new PlaybackTimers());
-    }
-
-    private deezerStore?: DeezerClient;
-
-    private get deezer(): DeezerClient {
-        return (this.deezerStore ??= new DeezerClient());
-    }
-
-    /** Voice channel this dispatcher is bound to; needed for session restore. */
+    /** The bound voice channel, used when a session is restored or moved. */
     public voiceId: string | null;
     public player: Player;
-    public queue: Song[];
-    public stopped: boolean;
-    public previous: Song | null;
-    public current: Song | null;
-    public loop: 'off' | 'repeat' | 'queue';
     public node: Node;
     private readonly nodeSession: string | null;
-    public paused: boolean;
-    /** Position sampled when the node died/was abandoned, so the replacement
-     * node resumes at that instant rather than after the switch delay. */
+
+    public queue: Song[] = [];
+    public stopped = false;
+    public previous: Song | null = null;
+    public current: Song | null = null;
+    public loop: 'off' | 'repeat' | 'queue' = 'off';
+    public paused = false;
+    /** Position sampled before a node switch; the replacement resumes there
+     * instead of losing the seconds spent reconnecting. */
     public resumePosition: number | null = null;
-    public filters: Array<string>;
-    /** Last applied values for parametric filters (pitch/rate/speed). */
+    public filters: string[] = [];
+    /** Applied pitch/rate/speed values for the parametric filters. */
     public filterValues: Record<string, number> = {};
-    public autoplay: boolean;
-    /** Last track a user asked for; the newest lane in `seeds`. */
-    public seed: Song | null;
-    /** Recent explicit requests, newest first (max AUTOPLAY_SEEDS). */
-    public seeds: Song[];
-    private toppingUp = false;
-    /** Failed final attempts per track, so an unplayable track is skipped. */
-    /** Exposed on the runtime object; tests and characterization suites read it. */
+    public autoplay = false;
+    /** Most recent user request; it heads `seeds`. */
+    public seed: Song | null = null;
+    /** User requests that can seed autoplay, newest first. */
+    public seeds: Song[] = [];
+    private fillingLookahead = false;
+    /** Failed attempts per track; a track is dropped after the last one. */
     public failedTracks = new Map<string, number>();
-    public nowPlayingMessage: Message | null;
-    public nowPlayingCollector: NowPlayingCollector | null;
-    /** "Leave in …" prompt shown when the queue drains; cleared on leave/requeue. */
-    public queueEmptyPrompt: Message | null;
-    /** Ephemeral command responses that should expire with the current track. */
-    private presentation?: PresentationRegistry;
-    /** Set by /playleave: tear down the player when the queue drains. */
+    public nowPlayingMessage: Message | null = null;
+    public nowPlayingCollector: NowPlayingCollector | null = null;
+    /** "Leave in …" prompt shown when the queue drains. */
+    public queueEmptyPrompt: Message | null = null;
+    /** /playleave: tear the player down once the queue drains. */
     public leaveOnEnd = false;
-    /** 24/7 mode: pause at the end of the current track when the channel is empty. */
+    /** 24/7: pause at track end when nobody is listening. */
     public pauseWhenEmpty = false;
     public paused247 = false;
     public history: Song[] = [];
-    /** Suppresses the periodic persist while a session restore is populating it. */
+    /** Mutes the periodic persist while a restore is filling the state. */
     public restoring = false;
-    /** Set for the first track start after a restore so it is not recorded twice. */
+    /** First track start after a restore must not be recorded twice. */
     public skipRecentRecording = false;
-    /** Playback decisions live here; this class keeps the public state and wiring. */
+
+    /** Command replies that expire together with the current track. */
+    private presentation?: PresentationRegistry;
+    private timersStore?: PlaybackTimers;
+    private deezerStore?: DeezerClient;
     private engineStore?: PlaybackEngine;
     private coordinatorStore?: DestroyCoordinator;
 
-    private get coordinator(): DestroyCoordinator {
-        this.coordinatorStore ??= new DestroyCoordinator(
-            new DispatcherDestroyHost(this, this.timers, this.client),
-            new DispatcherLoggerPort(this.client.logger)
-        );
-        return this.coordinatorStore;
+    private get timers(): PlaybackTimers {
+        this.timersStore ??= new PlaybackTimers();
+        return this.timersStore;
+    }
+
+    private get deezer(): DeezerClient {
+        this.deezerStore ??= new DeezerClient();
+        return this.deezerStore;
     }
 
     private get engine(): PlaybackEngine {
-        this.engineStore ??= new PlaybackEngine(new DispatcherPlaybackState(this), {
-            player: new ShoukakuPlayerPort(() => this.player),
-            sessions: new SessionPort(this.client.db),
-            logger: new DispatcherLoggerPort(this.client.logger),
-            host: new DispatcherPlaybackHost(this, this.client.db, {
-                arm: (seconds, onElapsed) => this.coordinator.armPauseTimeout(seconds, onElapsed),
-                clear: () => this.coordinator.clearPauseTimeout(),
-            }),
-        });
+        if (!this.engineStore) {
+            this.engineStore = new PlaybackEngine(new DispatcherPlaybackState(this), {
+                player: new ShoukakuPlayerPort(() => this.player),
+                sessions: new SessionPort(this.client.db),
+                logger: new DispatcherLoggerPort(this.client.logger),
+                host: new DispatcherPlaybackHost(this, this.client.db, {
+                    arm: (seconds, onElapsed) =>
+                        this.coordinator.armPauseTimeout(seconds, onElapsed),
+                    clear: () => this.coordinator.clearPauseTimeout(),
+                }),
+            });
+        }
         return this.engineStore;
     }
 
-    constructor(options: DispatcherOptions) {
-        this.client = options.client;
-        this.guildId = options.guildId;
-        this.channelId = options.channelId;
-        this.voiceId = options.voiceId ?? null;
-        this.player = options.player;
-        this.queue = [];
-        this.stopped = false;
-        this.previous = null;
-        this.current = null;
-        this.loop = 'off';
-        this.node = options.node;
-        this.nodeSession = options.node.sessionId;
-        this.paused = false;
-        this.filters = [];
-        this.autoplay = false;
-        this.seed = null;
-        this.seeds = [];
-        this.nowPlayingMessage = null;
-        this.nowPlayingCollector = null;
-        this.queueEmptyPrompt = null;
+    private get coordinator(): DestroyCoordinator {
+        if (!this.coordinatorStore) {
+            this.coordinatorStore = new DestroyCoordinator(
+                new DispatcherDestroyHost(this, this.timers, this.client),
+                new DispatcherLoggerPort(this.client.logger)
+            );
+        }
+        return this.coordinatorStore;
+    }
+
+    public constructor(options: DispatcherOptions) {
+        const { client, guildId, channelId, voiceId, player, node } = options;
+        this.client = client;
+        this.guildId = guildId;
+        this.channelId = channelId;
+        this.voiceId = voiceId ?? null;
+        this.player = player;
+        this.node = node;
+        this.nodeSession = node.sessionId;
+        this.startTimers();
+        this.bindPlayerEvents();
+    }
+
+    private startTimers(): void {
         this.timers.persist = setInterval(() => {
-            // A paused player's position cannot change and pause() already wrote
-            // the state. An idle dispatcher has no position or queue to save;
-            // persisting it only rewrites/deletes the same row every 10s.
-            if (!this.paused && (this.current || this.queue.length)) void this.persist();
+            // Pause already wrote its snapshot and an idle player has nothing
+            // to save, so periodic writes would only churn the same row.
+            const saving = !this.paused && (this.current || this.queue.length);
+            if (saving) void this.persist();
         }, 10_000);
         this.timers.stats = setInterval(() => void this.sampleListeners(), 60_000);
         (this.timers.persist as unknown as { unref?: () => void }).unref?.();
         (this.timers.stats as unknown as { unref?: () => void }).unref?.();
+    }
 
+    /** Forward Shoukaku player events under the bot's own event names. */
+    private bindPlayerEvents(): void {
         this.player
-            .on('start', () =>
-                this.client.shoukaku.emitPlayerEvent('trackStart', this.player, this.current, this)
-            )
-            .on('end', (data: TrackEndEvent) => {
-                // FINISHED is the normal path; LOAD_FAILED/CLEANUP/STOPPED/REPLACED mean
-                // Lavalink dropped the track, which used to be completely silent.
-                if (data?.reason && !isFinishedTrackReason(data.reason))
-                    this.client.logger.warn(
-                        `Track ended with reason ${data.reason}: ${
-                            this.current?.info?.title ?? 'unknown'
-                        }`
-                    );
-                if (!this.queue.length)
-                    this.client.shoukaku.emitPlayerEvent('queueEnd', this.player, this.current, this);
-                this.client.shoukaku.emitPlayerEvent('trackEnd', this.player, this.current, this, data?.reason);
-            })
-            .on('stuck', () => this.client.shoukaku.emitPlayerEvent('trackStuck', this.player, this.current))
-            .on('exception', (data: TrackExceptionEvent) => {
-                this.client.logger.error(
-                    `Track exception (${data?.exception?.severity ?? 'unknown'}): ${
-                        data?.exception?.message ?? 'no message'
-                    }${data?.exception?.cause ? ` — ${data.exception.cause}` : ''}`
-                );
-            })
-            .on('closed', (...arr) => {
-                this.client.shoukaku.emitPlayerEvent('socketClosed', this.player, ...arr);
-            });
+            .on('start', () => this.emitPlayerEvent('trackStart', this.player, this.current, this))
+            .on('end', (data: TrackEndEvent) => this.onTrackEnd(data))
+            .on('stuck', () => this.emitPlayerEvent('trackStuck', this.player, this.current))
+            .on('exception', (data: TrackExceptionEvent) => this.onTrackException(data))
+            .on('closed', (...args) => this.emitPlayerEvent('socketClosed', this.player, ...args));
     }
 
-    get exists(): boolean {
-        return this.client.queue.has(this.guildId);
+    private emitPlayerEvent(name: string, ...args: unknown[]): void {
+        this.client.shoukaku.emitPlayerEvent(name, ...args);
     }
 
-    /** True when the player no longer belongs to a live Lavalink session:
-     * the node restarted (new session id) or Shoukaku dropped the player.
-     * Comparing object identity alone missed the common case — Shoukaku keeps
-     * the player in its map after a reconnect with a null session, so calls
-     * failed with "Session not found" instead of rebuilding. */
-    get isStale(): boolean {
-        if (this.client.shoukaku.players.get(this.guildId) !== this.player) return true;
-        return this.node.sessionId === null || this.node.sessionId !== this.nodeSession;
+    private onTrackEnd(data: TrackEndEvent): void {
+        const reason = data?.reason;
+        // A finished track is routine; any other reason means Lavalink dropped
+        // it, which is worth a warning before the queue moves on.
+        if (reason && !isFinishedTrackReason(reason)) {
+            this.client.logger.warn(
+                `Track ended with reason ${reason}: ${this.current?.info?.title ?? 'unknown'}`
+            );
+        }
+        if (!this.queue.length) {
+            this.emitPlayerEvent('queueEnd', this.player, this.current, this);
+        }
+        this.emitPlayerEvent('trackEnd', this.player, this.current, this, reason);
     }
-    get volume(): number {
+
+    private onTrackException(data: TrackExceptionEvent): void {
+        const severity = data?.exception?.severity ?? 'unknown';
+        const message = data?.exception?.message ?? 'no message';
+        const cause = data?.exception?.cause;
+        const suffix = cause ? ` — ${cause}` : '';
+        this.client.logger.error(`Track exception (${severity}): ${message}${suffix}`);
+    }
+
+    public get exists(): boolean {
+        const { queue } = this.client;
+        return queue.has(this.guildId);
+    }
+
+    /** A player is stale when Shoukaku dropped it or the node changed its
+     * session id; identity alone misses a reconnect with a null session. */
+    public get isStale(): boolean {
+        const live = this.client.shoukaku.players.get(this.guildId);
+        if (live !== this.player) return true;
+        const session = this.node.sessionId;
+        return session === null || session !== this.nodeSession;
+    }
+
+    public get volume(): number {
         return this.player.volume;
     }
-    /** Shoukaku's player methods return promises nobody awaits; a player on a
-     * dead session would otherwise raise unhandled rejections for every click. */
+
+    /** Fire-and-forget player call that logs instead of rejecting unhandled. */
     public callPlayer(action: string, run: () => Promise<unknown>): void {
-        void run().catch(error => {
+        const pending = run();
+        void pending.catch(error => {
             this.client.logger.warn(`[queue] ${action} failed for ${this.guildId}: ${error}`);
         });
     }
 
     public async play(attempt: number = 1): Promise<void> {
-        await this.engine.play(attempt);
+        return await this.engine.play(attempt);
     }
 
     public async resolveFresh(track: Song): Promise<Song | null> {
@@ -261,38 +289,49 @@ export default class Dispatcher {
     public pause(): void {
         this.engine.pause();
     }
+
     public remove(index: number): void {
-        if (!this.player) return;
-        if (index > this.queue.length) return;
+        if (!this.player || index > this.queue.length) return;
         this.queue.splice(index, 1);
     }
 
     public fairPlay(): number {
-        const result = fairPlayQueue(this.queue);
-        this.queue = result.queue;
-        if (result.added) void this.persist();
-        return result.added;
+        const ordered = fairPlayQueue(this.queue);
+        this.queue = ordered.queue;
+        if (ordered.added) void this.persist();
+        return ordered.added;
     }
 
     public previousTrack(): void {
         this.engine.previous();
     }
-    /** A listener joined a 24/7 session after it paused at track end. */
+
+    /** Someone joined a 24/7 session that had paused itself at track end. */
     public resume247(): void {
         this.engine.resume247();
     }
 
-    /** Sample voice membership once a minute for listener-time statistics. */
+    /** Count non-bot voice members once a minute for listener-time stats. */
     private async sampleListeners(): Promise<void> {
-        if (this.paused || this.paused247) return;
+        if (this.paused247 || this.paused) return;
         const guild = this.client.guilds.cache.get(this.guildId);
-        const channel = guild && this.voiceId ? guild.channels.cache.get(this.voiceId) : null;
-        if (!guild || !channel || (channel.type !== ChannelType.GuildVoice && channel.type !== ChannelType.GuildStageVoice)) return;
-        const rows = [...channel.members.filter(member => !member.user.bot).values()].map(member => ({
-            userId: member.id,
-            seconds: 60,
-            deafSeconds: member.voice.deaf || member.voice.selfDeaf ? 60 : 0,
-        }));
+        if (!guild || !this.voiceId) return;
+        const channel = guild.channels.cache.get(this.voiceId);
+        if (!channel) return;
+        if (
+            channel.type !== ChannelType.GuildVoice &&
+            channel.type !== ChannelType.GuildStageVoice
+        ) {
+            return;
+        }
+        const rows = channel.members
+            .filter(member => !member.user.bot)
+            .map(member => ({
+                userId: member.id,
+                seconds: LISTENER_SAMPLE_SECONDS,
+                deafSeconds:
+                    member.voice.deaf || member.voice.selfDeaf ? LISTENER_SAMPLE_SECONDS : 0,
+            }));
         await this.client.db.recordListenerStatsBulk(this.guildId, rows).catch(() => {});
     }
 
@@ -304,11 +343,11 @@ export default class Dispatcher {
         this.coordinator.clearIdleTimeout();
     }
 
-    /** Remove the "leave in …" prompt when playback resumes or the player goes away. */
+    /** Dismiss the queued "leave in …" prompt, if one is still showing. */
     public clearQueueEmptyPrompt(): void {
-        const prompt = this.queueEmptyPrompt;
+        const stale = this.queueEmptyPrompt;
         this.queueEmptyPrompt = null;
-        if (prompt) void prompt.delete().catch(() => {});
+        if (stale) void stale.delete().catch(() => {});
     }
 
     public registerNowPlayingMessage(message: Message, durationMs: number | null): void {
@@ -327,17 +366,14 @@ export default class Dispatcher {
         this.coordinator.destroy(preserveSession);
     }
 
-    /**
-     * Destroy and wait for Lavalink to remove the old player. A rebuild that
-     * joins before this settles can have its new player deleted by the old
-     * leave request, leaving the queue populated but silent.
-     */
+    /** Wait for Lavalink to drop the old player so a rebuild that joins now
+     * cannot have its new player deleted by the previous leave request. */
     public async destroyAndWait(preserveSession: boolean = false): Promise<void> {
-        await this.coordinator.destroyAndWait(preserveSession);
+        return await this.coordinator.destroyAndWait(preserveSession);
     }
+
     public setShuffle(): void {
-        if (!this.player) return;
-        this.engine.shuffle();
+        if (this.player) this.engine.shuffle();
     }
 
     public async skip(skipto = 1): Promise<void> {
@@ -351,12 +387,10 @@ export default class Dispatcher {
     public stop(): void {
         this.engine.stop();
     }
-    /**
-     * Snapshot playback state so a crash or restart can resume it. The row is
-     * deleted when playback ends normally, so a later boot has nothing stale.
-     */
+
+    /** Snapshot playback so a crash or restart can resume it. */
     public async persist(): Promise<void> {
-        await this.engine.persist();
+        return await this.engine.persist();
     }
 
     public setLoop(loop: 'off' | 'repeat' | 'queue'): void {
@@ -366,40 +400,49 @@ export default class Dispatcher {
     public buildTrack(track: Song | Track, user: User): Song {
         return new Song(track, user);
     }
+
     public async isPlaying(): Promise<void> {
-        await this.engine.isPlaying();
-    }
-    /**
-     * Queue a track a user asked for. Anything autoplay guessed is dropped
-     * first: once someone requests music, the bot's filler is obsolete, and the
-     * request becomes the seed for future picks.
-     */
-    public enqueue(song: Song, remember = true, persist = true): void {
-        this.clearIdleTimeout();
-        this.clearQueueEmptyPrompt();
-        if (this.autoplay) this.purgeAutoplay();
-        this.queue.push(song);
-        if (remember) this.rememberSeed(song);
-        if (persist) void this.persist();
-        void this.ensureLookahead().catch(() => {});
+        return await this.engine.isPlaying();
     }
 
-    /** Same contract as enqueue(), but jumps the queue (used by /playnext). */
+    /**
+     * Queue a user request. It replaces autoplay filler and becomes the seed
+     * for later picks, because the chosen track now defines the session.
+     */
+    public enqueue(song: Song, remember = true, persist = true): void {
+        this.admitRequest(song, false, remember, persist);
+    }
+
+    /** Insert at the head instead of the tail; /playnext uses this path. */
     public enqueueNext(song: Song, remember = true, persist = true): void {
+        this.admitRequest(song, true, remember, persist);
+    }
+
+    private resetQueueState(): void {
         this.clearIdleTimeout();
         this.clearQueueEmptyPrompt();
+    }
+
+    private dropFiller(): void {
         if (this.autoplay) this.purgeAutoplay();
-        this.queue.unshift(song);
+    }
+
+    private admitRequest(song: Song, front: boolean, remember: boolean, save: boolean): void {
+        this.resetQueueState();
+        this.dropFiller();
+        if (front) this.queue.unshift(song);
+        else this.queue.push(song);
         if (remember) this.rememberSeed(song);
-        if (persist) void this.persist();
+        if (save) void this.persist();
         void this.ensureLookahead().catch(() => {});
     }
 
     public seedPlaylist(tracks: Song[]): void {
-        const unique = playlistSeeds(tracks, items => this.shuffle(items));
-        if (!unique.length) return;
-        this.seeds = unique;
-        this.seed = unique[0];
+        const lanes = playlistSeeds(tracks, items => this.shuffle(items));
+        if (!lanes.length) return;
+        const [first] = lanes;
+        this.seeds = lanes;
+        this.seed = first;
         void this.persist();
     }
 
@@ -410,38 +453,37 @@ export default class Dispatcher {
     }
 
     /**
-     * Keep exactly one bot pick queued ahead while autoplay is on, so /skip
-     * always has somewhere to go. User requests keep precedence: nothing is
-     * added while any track is already queued (a user track outranks the bot,
-     * and an existing bot pick already satisfies the lookahead).
+     * Keep one bot pick queued ahead while autoplay is on. A queued user track
+     * already outranks the bot, so nothing is added behind it.
      */
     public async ensureLookahead(): Promise<Song | null> {
-        if (!this.autoplay || this.toppingUp || this.queue.length) return null;
-        this.toppingUp = true;
-        try {
-            // Do not seed from the track that happens to be current: with the
-            // explicit seed first, a long session follows the last bot pick
-            // instead of the user's request pool.
-            return await this.Autoplay();
-        } finally {
-            this.toppingUp = false;
-        }
+        if (!this.autoplay || this.fillingLookahead) return null;
+        if (this.queue.length) return null;
+        this.fillingLookahead = true;
+        const pick = await this.Autoplay().finally(() => {
+            this.fillingLookahead = false;
+        });
+        return pick;
     }
 
     public purgeAutoplay(): number {
-        const result = purgeAutoplayQueue(this.queue);
-        this.queue = result.queue;
+        const cleaned = purgeAutoplayQueue(this.queue);
+        this.queue = cleaned.queue;
         void this.persist();
-        return result.removed;
+        return cleaned.removed;
     }
 
     private shuffle<T>(items: T[]): T[] {
-        const copy = [...items];
-        for (let i = copy.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [copy[i], copy[j]] = [copy[j], copy[i]];
+        const result = [...items];
+        let cursor = result.length - 1;
+        while (cursor > 0) {
+            const swap = Math.floor(Math.random() * (cursor + 1));
+            const held = result[cursor];
+            result[cursor] = result[swap];
+            result[swap] = held;
+            cursor -= 1;
         }
-        return copy;
+        return result;
     }
 
     private isRecent(track: Song | Track): boolean {
@@ -461,32 +503,35 @@ export default class Dispatcher {
         });
     }
 
-    /** Search a free-text query and pick one result. */
     private async pickFromQuery(query: string): Promise<Song | null> {
-        return this.chooseFrom(
-            await this.resolveTracks(`${this.client.config.searchEngine}:${query}`)
-        );
+        const tracks = await this.resolveTracks(`${this.client.config.searchEngine}:${query}`);
+        return this.chooseFrom(tracks);
     }
 
-    /** Cold-start seed from Deezer's chart, filtered to non-explicit tracks. */
+    /** Pick a cold-start track from Deezer's chart shortlist. */
     private async chartSeed(): Promise<Song | null> {
-        if (!this.node || !this.client.user) return null;
-        const tracks = await this.deezer.chart();
-        if (!tracks.length) return null;
-        for (const candidate of this.shuffle(tracks).slice(0, 6)) {
-            if (!candidate.link) continue;
-            const resolved = await this.node.rest.resolve(candidate.link).catch(() => null);
+        const owner = this.client.user;
+        if (!this.node || !owner) return null;
+        const chart = await this.deezer.chart();
+        if (!chart.length) return null;
+        const shortlist = this.shuffle(chart).slice(0, 6);
+        const links = shortlist
+            .map(entry => entry.link)
+            .filter((link): link is string => Boolean(link));
+        for (const link of links) {
+            const resolved = await this.node.rest.resolve(link).catch(() => null);
             if (resolved?.loadType === LoadType.TRACK) {
-                return this.buildTrack(resolved.data, this.client.user);
+                return this.buildTrack(resolved.data, owner);
             }
         }
         return null;
     }
 
-    /** Try curated cold-start queries in random order. */
+    /** Walk the configured curated queries in random order until one resolves. */
     private async curatedSeed(seeds: string[]): Promise<Song | null> {
-        for (const query of this.shuffle(seeds)) {
-            const pick = await this.pickFromQuery(query);
+        const queries = this.shuffle(seeds);
+        for (let index = 0; index < queries.length; index += 1) {
+            const pick = await this.pickFromQuery(queries[index]);
             if (pick) return pick;
         }
         return null;
@@ -517,65 +562,78 @@ export default class Dispatcher {
         });
     }
 
-    /** Kept as a seam for picker tests; the HTTP/cache work lives in DeezerClient. */
+    /** Picker seam for tests; DeezerClient owns the HTTP and cache work. */
     private async relatedArtistNames(song: Song): Promise<string[]> {
         return await this.deezer.relatedArtists(song);
-    }
-
-    private seedPool(): Song[] {
-        return buildSeedPool(this);
     }
 
     private seedCandidates(explicit?: Song): Song[] {
         return buildSeedCandidates(this, explicit, items => this.shuffle(items));
     }
 
+    /** Split comma-separated /autoplay input into up to three queries. */
+    private seedQueries(query: string | string[]): string[] {
+        const values = Array.isArray(query) ? query : [query];
+        const queries: string[] = [];
+        for (const value of values) {
+            for (const part of value.split(',')) {
+                const trimmed = part.trim();
+                if (trimmed) queries.push(trimmed);
+            }
+        }
+        return queries.slice(0, AUTOPLAY_SEEDS);
+    }
+
+    private markAsFiller(song: Song): void {
+        song.autoplay = true;
+    }
+
+    private async resolveSeedLanes(queries: string[]): Promise<Song[]> {
+        const picks: Array<Song> = [];
+        for (const query of queries) {
+            const candidate = await this.pickFromQuery(query);
+            if (!candidate) continue;
+            this.markAsFiller(candidate);
+            picks.push(candidate);
+        }
+        return picks;
+    }
+
     /**
-     * Seed explicitly from one or more comma-separated queries
-     * ("/autoplay Akon, NF"): queue one random result from the first query,
-     * add each result to the seed pool, and start playing if idle.
+     * Seed from one or more comma-separated queries: queue a pick from the
+     * first query, record every result as a seed lane, and start if idle.
      */
     public async seedFrom(query: string | string[]): Promise<Song | null> {
         this.purgeAutoplay();
-        const parts = Array.isArray(query) ? query : [query];
-        const queries = parts
-            .flatMap(part => part.split(','))
-            .map(part => part.trim())
-            .filter(Boolean)
-            .slice(0, AUTOPLAY_SEEDS);
-        const picks: Song[] = [];
-        for (const part of queries) {
-            const pick = await this.pickFromQuery(part);
-            if (!pick) continue;
-            pick.autoplay = true;
-            picks.push(pick);
-        }
+        const picks = await this.resolveSeedLanes(this.seedQueries(query));
         if (!picks.length) return null;
-        // Add in reverse so the first query remains the newest lane.
-        for (const pick of [...picks].reverse()) this.rememberSeed(pick);
+        // The first query must remain the newest lane, so remember it last.
+        for (let index = picks.length - 1; index >= 0; index -= 1) {
+            this.rememberSeed(picks[index]);
+        }
         const opener = picks[0];
-        this.queue.push(opener);
+        this.queue.splice(this.queue.length, 0, opener);
         await this.isPlaying();
         return opener;
     }
 
     private async queueAutoplay(pick: Song): Promise<Song> {
-        pick.autoplay = true;
-        this.queue.push(pick);
+        this.markAsFiller(pick);
+        this.queue.splice(this.queue.length, 0, pick);
         await this.isPlaying();
         return pick;
     }
 
-    /**
-     * Queue exactly one bot pick. Returns it, or null when no seed yields
-     * anything usable — a failed pick must never take the player down.
-     */
-    public async Autoplay(explicit?: Song): Promise<Song | null> {
-        for (const seed of this.seedCandidates(explicit)) {
-            const pick = await this.pickForSeed(seed);
-            if (pick) return await this.queueAutoplay(pick);
+    private async autoplayFromSeeds(explicit?: Song): Promise<Song | null> {
+        const seeds = this.seedCandidates(explicit);
+        for (const seed of seeds) {
+            const candidate = await this.pickForSeed(seed);
+            if (candidate) return await this.queueAutoplay(candidate);
         }
-        // Cold start: nothing has played and no seed was requested.
+        return null;
+    }
+
+    private async autoplayColdStart(): Promise<Song | null> {
         const cold = await findColdStart({
             getConfig: () => this.client.db.getAutoplaySetting(this.guildId),
             config: this.client.config,
@@ -584,269 +642,28 @@ export default class Dispatcher {
             pickFromQuery: query => this.pickFromQuery(query),
         });
         if (cold) return await this.queueAutoplay(cold);
+        return null;
+    }
+
+    /** Produce and queue one bot pick; null means every source was empty. */
+    public async Autoplay(explicit?: Song): Promise<Song | null> {
+        const seeded = await this.autoplayFromSeeds(explicit);
+        if (seeded) return seeded;
+        const coldStart = await this.autoplayColdStart();
+        if (coldStart) return coldStart;
         this.client.logger.error(`[autoplay] no usable track found for guild ${this.guildId}`);
         return null;
     }
 
-    public async setAutoplay(autoplay: boolean): Promise<Song | null> {
-        this.autoplay = autoplay;
+    public async setAutoplay(enabled: boolean): Promise<Song | null> {
+        this.autoplay = enabled;
         void this.persist();
-        if (!autoplay) {
+        if (!enabled) {
             this.purgeAutoplay();
             return null;
         }
-        // Nothing to play at all: seed the first track. Otherwise just make
-        // sure one pick is waiting behind whatever is queued.
-        if (!this.current && !this.queue.length) return await this.Autoplay();
-        return await this.ensureLookahead();
-    }
-}
-
-
-class DispatcherPlaybackState implements PlaybackState {
-    public constructor(private readonly dispatcher: Dispatcher) {}
-
-    public get current(): Song | null {
-        return this.dispatcher.current;
-    }
-
-    public set current(value: Song | null) {
-        this.dispatcher.current = value;
-    }
-
-    public get queue(): Song[] {
-        return this.dispatcher.queue;
-    }
-
-    public set queue(value: Song[]) {
-        this.dispatcher.queue = value;
-    }
-
-    public get history(): Song[] {
-        return this.dispatcher.history;
-    }
-
-    public set history(value: Song[]) {
-        this.dispatcher.history = value;
-    }
-
-    public get previous(): Song | null {
-        return this.dispatcher.previous;
-    }
-
-    public set previous(value: Song | null) {
-        this.dispatcher.previous = value;
-    }
-
-    public get loop(): 'off' | 'repeat' | 'queue' {
-        return this.dispatcher.loop;
-    }
-
-    public set loop(value: 'off' | 'repeat' | 'queue') {
-        this.dispatcher.loop = value;
-    }
-
-    public get autoplay(): boolean {
-        return this.dispatcher.autoplay;
-    }
-
-    public set autoplay(value: boolean) {
-        this.dispatcher.autoplay = value;
-    }
-
-    public get volume(): number {
-        return this.dispatcher.player?.volume ?? 0;
-    }
-
-    public get paused(): boolean {
-        return this.dispatcher.paused;
-    }
-
-    public set paused(value: boolean) {
-        this.dispatcher.paused = value;
-    }
-
-    public get stopped(): boolean {
-        return this.dispatcher.stopped;
-    }
-
-    public set stopped(value: boolean) {
-        this.dispatcher.stopped = value;
-    }
-
-    public get seed(): Song | null {
-        return this.dispatcher.seed;
-    }
-
-    public set seed(value: Song | null) {
-        this.dispatcher.seed = value;
-    }
-
-    public get seeds(): Song[] {
-        return this.dispatcher.seeds;
-    }
-
-    public set seeds(value: Song[]) {
-        this.dispatcher.seeds = value;
-    }
-
-    public get pauseWhenEmpty(): boolean {
-        return this.dispatcher.pauseWhenEmpty;
-    }
-
-    public set pauseWhenEmpty(value: boolean) {
-        this.dispatcher.pauseWhenEmpty = value;
-    }
-
-    public get paused247(): boolean {
-        return this.dispatcher.paused247;
-    }
-
-    public set paused247(value: boolean) {
-        this.dispatcher.paused247 = value;
-    }
-
-    public get failedTracks(): Map<string, number> {
-        return this.dispatcher.failedTracks;
-    }
-}
-
-interface PauseSettingsStore {
-    get_247(guildId: string): Promise<unknown>;
-    getGuildSettings(guildId: string): Promise<{ timeoutpause?: unknown }>;
-}
-
-interface PauseTimeoutPort {
-    arm(seconds: number, onElapsed: () => void): void;
-    clear(): void;
-}
-
-class DispatcherPlaybackHost implements PlaybackHost {
-    public constructor(
-        private readonly dispatcher: Dispatcher,
-        private readonly db: PauseSettingsStore,
-        private readonly pauseTimeouts: PauseTimeoutPort
-    ) {}
-
-    public get guildId(): string {
-        return this.dispatcher.guildId;
-    }
-
-    public get exists(): boolean {
-        return this.dispatcher.exists;
-    }
-
-    public get stale(): boolean {
-        return this.dispatcher.isStale;
-    }
-
-    public sessionTarget(): { textId: string; voiceId: string } | null {
-        if (!this.dispatcher.voiceId || this.dispatcher.restoring) return null;
-        return { textId: this.dispatcher.channelId, voiceId: this.dispatcher.voiceId };
-    }
-
-    public persist(): Promise<void> {
-        return this.dispatcher.persist();
-    }
-
-    public scheduleRetry(delayMs: number, task: () => void): void {
-        setTimeout(task, delayMs);
-    }
-
-    public resolveFresh(track: Song): Promise<Song | null> {
-        return this.dispatcher.resolveFresh(track);
-    }
-
-    public restartIfIdle(): void {
-        void this.dispatcher.isPlaying();
-    }
-
-    public async pausePolicy(): Promise<{ stay: boolean; seconds: number }> {
-        const stay = await this.db.get_247(this.dispatcher.guildId);
-        if (stay) return { stay: true, seconds: 0 };
-        const settings = await this.db.getGuildSettings(this.dispatcher.guildId);
-        return { stay: false, seconds: Number(settings.timeoutpause ?? 0) };
-    }
-
-    public armPauseTimeout(seconds: number, onElapsed: () => void): void {
-        this.pauseTimeouts.arm(seconds, onElapsed);
-    }
-
-    public clearPauseTimeout(): void {
-        this.pauseTimeouts.clear();
-    }
-
-    public destroy(): void {
-        this.dispatcher.destroy();
-    }
-}
-
-
-class DispatcherDestroyHost implements DestroyHost {
-    public constructor(
-        private readonly dispatcher: Dispatcher,
-        public readonly timers: PlaybackTimers,
-        private readonly client: BootstrapClient
-    ) {}
-
-    public get guildId(): string {
-        return this.dispatcher.guildId;
-    }
-
-    public get stopped(): boolean {
-        return this.dispatcher.stopped;
-    }
-
-    public isCurrent(): boolean {
-        return this.client.queue.get(this.dispatcher.guildId) === this.dispatcher;
-    }
-
-    public isShuttingDown(): boolean {
-        return this.client.shuttingDown;
-    }
-
-    public isIdle(): boolean {
-        return !this.dispatcher.queue.length && !this.dispatcher.autoplay && !this.dispatcher.current;
-    }
-
-    public stopNowPlayingCollector(): void {
-        this.dispatcher.nowPlayingCollector?.stop('destroy');
-        this.dispatcher.nowPlayingCollector = null;
-    }
-
-    public clearNowPlayingCommandMessages(): void {
-        this.dispatcher.clearNowPlayingCommandMessages();
-    }
-
-    public clearQueueEmptyPrompt(): void {
-        this.dispatcher.clearQueueEmptyPrompt();
-    }
-
-    public resetPlayback(): void {
-        this.dispatcher.queue.length = 0;
-        this.dispatcher.history = [];
-        this.dispatcher.pauseWhenEmpty = false;
-        this.dispatcher.paused247 = false;
-    }
-
-    public deleteSession(): Promise<void> {
-        return this.dispatcher.deleteSession();
-    }
-
-    public leave(): Promise<void> {
-        return this.client.shoukaku.leaveVoiceChannel(this.dispatcher.guildId);
-    }
-
-    public removeFromQueue(): void {
-        this.client.queue.delete(this.dispatcher.guildId);
-    }
-
-    public updateStatus(): void {
-        this.client.utils.updateStatus(this.client, this.dispatcher.guildId);
-    }
-
-    public emitPlayerDestroy(): void {
-        this.client.shoukaku.emitPlayerEvent('playerDestroy', this.dispatcher.player);
+        const idle = !this.current && !this.queue.length;
+        return await (idle ? this.Autoplay() : this.ensureLookahead());
     }
 }
 
@@ -858,9 +675,3 @@ export interface DispatcherOptions {
     player: Player;
     node: Node;
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
