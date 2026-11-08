@@ -86,16 +86,29 @@ export async function waitForListeners(
         members: { values(): IterableIterator<{ user?: { bot?: boolean } | null } | null> };
     },
     seconds: number,
-    intervalMs: number = 1000
+    intervalMs: number = 1000,
+    onPoll?: () => void
 ): Promise<boolean> {
     if (hasListeners(channel.members.values())) return true;
     if (seconds <= 0) return false;
     const deadline = Date.now() + seconds * 1000;
     while (Date.now() < deadline) {
         await new Promise<void>((resolve: () => void) => setTimeout(resolve, intervalMs));
+        onPoll?.();
         if (hasListeners(channel.members.values())) return true;
     }
     return false;
+}
+
+/**
+ * Lease TTL long enough to cover a restore that is waiting for a listener.
+ * The 60s default expires inside `SESSION_EMPTY_WAIT` as soon as an operator
+ * raises that window, which lets a standby claim the same row mid-restore.
+ */
+export function sessionLeaseTtlMs(client: BootstrapClient, baseMs: number = 60_000): number {
+    const seconds = Number(client.config.sessionEmptyWait);
+    const waitMs = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0;
+    return Math.max(baseMs, waitMs + baseMs);
 }
 
 /**
@@ -123,7 +136,12 @@ export async function restoreSessions(client: BootstrapClient): Promise<void> {
         sessions.map(async session => {
             if (!client.guilds.cache.has(session.guildId)) return;
             const claimed = await client.db
-                .claimSessionLease(session.guildId, botUser.id, botName)
+                .claimSessionLease(
+                    session.guildId,
+                    botUser.id,
+                    botName,
+                    sessionLeaseTtlMs(client)
+                )
                 .catch(() => false);
             if (!claimed) return;
             await restoreSession(client, session, botUser);
@@ -231,7 +249,13 @@ export async function restoreSession(
                 `[session] ${guild.name}: channel empty, waiting up to ${window}s for a listener`
             );
         }
-        if (!(await waitForListeners(voiceChannel, window))) {
+        const botName = client.config.botName || botUser.username;
+        const refreshLease = (): void => {
+            void client.db
+                .claimSessionLease(guildId, botUser.id, botName, sessionLeaseTtlMs(client))
+                .catch(() => false);
+        };
+        if (!(await waitForListeners(voiceChannel, window, 1000, refreshLease))) {
             return await drop(`${guild.name}: voice channel stayed empty, saved queue cleared`);
         }
     }

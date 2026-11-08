@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { Queue } from '../dist/core/Queue.js';
+import { makeSong } from './helpers.mjs';
 
 function makeQueueClient(settings = {}) {
     const calls = { volumes: [], created: [], leases: 0 };
@@ -88,6 +89,38 @@ test('an invalid default volume is ignored', async () => {
 
     assert.deepEqual(harness.calls.volumes, []);
     assert.equal(dispatcher.loop, 'off');
+
+    dispatcher.timers.clearAll();
+});
+
+test('defaultshuffle waits for the first populated queue instead of shuffling nothing', async () => {
+    const harness = makeQueueClient({ defaultshuffle: 'true' });
+
+    const dispatcher = await harness.queue.create(harness.guild, harness.voice, harness.text);
+
+    assert.equal(dispatcher.pendingDefaultShuffle, true);
+    assert.equal(dispatcher.queue.length, 0);
+
+    let shuffles = 0;
+    let persists = 0;
+    dispatcher.engineStore = {
+        shuffle: () => {
+            shuffles += 1;
+            dispatcher.queue = [dispatcher.queue[1], dispatcher.queue[0]];
+        },
+        isPlaying: async () => {},
+    };
+    dispatcher.persist = async () => {
+        persists += 1;
+    };
+    dispatcher.queue.push(makeSong('a'), makeSong('b'));
+
+    await dispatcher.isPlaying();
+
+    assert.equal(shuffles, 1);
+    assert.equal(persists, 1);
+    assert.equal(dispatcher.pendingDefaultShuffle, false);
+    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['b', 'a']);
 
     dispatcher.timers.clearAll();
 });

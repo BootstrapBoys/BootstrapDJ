@@ -32,10 +32,17 @@ function makeDispatcher(overrides = {}) {
         current: track,
         queue: [makeSong('next')],
         history: [makeSong('old')],
+        previous: makeSong('previous'),
         loop: 'repeat',
         autoplay: true,
         seed: makeSong('seed'),
         seeds: [makeSong('seed')],
+        filters: ['bassboost'],
+        filterValues: { bassboost: 1 },
+        leaveOnEnd: true,
+        pauseWhenEmpty: true,
+        paused247: true,
+        skipRecentRecording: true,
         paused: true,
         volume: 100,
         resumePosition: null,
@@ -73,10 +80,17 @@ function makeRebuilt(events) {
         current: null,
         queue: [],
         history: [],
+        previous: null,
         loop: 'off',
         autoplay: false,
         seed: null,
         seeds: [],
+        filters: [],
+        filterValues: {},
+        leaveOnEnd: false,
+        pauseWhenEmpty: false,
+        paused247: false,
+        skipRecentRecording: false,
         paused: false,
         resumePosition: 99,
         player: {
@@ -111,10 +125,17 @@ test('rebuild transfers current, queue, history and seeds exactly once', async (
         ['current', 'next']
     );
     assert.deepEqual(rebuilt.history.map(track => track.info.title), ['old']);
+    assert.equal(rebuilt.previous?.info.title, 'previous');
     assert.equal(rebuilt.loop, 'repeat');
     assert.equal(rebuilt.autoplay, true);
     assert.equal(rebuilt.seed?.info.title, 'seed');
     assert.equal(rebuilt.seeds.length, 1);
+    assert.deepEqual(rebuilt.filters, ['bassboost']);
+    assert.deepEqual(rebuilt.filterValues, { bassboost: 1 });
+    assert.equal(rebuilt.leaveOnEnd, true);
+    assert.equal(rebuilt.pauseWhenEmpty, true);
+    assert.equal(rebuilt.paused247, true);
+    assert.equal(rebuilt.skipRecentRecording, true);
     assert.equal(rebuilt.resumePosition, null);
     assert.equal(events[0], 'teardown:true');
     assert.ok(events.includes('volume:100'));
@@ -248,4 +269,40 @@ test('a skipped queue rebuild does not duplicate the head track', async () => {
     await migrator.rebuild(dispatcher, node);
 
     assert.deepEqual(rebuilt.queue.map(track => track.info.title), ['next']);
+});
+
+test('rebuild waits for the migrated volume before starting playback', async () => {
+    const guild = makeGuild();
+    const { dispatcher, events } = makeDispatcher();
+    const { client, events: clientEvents } = makeClient(guild);
+    const rebuilt = makeRebuilt(events);
+    let releaseVolume;
+    const volumeApplied = new Promise(resolve => {
+        releaseVolume = resolve;
+    });
+    rebuilt.player.setGlobalVolume = async value => {
+        await volumeApplied;
+        events.push(`volume:${value}`);
+    };
+    rebuilt.play = async () => events.push('play');
+    const migrator = new NodeMigrator(
+        client,
+        async () => rebuilt,
+        { info: () => {}, warn: () => {}, error: () => {} }
+    );
+
+    const migrating = migrator.rebuild(dispatcher, node);
+    await new Promise(resolve => setImmediate(resolve));
+
+    assert.equal(events.includes('play'), false, 'play must wait for the volume write');
+    assert.equal(clientEvents.includes('playerCreate'), false);
+
+    releaseVolume();
+    await migrating;
+
+    assert.deepEqual(events.filter(event => event === 'volume:100' || event === 'play'), [
+        'volume:100',
+        'play',
+    ]);
+    assert.ok(clientEvents.includes('playerCreate'));
 });

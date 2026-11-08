@@ -133,3 +133,71 @@ test('queue-empty prompt is deleted when the player is destroyed or a request ar
     assert.equal(dispatcher.queueEmptyPrompt, null);
     assert.equal(second.deleted, true);
 });
+
+test('remove and clearQueue persist while playback is paused', () => {
+    const dispatcher = makeDispatcher({ player: {}, paused: true });
+    dispatcher.queue = [makeSong('a'), makeSong('b'), makeSong('c')];
+    let persisted = 0;
+    dispatcher.persist = async () => {
+        persisted += 1;
+    };
+
+    dispatcher.remove(1);
+    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['a', 'c']);
+    assert.equal(persisted, 1);
+
+    dispatcher.clearQueue();
+    assert.deepEqual(dispatcher.queue, []);
+    assert.equal(persisted, 2);
+});
+
+test('setShuffle persists the new order', () => {
+    const dispatcher = makeDispatcher({ player: {} });
+    dispatcher.queue = [makeSong('a'), makeSong('b'), makeSong('c')];
+    let persisted = 0;
+    dispatcher.persist = async () => {
+        persisted += 1;
+    };
+    dispatcher.engineStore = {
+        shuffle: () => {
+            dispatcher.queue = [dispatcher.queue[2], dispatcher.queue[1], dispatcher.queue[0]];
+        },
+    };
+
+    dispatcher.setShuffle();
+
+    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['c', 'b', 'a']);
+    assert.equal(persisted, 1);
+});
+
+test('ensureLookahead retries an empty autoplay pick instead of ending the queue', async () => {
+    const dispatcher = makeDispatcher({ autoplay: true });
+    dispatcher.current = makeSong('playing');
+    let attempts = 0;
+    dispatcher.autoplayColdStart = async () => null;
+    dispatcher.pickForSeed = async () => {
+        attempts += 1;
+        return attempts === 1 ? null : makeSong('recovered', { autoplay: true });
+    };
+
+    const pick = await dispatcher.ensureLookahead();
+
+    assert.equal(attempts, 2);
+    assert.equal(pick?.info.title, 'recovered');
+    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['recovered']);
+    assert.equal(dispatcher.lookaheadRetry, null);
+});
+
+test('ensureLookahead schedules a bounded background retry when all sources are empty', async () => {
+    const dispatcher = makeDispatcher({ autoplay: true });
+    dispatcher.current = makeSong('playing');
+    dispatcher.autoplayColdStart = async () => null;
+    dispatcher.pickForSeed = async () => null;
+
+    const pick = await dispatcher.ensureLookahead();
+
+    assert.equal(pick, null);
+    assert.ok(dispatcher.lookaheadRetry, 'a retry timer must stay armed');
+    dispatcher.clearLookaheadRetry();
+    assert.equal(dispatcher.lookaheadRetry, null);
+});

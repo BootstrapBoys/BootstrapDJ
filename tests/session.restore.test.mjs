@@ -8,6 +8,8 @@ import {
     resetRestoreRetries,
     restoreSession,
     restoreSessions,
+    sessionLeaseTtlMs,
+    waitForListeners,
 } from '../dist/core/player/SessionRestorer.js';
 import { toSaved } from '../dist/core/Dispatcher.js';
 import { makeSong } from './helpers.mjs';
@@ -31,6 +33,7 @@ function makeRestoreHarness({ session, stay = null, listeners = [], text = null 
         destroyed: [],
         restored: [],
         released: [],
+        claimTtls: [],
     };
     const voice = makeChannel(ChannelType.GuildVoice, listeners);
     const textChannel = text ?? makeChannel(ChannelType.GuildText);
@@ -84,7 +87,10 @@ function makeRestoreHarness({ session, stay = null, listeners = [], text = null 
             getSetup: async () => null,
             get_247: async () => stay,
             getSessions: async () => [session],
-            claimSessionLease: async () => true,
+            claimSessionLease: async (_guildId, _botId, _botName, ttl) => {
+                calls.claimTtls.push(ttl);
+                return true;
+            },
             releaseSessionLease: async guildId => calls.released.push(guildId),
         },
     };
@@ -285,4 +291,30 @@ test('stale now-playing panels are deleted but the setup mock is preserved', asy
     await clearStaleNowPlaying({ user: { id: 'bot' } }, channel, 'setup-1');
 
     assert.deepEqual(deleted, ['panel-1']);
+});
+
+test('restore lease TTL covers a long empty-channel wait', async () => {
+    const harness = makeRestoreHarness({
+        session: savedSession(),
+        listeners: [{ user: { bot: false } }],
+    });
+    harness.client.config.sessionEmptyWait = 120;
+
+    assert.equal(sessionLeaseTtlMs(harness.client), 180_000);
+
+    await restoreSessions(harness.client);
+
+    assert.equal(harness.calls.claimTtls[0], 180_000);
+});
+
+test('the empty-channel wait refreshes the lease on every poll', async () => {
+    let polls = 0;
+    const channel = { members: new Collection() };
+
+    const found = await waitForListeners(channel, 0.02, 1, () => {
+        polls += 1;
+    });
+
+    assert.equal(found, false);
+    assert.ok(polls > 0, 'the wait must heartbeat while it polls');
 });

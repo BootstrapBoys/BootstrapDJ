@@ -90,5 +90,12 @@ export default class TrackEnd extends Event {
 
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         if (guild) await updateSetup(this.client, guild);
+        // A drained queue has nothing worth restoring. Without this delete the
+        // last snapshot keeps `current`, so a restart replays a track that had
+        // already ended. Autoplay that found no pick is just as empty; its own
+        // retry recreates the row when it queues something.
+        if (!dispatcher.current && !dispatcher.queue.length) {
+            await dispatcher.deleteSession();
+        }
     }
 }

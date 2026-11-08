@@ -10,10 +10,18 @@ export interface ResumableState {
     current: Dispatcher['current'];
     queue: Dispatcher['queue'];
     history: Dispatcher['history'];
+    previous: Dispatcher['previous'];
     loop: Dispatcher['loop'];
     autoplay: boolean;
     seed: Dispatcher['seed'];
     seeds: Dispatcher['seeds'];
+    filters: Dispatcher['filters'];
+    filterValues: Dispatcher['filterValues'];
+    leaveOnEnd: boolean;
+    pauseWhenEmpty: boolean;
+    paused247: boolean;
+    skipRecentRecording: boolean;
+    pendingDefaultShuffle: boolean;
     volume: number;
     position: number;
     paused: boolean;
@@ -47,10 +55,18 @@ export class NodeMigrator {
             current: dispatcher.current,
             queue: dispatcher.queue.slice(),
             history: dispatcher.history.slice(),
+            previous: dispatcher.previous ?? null,
             loop: dispatcher.loop,
             autoplay: dispatcher.autoplay,
             seed: dispatcher.seed,
             seeds: dispatcher.seeds.slice(),
+            filters: [...(dispatcher.filters ?? [])],
+            filterValues: Object.assign({}, dispatcher.filterValues),
+            leaveOnEnd: dispatcher.leaveOnEnd ?? false,
+            pauseWhenEmpty: dispatcher.pauseWhenEmpty ?? false,
+            paused247: dispatcher.paused247 ?? false,
+            skipRecentRecording: dispatcher.skipRecentRecording ?? false,
+            pendingDefaultShuffle: dispatcher.pendingDefaultShuffle ?? false,
             volume: dispatcher.volume,
             position:
                 dispatcher.resumePosition ??
@@ -95,11 +111,23 @@ export class NodeMigrator {
             rebuilt.current = null;
             rebuilt.queue = state.current ? [state.current, ...state.queue] : state.queue;
             rebuilt.history = state.history;
+            rebuilt.previous = state.previous;
             rebuilt.loop = state.loop;
             rebuilt.autoplay = state.autoplay;
             rebuilt.seed = state.seed;
             rebuilt.seeds = state.seeds;
-            void rebuilt.player.setGlobalVolume(state.volume).catch(() => {});
+            rebuilt.filters = state.filters;
+            rebuilt.filterValues = state.filterValues;
+            rebuilt.leaveOnEnd = state.leaveOnEnd;
+            rebuilt.pauseWhenEmpty = state.pauseWhenEmpty;
+            rebuilt.paused247 = state.paused247;
+            rebuilt.skipRecentRecording = state.skipRecentRecording;
+            rebuilt.pendingDefaultShuffle = state.pendingDefaultShuffle;
+            // Awaited so the default volume applied by the spawn cannot land
+            // after the migrated volume and silently overwrite it.
+            await rebuilt.player.setGlobalVolume(state.volume).catch(error => {
+                this.logger.warn(`[queue] could not restore volume on ${node.name}: ${error}`);
+            });
             this.client.shoukaku.emitPlayerEvent('playerCreate', rebuilt.player);
 
             let resumedAt = 0;

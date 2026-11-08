@@ -52,6 +52,12 @@ export type { SavedTrack } from './player/TrackCodec.js';
 /** Listener-time accounting window: the stats sampler runs once a minute. */
 const LISTENER_SAMPLE_SECONDS = 60;
 
+/** Autoplay lookahead must not become terminal when every source is empty. */
+const LOOKAHEAD_ATTEMPTS = 2;
+const LOOKAHEAD_RETRY_MS = 5_000;
+const LOOKAHEAD_MAX_RETRIES = 6;
+const LOOKAHEAD_RETRY_BASE_MS = 250;
+
 /**
  * A resolved Lavalink track that remembers who requested it. `autoplay` marks
  * filler the bot chose itself, so a user request can displace it.
@@ -118,6 +124,11 @@ export default class Dispatcher {
     /** User requests that can seed autoplay, newest first. */
     public seeds: Song[] = [];
     private fillingLookahead = false;
+    /** Background retry for an autoplay lookahead that found nothing. */
+    private lookaheadRetry: ReturnType<typeof setTimeout> | null = null;
+    private lookaheadFailures = 0;
+    /** `defaultshuffle` waits for the first queue that actually has tracks. */
+    public pendingDefaultShuffle = false;
     /** Failed attempts per track; a track is dropped after the last one. */
     public failedTracks = new Map<string, number>();
     public nowPlayingMessage: Message | null = null;
@@ -291,8 +302,15 @@ export default class Dispatcher {
     }
 
     public remove(index: number): void {
-        if (!this.player || index > this.queue.length) return;
+        if (!this.player || index < 0 || index >= this.queue.length) return;
         this.queue.splice(index, 1);
+        void this.persist();
+    }
+
+    /** `/clearqueue`: an explicit mutation must outlive a paused timer gate. */
+    public clearQueue(): void {
+        this.queue = [];
+        void this.persist();
     }
 
     public fairPlay(): number {
@@ -363,6 +381,7 @@ export default class Dispatcher {
     }
 
     public destroy(preserveSession: boolean = false): void {
+        this.clearLookaheadRetry();
         this.engineStore?.dispose();
         this.coordinator.destroy(preserveSession);
     }
@@ -374,7 +393,9 @@ export default class Dispatcher {
     }
 
     public setShuffle(): void {
-        if (this.player) this.engine.shuffle();
+        if (!this.player) return;
+        this.engine.shuffle();
+        void this.persist();
     }
 
     public async skip(skipto = 1): Promise<void> {
@@ -386,6 +407,8 @@ export default class Dispatcher {
     }
 
     public stop(): void {
+        this.clearLookaheadRetry();
+        this.lookaheadFailures = 0;
         this.engine.stop();
     }
 
@@ -402,7 +425,16 @@ export default class Dispatcher {
         return new Song(track, user);
     }
 
+    /** Apply `defaultshuffle` once, when the first real queue is about to play. */
+    private applyPendingDefaultShuffle(): void {
+        if (!this.pendingDefaultShuffle || this.queue.length < 2) return;
+        this.pendingDefaultShuffle = false;
+        this.engine.shuffle();
+        void this.persist();
+    }
+
     public async isPlaying(): Promise<void> {
+        this.applyPendingDefaultShuffle();
         return await this.engine.isPlaying();
     }
 
@@ -430,6 +462,8 @@ export default class Dispatcher {
 
     private admitRequest(song: Song, front: boolean, remember: boolean, save: boolean): void {
         this.resetQueueState();
+        this.clearLookaheadRetry();
+        this.lookaheadFailures = 0;
         this.dropFiller();
         if (front) this.queue.unshift(song);
         else this.queue.push(song);
@@ -456,15 +490,63 @@ export default class Dispatcher {
     /**
      * Keep one bot pick queued ahead while autoplay is on. A queued user track
      * already outranks the bot, so nothing is added behind it.
+     *
+     * Autoplay sources can be temporarily empty (Lavalink reconnecting, Deezer
+     * rate-limited). A null pick used to end the cycle and leave the bot idle
+     * in voice forever, so retry immediately and then keep a bounded background
+     * retry alive until autoplay is disabled or a request arrives.
      */
     public async ensureLookahead(): Promise<Song | null> {
         if (!this.autoplay || this.fillingLookahead) return null;
-        if (this.queue.length) return null;
+        if (this.queue.length) {
+            this.clearLookaheadRetry();
+            return null;
+        }
         this.fillingLookahead = true;
-        const pick = await this.Autoplay().finally(() => {
+        try {
+            for (let attempt = 1; attempt <= LOOKAHEAD_ATTEMPTS; attempt++) {
+                const pick = await this.Autoplay();
+                if (pick) {
+                    this.lookaheadFailures = 0;
+                    this.clearLookaheadRetry();
+                    return pick;
+                }
+                if (!this.autoplay || this.queue.length) return null;
+                if (attempt < LOOKAHEAD_ATTEMPTS) {
+                    await new Promise<void>(resolve => {
+                        setTimeout(resolve, LOOKAHEAD_RETRY_BASE_MS * attempt);
+                    });
+                }
+            }
+            this.scheduleLookaheadRetry();
+            return null;
+        } finally {
             this.fillingLookahead = false;
-        });
-        return pick;
+        }
+    }
+
+    /** Cancel a pending lookahead retry (a user request or teardown won). */
+    public clearLookaheadRetry(): void {
+        if (this.lookaheadRetry) clearTimeout(this.lookaheadRetry);
+        this.lookaheadRetry = null;
+    }
+
+    private scheduleLookaheadRetry(): void {
+        if (this.lookaheadRetry || !this.autoplay) return;
+        if (this.lookaheadFailures >= LOOKAHEAD_MAX_RETRIES) {
+            this.client.logger.warn(
+                `[autoplay] no lookahead found for guild ${this.guildId} after ${this.lookaheadFailures} retries`
+            );
+            return;
+        }
+        const timer = setTimeout(() => {
+            this.lookaheadRetry = null;
+            if (!this.autoplay || this.current || this.queue.length) return;
+            this.lookaheadFailures += 1;
+            void this.ensureLookahead().catch(() => {});
+        }, LOOKAHEAD_RETRY_MS);
+        (timer as unknown as { unref?: () => void }).unref?.();
+        this.lookaheadRetry = timer;
     }
 
     public purgeAutoplay(): number {
@@ -658,6 +740,8 @@ export default class Dispatcher {
 
     public async setAutoplay(enabled: boolean): Promise<Song | null> {
         this.autoplay = enabled;
+        this.lookaheadFailures = 0;
+        this.clearLookaheadRetry();
         void this.persist();
         if (!enabled) {
             this.purgeAutoplay();

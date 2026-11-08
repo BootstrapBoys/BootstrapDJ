@@ -81,13 +81,17 @@ export class Queue extends Map<string, Dispatcher> {
 
         const volume = Number(defaults.defaultvolume);
         if (Number.isFinite(volume) && volume >= 0 && volume <= DEFAULT_VOLUME_MAX) {
-            void dispatcher.player.setGlobalVolume(volume).catch(() => {});
+            // Apply the default before the player is advertised to callers. A
+            // fire-and-forget write races a migration restoring the old volume.
+            await dispatcher.player.setGlobalVolume(volume).catch(() => {});
         }
         if (defaults.defaultrepeat === 'repeat' || defaults.defaultrepeat === 'queue') {
             dispatcher.loop = defaults.defaultrepeat;
         }
         if (defaults.defaultautoplay === 'true') dispatcher.autoplay = true;
-        if (defaults.defaultshuffle === 'true') dispatcher.setShuffle();
+        // A fresh player always has an empty queue, so shuffling here is a
+        // no-op. Arm it until the first non-empty queue is about to start.
+        if (defaults.defaultshuffle === 'true') dispatcher.pendingDefaultShuffle = true;
     }
 
     public async create(
