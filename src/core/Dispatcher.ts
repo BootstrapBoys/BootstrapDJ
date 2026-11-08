@@ -6,6 +6,11 @@ import { isFinishedTrackReason } from '../lib/TrackEndReason.js';
 import { BootstrapClient } from './index.js';
 import { normalizeAuthor, trackKey, trackSignature } from './player/TrackIdentity.js';
 import { PresentationRegistry } from './player/PresentationRegistry.js';
+import { toSaved } from './player/TrackCodec.js';
+import type { SavedTrack } from './player/TrackCodec.js';
+
+export { toSaved } from './player/TrackCodec.js';
+export type { SavedTrack } from './player/TrackCodec.js';
 
 /** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
@@ -100,42 +105,6 @@ export class Song implements Track {
         };
     }
 }
-export interface SavedTrack {
-    encoded: string;
-    autoplay: boolean;
-    info: {
-        identifier: string;
-        isSeekable: boolean;
-        author: string;
-        length: number;
-        isStream: boolean;
-        title: string;
-        uri?: string;
-        artworkUrl?: string;
-        isrc?: string;
-        sourceName: string;
-    };
-}
-
-/** Strip runtime-only state (requester, live player position) for storage. */
-export function toSaved(song: Song): SavedTrack {
-    // Optional fields are only set when present: undefined keys vanish through
-    // JSON.stringify and the stored row would no longer match this shape.
-    const info: SavedTrack['info'] = {
-        identifier: song.info.identifier,
-        isSeekable: song.info.isSeekable,
-        author: song.info.author,
-        length: song.info.length,
-        isStream: song.info.isStream,
-        title: song.info.title,
-        sourceName: song.info.sourceName,
-    };
-    if (song.info.uri) info.uri = song.info.uri;
-    if (song.info.artworkUrl) info.artworkUrl = song.info.artworkUrl;
-    if (song.info.isrc) info.isrc = song.info.isrc;
-    return { encoded: song.encoded, autoplay: song.autoplay, info };
-}
-
 /** Rebuild a playable Song; the requester becomes whoever restored it. */
 export function fromSaved(saved: SavedTrack, user: User): Song {
     return new Song(
