@@ -1,33 +1,26 @@
 import {
     ActionRowBuilder,
+    type AnySelectMenuInteraction,
+    BaseGuildTextChannel,
     ButtonBuilder,
     ButtonInteraction,
     ButtonStyle,
-    ChannelSelectMenuInteraction,
     EmbedBuilder,
-    MentionableSelectMenuInteraction,
     PermissionFlagsBits,
-    RoleSelectMenuInteraction,
-    StringSelectMenuInteraction,
-    TextChannel,
-    UserSelectMenuInteraction,
 } from 'discord.js';
-import { Player } from 'shoukaku';
+import type { Player } from 'shoukaku';
 
-import { Song, toSaved } from '../../core/Dispatcher.js';
-import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import { type Song, toSaved } from '../../core/Dispatcher.js';
+import type { BootstrapClient, Dispatcher } from '../../core/index.js';
+import { Event } from '../../core/index.js';
 import { loudnessOf, volumeForLoudness } from '../../lib/Loudness.js';
 import { trackStart } from '../../lib/SetupSystem.js';
 
-type DjInteraction =
-    | ButtonInteraction<'cached'>
-    | StringSelectMenuInteraction<'cached'>
-    | UserSelectMenuInteraction<'cached'>
-    | RoleSelectMenuInteraction<'cached'>
-    | MentionableSelectMenuInteraction<'cached'>
-    | ChannelSelectMenuInteraction<'cached'>;
+type DjInteraction = ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'>;
 
 const NOW_PLAYING_TTL_MS = 12 * 60 * 60 * 1000;
+const DEFAULT_VOLUME = 100;
+const DEFAULT_LOUDNESS = -16;
 
 function controlRow(dispatcher: Dispatcher, player: Player): ActionRowBuilder<ButtonBuilder> {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -76,7 +69,11 @@ function nowPlayingEmbed(client: BootstrapClient, track: Song): EmbedBuilder {
         .setTimestamp();
 }
 
-async function recordRecentPlay(client: BootstrapClient, dispatcher: Dispatcher, track: Song): Promise<void> {
+async function recordRecentPlay(
+    client: BootstrapClient,
+    dispatcher: Dispatcher,
+    track: Song
+): Promise<void> {
     if (dispatcher.skipRecentRecording) {
         dispatcher.skipRecentRecording = false;
         return;
@@ -102,24 +99,30 @@ async function applyAutomaticVolume(
     settings: Record<string, string>
 ): Promise<void> {
     if (settings.volumeautomatic !== 'true') return;
-    const base = Number(settings.defaultvolume ?? 100);
-    const fallback = Number.isFinite(base) && base >= 0 && base <= 200 ? base : 100;
-    const target = Number(settings.loudnesstarget ?? -16);
+
+    const configured = Number(settings.defaultvolume ?? DEFAULT_VOLUME);
+    const fallback =
+        Number.isFinite(configured) && configured >= 0 && configured <= 200
+            ? configured
+            : DEFAULT_VOLUME;
+    const configuredTarget = Number(settings.loudnesstarget ?? DEFAULT_LOUDNESS);
+    const target = Number.isFinite(configuredTarget) ? configuredTarget : DEFAULT_LOUDNESS;
     const uri = track.info.uri;
     if (!uri || track.info.isStream) {
-        player.setGlobalVolume(fallback);
+        void player.setGlobalVolume(fallback);
         return;
     }
+
     void loudnessOf(uri)
         .then(result => {
             if (dispatcher.current?.info.uri !== uri) return;
-            const volume = result
-                ? volumeForLoudness(result.lufs, Number.isFinite(target) ? target : -16, fallback)
-                : fallback;
-            player.setGlobalVolume(volume);
+            const volume = result ? volumeForLoudness(result.lufs, target, fallback) : fallback;
+            void player.setGlobalVolume(volume);
             client.logger.info(
                 `[loudness] ${track.info.title}: ${
-                    result ? `${result.lufs.toFixed(1)} LUFS -> volume ${volume}` : `no sample -> volume ${volume}`
+                    result
+                        ? `${result.lufs.toFixed(1)} LUFS -> volume ${volume}`
+                        : `no sample -> volume ${volume}`
                 }`
             );
         })
@@ -137,6 +140,7 @@ async function sendAnnouncement(
     const guild = client.guilds.cache.get(guildId);
     const channel = guild?.channels.cache.get(settings.announcechannel);
     if (!channel?.isTextBased()) return;
+
     const message = await channel
         .send({
             embeds: [
@@ -164,8 +168,8 @@ export default class TrackStart extends Event {
         void dispatcher.ensureLookahead().catch(() => {});
 
         const guild = this.client.guilds.cache.get(player.guildId);
-        const channel = guild?.channels.cache.get(dispatcher.channelId) as TextChannel | undefined;
-        if (!guild || !channel) return;
+        const channel = guild?.channels.cache.get(dispatcher.channelId);
+        if (!guild || !channel?.isTextBased()) return;
 
         await recordRecentPlay(this.client, dispatcher, track);
         this.client.utils.updateStatus(this.client, guild.id);
@@ -177,18 +181,20 @@ export default class TrackStart extends Event {
         const embed = nowPlayingEmbed(this.client, track);
         const setup = await this.client.db.getSetup(guild.id);
         this.client.logger.debug(
-            `[setup] trackStart guild=${guild.id} dispatcherChannel=${dispatcher.channelId} setupText=${setup?.textId ?? 'none'} setupMsg=${setup?.messageId ?? 'none'}`
+            `[setup] trackStart guild=${guild.id} dispatcherChannel=${dispatcher.channelId} setupText=${
+                setup?.textId ?? 'none'
+            } setupMsg=${setup?.messageId ?? 'none'}`
         );
 
         if (setup?.textId) {
-            const textChannel = guild.channels.cache.get(setup.textId) as TextChannel | undefined;
-            if (!textChannel) {
+            const setupChannel = guild.channels.cache.get(setup.textId);
+            if (!(setupChannel instanceof BaseGuildTextChannel)) {
                 this.client.logger.warn(
                     `[setup] channel ${setup.textId} not found in cache — mock player not updated`
                 );
                 return;
             }
-            await trackStart(setup.messageId, textChannel, dispatcher, track, this.client);
+            await trackStart(setup.messageId, setupChannel, dispatcher, track, this.client);
             return;
         }
 
@@ -202,10 +208,17 @@ export default class TrackStart extends Event {
             time: NOW_PLAYING_TTL_MS,
             filter: async interaction => {
                 const me = interaction.guild.members.me;
-                if (me?.voice.channel && me.voice.channelId === interaction.member.voice.channelId) return true;
+                if (
+                    me?.voice.channel &&
+                    me.voice.channelId === interaction.member.voice.channelId
+                ) {
+                    return true;
+                }
                 await interaction
                     .reply({
-                        content: `You are not connected to <#${me?.voice?.channelId ?? 'None'}> to use these buttons.`,
+                        content: `You are not connected to <#${
+                            me?.voice?.channelId ?? 'None'
+                        }> to use these buttons.`,
                         ephemeral: true,
                     })
                     .catch(() => {});
@@ -214,24 +227,31 @@ export default class TrackStart extends Event {
         });
         dispatcher.nowPlayingCollector = collector;
         collector.on('end', () => {
-            if (dispatcher.nowPlayingCollector === collector) dispatcher.nowPlayingCollector = null;
+            if (dispatcher.nowPlayingCollector === collector) {
+                dispatcher.nowPlayingCollector = null;
+            }
         });
 
         collector.on('collect', async interaction => {
             if (!(await checkDj(this.client, interaction))) {
                 await interaction
-                    .reply({ content: 'You need to have the DJ role to use this command.', ephemeral: true })
+                    .reply({
+                        content: 'You need to have the DJ role to use this command.',
+                        ephemeral: true,
+                    })
                     .catch(() => {});
                 return;
             }
 
-            const footer = (text: string): void => {
+            const setFooter = (text: string): void => {
                 embed.setFooter({
                     text,
                     iconURL: interaction.user.avatarURL({}) ?? undefined,
                 });
             };
-            const editPanel = async (components: ActionRowBuilder<ButtonBuilder>[]): Promise<void> => {
+            const editPanel = async (
+                components: ActionRowBuilder<ButtonBuilder>[]
+            ): Promise<void> => {
                 await message.edit({ embeds: [embed], components }).catch(() => {});
             };
 
@@ -244,40 +264,44 @@ export default class TrackStart extends Event {
                         return;
                     }
                     dispatcher.previousTrack();
-                    footer(`Previous by ${interaction.user.tag}`);
+                    setFooter(`Previous by ${interaction.user.tag}`);
                     await editPanel([controlRow(dispatcher, player)]);
                     break;
                 case 'resume':
                     dispatcher.pause();
-                    footer(`${player.paused ? 'Paused' : 'Resumed'} by ${interaction.user.tag}`);
+                    setFooter(`${player.paused ? 'Paused' : 'Resumed'} by ${interaction.user.tag}`);
                     await editPanel([controlRow(dispatcher, player)]);
                     break;
                 case 'stop':
                     dispatcher.stop();
-                    footer(`Stopped by ${interaction.user.tag}`);
+                    setFooter(`Stopped by ${interaction.user.tag}`);
                     await editPanel([]);
                     break;
                 case 'skip':
                     if (!dispatcher.queue.length) {
                         await interaction
-                            .reply({ content: 'There is no more song in the queue.', ephemeral: true })
+                            .reply({
+                                content: 'There is no more song in the queue.',
+                                ephemeral: true,
+                            })
                             .catch(() => {});
                         return;
                     }
                     dispatcher.skip();
-                    footer(`Skipped by ${interaction.user.tag}`);
+                    setFooter(`Skipped by ${interaction.user.tag}`);
                     await editPanel([]);
                     break;
                 case 'loop': {
-                    const modes = ['off', 'repeat', 'queue'] as const;
-                    dispatcher.loop = modes[(modes.indexOf(dispatcher.loop) + 1) % modes.length];
+                    const modes: readonly Dispatcher['loop'][] = ['off', 'repeat', 'queue'];
+                    const next = modes[(modes.indexOf(dispatcher.loop) + 1) % modes.length];
+                    dispatcher.loop = next;
                     const label =
-                        dispatcher.loop === 'queue'
+                        next === 'queue'
                             ? 'Looping Queue'
-                            : dispatcher.loop === 'repeat'
+                            : next === 'repeat'
                               ? 'Looping'
                               : 'Looping Off';
-                    footer(`${label} by ${interaction.user.tag}`);
+                    setFooter(`${label} by ${interaction.user.tag}`);
                     await editPanel([controlRow(dispatcher, player)]);
                     break;
                 }
@@ -287,12 +311,17 @@ export default class TrackStart extends Event {
     }
 }
 
-export async function checkDj(client: BootstrapClient, interaction: DjInteraction): Promise<boolean> {
+export async function checkDj(
+    client: BootstrapClient,
+    interaction: DjInteraction
+): Promise<boolean> {
     const dj = await client.db.getDj(interaction.guildId);
     if (!dj?.mode) return true;
     const roles = await client.db.getRoles(interaction.guildId);
     if (!roles) return false;
-    const hasDjRole = interaction.member.roles.cache.some(role => roles.some(entry => entry.roleId === role.id));
+    const hasDjRole = interaction.member.roles.cache.some(role =>
+        roles.some(entry => entry.roleId === role.id)
+    );
     if (hasDjRole) return true;
     return interaction.member.permissions.has(PermissionFlagsBits.ManageGuild);
 }

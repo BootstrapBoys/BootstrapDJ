@@ -1,8 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, TextChannel } from 'discord.js';
-import { Player } from 'shoukaku';
+import type { Player } from 'shoukaku';
 
-import { Song } from '../../core/Dispatcher.js';
-import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import type { Song } from '../../core/Dispatcher.js';
+import type { BootstrapClient, Dispatcher } from '../../core/index.js';
+import { Event } from '../../core/index.js';
 import { formatDuration } from '../../lib/NodeStatus.js';
 
 export default class QueueEnd extends Event {
@@ -16,8 +17,14 @@ export default class QueueEnd extends Event {
         seconds: number
     ): Promise<void> {
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder().setCustomId('timeout-stay').setLabel('Still listening').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('timeout-leave').setLabel('Leave').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder()
+                .setCustomId('timeout-stay')
+                .setLabel('Still listening')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('timeout-leave')
+                .setLabel('Leave')
+                .setStyle(ButtonStyle.Secondary)
         );
         const prompt = await channel.send({
             embeds: [
@@ -25,17 +32,26 @@ export default class QueueEnd extends Event {
                     .embed()
                     .setColor(this.client.color.main)
                     .setDescription(
-                        `The queue is empty. I'll leave in ${formatDuration(seconds * 1000)} unless someone confirms.`
+                        `The queue is empty. I'll leave in ${formatDuration(
+                            seconds * 1000
+                        )} unless someone confirms.`
                     ),
             ],
             components: [row],
         });
         dispatcher.clearQueueEmptyPrompt();
         dispatcher.queueEmptyPrompt = prompt;
-        const collector = prompt.createMessageComponentCollector({ time: seconds * 1000, max: 1 });
+
+        const collector = prompt.createMessageComponentCollector({
+            time: seconds * 1000,
+            max: 1,
+        });
         collector.on('collect', async interaction => {
             if (interaction.customId === 'timeout-leave') {
-                await interaction.reply({ content: 'Leaving the voice channel.', ephemeral: true });
+                await interaction.reply({
+                    content: 'Leaving the voice channel.',
+                    ephemeral: true,
+                });
                 collector.stop('leave');
                 dispatcher.destroy();
                 return;
@@ -46,13 +62,16 @@ export default class QueueEnd extends Event {
         collector.on('end', async (_collected, reason) => {
             if (dispatcher.queueEmptyPrompt === prompt) dispatcher.queueEmptyPrompt = null;
             await prompt.delete().catch(() => null);
-            if (reason === 'time' && !dispatcher.queue.length && !dispatcher.autoplay) dispatcher.destroy();
+            if (reason === 'time' && !dispatcher.queue.length && !dispatcher.autoplay) {
+                dispatcher.destroy();
+            }
         });
     }
 
     public async run(_player: Player, _track: Song, dispatcher: Dispatcher): Promise<void> {
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         if (!guild || dispatcher.loop !== 'off') return;
+
         if (dispatcher.leaveOnEnd && !dispatcher.autoplay && !dispatcher.queue.length) {
             dispatcher.leaveOnEnd = false;
             dispatcher.destroy();
@@ -62,15 +81,28 @@ export default class QueueEnd extends Event {
 
         const stay = await this.client.db.get_247(guild.id).catch(() => null);
         if (stay) return;
+
         const settings = await this.client.db.getGuildSettings(guild.id);
-        if (dispatcher.loop !== 'off' || dispatcher.current || dispatcher.autoplay || dispatcher.queue.length) return;
+        if (
+            dispatcher.loop !== 'off' ||
+            dispatcher.current ||
+            dispatcher.autoplay ||
+            dispatcher.queue.length
+        ) {
+            return;
+        }
 
         const confirmSeconds = Number(settings.timeoutconfirmation ?? 0);
         const channel = guild.channels.cache.get(dispatcher.channelId);
-        if (Number.isFinite(confirmSeconds) && confirmSeconds > 0 && channel instanceof TextChannel) {
+        if (
+            Number.isFinite(confirmSeconds) &&
+            confirmSeconds > 0 &&
+            channel instanceof TextChannel
+        ) {
             await this.confirmLeave(dispatcher, channel, confirmSeconds);
             return;
         }
+
         const idleSeconds = Number(settings.timeoutplaying ?? 0);
         dispatcher.armIdleTimeout(Number.isFinite(idleSeconds) ? idleSeconds : 0);
     }

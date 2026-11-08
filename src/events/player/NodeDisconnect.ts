@@ -1,4 +1,5 @@
-import { BootstrapClient, Event } from '../../core/index.js';
+import type { BootstrapClient } from '../../core/index.js';
+import { Event } from '../../core/index.js';
 import BotLog from '../../lib/BotLog.js';
 import { beginIncident, formatDuration } from '../../lib/NodeStatus.js';
 

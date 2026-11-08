@@ -12,9 +12,8 @@ export default class GuildDelete extends Event {
     public async run(guild: Guild): Promise<unknown> {
         this.client.queue.get(guild.id)?.destroy();
         void this.client.db.deleteSession(guild.id).catch(() => {});
-        if (this.client.user) {
-            void this.client.db.releaseSessionLease(guild.id, this.client.user.id).catch(() => {});
-        }
+        const botId = this.client.user?.id;
+        if (botId) void this.client.db.releaseSessionLease(guild.id, botId).catch(() => {});
         stopSetupJanitor(guild.id);
         return await postGuildNotice(this.client, guild, 'removed');
     }

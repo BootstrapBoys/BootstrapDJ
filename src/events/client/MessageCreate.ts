@@ -8,7 +8,7 @@ function escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function memberContext(member: GuildMember): GateMember {
+function gateMember(member: GuildMember): GateMember {
     return {
         id: member.id,
         roleIds: [...member.roles.cache.keys()],
@@ -19,52 +19,57 @@ function memberContext(member: GuildMember): GateMember {
     };
 }
 
+/** Levenshtein distance, bounded by the caller's tolerance. */
+function editDistance(left: string, right: string): number {
+    const rows = left.length + 1;
+    const columns = right.length + 1;
+    const table: number[][] = Array.from({ length: rows }, () =>
+        Array.from({ length: columns }, () => 0)
+    );
+    for (let row = 0; row < rows; row++) table[row][0] = row;
+    for (let column = 0; column < columns; column++) table[0][column] = column;
+    for (let row = 1; row < rows; row++) {
+        for (let column = 1; column < columns; column++) {
+            const substitution = left[row - 1] === right[column - 1] ? 0 : 1;
+            table[row][column] = Math.min(
+                table[row - 1][column] + 1,
+                table[row][column - 1] + 1,
+                table[row - 1][column - 1] + substitution
+            );
+        }
+    }
+    return table[left.length][right.length];
+}
+
 export default class MessageCreate extends Event {
     public constructor(client: BootstrapClient, file: string) {
         super(client, file, { name: 'messageCreate' });
     }
 
+    /** Server prefixes are comma-separated; a personal prefix wins ties. */
     private prefixList(guildPrefix: string, userPrefix: string | null): string[] {
         const server = guildPrefix
             .split(',')
             .map(prefix => prefix.trim())
             .filter(Boolean);
-        const all = userPrefix ? [...new Set([...server, userPrefix])] : server;
-        return all.sort((left, right) => right.length - left.length);
+        const merged = userPrefix ? [...server, userPrefix] : server;
+        return [...new Set(merged)].sort((left, right) => right.length - left.length);
     }
 
     private closest(input: string): string | null {
-        const distance = (left: string, right: string): number => {
-            const table = Array.from({ length: left.length + 1 }, () =>
-                Array<number>(right.length + 1).fill(0)
-            );
-            for (let row = 0; row <= left.length; row++) table[row][0] = row;
-            for (let column = 0; column <= right.length; column++) table[0][column] = column;
-            for (let row = 1; row <= left.length; row++) {
-                for (let column = 1; column <= right.length; column++) {
-                    table[row][column] = Math.min(
-                        table[row - 1][column] + 1,
-                        table[row][column - 1] + 1,
-                        table[row - 1][column - 1] + (left[row - 1] === right[column - 1] ? 0 : 1)
-                    );
-                }
-            }
-            return table[left.length][right.length];
-        };
-
         let best: string | null = null;
-        let bestScore = 3;
+        let bestDistance = 3;
         for (const name of this.client.commands.keys()) {
-            const score = distance(input, name);
-            if (score < bestScore) {
-                bestScore = score;
+            const distance = editDistance(input, name);
+            if (distance < bestDistance) {
+                bestDistance = distance;
                 best = name;
             }
         }
         return best;
     }
 
-    private reply(message: Message<true>) {
+    private responder(message: Message<true>) {
         return async (content: string | MessageReplyOptions): Promise<Message> => {
             const sent = await message.reply(content);
             this.client.utils.scheduleDelete(this.client, sent);
@@ -72,6 +77,10 @@ export default class MessageCreate extends Event {
         };
     }
 
+    /**
+     * The request channel treats unknown text as a song query. A real command
+     * (including a mapping or custom alias) must still reach the normal path.
+     */
     private async isSetupCommand(
         message: Message<true>,
         guildPrefix: string,
@@ -79,13 +88,20 @@ export default class MessageCreate extends Event {
     ): Promise<boolean> {
         const match = matchPrefixCommand(message.content, this.prefixList(guildPrefix, userPrefix));
         if (!match) return false;
-        if (this.client.commands.has(match.name) || this.client.aliases.has(match.name)) return true;
+        if (this.client.commands.has(match.name) || this.client.aliases.has(match.name)) {
+            return true;
+        }
 
         const mapping = await this.client.db
             .getCommandMapping(message.guildId, match.name, message.author.id)
             .catch(() => null);
-        const mapped = mapping?.expansion.trim().split(/ +/)[0]?.toLowerCase();
-        if (mapped && (this.client.commands.has(mapped) || this.client.aliases.has(mapped))) return true;
+        const expansion = mapping?.expansion.trim().split(/ +/)[0]?.toLowerCase();
+        if (
+            expansion &&
+            (this.client.commands.has(expansion) || this.client.aliases.has(expansion))
+        ) {
+            return true;
+        }
 
         const alias = await this.client.db
             .getCommandAlias(message.guildId, match.name, message.author.id)
@@ -100,9 +116,10 @@ export default class MessageCreate extends Event {
         const botId = this.client.user?.id;
         if (!me || !member || !botId) return;
 
-        const reply = this.reply(message);
+        const reply = this.responder(message);
         const guild = await this.client.db.get(message.guildId);
         if (!guild) return;
+
         const userPrefix = await this.client.db.getUserPrefix(message.guildId, message.author.id);
         const setup = await this.client.db.getSetup(message.guildId);
         if (setup?.textId === message.channelId) {
@@ -118,18 +135,22 @@ export default class MessageCreate extends Event {
         }
 
         const prefixes = this.prefixList(guild.prefix, userPrefix);
-        const prefixRegex = new RegExp(
+        const prefixPattern = new RegExp(
             `^(<@!?${botId}>|${prefixes.map(prefix => escapeRegex(prefix)).join('|')})\\s*`
         );
-        const match = message.content.match(prefixRegex);
-        if (!match) return;
+        const matchedPrefix = message.content.match(prefixPattern);
+        if (!matchedPrefix) return;
 
-        const args = message.content.slice(match[0].length).trim().split(/ +/g);
+        const args = message.content.slice(matchedPrefix[0].length).trim().split(/ +/g);
         let key = args.shift()?.toLowerCase();
         if (!key) return;
         const settings = await this.client.db.getGuildSettings(message.guildId);
 
-        const mapping = await this.client.db.getCommandMapping(message.guildId, key, message.author.id);
+        const mapping = await this.client.db.getCommandMapping(
+            message.guildId,
+            key,
+            message.author.id
+        );
         if (mapping) {
             const expanded = mapping.expansion.trim().split(/ +/g);
             const mapped = expanded.shift()?.toLowerCase();
@@ -139,20 +160,29 @@ export default class MessageCreate extends Event {
             }
         }
 
-        let command = this.client.commands.get(key) ?? this.client.commands.get(this.client.aliases.get(key) ?? '');
+        const aliasTarget = this.client.aliases.get(key);
+        let command =
+            this.client.commands.get(key) ??
+            (aliasTarget ? this.client.commands.get(aliasTarget) : undefined);
         if (!command) {
-            const alias = await this.client.db.getCommandAlias(message.guildId, key, message.author.id);
-            if (alias) command = this.client.commands.get(alias.command);
+            const customAlias = await this.client.db.getCommandAlias(
+                message.guildId,
+                key,
+                message.author.id
+            );
+            if (customAlias) command = this.client.commands.get(customAlias.command);
         }
+
         if (!command && settings.autocorrect === 'true') {
             const suggestion = this.closest(key);
-            if (suggestion) {
-                command = this.client.commands.get(suggestion);
-                if (command) {
-                    const prefix = guild.prefix.split(',')[0]?.trim() || this.client.config.prefix;
-                    await reply({ content: `Corrected \`${prefix}${key}\` to \`${prefix}${suggestion}\`.` });
-                    key = suggestion;
-                }
+            const corrected = suggestion ? this.client.commands.get(suggestion) : undefined;
+            if (suggestion && corrected) {
+                command = corrected;
+                const prefix = guild.prefix.split(',')[0]?.trim() || this.client.config.prefix;
+                await reply({
+                    content: `Corrected \`${prefix}${key}\` to \`${prefix}${suggestion}\`.`,
+                });
+                key = suggestion;
             }
         }
         if (!command) return;
@@ -162,8 +192,8 @@ export default class MessageCreate extends Event {
             command,
             guildId: message.guildId,
             guildName: message.guild.name,
-            member: memberContext(member),
-            me: memberContext(me),
+            member: gateMember(member),
+            me: gateMember(me),
             channel: message.channel,
             canViewChannel:
                 message.channel.permissionsFor(me)?.has(PermissionFlagsBits.ViewChannel) === true,
@@ -182,6 +212,7 @@ export default class MessageCreate extends Event {
         ctx.deleteAfter = Number(settings.deleteafter) || null;
         ctx.setArgs(args);
         void this.client.db.recordCommand(message.guildId, command.name).catch(() => {});
+
         try {
             return await command.run(this.client, ctx, ctx.args);
         } catch (error) {

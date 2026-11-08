@@ -4,27 +4,29 @@ import {
     ButtonBuilder,
     ButtonStyle,
     EmbedBuilder,
-    Message,
-    MessageComponentInteraction,
+    type Message,
+    type MessageComponentInteraction,
 } from 'discord.js';
-import { LavalinkResponse, LoadType, Track } from 'shoukaku';
+import { type LavalinkResponse, LoadType, type Track } from 'shoukaku';
 
 import config from '../config.js';
-import { BootstrapClient, Context } from '../core/index.js';
+import type { BootstrapClient, Context } from '../core/index.js';
 
 type PagerAction = 'fast' | 'back' | 'stop' | 'next' | 'last';
 
-type PagerPayload = {
-    embeds: EmbedBuilder[];
-    components: ActionRowBuilder<ButtonBuilder>[];
-};
-
-const PAGER_ACTIONS: ReadonlyArray<{
+interface PagerButton {
     id: PagerAction;
     emoji: string;
     style: ButtonStyle;
     edge: 'first' | 'last' | null;
-}> = [
+}
+
+interface PagerPayload {
+    embeds: EmbedBuilder[];
+    components: ActionRowBuilder<ButtonBuilder>[];
+}
+
+const PAGER_BUTTONS: readonly PagerButton[] = [
     { id: 'fast', emoji: '⏪', style: ButtonStyle.Primary, edge: 'first' },
     { id: 'back', emoji: '◀️', style: ButtonStyle.Primary, edge: 'first' },
     { id: 'stop', emoji: '⏹️', style: ButtonStyle.Danger, edge: null },
@@ -32,10 +34,39 @@ const PAGER_ACTIONS: ReadonlyArray<{
     { id: 'last', emoji: '⏩', style: ButtonStyle.Primary, edge: 'last' },
 ];
 
+const CLOCK_UNITS: ReadonlyArray<{
+    span: number;
+    suffix: string;
+    remainderSpan: number;
+    remainderSuffix: string;
+}> = [
+    { span: 86_400_000, suffix: 'd', remainderSpan: 3_600_000, remainderSuffix: 'h' },
+    { span: 3_600_000, suffix: 'h', remainderSpan: 60_000, remainderSuffix: 'm' },
+    { span: 60_000, suffix: 'm', remainderSpan: 1000, remainderSuffix: 's' },
+];
+
+function isPagerAction(value: string): value is PagerAction {
+    return PAGER_BUTTONS.some(button => button.id === value);
+}
+
+function pageAfter(action: PagerAction, current: number, total: number): number {
+    switch (action) {
+        case 'fast':
+            return 0;
+        case 'back':
+            return Math.max(0, current - 1);
+        case 'next':
+            return Math.min(total - 1, current + 1);
+        case 'last':
+            return total - 1;
+        default:
+            return current;
+    }
+}
+
 /**
- * Stateless formatting and presentation helpers shared by commands, events,
- * and the dashboard bridge. Keeping these free of player state makes them
- * cheap to call on every render.
+ * Formatting and presentation helpers with no player state of their own, so
+ * commands, events and the dashboard can call them during a render.
  */
 export class Utils {
     /** First playable track from any Lavalink load response. */
@@ -55,91 +86,111 @@ export class Utils {
 
     /** Compact clock: 9s, 1m 5s, 1h 2m, 1d 1h. */
     public static formatTime(milliseconds: number): string {
-        const seconds = Math.max(0, milliseconds);
-        const units = [
-            { size: 86_400_000, suffix: 'd', next: 3_600_000, nextSuffix: 'h' },
-            { size: 3_600_000, suffix: 'h', next: 60_000, nextSuffix: 'm' },
-            { size: 60_000, suffix: 'm', next: 1000, nextSuffix: 's' },
-        ] as const;
-        for (const unit of units) {
-            if (seconds >= unit.size) {
-                const whole = Math.floor(seconds / unit.size);
-                const remainder = Math.floor((seconds % unit.size) / unit.next);
-                return `${whole}${unit.suffix} ${remainder}${unit.nextSuffix}`;
-            }
+        const elapsed = Math.max(0, milliseconds);
+        for (const unit of CLOCK_UNITS) {
+            if (elapsed < unit.span) continue;
+            const primary = Math.floor(elapsed / unit.span);
+            const remainder = Math.floor((elapsed % unit.span) / unit.remainderSpan);
+            return `${primary}${unit.suffix} ${remainder}${unit.remainderSuffix}`;
         }
-        return `${Math.floor(seconds / 1000)}s`;
+        return `${Math.floor(elapsed / 1000)}s`;
+    }
+
+    private static activePlayers(players: ReadonlyMap<string, { current: unknown }>): number {
+        let active = 0;
+        for (const player of players.values()) {
+            if (player.current) active += 1;
+        }
+        return active;
     }
 
     /** Update account presence according to the configured status mode. */
     public static updateStatus(client: BootstrapClient, guildId?: string): void {
-        if (!client.user) return;
+        const user = client.user;
+        if (!user) return;
+
         const showStatic = (): void => {
-            client.user?.setPresence({
+            user.setPresence({
                 activities: [{ name: config.botActivity, type: config.botActivityType }],
                 status: config.botStatus,
             });
         };
 
-        switch (config.botStatusMode) {
-            case 'track': {
-                if (guildId !== config.guildId) return;
-                const player = client.queue.get(config.guildId);
-                if (!player?.current) {
-                    showStatic();
-                    return;
-                }
-                client.user.setActivity({
-                    name: `🎶 | ${player.current.info.title}`.slice(0, 128),
-                    type: ActivityType.Listening,
-                });
-                return;
-            }
-            case 'count': {
-                const showCount = (active: number): void => {
-                    if (active <= 0) {
-                        showStatic();
-                        return;
-                    }
-                    client.user?.setActivity({
-                        name: `music in ${active} server${active === 1 ? '' : 's'}`.slice(0, 128),
-                        type: ActivityType.Listening,
-                    });
-                };
-                if (client.shard) {
-                    if (!client.isCoordinator) return;
-                    void client.shard
-                        .broadcastEval(candidate => {
-                            const shard = candidate as unknown as BootstrapClient;
-                            return [...shard.queue.values()].filter(player => Boolean(player.current)).length;
-                        })
-                        .then(counts => showCount(counts.reduce((total, value) => total + value, 0)))
-                        .catch(() => {});
-                    return;
-                }
-                showCount([...client.queue.values()].filter(player => Boolean(player.current)).length);
-                return;
-            }
-            default:
+        if (config.botStatusMode === 'track') {
+            if (guildId !== config.guildId) return;
+            const player = client.queue.get(config.guildId);
+            if (!player?.current) {
                 showStatic();
+                return;
+            }
+            user.setActivity({
+                name: `🎶 | ${player.current.info.title}`.slice(0, 128),
+                type: ActivityType.Listening,
+            });
+            return;
         }
+
+        if (config.botStatusMode !== 'count') {
+            showStatic();
+            return;
+        }
+
+        const showCount = (active: number): void => {
+            if (active <= 0) {
+                showStatic();
+                return;
+            }
+            user.setActivity({
+                name: `music in ${active} server${active === 1 ? '' : 's'}`.slice(0, 128),
+                type: ActivityType.Listening,
+            });
+        };
+
+        if (!client.shard) {
+            showCount(Utils.activePlayers(client.queue));
+            return;
+        }
+        if (!client.isCoordinator) return;
+
+        void client.shard
+            .broadcastEval(candidate => {
+                const queue = Reflect.get(candidate, 'queue');
+                if (!(queue instanceof Map)) return 0;
+                let active = 0;
+                for (const player of queue.values()) {
+                    if (
+                        player !== null &&
+                        typeof player === 'object' &&
+                        'current' in player &&
+                        player.current
+                    ) {
+                        active += 1;
+                    }
+                }
+                return active;
+            })
+            .then(counts => showCount(counts.reduce((total, value) => total + value, 0)))
+            .catch(() => {});
     }
 
     /** Split an array into fixed-size groups without mutating the input. */
     public static chunk<T>(items: readonly T[], size: number): T[][] {
         const width = Math.max(1, Math.floor(size));
-        return Array.from({ length: Math.ceil(items.length / width) }, (_, index) =>
-            items.slice(index * width, (index + 1) * width)
-        );
+        const groups: T[][] = [];
+        for (let offset = 0; offset < items.length; offset += width) {
+            groups.push(items.slice(offset, offset + width));
+        }
+        return groups;
     }
 
     /** Human-readable byte count using binary units. */
     public static formatBytes(bytes: number, decimals: number = 2): string {
         if (bytes === 0) return '0 Bytes';
         const units = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const magnitude = Math.abs(bytes);
         const unitIndex = Math.min(
             units.length - 1,
-            Math.max(0, Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024)))
+            Math.max(0, Math.floor(Math.log(magnitude) / Math.log(1024)))
         );
         const digits = Math.max(0, decimals);
         const value = Number((bytes / 1024 ** unitIndex).toFixed(digits));
@@ -157,26 +208,30 @@ export class Utils {
     }
 
     /** Expire a component message after its collector ends. */
-    public static scheduleDelete(client: BootstrapClient, message: Message, seconds?: number): void {
+    public static scheduleDelete(
+        client: BootstrapClient,
+        message: Message,
+        seconds?: number
+    ): void {
         const delay = seconds ?? client.config.deleteAfter;
         if (!delay || delay <= 0) return;
         const timer = setTimeout(() => {
             void message.delete().catch(() => {});
         }, delay * 1000);
-        (timer as unknown as { unref?: () => void }).unref?.();
+        timer.unref();
     }
 
     private static pagerPayload(pages: EmbedBuilder[], page: number): PagerPayload {
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-            ...PAGER_ACTIONS.map(action => {
-                const disabled =
-                    (action.edge === 'first' && page === 0) ||
-                    (action.edge === 'last' && page === pages.length - 1);
+            ...PAGER_BUTTONS.map(button => {
+                const atEdge =
+                    (button.edge === 'first' && page === 0) ||
+                    (button.edge === 'last' && page === pages.length - 1);
                 return new ButtonBuilder()
-                    .setCustomId(action.id)
-                    .setEmoji(action.emoji)
-                    .setStyle(action.style)
-                    .setDisabled(disabled);
+                    .setCustomId(button.id)
+                    .setEmoji(button.emoji)
+                    .setStyle(button.style)
+                    .setDisabled(atEdge);
             })
         );
         return { embeds: [pages[page]], components: [row] };
@@ -192,7 +247,7 @@ export class Utils {
 
         let page = 0;
         const authorId = ctx.author?.id;
-        const message = await ctx.sendMessage(this.pagerPayload(pages, page));
+        const message = await ctx.sendMessage(Utils.pagerPayload(pages, page));
         const collector = message.createMessageComponentCollector({
             filter: (interaction: MessageComponentInteraction) =>
                 !authorId || interaction.user.id === authorId,
@@ -200,29 +255,13 @@ export class Utils {
         });
 
         collector.on('collect', async (interaction: MessageComponentInteraction) => {
-            if (authorId && interaction.user.id !== authorId) {
-                await interaction.reply({ content: `You can't use this button`, ephemeral: true });
-                return;
-            }
             if (interaction.customId === 'stop') {
-                collector.stop();
+                collector.stop('closed');
                 return;
             }
-            switch (interaction.customId) {
-                case 'fast':
-                    page = 0;
-                    break;
-                case 'back':
-                    page = Math.max(0, page - 1);
-                    break;
-                case 'next':
-                    page = Math.min(pages.length - 1, page + 1);
-                    break;
-                case 'last':
-                    page = pages.length - 1;
-                    break;
-            }
-            await interaction.update(this.pagerPayload(pages, page));
+            if (!isPagerAction(interaction.customId)) return;
+            page = pageAfter(interaction.customId, page, pages.length);
+            await interaction.update(Utils.pagerPayload(pages, page));
         });
 
         collector.on('end', async () => {

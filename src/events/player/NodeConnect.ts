@@ -1,4 +1,5 @@
-import { BootstrapClient, Event } from '../../core/index.js';
+import type { BootstrapClient } from '../../core/index.js';
+import { Event } from '../../core/index.js';
 import BotLog from '../../lib/BotLog.js';
 import { isPrimaryNode } from '../../lib/NodeConfig.js';
 import { endIncident, formatDuration } from '../../lib/NodeStatus.js';
@@ -9,9 +10,15 @@ export default class NodeConnect extends Event {
         super(client, file, { name: 'nodeConnect' });
     }
 
+    private configuredNames(): string[] {
+        return this.client.config.lavalink.map(option => option.name);
+    }
+
     private isStandby(node: string): boolean {
-        const configured = this.client.config.lavalink.map(option => option.name);
-        return !isFallbackNode(node) && configured.includes(node) && !isPrimaryNode(node, configured);
+        const configured = this.configuredNames();
+        return (
+            !isFallbackNode(node) && configured.includes(node) && !isPrimaryNode(node, configured)
+        );
     }
 
     private report(node: string): void {
@@ -22,12 +29,12 @@ export default class NodeConnect extends Event {
             return;
         }
         const recoveredMs = endIncident();
-        const text =
+        const message =
             recoveredMs === null
                 ? `Lavalink node "${node}" is ready!`
                 : `Lavalink node "${node}" recovered after ${formatDuration(recoveredMs)}.`;
-        this.client.logger.success(text);
-        BotLog.send(this.client, text, 'success');
+        this.client.logger.success(message);
+        BotLog.send(this.client, message, 'success');
     }
 
     private switchBack(node: string): void {
@@ -37,15 +44,22 @@ export default class NodeConnect extends Event {
         void this.client.queue
             .migrateToNode(target)
             .then(moved => {
-                if (moved) this.client.logger.success(`[nodes] moved ${moved} player(s) back to "${node}"`);
+                if (moved) {
+                    this.client.logger.success(
+                        `[nodes] moved ${moved} player(s) back to "${node}"`
+                    );
+                }
             })
-            .catch(error => this.client.logger.error(`[nodes] switch-back migration failed: ${error}`));
+            .catch(error =>
+                this.client.logger.error(`[nodes] switch-back migration failed: ${error}`)
+            );
     }
 
     private async rejoin247(guildId: string): Promise<void> {
         const guild = this.client.guilds.cache.get(guildId);
         const bot = this.client.user;
         if (!guild || !bot) return;
+
         const stay = await this.client.db.get_247(guildId);
         const row = Array.isArray(stay) ? stay[0] : stay;
         if (!row) return;
@@ -56,14 +70,20 @@ export default class NodeConnect extends Event {
         const lease = await this.client.db.getSessionLease(guildId).catch(() => null);
         if (lease && lease.expiresAt.getTime() > Date.now() && lease.botId !== bot.id) return;
         if (!lease && !(await this.client.preferredBotStatus(guildId)).allowed) return;
+
         const claimed = await this.client.db
             .claimSessionLease(guildId, bot.id, this.client.config.botName || bot.username, 60_000)
             .catch(() => false);
         if (!claimed) return;
-        if (!this.client.queue.has(guildId) && (await this.client.db.getSession(guildId).catch(() => null))) {
+
+        if (
+            !this.client.queue.has(guildId) &&
+            (await this.client.db.getSession(guildId).catch(() => null))
+        ) {
             await this.client.db.releaseSessionLease(guildId, bot.id).catch(() => {});
             return;
         }
+
         try {
             await this.client.queue.create(guild, voice, text);
         } catch (error) {

@@ -1,4 +1,5 @@
-import { BootstrapClient, Event } from '../../core/index.js';
+import type { BootstrapClient } from '../../core/index.js';
+import { Event } from '../../core/index.js';
 import BotLog from '../../lib/BotLog.js';
 import { isPrimaryNode } from '../../lib/NodeConfig.js';
 import { beginIncident, describeCloseCode, formatDuration } from '../../lib/NodeStatus.js';
@@ -9,7 +10,7 @@ export default class NodeDestroy extends Event {
         super(client, file, { name: 'nodeDestroy' });
     }
 
-    private async fallback(node: string, code: number, reason: string): Promise<void> {
+    private async loseFallback(node: string, code: number, reason: string): Promise<void> {
         markFallbackFailed(node);
         try {
             this.client.shoukaku.removeNode(node, 'fallback lost');
@@ -29,19 +30,26 @@ export default class NodeDestroy extends Event {
         void this.client.queue
             .migrateToNode(target)
             .then(moved => {
-                if (moved) this.client.logger.warn(`[nodes] moved ${moved} player(s) off "${node}"`);
+                if (moved)
+                    this.client.logger.warn(`[nodes] moved ${moved} player(s) off "${node}"`);
             })
-            .catch(error => this.client.logger.error(`[nodes] failover migration failed: ${error}`));
+            .catch(error =>
+                this.client.logger.error(`[nodes] failover migration failed: ${error}`)
+            );
     }
 
     public async run(node: string, code: number, reason: string): Promise<void> {
         const configured = this.client.config.lavalink.map(option => option.name);
-        if (!isFallbackNode(node) && configured.includes(node) && !isPrimaryNode(node, configured)) {
+        if (
+            !isFallbackNode(node) &&
+            configured.includes(node) &&
+            !isPrimaryNode(node, configured)
+        ) {
             this.client.logger.warn(`[nodes] standby node "${node}" disconnected`);
             return;
         }
         if (isFallbackNode(node)) {
-            await this.fallback(node, code, reason);
+            await this.loseFallback(node, code, reason);
             return;
         }
 

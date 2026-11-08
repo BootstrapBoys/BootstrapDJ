@@ -5,20 +5,48 @@ import { buttonReply } from '../../lib/SetupSystem.js';
 import { checkDj } from '../player/TrackStart.js';
 
 type SetupInteraction = ButtonInteraction<'cached'> | StringSelectMenuInteraction<'cached'>;
+type ControlAction = (
+    interaction: SetupInteraction,
+    player: Dispatcher,
+    messageId: string
+) => Promise<void>;
 
 const VOLUME_STEP = 10;
 const SEEK_STEP_MS = 10_000;
+const LOOP_MODES: readonly Dispatcher['loop'][] = ['off', 'queue', 'repeat'];
 
 /**
- * Handles the persistent control buttons on the song-request mock player.
+ * Serves the persistent controls in the song-request channel and the compact
+ * controls on a /nowplaying reply.
  *
- * Every click is checked against voice state, DJ permission, and the message
- * identity. The mock is long-lived; a /nowplaying reply must not be rewritten
- * with the setup layout, and skip/previous must not race TrackStart's render.
+ * Every click passes the same guards. The persisted setup message may be
+ * re-rendered with the mock layout; a track-scoped reply must never be, or its
+ * compact layout is lost. Skip/previous also let TrackStart own the next
+ * render, so this handler only acknowledges them.
  */
 export default class SetupButtons extends Event {
+    private readonly actions: Readonly<Record<string, ControlAction>>;
+
     public constructor(client: BootstrapClient, file: string) {
         super(client, file, { name: 'setupButtons' });
+        this.actions = {
+            LOW_VOL_BUT: (interaction, player, messageId) =>
+                this.stepVolume(interaction, player, messageId, -VOLUME_STEP),
+            HIGH_VOL_BUT: (interaction, player, messageId) =>
+                this.stepVolume(interaction, player, messageId, VOLUME_STEP),
+            PAUSE_BUT: (interaction, player, messageId) =>
+                this.togglePause(interaction, player, messageId),
+            SKIP_BUT: (interaction, player) => this.skip(interaction, player),
+            STOP_BUT: (interaction, player) => this.stop(interaction, player),
+            LOOP_BUT: (interaction, player, messageId) =>
+                this.cycleLoop(interaction, player, messageId),
+            SHUFFLE_BUT: (interaction, player) => this.shuffle(interaction, player),
+            PREV_BUT: (interaction, player) => this.previous(interaction, player),
+            REWIND_BUT: (interaction, player, messageId) =>
+                this.seekBy(interaction, player, messageId, -SEEK_STEP_MS),
+            FORWARD_BUT: (interaction, player, messageId) =>
+                this.seekBy(interaction, player, messageId, SEEK_STEP_MS),
+        };
     }
 
     private async deny(interaction: SetupInteraction, text: string): Promise<void> {
@@ -29,6 +57,7 @@ export default class SetupButtons extends Event {
         await buttonReply(interaction, text, this.client.color.main);
     }
 
+    /** True when this message is a command reply, not the persisted mock. */
     private async isTrackScoped(
         interaction: SetupInteraction,
         player: Dispatcher,
@@ -41,20 +70,22 @@ export default class SetupButtons extends Event {
     private nowPlayingEmbed(player: Dispatcher): EmbedBuilder | null {
         const current = player.current;
         if (!current) return null;
-        const sourceIcon =
+        const icon =
             this.client.config.icons[current.info.sourceName] ??
             this.client.user?.displayAvatarURL({ extension: 'png' });
+        const duration = current.info.isStream
+            ? 'LIVE'
+            : this.client.utils.formatTime(current.info.length);
         return this.client
             .embed()
-            .setAuthor({ name: 'Now Playing', iconURL: sourceIcon })
+            .setAuthor({ name: 'Now Playing', iconURL: icon })
             .setDescription(
-                `[${current.info.title}](${current.info.uri}) - ${
-                    current.info.isStream ? 'LIVE' : this.client.utils.formatTime(current.info.length)
-                } - Requested by ${current.info.requester}`
+                `[${current.info.title}](${current.info.uri}) - ${duration} - Requested by ${current.info.requester}`
             )
             .setImage(current.info.artworkUrl ?? null);
     }
 
+    /** Footer feedback is safe only on the setup mock, never on a command reply. */
     private async editFeedback(
         interaction: SetupInteraction,
         player: Dispatcher,
@@ -76,14 +107,147 @@ export default class SetupButtons extends Event {
             .catch(() => {});
     }
 
+    private async stepVolume(
+        interaction: SetupInteraction,
+        player: Dispatcher,
+        messageId: string,
+        delta: number
+    ): Promise<void> {
+        const volume = Math.max(0, Math.min(200, player.player.volume + delta));
+        void player.player.setGlobalVolume(volume).catch(() => {});
+        await this.confirm(interaction, `Volume set to ${volume}%`);
+        await this.editFeedback(interaction, player, messageId, `Volume: ${volume}%`);
+    }
+
+    private async togglePause(
+        interaction: SetupInteraction,
+        player: Dispatcher,
+        messageId: string
+    ): Promise<void> {
+        const state = player.player.paused ? 'Resumed' : 'Paused';
+        player.pause();
+        await this.confirm(interaction, `${state} the music.`);
+        await this.editFeedback(
+            interaction,
+            player,
+            messageId,
+            `${state} by ${interaction.member.displayName}`
+        );
+    }
+
+    private async skip(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
+        if (!player.queue.length) {
+            await this.confirm(interaction, 'There is no music to skip.');
+            return;
+        }
+        player.skip();
+        await this.confirm(interaction, 'Skipped the music.');
+    }
+
+    private async stop(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
+        const embed = this.nowPlayingEmbed(player);
+        player.stop();
+        await this.confirm(interaction, 'Stopped the music.');
+        if (!embed) return;
+        await interaction.message
+            .edit({
+                embeds: [
+                    embed
+                        .setFooter({
+                            text: `Stopped by ${interaction.member.displayName}`,
+                            iconURL: interaction.member.displayAvatarURL({}),
+                        })
+                        .setDescription('Nothing playing right now')
+                        .setImage(this.client.config.links.img)
+                        .setAuthor({
+                            name: this.client.user?.username ?? 'BootstrapDJ',
+                            iconURL: this.client.user?.displayAvatarURL({ extension: 'png' }),
+                        }),
+                ],
+            })
+            .catch(() => {});
+    }
+
+    private async cycleLoop(
+        interaction: SetupInteraction,
+        player: Dispatcher,
+        messageId: string
+    ): Promise<void> {
+        const index = LOOP_MODES.indexOf(player.loop);
+        const next = LOOP_MODES[(index + 1) % LOOP_MODES.length];
+        player.setLoop(next);
+        await this.confirm(interaction, `Loop set to ${player.loop}.`);
+        await this.editFeedback(
+            interaction,
+            player,
+            messageId,
+            `Loop set to ${player.loop} by ${interaction.member.displayName}`
+        );
+    }
+
+    private async shuffle(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
+        player.setShuffle();
+        await this.confirm(interaction, 'Shuffled the queue.');
+    }
+
+    private async previous(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
+        if (!player.previous) {
+            await this.confirm(interaction, 'There is no previous track.');
+            return;
+        }
+        await this.confirm(interaction, 'Playing the previous track.');
+        player.previousTrack();
+    }
+
+    private async seekBy(
+        interaction: SetupInteraction,
+        player: Dispatcher,
+        messageId: string,
+        delta: number
+    ): Promise<void> {
+        const target = player.player.position + delta;
+        const current = player.current;
+        if (!current) return;
+        if (delta < 0 && target < 0) {
+            await this.confirm(
+                interaction,
+                'You cannot rewind the music more than the length of the song.'
+            );
+            return;
+        }
+        if (delta > 0 && target > current.info.length) {
+            await this.confirm(
+                interaction,
+                'You cannot forward the music more than the length of the song.'
+            );
+            return;
+        }
+        player.seek(target);
+        await this.confirm(interaction, delta < 0 ? 'Rewound the music.' : 'Forwarded the music.');
+        await this.editFeedback(
+            interaction,
+            player,
+            messageId,
+            `${delta < 0 ? 'Rewound' : 'Forwarded'} by ${interaction.member.displayName}`
+        );
+    }
+
     public async run(interaction: SetupInteraction): Promise<void> {
-        if (!interaction.replied) await interaction.deferReply().catch(() => {});
+        if (!interaction.deferred && !interaction.replied) {
+            await interaction.deferReply().catch(() => {});
+        }
         if (!interaction.member.voice.channel) {
-            return await this.deny(interaction, 'You are not connected to a voice channel to use this button.');
+            return await this.deny(
+                interaction,
+                'You are not connected to a voice channel to use this button.'
+            );
         }
 
         const botMember = interaction.guild.members.me;
-        if (botMember?.voice.channel && botMember.voice.channelId !== interaction.member.voice.channelId) {
+        if (
+            botMember?.voice.channel &&
+            botMember.voice.channelId !== interaction.member.voice.channelId
+        ) {
             return await this.deny(
                 interaction,
                 `You are not connected to ${botMember.voice.channel} to use these buttons.`
@@ -96,124 +260,17 @@ export default class SetupButtons extends Event {
         }
         if (!interaction.isButton()) return;
         if (!(await checkDj(this.client, interaction))) {
-            return await this.deny(interaction, 'You need to have the DJ role to use this command.');
+            return await this.deny(
+                interaction,
+                'You need to have the DJ role to use this command.'
+            );
         }
 
-        const messageId = interaction.message.id;
-        switch (interaction.customId) {
-            case 'LOW_VOL_BUT':
-            case 'HIGH_VOL_BUT': {
-                const delta = interaction.customId === 'LOW_VOL_BUT' ? -VOLUME_STEP : VOLUME_STEP;
-                const volume = Math.max(0, Math.min(200, player.player.volume + delta));
-                void player.player.setGlobalVolume(volume).catch(() => {});
-                await this.confirm(interaction, `Volume set to ${volume}%`);
-                await this.editFeedback(interaction, player, messageId, `Volume: ${volume}%`);
-                return;
-            }
-            case 'PAUSE_BUT': {
-                const nextState = player.player.paused ? 'Resumed' : 'Paused';
-                player.pause();
-                await this.confirm(interaction, `${nextState} the music.`);
-                if (!(await this.isTrackScoped(interaction, player, messageId))) {
-                    await this.editFeedback(
-                        interaction,
-                        player,
-                        messageId,
-                        `${nextState} by ${interaction.member.displayName}`
-                    );
-                }
-                return;
-            }
-            case 'SKIP_BUT':
-                if (!player.queue.length) return await this.confirm(interaction, 'There is no music to skip.');
-                player.skip();
-                await this.confirm(interaction, 'Skipped the music.');
-                return;
-            case 'STOP_BUT': {
-                const embed = this.nowPlayingEmbed(player);
-                player.stop();
-                await this.confirm(interaction, 'Stopped the music.');
-                if (embed) {
-                    await interaction.message
-                        .edit({
-                            embeds: [
-                                embed
-                                    .setFooter({
-                                        text: `Stopped by ${interaction.member.displayName}`,
-                                        iconURL: interaction.member.displayAvatarURL({}),
-                                    })
-                                    .setDescription('Nothing playing right now')
-                                    .setImage(this.client.config.links.img)
-                                    .setAuthor({
-                                        name: this.client.user?.username ?? 'BootstrapDJ',
-                                        iconURL: this.client.user?.displayAvatarURL({ extension: 'png' }),
-                                    }),
-                            ],
-                        })
-                        .catch(() => {});
-                }
-                return;
-            }
-            case 'LOOP_BUT': {
-                const modes = ['off', 'queue', 'repeat'] as const;
-                const nextMode = modes[(modes.indexOf(player.loop) + 1) % modes.length];
-                player.setLoop(nextMode);
-                await this.confirm(interaction, `Loop set to ${player.loop}.`);
-                await this.editFeedback(
-                    interaction,
-                    player,
-                    messageId,
-                    `Loop set to ${player.loop} by ${interaction.member.displayName}`
-                );
-                return;
-            }
-            case 'SHUFFLE_BUT':
-                player.setShuffle();
-                await this.confirm(interaction, 'Shuffled the queue.');
-                return;
-            case 'PREV_BUT':
-                if (!player.previous) return await this.confirm(interaction, 'There is no previous track.');
-                await this.confirm(interaction, 'Playing the previous track.');
-                player.previousTrack();
-                return;
-            case 'REWIND_BUT': {
-                const position = player.player.position - SEEK_STEP_MS;
-                if (position < 0) {
-                    return await this.confirm(
-                        interaction,
-                        'You cannot rewind the music more than the length of the song.'
-                    );
-                }
-                player.seek(position);
-                await this.confirm(interaction, 'Rewound the music.');
-                await this.editFeedback(
-                    interaction,
-                    player,
-                    messageId,
-                    `Rewound by ${interaction.member.displayName}`
-                );
-                return;
-            }
-            case 'FORWARD_BUT': {
-                const position = player.player.position + SEEK_STEP_MS;
-                if (position > player.current.info.length) {
-                    return await this.confirm(
-                        interaction,
-                        'You cannot forward the music more than the length of the song.'
-                    );
-                }
-                player.seek(position);
-                await this.confirm(interaction, 'Forwarded the music.');
-                await this.editFeedback(
-                    interaction,
-                    player,
-                    messageId,
-                    `Forwarded by ${interaction.member.displayName}`
-                );
-                return;
-            }
-            default:
-                await this.confirm(interaction, 'This button is not available.');
+        const action = this.actions[interaction.customId];
+        if (!action) {
+            await this.confirm(interaction, 'This button is not available.');
+            return;
         }
+        await action(interaction, player, interaction.message.id);
     }
 }

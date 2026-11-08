@@ -1,4 +1,5 @@
-import { BootstrapClient, Event } from '../../core/index.js';
+import type { BootstrapClient } from '../../core/index.js';
+import { Event } from '../../core/index.js';
 import BotLog from '../../lib/BotLog.js';
 import { isPrimaryNode } from '../../lib/NodeConfig.js';
 import { endIncident, formatDuration } from '../../lib/NodeStatus.js';
@@ -11,7 +12,11 @@ export default class NodeReconnect extends Event {
 
     public async run(node: string): Promise<void> {
         const configured = this.client.config.lavalink.map(option => option.name);
-        if (!isFallbackNode(node) && configured.includes(node) && !isPrimaryNode(node, configured)) {
+        if (
+            !isFallbackNode(node) &&
+            configured.includes(node) &&
+            !isPrimaryNode(node, configured)
+        ) {
             this.client.logger.info(`[nodes] standby node "${node}" reconnected`);
             return;
         }
@@ -21,6 +26,7 @@ export default class NodeReconnect extends Event {
             );
             return;
         }
+
         const recoveredMs = endIncident();
         const message =
             recoveredMs === null

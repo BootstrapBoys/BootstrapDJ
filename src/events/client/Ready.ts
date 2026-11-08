@@ -5,7 +5,8 @@ import { BootstrapClient, Event } from '../../core/index.js';
 import { restoreSessions, startSessionHandoffs, waitForNode } from '../../lib/Session.js';
 import { resetSetupChannel, startSetupJanitor } from '../../lib/SetupSystem.js';
 
-let initialized = false;
+/** The gateway can emit ready again after a resume; boot work must run once. */
+let booted = false;
 
 export default class Ready extends Event {
     public constructor(client: BootstrapClient, file: string) {
@@ -39,8 +40,13 @@ export default class Ready extends Event {
 
     private async restore(): Promise<void> {
         try {
-            if (await waitForNode(this.client)) await restoreSessions(this.client);
-            else this.client.logger.error('[session] no node available after waiting; skipping restore');
+            if (await waitForNode(this.client)) {
+                await restoreSessions(this.client);
+            } else {
+                this.client.logger.error(
+                    '[session] no node available after waiting; skipping restore'
+                );
+            }
         } catch (error) {
             this.client.logger.error(`[session] restore pass failed: ${error}`);
         } finally {
@@ -56,8 +62,8 @@ export default class Ready extends Event {
             )}`
         );
         this.setPresence();
-        if (initialized) return;
-        initialized = true;
+        if (booted) return;
+        booted = true;
         await this.initializeSetups();
         await this.restore();
     }
