@@ -18,6 +18,9 @@ test.before(async () => {
         `CREATE TABLE "GuildSetting" ("guildId" TEXT NOT NULL, "key" TEXT NOT NULL, "value" TEXT NOT NULL, "updatedAt" DATETIME NOT NULL, PRIMARY KEY ("guildId", "key"))`
     );
     await prisma.$executeRawUnsafe(
+        `CREATE TABLE "AutoplaySetting" ("guildId" TEXT NOT NULL PRIMARY KEY, "source" TEXT NOT NULL DEFAULT 'chart', "seeds" TEXT NOT NULL DEFAULT '', "updatedAt" DATETIME NOT NULL)`
+    );
+    await prisma.$executeRawUnsafe(
         `CREATE TABLE "PermissionRule" ("id" TEXT NOT NULL PRIMARY KEY, "guildId" TEXT NOT NULL, "command" TEXT NOT NULL, "targetId" TEXT NOT NULL, "targetType" TEXT NOT NULL, "allow" BOOLEAN NOT NULL DEFAULT false)`
     );
     await prisma.$executeRawUnsafe(
@@ -85,6 +88,65 @@ test('guild settings round-trip and reset', async () => {
     });
     assert.equal(await db.resetGuildSettings('g1'), 2);
     assert.equal(await db.getGuildSetting('g1', 'defaultvolume'), null);
+});
+
+test('a settings batch writes guild keys and autoplay in one transaction', async () => {
+    await db.applySettings(
+        'gbatch',
+        { defaultvolume: '70', ephemeral: 'false' },
+        { source: 'chart', seeds: 'alpha, beta' }
+    );
+
+    assert.deepEqual(await db.getGuildSettings('gbatch'), {
+        defaultvolume: '70',
+        ephemeral: 'false',
+    });
+    const autoplay = await db.getAutoplaySetting('gbatch');
+    assert.equal(autoplay.source, 'chart');
+    assert.equal(autoplay.seeds, 'alpha, beta');
+
+    await db.applySettings('gbatch', {}, 'delete');
+    assert.equal(await db.getAutoplaySetting('gbatch'), null);
+});
+
+test('a failed settings upsert rolls the whole batch back', async () => {
+    await assert.rejects(() =>
+        db.applySettings('gfail', { defaultvolume: '50', broken: null }, {
+            source: 'chart',
+            seeds: '',
+        })
+    );
+
+    assert.deepEqual(await db.getGuildSettings('gfail'), {});
+    assert.equal(await db.getAutoplaySetting('gfail'), null);
+});
+
+test('the settings cache returns a copy the caller cannot mutate', async () => {
+    await db.setGuildSetting('gcopy', 'defaultvolume', '55');
+    const first = await db.getGuildSettings('gcopy');
+    first.defaultvolume = '99';
+
+    assert.equal((await db.getGuildSettings('gcopy')).defaultvolume, '55');
+});
+
+test('the settings cache expires instead of serving another process write forever', async () => {
+    await db.setGuildSetting('gttl', 'defaultvolume', '10');
+    await db.getGuildSettings('gttl');
+
+    // Simulate a second bot process updating the same SQLite file.
+    await prisma.guildSetting.update({
+        where: { guildId_key: { guildId: 'gttl', key: 'defaultvolume' } },
+        data: { value: '20' },
+    });
+    assert.equal((await db.getGuildSettings('gttl')).defaultvolume, '10');
+
+    const realNow = Date.now;
+    Date.now = () => realNow() + 6_000;
+    try {
+        assert.equal((await db.getGuildSettings('gttl')).defaultvolume, '20');
+    } finally {
+        Date.now = realNow;
+    }
 });
 
 test('permission rules deny and allow by user or role', async () => {

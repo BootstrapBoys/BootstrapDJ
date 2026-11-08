@@ -34,7 +34,7 @@ import {
 } from './cluster.js';
 import { renderDashboard, renderLoginPage } from './page.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
-import { effectiveSettings, initialState, saveSetting } from './state.js';
+import { effectiveSettings, initialState, saveSettings, SettingValidationError } from './state.js';
 
 const MAX_BODY_BYTES = 64_000;
 const RATE_WINDOW_MS = 60_000;
@@ -361,12 +361,24 @@ async function route(
             guildDenied(res);
             return;
         }
-        if (isRecord(body.settings)) {
-            for (const [key, value] of Object.entries(body.settings)) {
-                await saveSetting(client, guildId, key, bodyText(value));
+        try {
+            if (isRecord(body.settings)) {
+                const values: Record<string, string> = {};
+                for (const [key, value] of Object.entries(body.settings)) {
+                    values[key] = bodyText(value);
+                }
+                await saveSettings(client, guildId, values);
+            } else {
+                await saveSettings(client, guildId, {
+                    [bodyText(body.key)]: bodyText(body.value),
+                });
             }
-        } else {
-            await saveSetting(client, guildId, bodyText(body.key), bodyText(body.value));
+        } catch (error) {
+            if (error instanceof SettingValidationError) {
+                sendJson(res, 400, { error: error.message });
+                return;
+            }
+            throw error;
         }
         accessCache.invalidateGuild(guildId);
         await clearSettingsCaches(client, guildId);

@@ -195,6 +195,15 @@ export default class ServerData extends PermissionStore {
         return await this.guilds.setSetting(guildId, key, value);
     }
 
+    /** Atomic multi-key settings write; the dashboard validates before calling. */
+    public async applySettings(
+        guildId: string,
+        entries: Record<string, string>,
+        autoplay: { source: string; seeds: string } | 'delete' | null = null
+    ): Promise<void> {
+        await this.guilds.applySettings(guildId, entries, autoplay);
+    }
+
     public async resetGuildSettings(guildId: string): Promise<number> {
         return await this.guilds.resetSettings(guildId);
     }
