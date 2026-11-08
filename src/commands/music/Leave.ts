@@ -10,7 +10,7 @@ export default defineMusicCommand({
         if (!ctx.guild) return;
         if (!player) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription("I'm not in a voice channel")],
+                embeds: [client.embed().setColor(client.color.red).setDescription('I\'m not in a voice channel')],
             });
         }
         await ctx.sendMessage({
