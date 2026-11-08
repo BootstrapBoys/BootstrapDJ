@@ -92,8 +92,8 @@ export default class Collection extends Command {
     public async run(client: BootstrapClient, ctx: Context, _args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
-        const action = (this.get(ctx, 'action', 0) ?? 'list').toLowerCase();
-        let name = (this.get(ctx, 'name', 1) ?? '').trim();
+        const action = String(ctx.args[0] ?? this.get(ctx, 'action', 0) ?? 'list').toLowerCase();
+        let name = String(ctx.args[1] ?? this.get(ctx, 'name', 1) ?? '').trim();
         client.logger.info(`[playlist] action=${action} name=${name} args=${ctx.args.join('|')}`);
         const query = (this.get(ctx, 'query', 2) ?? '').trim();
         const target = (this.get(ctx, 'target', 3) ?? '').trim();
