@@ -108,6 +108,36 @@ Every 5–10 minutes, mix:
 
 Add bounded randomization and a fixed seed for reproducibility.
 
+### Recommended 24-hour scenario matrix
+
+Run these as separate soak profiles, or as phases in one run:
+
+| Profile | 24/7 | Autoplay | What it proves | What it hides |
+|---|---|---|---|---|
+| Continuous | on | on | track transitions, cache, Lavalink, always-on stability | queue end, leave, session deletion |
+| Lifecycle | off | mixed | queue end, leave/rejoin, session cleanup, idle timers | long continuous playback |
+| Stress | either | on | queue churn, failover, restart, memory under load | clean idle behavior |
+
+Recommended single-run schedule:
+- **0–1h:** warmup, baseline, short functional probe
+- **1–8h:** 24/7 on + autoplay on, plus queue/playlist mutations every 10 min
+- **8–16h:** 24/7 off, mixed normal playback, force queue end and leave/rejoin
+- **16–22h:** 24/7 on + autoplay, restart and failover probes
+- **22–24h:** teardown, final functional probe, artifact flush
+
+24/7 + autoplay is worth enabling because it exercises the long-lived player,
+track replacement, autoplay resolution/cache, and repeated Lavalink updates.
+Do not use it as the only profile: it prevents the queue-end session deletion
+and leave path from ever running.
+
+Soak-specific controls:
+- cap the queue (for example 50) so a stuck autoplay cannot grow unbounded
+- use a fixed seed and a known playlist for reproducibility
+- monitor autoplay resolution failures, 429s, and source API latency
+- record autoplay cache size and hit/miss counts
+- run a separate cleanup assertion after disabling 24/7
+- keep the test guild and voice channel dedicated; never use production
+
 ### Metrics sampled every 15–30 seconds
 
 Process:
