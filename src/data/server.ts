@@ -29,6 +29,7 @@ import {
 import { PlaylistStore } from './playlists.js';
 import { SessionStore } from './sessions.js';
 import { UserStore } from './users.js';
+import { VoiceStore } from './voice.js';
 import { createPrismaClient, initializePrisma } from './prisma.js';
 
 export interface StatsPruneResult {
@@ -44,6 +45,7 @@ export default class ServerData {
     private playlists: PlaylistStore;
     private sessions: SessionStore;
     private users: UserStore;
+    private voice: VoiceStore;
     /** PRAGMAs are connection/file scoped; every bot process runs this once. */
     private initPromise: Promise<void> | null = null;
     /** Guild rows are read for every message and every command; cache them and
@@ -62,6 +64,7 @@ export default class ServerData {
         this.playlists = new PlaylistStore(this.prisma);
         this.sessions = new SessionStore(this.prisma);
         this.users = new UserStore(this.prisma);
+        this.voice = new VoiceStore(this.prisma);
     }
 
     /**
@@ -807,7 +810,7 @@ export default class ServerData {
     }
 
     public async getVoiceListen(guildId: string): Promise<VoiceListen | null> {
-        return await this.prisma.voiceListen.findUnique({ where: { guildId } });
+        return await this.voice.get(guildId);
     }
 
     public async setVoiceListen(
@@ -819,41 +822,19 @@ export default class ServerData {
             updatedBy?: string | null;
         }
     ): Promise<VoiceListen> {
-        return await this.prisma.voiceListen.upsert({
-            where: { guildId },
-            create: {
-                guildId,
-                enabled: data.enabled,
-                voiceChannelId: data.voiceChannelId ?? null,
-                textChannelId: data.textChannelId ?? null,
-                updatedBy: data.updatedBy ?? null,
-            },
-            update: {
-                enabled: data.enabled,
-                voiceChannelId: data.voiceChannelId ?? null,
-                textChannelId: data.textChannelId ?? null,
-                updatedBy: data.updatedBy ?? null,
-            },
-        });
+        return await this.voice.set(guildId, data);
     }
 
     public async addVoiceOptOut(guildId: string, userId: string): Promise<VoiceListenOptOut> {
-        return await this.prisma.voiceListenOptOut.upsert({
-            where: { guildId_userId: { guildId, userId } },
-            create: { guildId, userId },
-            update: {},
-        });
+        return await this.voice.addOptOut(guildId, userId);
     }
 
     public async removeVoiceOptOut(guildId: string, userId: string): Promise<boolean> {
-        const result = await this.prisma.voiceListenOptOut.deleteMany({
-            where: { guildId, userId },
-        });
-        return result.count > 0;
+        return await this.voice.removeOptOut(guildId, userId);
     }
 
     public async listVoiceOptOuts(guildId: string): Promise<VoiceListenOptOut[]> {
-        return await this.prisma.voiceListenOptOut.findMany({ where: { guildId } });
+        return await this.voice.optOuts(guildId);
     }
 
     public async getDj(guildId: string): Promise<Dj | null> {
