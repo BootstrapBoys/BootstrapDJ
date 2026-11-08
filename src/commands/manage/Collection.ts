@@ -8,10 +8,10 @@ import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 export default class Collection extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
-            name: 'collection',
-            description: { content: 'Manage saved collections (playlists)', usage: 'collection <action> [name] [query]', examples: ['collection list', 'collection load roadtrip'] },
+            name: 'playlist',
+            description: { content: 'Manage saved playlists', usage: 'playlist <action> [name] [query]', examples: ['playlist list', 'playlist load roadtrip'] },
             category: 'playlist',
-            aliases: ['collections', 'col'],
+            aliases: ['collection', 'collections', 'col'],
             cooldown: 3,
             args: true,
             defer: true,

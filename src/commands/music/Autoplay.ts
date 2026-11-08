@@ -107,13 +107,26 @@ export default class Autoplay extends Command {
 
         if (seeds.length) {
             const picked = await player.seedFrom(seeds);
+            if (!picked) {
+                return await ctx.sendMessage({
+                    embeds: [
+                        embed
+                            .setColor(client.color.red)
+                            .setDescription(
+                                `I couldn't find anything for **${seedLabel}**. Autoplay was left unchanged.`
+                            ),
+                    ],
+                });
+            }
             await player.setAutoplay(true);
+            await client.db.setAutoplaySetting(guild.id, {
+                source: 'curated',
+                seeds: seedLabel,
+            });
             return await ctx.sendMessage({
                 embeds: [
                     embed.setColor(client.color.main).setDescription(
-                        picked
-                            ? `Autoplay enabled — seeded from **${seedLabel}**, starting with **${picked.info.title}** by ${picked.info.author}.`
-                            : `Autoplay enabled, but I couldn't find anything for **${seedLabel}**. I'll pick tracks when the queue runs out.`
+                        `Autoplay enabled — seeded from **${seedLabel}**, starting with **${picked.info.title}** by ${picked.info.author}.`
                     ),
                 ],
             });
