@@ -545,7 +545,7 @@ export default class Dispatcher {
             this.lookaheadFailures += 1;
             void this.ensureLookahead().catch(() => {});
         }, LOOKAHEAD_RETRY_MS);
-        (timer as unknown as { unref?: () => void }).unref?.();
+        timer.unref();
         this.lookaheadRetry = timer;
     }
 
