@@ -14,6 +14,7 @@ export default defineMusicCommand({
     args: true,
     dj: false,
     active: false,
+    requirePlayer: false,
     defer: true,
     clientPermissions: ['SendMessages', 'ViewChannel', 'EmbedLinks', 'Connect', 'Speak'],
     options: [
