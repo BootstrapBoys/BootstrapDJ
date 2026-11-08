@@ -8,7 +8,11 @@ import config from '../dist/config.js';
 import {
     anonymousAccessAllowed,
     authorized,
+    createSession,
+    csrfMatches,
     isLoopbackHost,
+    readSession,
+    revokeSession,
     viewer,
 } from '../dist/dashboard/auth.js';
 
@@ -121,4 +125,94 @@ test('.env.example leaves dashboard OAuth blank so token mode is not locked out'
         assert.equal(parsed[key], '', `${key} must stay blank in the example`);
     }
     assert.equal(parsed.DASHBOARD_TOKEN, '');
+});
+
+test('a session cookie is signed, expiring and revocable', async () => {
+    await withConfig(noAuthConfig({ dashboardSessionSecret: 'test-session-secret' }), () => {
+        const token = createSession({ id: 'user-1', username: 'tester', avatar: null });
+        const request = extra => ({
+            ...makeRequest(),
+            headers: { cookie: `bdj_session=${encodeURIComponent(token)}`, ...extra },
+        });
+
+        const session = readSession(request());
+        assert.equal(session.id, 'user-1');
+        assert.equal(session.name, 'tester');
+
+        const [payload, signature] = token.split('.');
+        const tamperedPayload = `${payload[0] === 'A' ? 'B' : 'A'}${payload.slice(1)}.${signature}`;
+        assert.equal(
+            readSession({
+                ...makeRequest(),
+                headers: { cookie: `bdj_session=${encodeURIComponent(tamperedPayload)}` },
+            }),
+            null,
+            'a modified payload must fail the HMAC check'
+        );
+        const tamperedSignature = `${signature[0] === 'A' ? 'B' : 'A'}${signature.slice(1)}`;
+        assert.equal(
+            readSession({
+                ...makeRequest(),
+                headers: {
+                    cookie: `bdj_session=${encodeURIComponent(`${payload}.${tamperedSignature}`)}`,
+                },
+            }),
+            null,
+            'a modified signature must be rejected'
+        );
+
+        revokeSession(session);
+        assert.equal(readSession(request()), null, 'logout must revoke the session in-process');
+
+        const fresh = createSession({ id: 'user-1', username: 'tester', avatar: null });
+        const realNow = Date.now;
+        Date.now = () => realNow() + 25 * 60 * 60 * 1000;
+        try {
+            assert.equal(
+                readSession({
+                    ...makeRequest(),
+                    headers: { cookie: `bdj_session=${encodeURIComponent(fresh)}` },
+                }),
+                null,
+                'an expired session must not authenticate'
+            );
+        } finally {
+            Date.now = realNow;
+        }
+    });
+});
+
+test('CSRF requires the cookie value in the request header', async () => {
+    assert.equal(
+        csrfMatches({ headers: { cookie: 'bdj_csrf=token-123', 'x-dashboard-csrf': 'token-123' } }),
+        true
+    );
+    assert.equal(
+        csrfMatches({ headers: { cookie: 'bdj_csrf=token-123', 'x-dashboard-csrf': 'other' } }),
+        false
+    );
+    assert.equal(csrfMatches({ headers: { cookie: 'bdj_csrf=token-123' } }), false);
+    assert.equal(csrfMatches({ headers: { 'x-dashboard-csrf': 'token-123' } }), false);
+});
+
+test('OAuth mode accepts a signed session and rejects an anonymous request', async () => {
+    await withConfig(
+        noAuthConfig({
+            dashboardOAuthClientId: 'client-id',
+            dashboardOAuthClientSecret: 'client-secret',
+            dashboardOAuthRedirectUri: 'https://dashboard.example.com/auth/callback',
+            dashboardSessionSecret: 'test-session-secret',
+        }),
+        () => {
+            assert.equal(authorized(makeRequest()), false);
+            const token = createSession({ id: 'user-1', username: 'tester', avatar: null });
+            assert.equal(
+                authorized({
+                    ...makeRequest(),
+                    headers: { cookie: `bdj_session=${encodeURIComponent(token)}` },
+                }),
+                true
+            );
+        }
+    );
 });
