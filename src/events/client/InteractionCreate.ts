@@ -189,6 +189,17 @@ export default class InteractionCreate extends Event {
     }
 
     private async autocomplete(interaction: AutocompleteInteraction): Promise<unknown> {
+        try {
+            return await this.autocompleteChoices(interaction);
+        } catch (error) {
+            // An autocomplete request that rejects leaves Discord spinning
+            // until it times out; answer with an empty list instead.
+            this.client.logger.error(`[autocomplete] choice lookup failed: ${error}`);
+            return await this.respond(interaction, []);
+        }
+    }
+
+    private async autocompleteChoices(interaction: AutocompleteInteraction): Promise<unknown> {
         const focused = interaction.options.getFocused(true);
         const raw = focused.value ?? '';
         const query = String(raw).toLowerCase();
