@@ -22,6 +22,48 @@ Definition of done:
 - Concurrent adds do not create duplicate positions.
 - All tests and staging pass; production deploy is separately approved.
 
+## Prerequisite: Repo-Wide Formatting
+
+`npm run format` is currently red on **163 pre-existing files**. The playlist
+schema migration must not be mixed with a repository-wide formatting diff.
+
+Do this first, on its own branch/commit:
+
+1. Capture the baseline:
+   ```bash
+   npm run format > /tmp/format-before.log 2>&1 || true
+   ```
+2. Run the formatter:
+   ```bash
+   npm run format:fix
+   ```
+3. Review the diff for semantic changes; formatting must not alter logic.
+4. Run:
+   ```bash
+   npm run build
+   npm run lint
+   npx tsc --noEmit -p tsconfig.json
+   npm test
+   npm run format
+   git diff --check
+   ```
+5. Commit only the formatting changes, with a message such as
+   `style: format repository with prettier`.
+6. Keep that commit separate from the playlist schema/migration commit.
+7. Add `npm run format` as a CI gate after the formatting commit is green.
+
+If the formatter would touch generated files or vendored assets, add them to
+`.prettierignore` rather than editing them. Do not reformat `dist/`,
+`node_modules/`, or generated Prisma client output.
+
+Acceptance:
+- `npm run format` exits 0.
+- Build/lint/tsc/tests unchanged.
+- Diff contains formatting only.
+- CI enforces the format check.
+
+This adds roughly **0.5 day** and must land before the schema migration.
+
 ## Schema Change
 
 Add a position column to `Song`:
@@ -165,4 +207,6 @@ Rollback:
 - Schema + data changes: 2–4 hours
 - Tests and concurrency: 2–3 hours
 - BotTest/production rollout and verification: 1–2 hours
-- Total: **0.5–1 focused day**, plus deploy approval
+- Formatting cleanup: ~0.5 day (separate commit)
+- Schema/order implementation: 0.5–1 focused day
+- Total: **1–1.5 focused days**, plus deploy approval
