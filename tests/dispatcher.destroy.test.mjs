@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import Dispatcher from '../dist/core/Dispatcher.js';
 import { DestroyCoordinator } from '../dist/core/player/DestroyCoordinator.js';
 import { PlaybackTimers } from '../dist/core/player/PlaybackTimers.js';
+import { makeSong } from './helpers.mjs';
 
 function makeTimers() {
     const timers = new PlaybackTimers();
@@ -220,4 +222,50 @@ test('pause timeout can be armed and cleared', () => {
     assert.notEqual(h.timers.pause, null);
     h.coordinator.clearPauseTimeout();
     assert.equal(h.timers.pause, null);
+});
+
+test('Dispatcher.destroy delegates teardown and removes the queue entry', async () => {
+    const calls = { left: [], deleted: [], events: [], status: 0 };
+    const client = {
+        shuttingDown: false,
+        queue: new Map(),
+        db: { deleteSession: async guildId => calls.deleted.push(guildId) },
+        shoukaku: {
+            players: new Map(),
+            leaveVoiceChannel: async guildId => calls.left.push(guildId),
+            emitPlayerEvent: (...args) => calls.events.push(args),
+        },
+        utils: { updateStatus: () => { calls.status += 1; } },
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+    };
+    const dispatcher = Object.create(Dispatcher.prototype);
+    Object.assign(dispatcher, {
+        client,
+        guildId: 'guild-1',
+        channelId: 'text-1',
+        voiceId: 'voice-1',
+        player: {},
+        queue: [makeSong('queued')],
+        history: [makeSong('old')],
+        current: null,
+        autoplay: false,
+        stopped: false,
+        pauseWhenEmpty: true,
+        paused247: true,
+    });
+    client.queue.set('guild-1', dispatcher);
+
+    dispatcher.destroy();
+    await new Promise(resolve => setImmediate(resolve));
+
+    assert.deepEqual(calls.left, ['guild-1']);
+    assert.deepEqual(calls.deleted, ['guild-1']);
+    assert.equal(calls.status, 1);
+    assert.equal(client.queue.has('guild-1'), false);
+    assert.equal(dispatcher.queue.length, 0);
+    assert.deepEqual(dispatcher.history, []);
+    assert.equal(dispatcher.pauseWhenEmpty, false);
+    assert.equal(dispatcher.paused247, false);
+    assert.deepEqual(calls.events[0].slice(0, 1), ['playerDestroy']);
+    dispatcher.timers.clearAll();
 });

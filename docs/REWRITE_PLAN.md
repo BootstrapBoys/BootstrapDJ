@@ -338,6 +338,28 @@ Acceptance:
 - `Dispatcher` is a façade/event adapter, not a second engine.
 - All public imports still resolve.
 
+
+## Implementation status — phases 2–6
+
+Completed on `experimental/rewrite` after the original snapshot:
+
+| Phase | Commit | Result |
+|---|---|---|
+| 2 — engine contract | `9d23cd9` | `PlaybackEngine`, `PlaybackState`, `PlaybackPorts`, Shoukaku/session/logger adapters, pilot `setLoop` delegation; 14 engine tests |
+| 3 — transport | `f1d8b09` | `play`/`pause`/`skip`/`seek`/`stop`/`previous`/`shuffle`/`isPlaying` are engine delegates; retry backoff and failure-drop pinned by tests |
+| 4 — restore | `35bc4ae` | `SessionRestorer` + `SessionLease` extracted; `lib/Session.ts` is a re-export surface; restore/expiry/empty-channel/24-7/failure tests |
+| 5 — lifecycle | `f67a566`, `4f76b33` | `DestroyCoordinator` owns teardown and timers; `NodeMigrator` owns snapshot/transfer/resume; 16 lifecycle tests |
+| 6 — integration | `fea7fec` | dead `TransportActions` removed; queue default-volume tests; architecture doc; 206 tests, build/lint/tsc/git diff clean |
+
+Behavior intentionally preserved:
+
+- `TrackStart`'s loop button still assigns `dispatcher.loop` directly (as before);
+  routing it through `setLoop()` would add a session write that did not exist.
+- `destroy()` during `shuttingDown` still clears only the persist/stats intervals
+  and the queue-empty prompt, leaving pause/idle timers untouched.
+- Transport state lives once in the existing Dispatcher fields and is exposed to
+  the engine through `DispatcherPlaybackState`; there is no second copy.
+
 ## Phase 7 — Live Staging Matrix
 
 Use the existing Edge/CDP harness against BotTest. Do not use production.
