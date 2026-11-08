@@ -62,7 +62,18 @@ function harness(overrides = {}) {
         persist: async () => {
             calls.persisted += 1;
         },
-        scheduleRetry: (delay, task) => scheduled.push({ delay, task }),
+        scheduleRetry: (delay, task) => {
+            const entry = {
+                delay,
+                task,
+                cancelled: false,
+                cancel() {
+                    entry.cancelled = true;
+                },
+            };
+            scheduled.push(entry);
+            return entry;
+        },
         resolveFresh: async () => null,
         restartIfIdle: () => {
             calls.restarts += 1;
@@ -179,6 +190,66 @@ test('engine play retries a rejected URI with 3s, 6s and 9s backoff', async () =
         h.scheduled.map(entry => entry.delay),
         [3000, 6000, 9000]
     );
+});
+
+test('engine stop cancels a pending play retry and clears the current track', async () => {
+    const track = makeSong('broken', { uri: 'https://x/broken' });
+    const h = harness({ current: track });
+    h.player.play = async () => {
+        h.calls.play += 1;
+        throw new Error('unplayable');
+    };
+
+    await h.engine.play(1);
+    assert.equal(h.calls.play, 1);
+    assert.equal(h.scheduled.length, 1);
+    assert.equal(h.scheduled[0].cancelled, false);
+
+    h.engine.stop();
+
+    assert.equal(h.state.current, null);
+    assert.equal(h.scheduled[0].cancelled, true);
+    assert.deepEqual(h.calls.removed, ['guild-1']);
+
+    // A timer that already fired must not restart the stopped track.
+    h.scheduled[0].task();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.calls.play, 1);
+});
+
+test('engine pause cancels a pending play retry', async () => {
+    const track = makeSong('broken', { uri: 'https://x/broken' });
+    const h = harness({ current: track });
+    h.player.play = async () => {
+        h.calls.play += 1;
+        throw new Error('unplayable');
+    };
+
+    await h.engine.play(1);
+    h.engine.pause();
+    assert.equal(h.scheduled[0].cancelled, true);
+
+    h.scheduled[0].task();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.calls.play, 1);
+});
+
+test('engine skip cancels a pending play retry from the skipped track', async () => {
+    const track = makeSong('broken', { uri: 'https://x/broken' });
+    const next = makeSong('next', { uri: 'https://x/next' });
+    const h = harness({ current: track, queue: [next] });
+    h.player.play = async () => {
+        h.calls.play += 1;
+        throw new Error('unplayable');
+    };
+
+    await h.engine.play(1);
+    h.engine.skip();
+    assert.equal(h.scheduled[0].cancelled, true);
+
+    h.scheduled[0].task();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.calls.play, 1);
 });
 
 test('engine play counts the fourth failure and requeues below the drop limit', async () => {

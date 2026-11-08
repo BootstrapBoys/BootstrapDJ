@@ -2,7 +2,7 @@ import type BootstrapClient from '../BootstrapClient.js';
 import type Dispatcher from '../Dispatcher.js';
 import type { Song } from '../Dispatcher.js';
 import type { DestroyHost } from './DestroyCoordinator.js';
-import type { PlaybackHost, PlaybackState } from './PlaybackEngine.js';
+import type { PlaybackHost, PlaybackState, RetryHandle } from './PlaybackEngine.js';
 import type { PlaybackTimers } from './PlaybackTimers.js';
 
 /** Guild settings the pause policy needs; structural so any store fits. */
@@ -160,8 +160,10 @@ export class DispatcherPlaybackHost implements PlaybackHost {
         return this.dispatcher.persist();
     }
 
-    public scheduleRetry(delayMs: number, task: () => void): void {
-        setTimeout(task, delayMs);
+    public scheduleRetry(delayMs: number, task: () => void): RetryHandle {
+        const timer = setTimeout(task, delayMs);
+        (timer as unknown as { unref?: () => void }).unref?.();
+        return { cancel: () => clearTimeout(timer) };
     }
 
     public resolveFresh(track: Song): Promise<Song | null> {

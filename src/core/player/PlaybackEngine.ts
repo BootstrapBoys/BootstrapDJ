@@ -74,7 +74,7 @@ export interface PlaybackHost {
     sessionTarget(): { textId: string; voiceId: string } | null;
     persist(): Promise<void>;
     /** setTimeout for retry backoff; injected so tests need no real waits. */
-    scheduleRetry(delayMs: number, task: () => void): void;
+    scheduleRetry(delayMs: number, task: () => void): RetryHandle | null;
     /** Re-resolve a rejected encoded track by URI. */
     resolveFresh(track: Song): Promise<Song | null>;
     /** Start the queue head when nothing is current; used after a failure. */
@@ -84,6 +84,11 @@ export interface PlaybackHost {
     armPauseTimeout(seconds: number, onElapsed: () => void): void;
     clearPauseTimeout(): void;
     destroy(): void;
+}
+
+/** A scheduled retry the engine can cancel when playback control changes. */
+export interface RetryHandle {
+    cancel(): void;
 }
 
 export interface PlaybackPorts {
@@ -99,10 +104,40 @@ export interface PlaybackPorts {
  * Shoukaku, the database or the Discord client directly.
  */
 export class PlaybackEngine {
+    /** The single pending retry; stop/skip/pause/destroy cancel it. */
+    private retry: RetryHandle | null = null;
+    /**
+     * Bumped whenever a transport action invalidates work that is already in
+     * flight, so a retry scheduled before `/stop` cannot start audio after it.
+     */
+    private generation = 0;
+
     public constructor(
         private readonly state: PlaybackState,
         private readonly ports: PlaybackPorts
     ) {}
+
+    /** Schedule a retry only if no control action happened in the meantime. */
+    private scheduleRetry(delayMs: number, generation: number, task: () => void): void {
+        this.cancelRetry();
+        this.retry = this.ports.host.scheduleRetry(delayMs, () => {
+            this.retry = null;
+            if (generation !== this.generation) return;
+            task();
+        });
+    }
+
+    /** Drop a pending backoff timer; safe to call repeatedly. */
+    public cancelRetry(): void {
+        this.retry?.cancel();
+        this.retry = null;
+    }
+
+    /** Teardown: nothing may start audio on a player that no longer exists. */
+    public dispose(): void {
+        this.cancelRetry();
+        this.generation += 1;
+    }
 
     /** A player action nobody awaits must not become an unhandled rejection. */
     private callPlayer(action: string, run: () => Promise<unknown>): void {
@@ -129,6 +164,9 @@ export class PlaybackEngine {
         }
 
         this.state.paused247 = false;
+        // Capture the control generation before any await: a stop/skip/pause
+        // that lands while the player call is in flight must win over a retry.
+        const generation = this.generation;
         // On a retry current is already the track that failed; shifting again
         // would skip it and play the next queue entry instead.
         if (!this.state.current && this.state.queue.length !== 0) {
@@ -162,7 +200,7 @@ export class PlaybackEngine {
                 if (fresh) this.state.current = fresh;
                 // A freshly reconnected node may still be registering its source
                 // managers, so retry with backoff instead of once immediately.
-                this.ports.host.scheduleRetry(3000 * attempt, () => {
+                this.scheduleRetry(3000 * attempt, generation, () => {
                     if (this.state.current) void this.play(attempt + 1);
                 });
                 return;
@@ -183,12 +221,16 @@ export class PlaybackEngine {
             }
             this.state.current = null;
             void this.ports.host.persist();
-            if (this.state.queue.length) this.ports.host.scheduleRetry(3000, () => this.ports.host.restartIfIdle());
+            if (this.state.queue.length) {
+                this.scheduleRetry(3000, generation, () => this.ports.host.restartIfIdle());
+            }
         }
     }
 
     public pause(): void {
         if (!this.ports.player.isAvailable()) return;
+        this.cancelRetry();
+        this.generation += 1;
         if (!this.state.paused) {
             this.callPlayer('pause', () => this.ports.player.pause());
             this.state.paused = true;
@@ -215,6 +257,9 @@ export class PlaybackEngine {
     /** Drop queued entries so the requested skip lands on the right track. */
     public skip(skipto: number = 1): void {
         if (!this.ports.player.isAvailable()) return;
+        // A pending retry belongs to the track being skipped, not the next one.
+        this.cancelRetry();
+        this.generation += 1;
         if (skipto > 1) {
             if (skipto > this.state.queue.length) {
                 this.state.queue.length = 0;
@@ -232,6 +277,11 @@ export class PlaybackEngine {
 
     public stop(): void {
         if (!this.ports.player.isAvailable()) return;
+        // Clear transport ownership first: a retry from the track that was
+        // playing must never restart audio or re-save the queue after /stop.
+        this.cancelRetry();
+        this.generation += 1;
+        this.state.current = null;
         this.state.queue.length = 0;
         this.state.history = [];
         this.state.loop = 'off';

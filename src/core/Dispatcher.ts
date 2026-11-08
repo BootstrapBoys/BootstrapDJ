@@ -363,6 +363,7 @@ export default class Dispatcher {
     }
 
     public destroy(preserveSession: boolean = false): void {
+        this.engineStore?.dispose();
         this.coordinator.destroy(preserveSession);
     }
 

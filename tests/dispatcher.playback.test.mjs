@@ -139,6 +139,7 @@ test('seek forwards the exact position to the player', () => {
 
 test('stop clears queue, history, loop, autoplay, seeds, and deletes the session', async () => {
     const dispatcher = playbackDispatcher({
+        current: makeSong('playing'),
         queue: [makeSong('a')],
         history: [makeSong('old')],
         loop: 'queue',
@@ -153,6 +154,7 @@ test('stop clears queue, history, loop, autoplay, seeds, and deletes the session
 
     dispatcher.stop();
 
+    assert.equal(dispatcher.current, null);
     assert.equal(view(dispatcher), '');
     assert.deepEqual(dispatcher.history, []);
     assert.equal(dispatcher.loop, 'off');
