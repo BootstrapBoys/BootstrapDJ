@@ -14,9 +14,7 @@ import {
     RecentTrack,
     Session,
     SessionLease,
-    Setup,
     Song,
-    Stay,
     UserPrefix,
     VoiceListen,
     VoiceListenOptOut,
@@ -38,7 +36,6 @@ export interface StatsPruneResult {
 }
 
 export default class ServerData extends PermissionStore {
-    private setupCache = new Map<string, Setup | null>();
     private playlists: PlaylistStore;
     private guilds: GuildStore;
     private sessions: SessionStore;
@@ -197,31 +194,6 @@ export default class ServerData extends PermissionStore {
 
     public async setPrefix(guildId: string, prefix: string): Promise<void> {
         await this.guilds.setPrefix(guildId, prefix);
-    }
-
-    public async set_247(guildId: string, textId: string, voiceId: string): Promise<void> {
-        await this.prisma.stay.upsert({
-            where: {
-                guildId,
-            },
-            update: {
-                textId,
-                voiceId,
-            },
-            create: {
-                guildId,
-                textId,
-                voiceId,
-            },
-        });
-    }
-
-    public async delete_247(guildId: string): Promise<void> {
-        await this.prisma.stay.delete({
-            where: {
-                guildId,
-            },
-        });
     }
 
     public async setDj(guildId: string, mode: boolean): Promise<void> {
@@ -580,18 +552,6 @@ export default class ServerData extends PermissionStore {
         await this.guilds.deleteAutoplay(guildId);
     }
 
-    public async get_247(guildId?: string): Promise<Stay | Stay[] | null> {
-        if (guildId) {
-            return await this.prisma.stay.findUnique({
-                where: {
-                    guildId,
-                },
-            });
-        } else {
-            return await this.prisma.stay.findMany();
-        }
-    }
-
     public async getVoiceListen(guildId: string): Promise<VoiceListen | null> {
         return await this.voice.get(guildId);
     }
@@ -618,50 +578,6 @@ export default class ServerData extends PermissionStore {
 
     public async listVoiceOptOuts(guildId: string): Promise<VoiceListenOptOut[]> {
         return await this.voice.optOuts(guildId);
-    }
-
-    public async getSetup(guildId: string): Promise<Setup | null> {
-        if (this.setupCache.has(guildId)) return this.setupCache.get(guildId) ?? null;
-        const setup = await this.prisma.setup.findUnique({
-            where: {
-                guildId,
-            },
-        });
-        this.setupCache.set(guildId, setup);
-        return setup;
-    }
-
-    public async getSetups(): Promise<Setup[]> {
-        const setups = await this.prisma.setup.findMany();
-        for (const setup of setups) this.setupCache.set(setup.guildId, setup);
-        return setups;
-    }
-
-    public async setSetup(guildId: string, textId: string, messageId: string): Promise<void> {
-        await this.prisma.setup.upsert({
-            where: {
-                guildId,
-            },
-            update: {
-                textId,
-                messageId,
-            },
-            create: {
-                guildId,
-                textId,
-                messageId,
-            },
-        });
-        this.setupCache.delete(guildId);
-    }
-
-    public async deleteSetup(guildId: string): Promise<void> {
-        await this.prisma.setup.delete({
-            where: {
-                guildId,
-            },
-        });
-        this.setupCache.set(guildId, null);
     }
 
     public async saveSession(session: {

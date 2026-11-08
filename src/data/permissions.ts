@@ -6,10 +6,13 @@ import type {
     PrismaClient,
     Role,
 } from '../generated/prisma/client.js';
+import { SetupStore } from './setup.js';
 
 /** Command mappings, aliases, permission rules, and DJ role configuration. */
-export class PermissionStore {
-    public constructor(protected readonly prisma: PrismaClient) {}
+export class PermissionStore extends SetupStore {
+    public constructor(prisma: PrismaClient) {
+        super(prisma);
+    }
 
     public async getCommandMapping(
         guildId: string,
