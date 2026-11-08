@@ -1,8 +1,8 @@
-import { appendFile, mkdir, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { readFile } from 'node:fs/promises';
+import 'dotenv/config';
 
 import { sampleMetrics, summarize, writeReport } from './metrics.mjs';
 import { workloadConfig, workloadStep } from './workload.mjs';
