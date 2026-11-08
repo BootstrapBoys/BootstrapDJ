@@ -2,6 +2,7 @@ import { ClientOptions, GatewayIntentBits } from 'discord.js';
 
 import config from './config.js';
 import BootstrapClient from './core/BootstrapClient.js';
+import { startClientOrExit } from './lib/Startup.js';
 
 const {
     GuildMembers,
@@ -28,7 +29,7 @@ const clientOptions: ClientOptions = {
 
 const client = new BootstrapClient(clientOptions);
 
-client.start(process.env.BOT_TOKEN || config.token);
+void startClientOrExit(client, process.env.BOT_TOKEN || config.token);
 
 /**
  * Project: BootstrapDJ
