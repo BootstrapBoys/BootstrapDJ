@@ -2,7 +2,8 @@ import { APIRole, ApplicationCommandOptionType, Role } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
-type RoleLike = Role | APIRole | null | undefined;
+type RoleLike = Role | APIRole | null;
+type Selection = { sub: string; role: RoleLike };
 
 export default class Dj extends Command {
     public constructor(client: BootstrapClient) {
@@ -51,44 +52,49 @@ export default class Dj extends Command {
                         },
                     ],
                 },
-                { name: 'clear', description: 'Clears all dj roles', type: ApplicationCommandOptionType.Subcommand },
-                { name: 'toggle', description: 'Toggles the dj role', type: ApplicationCommandOptionType.Subcommand },
+                {
+                    name: 'clear',
+                    description: 'Clears all dj roles',
+                    type: ApplicationCommandOptionType.Subcommand,
+                },
+                {
+                    name: 'toggle',
+                    description: 'Toggles the dj role',
+                    type: ApplicationCommandOptionType.Subcommand,
+                },
             ],
         });
     }
 
-    private resolve(ctx: Context, args: string[]): { sub: string; role: RoleLike } {
-        if (ctx.isInteraction) {
-            const sub = ctx.interaction?.options.data[0];
-            return {
-                sub: sub?.name ?? '',
-                role: sub?.name === 'add' || sub?.name === 'remove' ? sub.options?.[0]?.role : undefined,
-            };
+    private select(ctx: Context, args: string[]): Selection {
+        if (ctx.isInteraction && ctx.interaction) {
+            const sub = ctx.interaction.options.getSubcommand(false) ?? '';
+            const role = sub === 'add' || sub === 'remove' ? ctx.interaction.options.getRole('role') : null;
+            return { sub, role };
         }
-        const message = ctx.message;
-        return {
-            sub: args[0] ?? '',
-            role: message?.mentions.roles.first() ?? ctx.guild?.roles.cache.get(args[1]),
-        };
+
+        const mentioned = ctx.message?.mentions.roles.first() ?? null;
+        const typed = args[1] ? ctx.guild?.roles.cache.get(args[1].replace(/[<@&>]/g, '')) ?? null : null;
+        return { sub: args[0] ?? '', role: mentioned ?? typed };
     }
 
-    private reply(client: BootstrapClient, ctx: Context, description: string, error: boolean = false): Promise<unknown> {
+    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
         return ctx.sendMessage({
-            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(description)],
+            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
         });
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        if (!ctx.guild) return;
         const guild = ctx.guild;
-        const { sub, role } = this.resolve(ctx, args);
-        const dj = await client.db.getDj(guild.id);
+        if (!guild) return;
+        const { sub, role } = this.select(ctx, args);
+        const record = await client.db.getDj(guild.id);
 
         switch (sub) {
             case 'add': {
                 if (!role) return await this.reply(client, ctx, 'Please provide a role to add');
                 const roles = await client.db.getRoles(guild.id);
-                if (roles.some((entry: { roleId: string }) => entry.roleId === role.id)) {
+                if (roles.some(entry => entry.roleId === role.id)) {
                     return await this.reply(client, ctx, `The dj role <@&${role.id}> is already added`);
                 }
                 await client.db.addRole(guild.id, role.id);
@@ -98,21 +104,21 @@ export default class Dj extends Command {
             case 'remove': {
                 if (!role) return await this.reply(client, ctx, 'Please provide a role to remove');
                 const roles = await client.db.getRoles(guild.id);
-                if (!roles.some((entry: { roleId: string }) => entry.roleId === role.id)) {
+                if (!roles.some(entry => entry.roleId === role.id)) {
                     return await this.reply(client, ctx, `The dj role <@&${role.id}> is not added`);
                 }
                 await client.db.removeRole(guild.id, role.id);
                 return await this.reply(client, ctx, `The dj role <@&${role.id}> has been removed`);
             }
             case 'clear':
-                if (!dj) return await this.reply(client, ctx, 'There are no dj roles to clear');
+                if (!record) return await this.reply(client, ctx, 'There are no dj roles to clear');
                 await client.db.clearRoles(guild.id);
                 return await this.reply(client, ctx, 'All dj roles have been removed');
             case 'toggle': {
-                if (!dj) return await this.reply(client, ctx, 'There are no dj roles to toggle');
-                const next = !dj.mode;
-                await client.db.setDj(guild.id, next);
-                return await this.reply(client, ctx, `The dj mode has been toggled to ${next ? 'enabled' : 'disabled'}`);
+                if (!record) return await this.reply(client, ctx, 'There are no dj roles to toggle');
+                const enabled = !record.mode;
+                await client.db.setDj(guild.id, enabled);
+                return await this.reply(client, ctx, `The dj mode has been toggled to ${enabled ? 'enabled' : 'disabled'}`);
             }
             default:
                 return await ctx.sendMessage({

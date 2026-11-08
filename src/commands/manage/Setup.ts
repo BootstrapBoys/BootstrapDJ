@@ -30,28 +30,44 @@ export default class Setup extends Command {
             },
             slashCommand: true,
             options: [
-                { name: 'create', description: 'Creates the song request channel', type: ApplicationCommandOptionType.Subcommand },
-                { name: 'delete', description: 'Deletes the song request channel', type: ApplicationCommandOptionType.Subcommand },
-                { name: 'info', description: 'Shows the song request channel', type: ApplicationCommandOptionType.Subcommand },
+                {
+                    name: 'create',
+                    description: 'Creates the song request channel',
+                    type: ApplicationCommandOptionType.Subcommand,
+                },
+                {
+                    name: 'delete',
+                    description: 'Deletes the song request channel',
+                    type: ApplicationCommandOptionType.Subcommand,
+                },
+                {
+                    name: 'info',
+                    description: 'Shows the song request channel',
+                    type: ApplicationCommandOptionType.Subcommand,
+                },
             ],
         });
     }
 
     private subcommand(ctx: Context, args: string[]): string {
-        return ctx.isInteraction
-            ? (ctx.interaction?.options.data[0]?.name ?? '')
-            : (args[0] ?? '');
+        if (ctx.isInteraction && ctx.interaction) {
+            return ctx.interaction.options.getSubcommand(false) ?? '';
+        }
+        return args[0] ?? '';
+    }
+
+    private reply(client: BootstrapClient, ctx: Context, text: string, colour: number): Promise<unknown> {
+        return ctx.sendMessage({ embeds: [{ description: text, color: colour }] });
     }
 
     private async createChannel(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const guild = ctx.guild;
         const me = client.user;
         if (!guild || !me) return;
+
         const existing = await client.db.getSetup(guild.id);
         if (existing?.textId && existing.messageId) {
-            return await ctx.sendMessage({
-                embeds: [{ description: 'The song request channel already exists', color: client.color.red }],
-            });
+            return await this.reply(client, ctx, 'The song request channel already exists', client.color.red);
         }
 
         const channel = await guild.channels.create({
@@ -81,11 +97,10 @@ export default class Setup extends Command {
             ],
         });
 
-        const player = client.queue.get(guild.id);
-        const description =
-            player?.queue && player.current
-                ? `[${player.current.info.title}](${player.current.info.uri})`
-                : 'Nothing playing right now';
+        const current = client.queue.get(guild.id)?.current;
+        const description = current
+            ? `[${current.info.title}](${current.info.uri})`
+            : 'Nothing playing right now';
         const mock = await channel.send({
             embeds: [
                 client
@@ -96,16 +111,15 @@ export default class Setup extends Command {
             ],
             components: getButtons(),
         });
+
         await client.db.setSetup(guild.id, channel.id, mock.id);
         startSetupJanitor(client, guild.id);
-        return await ctx.sendMessage({
-            embeds: [
-                client
-                    .embed()
-                    .setColor(client.color.main)
-                    .setDescription(`The song request channel has been created in <#${channel.id}>`),
-            ],
-        });
+        return await this.reply(
+            client,
+            ctx,
+            `The song request channel has been created in <#${channel.id}>`,
+            client.color.main
+        );
     }
 
     private async deleteChannel(client: BootstrapClient, ctx: Context): Promise<unknown> {
@@ -113,16 +127,13 @@ export default class Setup extends Command {
         if (!guild) return;
         const setup = await client.db.getSetup(guild.id);
         if (!setup) {
-            return await ctx.sendMessage({
-                embeds: [{ description: 'The song request channel doesn\'t exist', color: client.color.red }],
-            });
+            return await this.reply(client, ctx, 'The song request channel doesn\'t exist', client.color.red);
         }
+
         await client.db.deleteSetup(guild.id);
         stopSetupJanitor(guild.id);
         await guild.channels.cache.get(setup.textId)?.delete().catch(() => {});
-        return await ctx.sendMessage({
-            embeds: [{ description: 'The song request channel has been deleted', color: client.color.main }],
-        });
+        return await this.reply(client, ctx, 'The song request channel has been deleted', client.color.main);
     }
 
     private async channelInfo(client: BootstrapClient, ctx: Context): Promise<unknown> {
@@ -131,18 +142,14 @@ export default class Setup extends Command {
         const setup = await client.db.getSetup(guild.id);
         const channel = setup ? guild.channels.cache.get(setup.textId) : undefined;
         if (!channel) {
-            return await ctx.sendMessage({
-                embeds: [{ description: 'The song request channel doesn\'t exist', color: client.color.red }],
-            });
+            return await this.reply(client, ctx, 'The song request channel doesn\'t exist', client.color.red);
         }
-        return await ctx.sendMessage({
-            embeds: [
-                client
-                    .embed()
-                    .setColor(client.color.main)
-                    .setDescription(`The song request channel is <#${channel.id}>`),
-            ],
-        });
+        return await this.reply(
+            client,
+            ctx,
+            `The song request channel is <#${channel.id}>`,
+            client.color.main
+        );
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {

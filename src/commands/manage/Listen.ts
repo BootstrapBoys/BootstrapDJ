@@ -4,8 +4,10 @@ import { BootstrapClient, Command, Context } from '../../core/index.js';
 import { updateSetup } from '../../lib/SetupSystem.js';
 import { hasDjAccess } from '../../lib/VoiceAccess.js';
 
+type ControlResponse = { ok: boolean; error?: string } & Record<string, unknown>;
+
 export default class Listen extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'listen',
             description: {
@@ -17,20 +19,15 @@ export default class Listen extends Command {
             aliases: ['ear'],
             cooldown: 3,
             args: true,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
                 user: [],
             },
             slashCommand: true,
-            // One top-level command with an action option instead of five
-            // subcommands, so the slash list stays compact.
+            // One action option instead of five subcommands keeps the slash
+            // surface compact.
             options: [
                 {
                     name: 'action',
@@ -49,147 +46,176 @@ export default class Listen extends Command {
         });
     }
 
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
+    private action(ctx: Context, args: string[]): string {
+        if (ctx.isInteraction && ctx.interaction) {
+            return ctx.interaction.options.getString('action') ?? '';
+        }
+        return args[0] ?? '';
+    }
+
+    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
+        return ctx.sendMessage({
+            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
+        });
+    }
+
+    /** The listener app owns the audio pipeline; this is only its control API. */
+    private async call(path: string, body?: Record<string, unknown>): Promise<ControlResponse> {
+        const secret = this.client.config.earlBridgeSecret;
+        if (!secret) return { ok: false, error: 'EARL_BRIDGE_SECRET is not set' };
+        const control = path.startsWith('/listen');
+        try {
+            const response = await fetch(`${this.client.config.earlControlUrl}${path}`, {
+                method: control ? 'POST' : 'GET',
+                headers: {
+                    authorization: `Bearer ${secret}`,
+                    ...(control ? { 'content-type': 'application/json' } : {}),
+                },
+                body: control ? JSON.stringify(body ?? {}) : undefined,
+                signal: AbortSignal.timeout(5_000),
+            });
+            const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+            if (!response.ok) {
+                return {
+                    ok: false,
+                    error: typeof data.error === 'string' ? data.error : `HTTP ${response.status}`,
+                    ...data,
+                };
+            }
+            return { ok: true, ...data };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    private async pushOptOuts(userIds: string[]): Promise<void> {
+        const secret = this.client.config.earlBridgeSecret;
+        if (!secret) return;
+        try {
+            await fetch(`${this.client.config.earlControlUrl}/listen/optouts`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
+                body: JSON.stringify({ userIds }),
+                signal: AbortSignal.timeout(5_000),
+            });
+        } catch {
+            // The listener restarts independently; the next enable pushes again.
+        }
+    }
+
+    private async enable(client: BootstrapClient, ctx: Context, userId: string): Promise<unknown> {
         const guild = ctx.guild;
         if (!guild) return;
-        const embed = client.embed().setColor(client.color.main);
-        const sub = ctx.isInteraction
-            ? (ctx.interaction?.options.getString('action') ?? '')
-            : (args[0] ?? '');
-        const authorId = ctx.author?.id;
-        if (!authorId) return;
-        const member = await guild.members.fetch(authorId).catch(() => null);
+        const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return;
+        if (!(await hasDjAccess(client, guild.id, member))) {
+            return await this.reply(client, ctx, 'You need the DJ role to enable voice commands.', true);
+        }
+        const voice = ctx.voiceChannel;
+        if (!voice) return await this.reply(client, ctx, 'Join a voice channel first.', true);
 
-        const listener = await callListener(client, '/status');
+        const setup = await client.db.getSetup(guild.id);
+        const textId = setup?.textId ?? (ctx.channel instanceof TextChannel ? ctx.channel.id : null);
+        if (!textId) {
+            return await this.reply(client, ctx, 'I need a text channel for replies — run `/setup` first.', true);
+        }
+
+        const started = await this.call('/listen/start', {
+            guildId: guild.id,
+            voiceChannelId: voice.id,
+            textChannelId: textId,
+        });
+        if (!started.ok) {
+            return await this.reply(
+                client,
+                ctx,
+                `Earl could not start listening: ${started.error ?? 'unknown error'}`,
+                true
+            );
+        }
+
+        await client.db.setVoiceListen(guild.id, {
+            enabled: true,
+            voiceChannelId: voice.id,
+            textChannelId: textId,
+            updatedBy: userId,
+        });
+        await updateSetup(client, guild).catch(() => {});
+        const optedOut = await client.db.listVoiceOptOuts(guild.id);
+        await this.pushOptOuts(optedOut.map(entry => entry.userId));
+        return await this.reply(client, ctx, `Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`);
+    }
+
+    private async disable(client: BootstrapClient, ctx: Context, userId: string): Promise<unknown> {
+        const guild = ctx.guild;
+        if (!guild) return;
+        const member = await guild.members.fetch(userId).catch(() => null);
+        if (!member) return;
+        if (!(await hasDjAccess(client, guild.id, member))) {
+            return await this.reply(client, ctx, 'You need the DJ role to disable voice commands.', true);
+        }
+
+        const stopped = await this.call('/listen/stop');
+        if (!stopped.ok) {
+            return await this.reply(
+                client,
+                ctx,
+                `Earl did not stop: ${stopped.error ?? 'listener unreachable'}. Listening is still on.`,
+                true
+            );
+        }
+        await client.db.setVoiceListen(guild.id, { enabled: false, updatedBy: userId });
+        await this.pushOptOuts([]);
+        await updateSetup(client, guild).catch(() => {});
+        return await this.reply(client, ctx, 'Voice listening is off. Earl is sleeping one off.');
+    }
+
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
+        const guild = ctx.guild;
+        const author = ctx.author;
+        if (!guild || !author) return;
+        const action = this.action(ctx, args);
+
+        switch (action) {
+            case 'enable':
+                return await this.enable(client, ctx, author.id);
+            case 'disable':
+                return await this.disable(client, ctx, author.id);
+            default:
+                break;
+        }
+
+        const listener = await this.call('/status');
         const state = await client.db.getVoiceListen(guild.id);
 
-        if (sub === 'enable') {
-            if (!(await hasDjAccess(client, guild.id, member))) {
-                return await ctx.sendMessage({ embeds: [embed.setColor(client.color.red).setDescription('You need the DJ role to enable voice commands.')] });
-            }
-            const voice = ctx.voiceChannel;
-            if (!voice) {
-                return await ctx.sendMessage({ embeds: [embed.setColor(client.color.red).setDescription('Join a voice channel first.')] });
-            }
-            const setup = await client.db.getSetup(guild.id);
-            const textId = setup?.textId ?? (ctx.channel instanceof TextChannel ? ctx.channel.id : null);
-            if (!textId) {
-                return await ctx.sendMessage({ embeds: [embed.setColor(client.color.red).setDescription('I need a text channel for replies — run `/setup` first.')] });
-            }
-            const result = await callListener(client, '/listen/start', {
-                guildId: guild.id,
-                voiceChannelId: voice.id,
-                textChannelId: textId,
-            });
-            if (!result.ok) {
-                return await ctx.sendMessage({ embeds: [embed.setColor(client.color.red).setDescription(`Earl could not start listening: ${result.error ?? 'unknown error'}`)] });
-            }
-            await client.db.setVoiceListen(guild.id, {
-                enabled: true,
-                voiceChannelId: voice.id,
-                textChannelId: textId,
-                updatedBy: authorId,
-            });
-            await updateSetup(client, guild).catch(() => {});
-            const optedOut = await client.db.listVoiceOptOuts(guild.id);
-            await pushOptOuts(client, optedOut.map(entry => entry.userId));
-            return await ctx.sendMessage({ embeds: [embed.setDescription(`Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`)] });
-        }
-
-        if (sub === 'disable') {
-            if (!(await hasDjAccess(client, guild.id, member))) {
-                return await ctx.sendMessage({ embeds: [embed.setColor(client.color.red).setDescription('You need the DJ role to disable voice commands.')] });
-            }
-            const stopped = await callListener(client, '/listen/stop');
-            if (!stopped.ok) {
-                return await ctx.sendMessage({
-                    embeds: [embed.setColor(client.color.red).setDescription(`Earl did not stop: ${stopped.error ?? 'listener unreachable'}. Listening is still on.`)],
-                });
-            }
-            await client.db.setVoiceListen(guild.id, { enabled: false, updatedBy: authorId });
-            await pushOptOuts(client, []);
-            await updateSetup(client, guild).catch(() => {});
-            return await ctx.sendMessage({ embeds: [embed.setDescription('Voice listening is off. Earl is sleeping one off.')] });
-        }
-
-        if (sub === 'status') {
+        if (action === 'status') {
             const optOuts = await client.db.listVoiceOptOuts(guild.id);
             const lines = [
                 `**Listening:** ${state?.enabled ? 'on' : 'off'}`,
                 state?.voiceChannelId ? `**Voice channel:** <#${state.voiceChannelId}>` : null,
                 state?.textChannelId ? `**Replies in:** <#${state.textChannelId}>` : null,
                 `**Listener:** ${listener.active === true ? 'connected' : 'not connected'}`,
-                `**Opted out:** ${optOuts.length ? optOuts.map(entry => `<@${entry.userId}>`).join(', ') : 'nobody'}`,
-            ].filter(Boolean);
-            return await ctx.sendMessage({ embeds: [embed.setDescription(lines.join('\n'))] });
+                `**Opted out:** ${
+                    optOuts.length > 0 ? optOuts.map(entry => `<@${entry.userId}>`).join(', ') : 'nobody'
+                }`,
+            ].filter((line): line is string => Boolean(line));
+            return await this.reply(client, ctx, lines.join('\n'));
         }
 
-        if (sub === 'optout') {
-            await client.db.addVoiceOptOut(guild.id, authorId);
-            await pushOptOuts(client, (await client.db.listVoiceOptOuts(guild.id)).map(entry => entry.userId));
-            return await ctx.sendMessage({
-                embeds: [embed.setDescription('You are opted out — Earl will not listen to you or reply while listening is active.')],
-            });
+        if (action === 'optout' || action === 'optin') {
+            if (action === 'optout') await client.db.addVoiceOptOut(guild.id, author.id);
+            else await client.db.removeVoiceOptOut(guild.id, author.id);
+            const optedOut = await client.db.listVoiceOptOuts(guild.id);
+            await this.pushOptOuts(optedOut.map(entry => entry.userId));
+            return await this.reply(
+                client,
+                ctx,
+                action === 'optout'
+                    ? 'You are opted out — Earl will not listen to you or reply while listening is active.'
+                    : 'You are opted in again.'
+            );
         }
 
-        if (sub === 'optin') {
-            await client.db.removeVoiceOptOut(guild.id, authorId);
-            await pushOptOuts(client, (await client.db.listVoiceOptOuts(guild.id)).map(row => row.userId));
-            return await ctx.sendMessage({ embeds: [embed.setDescription('You are opted in again.')] });
-        }
-
-        return await ctx.sendMessage({
-            embeds: [embed.setDescription('Usage: `/listen enable|disable|status|optout|optin`')],
-        });
-    }
-}
-
-async function pushOptOuts(client: BootstrapClient, userIds: string[]): Promise<void> {
-    if (!client.config.earlBridgeSecret) return;
-    try {
-        await fetch(`${client.config.earlControlUrl}/listen/optouts`, {
-            method: 'POST',
-            headers: {
-                authorization: `Bearer ${client.config.earlBridgeSecret}`,
-                'content-type': 'application/json',
-            },
-            body: JSON.stringify({ userIds }),
-            signal: AbortSignal.timeout(5_000),
-        });
-    } catch {
-        // The listener restarts independently; the next enable pushes again.
-    }
-}
-
-async function callListener(
-    client: BootstrapClient,
-    path: string,
-    body?: Record<string, unknown>
-): Promise<{ ok: boolean; error?: string } & Record<string, unknown>> {
-    if (!client.config.earlBridgeSecret) return { ok: false, error: 'EARL_BRIDGE_SECRET is not set' };
-    try {
-        // /listen/stop takes no fields but is still a POST; sending GET made the
-        // API return 404, so disable flipped the DB while Earl kept capturing.
-        const control = path.startsWith('/listen');
-        const response = await fetch(`${client.config.earlControlUrl}${path}`, {
-            method: control ? 'POST' : 'GET',
-            headers: {
-                authorization: `Bearer ${client.config.earlBridgeSecret}`,
-                ...(control ? { 'content-type': 'application/json' } : {}),
-            },
-            body: control ? JSON.stringify(body ?? {}) : undefined,
-            signal: AbortSignal.timeout(5_000),
-        });
-        const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
-        if (!response.ok)
-            return {
-                ok: false,
-                error: typeof data.error === 'string' ? data.error : `HTTP ${response.status}`,
-                ...data,
-            };
-        return { ok: true, ...data };
-    } catch (error) {
-        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        return await this.reply(client, ctx, 'Usage: `/listen enable|disable|status|optout|optin`');
     }
 }

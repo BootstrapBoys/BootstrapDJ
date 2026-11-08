@@ -3,8 +3,20 @@ import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
 
+type StoredRow = Awaited<ReturnType<BootstrapClient['db']['getSong']>>[number];
+
+/** Rows written before the per-track fix hold an array in one row. */
+function rowTracks(row: StoredRow): Array<Song | Track> | null {
+    try {
+        const parsed: unknown = JSON.parse(row.track);
+        return (Array.isArray(parsed) ? parsed : [parsed]) as Array<Song | Track>;
+    } catch {
+        return null;
+    }
+}
+
 export default class Load extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'load',
             description: {
@@ -16,12 +28,7 @@ export default class Load extends Command {
             aliases: [],
             cooldown: 3,
             args: true,
-            player: {
-                voice: true,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: true, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
@@ -40,70 +47,52 @@ export default class Load extends Command {
             ],
         });
     }
+
+    private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
+        return ctx.sendMessage({ embeds: [{ description: text, color: client.color.red }] });
+    }
+
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guild = ctx.guild;
         const author = ctx.author;
         if (!guild || !author) return;
-        let player = client.queue.get(guild.id);
-        const playlist = args.join(' ').trim();
-        const playlistData = await client.db.getPLaylist(author.id, playlist);
-        if (!playlistData)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'That playlist doesn\'t exist',
-                        color: client.color.red,
-                    },
-                ],
-            });
-        const songs = await client.db.getSong(author.id, playlist);
-        if (!songs.length)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'That playlist is empty',
-                        color: client.color.red,
-                    },
-                ],
-            });
-        if (!player || player.isStale) {
-            const vc = ctx.voiceChannel;
-            player = await client.queue.create(guild, vc, ctx.channel);
-        }
+        const name = args.join(' ').trim();
 
-        let loaded = 0;
+        const playlist = await client.db.getPLaylist(author.id, name);
+        if (!playlist) return await this.fail(client, ctx, 'That playlist doesn\'t exist');
+
+        const rows = await client.db.getSong(author.id, name);
+        if (rows.length === 0) return await this.fail(client, ctx, 'That playlist is empty');
+
+        let player = client.queue.get(guild.id);
+        if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
+
+        const queued: Song[] = [];
         let skipped = 0;
-        const added: Song[] = [];
-        for (const row of songs) {
-            let parsed: unknown;
-            try {
-                parsed = JSON.parse(row.track);
-            } catch {
-                skipped++;
+        for (const row of rows) {
+            const entries = rowTracks(row);
+            if (!entries) {
+                skipped += 1;
                 continue;
             }
-            // Rows written before the per-track fix hold an array in one row.
-            const tracks = (Array.isArray(parsed) ? parsed : [parsed]) as Array<Song | Track>;
-            for (const entry of tracks) {
+            for (const entry of entries) {
                 if (player.queue.length >= client.config.maxQueueSize) {
-                    skipped++;
+                    skipped += 1;
                     continue;
                 }
                 const song = player.buildTrack(entry, author);
                 player.enqueue(song, false, false);
-                added.push(song);
-                loaded++;
+                queued.push(song);
             }
         }
 
-        player.seedPlaylist(added);
+        player.seedPlaylist(queued);
         await player.isPlaying();
-        await ctx.sendMessage({
+        const suffix = skipped > 0 ? ` (${skipped} skipped)` : '';
+        return await ctx.sendMessage({
             embeds: [
                 {
-                    description: `Loaded \`${playlistData.name}\` with \`${loaded}\` songs${
-                        skipped ? ` (${skipped} skipped)` : ''
-                    }`,
+                    description: `Loaded \`${playlist.name}\` with \`${queued.length}\` songs${suffix}`,
                     color: client.color.main,
                 },
             ],

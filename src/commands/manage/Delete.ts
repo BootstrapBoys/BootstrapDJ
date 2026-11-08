@@ -3,7 +3,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 export default class Delete extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'delete',
             description: {
@@ -15,12 +15,7 @@ export default class Delete extends Command {
             aliases: ['delete'],
             cooldown: 3,
             args: true,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
@@ -38,41 +33,37 @@ export default class Delete extends Command {
             ],
         });
     }
+
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
-        const playlist = args.join(' ').trim();
+        const name = args.join(' ').trim();
+        const embed = client.embed();
 
-        const playlistExists = await client.db.getPLaylist(author.id, playlist);
-        if (!playlistExists)
+        if (!(await client.db.getPLaylist(author.id, name))) {
+            return await ctx.sendMessage({
+                embeds: [embed.setColor(client.color.red).setDescription('That playlist doesn\'t exist')],
+            });
+        }
+
+        const songs = await client.db.getSong(author.id, name);
+        if (!(await client.db.deletePlaylist(author.id, name))) {
             return await ctx.sendMessage({
                 embeds: [
-                    {
-                        description: 'That playlist doesn\'t exist',
-                        color: client.color.red,
-                    },
+                    embed
+                        .setColor(client.color.red)
+                        .setDescription(`Could not delete playlist **${name}**`),
                 ],
             });
+        }
 
-        const songs = await client.db.getSong(author.id, playlist);
-        const deleted = await client.db.deletePlaylist(author.id, playlist);
-        if (!deleted)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: `Could not delete playlist **${playlist}**`,
-                        color: client.color.red,
-                    },
-                ],
-            });
         return await ctx.sendMessage({
             embeds: [
-                {
-                    description: `Deleted playlist **${playlist}** and its ${songs.length} song${
-                        songs.length === 1 ? '' : 's'
-                    }`,
-                    color: client.color.main,
-                },
+                embed
+                    .setColor(client.color.main)
+                    .setDescription(
+                        `Deleted playlist **${name}** and its ${songs.length} song${songs.length === 1 ? '' : 's'}`
+                    ),
             ],
         });
     }

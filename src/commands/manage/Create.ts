@@ -2,8 +2,10 @@ import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
+const NAME_LIMIT = 50;
+
 export default class Create extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'create',
             description: {
@@ -15,12 +17,7 @@ export default class Create extends Command {
             aliases: ['create'],
             cooldown: 3,
             args: true,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
@@ -37,37 +34,28 @@ export default class Create extends Command {
             ],
         });
     }
+
+    private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
+        return ctx.sendMessage({ embeds: [{ description: text, color: client.color.red }] });
+    }
+
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
         const name = args.join(' ').trim();
-        if (name.length > 50)
+
+        if (name.length > NAME_LIMIT) {
+            return await this.fail(client, ctx, 'Playlist names can only be 50 characters long');
+        }
+        if (await client.db.getPLaylist(author.id, name)) {
             return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'Playlist names can only be 50 characters long',
-                        color: client.color.red,
-                    },
-                ],
+                embeds: [{ description: 'A playlist with that name already exists', color: client.color.main }],
             });
-        const playlist = await client.db.getPLaylist(author.id, name);
-        if (playlist)
-            return await ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'A playlist with that name already exists',
-                        color: client.color.main,
-                    },
-                ],
-            });
-        client.db.createPlaylist(author.id, name);
+        }
+
+        await client.db.createPlaylist(author.id, name);
         return await ctx.sendMessage({
-            embeds: [
-                {
-                    description: `Playlist **${name}** has been created`,
-                    color: client.color.main,
-                },
-            ],
+            embeds: [{ description: `Playlist **${name}** has been created`, color: client.color.main }],
         });
     }
 }

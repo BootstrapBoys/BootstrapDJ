@@ -1,7 +1,14 @@
+import type { ColorResolvable } from 'discord.js';
+
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
-export default class _247 extends Command {
-    constructor(client: BootstrapClient) {
+/**
+ * Toggles the guild's stay-connected flag. Enabling it also materialises a
+ * player for the caller's voice channel so 24/7 mode has something to keep
+ * alive; disabling only clears the flag and leaves playback untouched.
+ */
+export default class StayConnected extends Command {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: '247',
             description: {
@@ -13,12 +20,7 @@ export default class _247 extends Command {
             aliases: ['stay'],
             cooldown: 3,
             args: false,
-            player: {
-                voice: true,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: true, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
@@ -28,54 +30,39 @@ export default class _247 extends Command {
             options: [],
         });
     }
+
+    private reply(client: BootstrapClient, ctx: Context, text: string, colour: ColorResolvable): Promise<unknown> {
+        return ctx.sendMessage({ embeds: [client.embed().setColor(colour).setDescription(text)] });
+    }
+
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const guild = ctx.guild;
-        const channel = ctx.channel;
-        if (!guild || !channel) return;
-        const embed = client.embed();
-        const player = client.shoukaku.players.get(guild.id);
-
-        const data = await client.db.get_247(guild.id);
-        const vc = ctx.voiceChannel;
-        if (!vc)
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setDescription('You must be connected to a voice channel to use 24/7 mode.')
-                        .setColor(client.color.red),
-                ],
-            });
-        if (!data) {
-            client.db.set_247(guild.id, channel.id, vc.id);
-            if (!player)
-                await client.queue.create(
-                    guild,
-                    vc,
-                    channel,
-                    client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
-                );
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setDescription(`**247 mode has been enabled**`)
-                        .setColor(client.color.main),
-                ],
-            });
-        } else {
-            client.db.delete_247(guild.id);
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setDescription(`**247 mode has been disabled**`)
-                        .setColor(client.color.red),
-                ],
-            });
+        const textChannel = ctx.channel;
+        const voiceChannel = ctx.voiceChannel;
+        if (!guild || !textChannel) return;
+        if (!voiceChannel) {
+            return await this.reply(
+                client,
+                ctx,
+                'You must be connected to a voice channel to use 24/7 mode.',
+                client.color.red
+            );
         }
+
+        if (await client.db.get_247(guild.id)) {
+            await client.db.delete_247(guild.id);
+            return await this.reply(client, ctx, '**247 mode has been disabled**', client.color.red);
+        }
+
+        await client.db.set_247(guild.id, textChannel.id, voiceChannel.id);
+        if (!client.queue.get(guild.id)) {
+            await client.queue.create(
+                guild,
+                voiceChannel,
+                textChannel,
+                client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
+            );
+        }
+        return await this.reply(client, ctx, '**247 mode has been enabled**', client.color.main);
     }
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */

@@ -4,8 +4,16 @@ import { Track } from 'shoukaku';
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
+function keyOf(track: Track): string {
+    if (track.info.uri) return track.info.uri;
+    if (track.info.identifier && track.info.sourceName) {
+        return `${track.info.sourceName}:${track.info.identifier}`;
+    }
+    return track.encoded;
+}
+
 export default class RemoveSong extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'removesong',
             description: {
@@ -17,12 +25,7 @@ export default class RemoveSong extends Command {
             aliases: ['rs'],
             cooldown: 3,
             args: true,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
@@ -48,73 +51,49 @@ export default class RemoveSong extends Command {
         });
     }
 
+    private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
+        return ctx.sendMessage({ embeds: [client.embed().setColor(client.color.red).setDescription(text)] });
+    }
+
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
-        const playlist = args[0]?.trim();
-        const query = args.slice(1).join(' ').trim();
-        const embed = client.embed().setColor(client.color.main);
 
-        if (!playlist || !query) {
-            return await ctx.sendMessage({
-                embeds: [embed.setColor(client.color.red).setDescription('Provide a playlist and a song.')],
-            });
-        }
+        const playlist = (
+            ctx.isInteraction && ctx.interaction
+                ? ctx.interaction.options.getString('playlist')
+                : args[0]
+        )?.trim();
+        const query = (
+            ctx.isInteraction && ctx.interaction
+                ? ctx.interaction.options.getString('song')
+                : args.slice(1).join(' ')
+        )?.trim();
 
-        const playlistData = await client.db.getPLaylist(author.id, playlist);
-        if (!playlistData) {
-            return await ctx.sendMessage({
-                embeds: [embed.setColor(client.color.red).setDescription('That playlist doesn\'t exist.')],
-            });
-        }
+        if (!playlist || !query) return await this.fail(client, ctx, 'Provide a playlist and a song.');
 
+        const data = await client.db.getPLaylist(author.id, playlist);
+        if (!data) return await this.fail(client, ctx, 'That playlist doesn\'t exist.');
         if (!client.queue.hasNode) {
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(client.color.red)
-                        .setDescription('No Lavalink node is available right now.'),
-                ],
-            });
+            return await this.fail(client, ctx, 'No Lavalink node is available right now.');
         }
 
-        const track: Track | null = client.utils.firstTrack(await client.queue.search(query, await resolveSearchEngine(client, ctx)));
-        if (!track) {
-            return await ctx.sendMessage({
-                embeds: [embed.setColor(client.color.red).setDescription(`No results found for **${query}**.`)],
-            });
-        }
+        const track = client.utils.firstTrack(
+            await client.queue.search(query, await resolveSearchEngine(client, ctx))
+        );
+        if (!track) return await this.fail(client, ctx, `No results found for **${query}**.`);
 
-        const key =
-            track.info.uri ??
-            (track.info.identifier && track.info.sourceName
-                ? `${track.info.sourceName}:${track.info.identifier}`
-                : track.encoded);
-        const removed = await client.db.removeSong(author.id, playlist, key);
-        if (!removed) {
-            return await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(client.color.red)
-                        .setDescription(
-                            `[${track.info.title}](${track.info.uri}) is not in **${playlistData.name}**.`
-                        ),
-                ],
-            });
-        }
-
+        const label = `[${track.info.title}](${track.info.uri})`;
+        const removed = await client.db.removeSong(author.id, data.name, keyOf(track));
         return await ctx.sendMessage({
             embeds: [
-                embed.setDescription(
-                    `Removed [${track.info.title}](${track.info.uri}) from **${playlistData.name}**.`
-                ),
+                client
+                    .embed()
+                    .setColor(removed ? client.color.green : client.color.red)
+                    .setDescription(
+                        removed ? `Removed ${label} from **${data.name}**.` : `${label} is not in **${data.name}**.`
+                    ),
             ],
         });
     }
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
