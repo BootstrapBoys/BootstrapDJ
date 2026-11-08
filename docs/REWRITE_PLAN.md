@@ -37,14 +37,16 @@ Already extracted / rebuilt:
 | Autoplay cold start | `src/core/player/AutoplayColdStart.ts` | Done |
 | YouTube mix | `src/core/player/YouTubeMix.ts` | Done |
 | Track resolution | `src/core/player/TrackResolution.ts` | Done |
-| Transport helpers | `src/core/player/TransportActions.ts` | Done |
+| Transport helpers | `src/core/player/PlaybackEngine.ts` | Replaced by the engine |
 | Queue operations | `src/core/player/QueueOps.ts` | Done |
 | Play failure bookkeeping | `src/core/player/PlaybackFailure.ts` | Done |
-| Dispatcher | `src/core/Dispatcher.ts` | **761 lines, still inherited core** |
-| Session restore | `src/lib/Session.ts` | **358 lines, still inherited** |
+| Dispatcher | `src/core/Dispatcher.ts` | 866 lines; façade + adapters, transport/lifecycle delegated |
+| Session restore | `src/lib/Session.ts` | 14-line re-export; restorer/lease extracted |
 
-Remaining inherited logic includes `play()`, `pause()`, `destroy()`, session
-restore orchestration, node migration, and several event/plugin paths.
+The engine now owns transport decisions, pause policy, destroy ordering, and
+node migration. The Dispatcher still contains event wiring and the public state
+adapters used by commands/events; remaining inherited surface is mostly command
+and plugin code, not the playback core.
 
 ## Non-Negotiable Constraints
 
@@ -417,6 +419,24 @@ Rollback:
 - check out the previous production commit
 - rebuild/start
 - verify nodes and a test playback
+
+## Phase 7–8 Status
+
+Live staging on BotTest at `8663344` passed:
+
+- `!play` joins voice, queues FEAR, posts one Now Playing panel
+- `!play` + `!skip` advances to The Search
+- `!pause` / `!resume` work
+- `!stop` then `!play` restores volume **25** from `defaultvolume`
+- restart restores The Search at **17s** with 1 queued, volume 25
+- `!playlist load SmokeList` loads 20 tracks
+- `!autoplay nf` seeds NF
+- exactly one now-playing panel remains
+
+CI at `8663344`: **success**. Build, lint, and **209/209 tests** pass.
+
+Phase 9 is intentionally not executed: merging/deploying to `main`/`DJBoot`
+requires explicit approval. Production remains untouched.
 
 ## Risk Register
 
