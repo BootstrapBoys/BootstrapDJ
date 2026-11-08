@@ -14,6 +14,7 @@ import { relatedTracks as getRelatedTracks } from './player/YouTubeMix.js';
 import { previousTrack as goPrevious, resume247 as resumeSession, seekTo as seekPlayer, shuffleQueue, skipTracks, stopPlayback } from './player/TransportActions.js';
 import { affinityWeight, type AutoplayAffinity, chooseFrom, pickForSeed } from './player/AutoplayPicker.js';
 import { isRecent as checkRecent, youtubeIdFor as findYouTubeId, resolveFresh as freshTrack, resolveTracks as resolveIdentifier } from './player/TrackResolution.js';
+import { recordPlayFailure } from './player/PlaybackFailure.js';
 import { fairPlayQueue, playlistSeeds, purgeAutoplayQueue, rememberSeedState } from './player/QueueOps.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
@@ -260,13 +261,12 @@ export default class Dispatcher {
             // Retry a failed track a bounded number of times, then drop it.
             // Requeueing an unplayable track forever blocks the whole queue.
             if (this.current) {
-                const key = this.current.info?.uri ?? this.current.encoded;
-                const failures = (this.failedTracks.get(key) ?? 0) + 1;
-                if (failures >= 3) {
-                    this.failedTracks.delete(key);
-                    this.client.logger.warn(`[queue] skipping unplayable track in ${this.guildId}: ${key}`);
+                const failure = recordPlayFailure(this.current, this.failedTracks);
+                if (failure.drop) {
+                    this.client.logger.warn(
+                        `[queue] skipping unplayable track in ${this.guildId}: ${failure.key}`
+                    );
                 } else {
-                    this.failedTracks.set(key, failures);
                     this.queue.unshift(this.current);
                 }
             }
