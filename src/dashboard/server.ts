@@ -4,12 +4,14 @@ import http from 'node:http';
 import config from '../config.js';
 import type { BootstrapClient } from '../core/index.js';
 import {
+    anonymousDashboardAllowed,
     authorized,
     beginSession,
     clearOAuthState,
     csrfMatches,
     discordIdentity,
     endSession,
+    isLoopbackHost,
     issueCsrfToken,
     oauthEnabled,
     oauthRedirectUrl,
@@ -470,10 +472,16 @@ export function startDashboard(client: BootstrapClient): void {
     if (!config.dashboardPort) return;
 
     const host = config.dashboardHost;
-    const loopback = host === '127.0.0.1' || host === 'localhost' || host === '::1';
+    const loopback = isLoopbackHost(host);
     if (!loopback && !config.dashboardToken && !oauthEnabled()) {
         client.logger.error(
             '[dashboard] refusing non-loopback bind without DASHBOARD_TOKEN or Discord OAuth'
+        );
+        return;
+    }
+    if (!config.dashboardToken && !oauthEnabled() && !anonymousDashboardAllowed()) {
+        client.logger.error(
+            '[dashboard] refusing to start without authentication: configure DASHBOARD_TOKEN or Discord OAuth, or opt in with DASHBOARD_ALLOW_ANONYMOUS=1 on a loopback bind with no DASHBOARD_PUBLIC_URL'
         );
         return;
     }

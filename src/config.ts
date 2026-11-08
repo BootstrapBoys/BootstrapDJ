@@ -131,6 +131,7 @@ const config = {
     dashboardHost: text('DASHBOARD_HOST', '127.0.0.1'),
     dashboardPublicUrl: text('DASHBOARD_PUBLIC_URL'),
     dashboardToken: text('DASHBOARD_TOKEN'),
+    dashboardAllowAnonymous: flag('DASHBOARD_ALLOW_ANONYMOUS', false),
     dashboardOAuthClientId: text('DASHBOARD_OAUTH_CLIENT_ID', text('CLIENT_ID')),
     dashboardOAuthClientSecret: text('DASHBOARD_OAUTH_CLIENT_SECRET'),
     dashboardOAuthRedirectUri: text('DASHBOARD_OAUTH_REDIRECT_URI'),

@@ -109,6 +109,40 @@ function clientAddress(req: http.IncomingMessage): string {
     return first?.trim() || req.socket.remoteAddress || 'unknown';
 }
 
+/** A bind that only accepts local callers. */
+export function isLoopbackHost(host: string): boolean {
+    const value = host.trim().toLowerCase();
+    return value === '127.0.0.1' || value === 'localhost' || value === '::1' || value === '[::1]';
+}
+
+export interface AnonymousAccessInput {
+    allowAnonymous: boolean;
+    /** DASHBOARD_PUBLIC_URL: set when the port is served through a proxy. */
+    publicUrl: string;
+    host: string;
+}
+
+/**
+ * Anonymous access is an explicit, loopback-only opt-in.
+ *
+ * A configured public URL proves the port is proxied, so a loopback bind no
+ * longer identifies the caller. Without the flag, an unauthenticated request is
+ * refused rather than granted owner rights.
+ */
+export function anonymousAccessAllowed(input: AnonymousAccessInput): boolean {
+    if (!input.allowAnonymous) return false;
+    if (input.publicUrl.trim()) return false;
+    return isLoopbackHost(input.host);
+}
+
+export function anonymousDashboardAllowed(): boolean {
+    return anonymousAccessAllowed({
+        allowAnonymous: config.dashboardAllowAnonymous,
+        publicUrl: config.dashboardPublicUrl,
+        host: config.dashboardHost,
+    });
+}
+
 export function rateLimited(
     req: http.IncomingMessage,
     name: string,
@@ -238,6 +272,18 @@ export function revokeSession(session: DashboardSession | null): void {
     }
 }
 
+/**
+ * Resolve the operator identity for a request with no signed session.
+ *
+ * Token mode is the operator; anonymous mode counts as the operator only when
+ * it was explicitly enabled on a loopback bind. An unauthenticated request in
+ * any other configuration has no rights at all.
+ */
+function operatorRequest(): boolean {
+    if (oauthEnabled() || oauthConfigured()) return false;
+    return Boolean(config.dashboardToken) || anonymousDashboardAllowed();
+}
+
 export function viewer(req: http.IncomingMessage): {
     name: string;
     owner: boolean;
@@ -245,14 +291,15 @@ export function viewer(req: http.IncomingMessage): {
 } {
     const session = readSession(req);
     if (session) return { name: session.name, owner: false, admin: true };
-    return { name: 'Local admin', owner: true, admin: true };
+    if (operatorRequest()) return { name: 'Local admin', owner: true, admin: true };
+    return { name: 'Unauthenticated', owner: false, admin: false };
 }
 
 /** Token mode accepts a header/bearer value; OAuth mode requires a session. */
 export function authorized(req: http.IncomingMessage): boolean {
     if (oauthEnabled()) return Boolean(readSession(req));
     if (oauthConfigured()) return false;
-    if (!config.dashboardToken) return true;
+    if (!config.dashboardToken) return anonymousDashboardAllowed();
     const header = req.headers['x-dashboard-token'];
     const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, '');
     return header === config.dashboardToken || bearer === config.dashboardToken;
