@@ -15,7 +15,7 @@ test('the guild can opt into normal public slash replies', () => {
 });
 
 import { EmbedBuilder } from 'discord.js';
-import Utility from '../dist/commands/info/Utility.js';
+import Utility from '../dist/commands/tools/Utility.js';
 
 test('utility exposes a dashboard page and links the configured public URL', async () => {
     const client = {

@@ -61,9 +61,9 @@ test('commands that do remote work before replying defer; fast ones do not', asy
         'music/Radio',
         'music/PlaylistSearch',
         'music/PlaySelect',
-        'playlist/Load',
-        'playlist/Add',
-        'playlist/RemoveSong',
+        'manage/Load',
+        'manage/Add',
+        'manage/RemoveSong',
     ];
     const fast = ['music/Pause', 'music/Skip', 'music/Queue'];
 
@@ -80,11 +80,11 @@ test('commands that do remote work before replying defer; fast ones do not', asy
 
 test('the new feature commands are registered and keep ephemeral defaults', async () => {
     for (const path of [
-        'config/AutoplayConfig',
-        'dev/Guild',
-        'config/Mappings',
-        'config/Permissions',
-        'config/Alias',
+        'manage/AutoplayConfig',
+        'owner/Guild',
+        'manage/Mappings',
+        'manage/Permissions',
+        'manage/Alias',
         'music/Backward',
         'music/EndTime',
         'music/Forward',
@@ -105,9 +105,9 @@ test('the new feature commands are registered and keep ephemeral defaults', asyn
         'music/Swap',
         'music/Top',
         'music/VoteSkip',
-        'playlist/List',
-        'playlist/Save',
-        'playlist/RemoveSong',
+        'manage/List',
+        'manage/Save',
+        'manage/RemoveSong',
         'music/FairPlay',
         'filters/Filters',
         'filters/Filter',
@@ -136,7 +136,7 @@ test('slash replies default to ephemeral; queue and nowplaying stay public', asy
 
 
 test('collection exposes the legacy playlist actions without exceeding Discord choice limits', async () => {
-    const CollectionClass = (await import('../dist/commands/playlist/Collection.js')).default;
+    const CollectionClass = (await import('../dist/commands/manage/Collection.js')).default;
     const command = new CollectionClass(fakeClient);
     const action = command.options[0];
     const choices = action.choices?.map(choice => choice.value) ?? [];
@@ -161,7 +161,7 @@ test('autoplay exposes three optional seed boxes', async () => {
     assert.ok(command.options.every(option => option.required === false));
 });
 test('guild inspector is owner-only and slash-visible', async () => {
-    const GuildClass = (await import('../dist/commands/dev/Guild.js')).default;
+    const GuildClass = (await import('../dist/commands/owner/Guild.js')).default;
     const command = new GuildClass(fakeClient);
     assert.equal(command.permissions.dev, true);
     assert.equal(command.slashCommand, true);
