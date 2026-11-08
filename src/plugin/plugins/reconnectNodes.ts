@@ -97,6 +97,9 @@ export class NodeWatchdog {
         if (!this.fallbackName) return;
         const target = this.primaryNode();
         if (!target) return;
+        // A rebuild destroys the old player before spawning its replacement;
+        // removing the node in that window would abort the old player's leave.
+        if (this.migrating) return;
 
         const bound = this.fallbackPlayers();
         for (const player of bound) {
@@ -113,7 +116,6 @@ export class NodeWatchdog {
             this.dropIdleFallback();
             return;
         }
-        if (this.migrating) return;
 
         const name = this.fallbackName;
         this.migrating = true;

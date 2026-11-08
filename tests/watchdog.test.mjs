@@ -91,7 +91,7 @@ test('a shared public fallback is removed once no local player uses it', () => {
     assert.equal(watchdog.fallbackName, null);
 });
 
-test('players on the fallback migrate to the primary before it is removed', () => {
+test('players on the fallback migrate to the primary before it is removed', async () => {
     const active = makeDispatcher({ nodeName: 'public-a', current: { info: { title: 'song' } } });
     const { client, removed, migratedFrom } = makeClient({
         nodes: [
@@ -111,6 +111,7 @@ test('players on the fallback migrate to the primary before it is removed', () =
     // The migration rebinds the player; the next pass can drop the fallback.
     active.player.node = { name: 'primary' };
     active.node = { name: 'primary' };
+    await new Promise(resolve => setImmediate(resolve));
     watchdog.tick();
     assert.deepEqual(removed, ['public-a']);
 });
