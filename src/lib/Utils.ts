@@ -265,7 +265,11 @@ export class Utils {
         });
 
         collector.on('end', async () => {
-            if (!ctx.ephemeral) await message.delete().catch(() => {});
+            // Prefix contexts default to ephemeral=true for reply text, but a
+            // paginator is a normal channel message. Decide by transport:
+            // only an ephemeral interaction reply is undeletable.
+            const deletable = ctx.isInteraction ? !ctx.ephemeral : true;
+            if (deletable) await message.delete().catch(() => {});
         });
     }
 }
