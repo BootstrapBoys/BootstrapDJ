@@ -9,6 +9,7 @@ import { PresentationRegistry } from './player/PresentationRegistry.js';
 import { persistSession } from './player/SessionWriter.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
 import { DeezerClient } from './player/DeezerClient.js';
+import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
@@ -40,12 +41,6 @@ const AUTOPLAY_RELATED_WEIGHT = 2;
 /** A seed-only radio would otherwise never leave that artist. Occasionally
  * take a related-artist lane before the mix so the session can breathe. */
 const AUTOPLAY_SPREAD_CHANCE = 0.35;
-
-/** Recent explicit requests kept as independent seed lanes. Newest is drawn
- * most often; the pool is additive and capped so a long session doesn't turn
- * into a bag of unrelated artists. */
-const AUTOPLAY_SEEDS = 3;
-const AUTOPLAY_SEED_LANE_WEIGHTS = [3, 2, 1];
 
 type AutoplayAffinity = {
     seedArtist: string;
@@ -906,60 +901,12 @@ export default class Dispatcher {
         return await this.deezer.relatedArtists(song);
     }
 
-    /** Explicit seed lanes, newest first. A restored session has no persisted
-     * pool, so fall back to unplayed user requests in current/queue/history
-     * rather than treating the last bot pick as the user's intent. */
     private seedPool(): Song[] {
-        const pool: Song[] = [];
-        const seen = new Set<string>();
-        const add = (track?: Song | null, includeAutoplay = false): void => {
-            if (!track?.info?.author) return;
-            if (track.autoplay && !includeAutoplay) return;
-            const signature = trackSignature(track) || trackKey(track);
-            if (!signature || seen.has(signature)) return;
-            seen.add(signature);
-            pool.push(track);
-        };
-
-        for (const track of this.seeds ?? []) add(track, true);
-        if (!this.seeds?.length) {
-            add(this.seed, true);
-            add(this.current);
-            for (const track of this.queue) add(track);
-            for (const track of this.history) add(track);
-        }
-        return pool.slice(0, AUTOPLAY_SEEDS);
+        return buildSeedPool(this);
     }
 
-    /** Seed candidates for one lookahead. The first lane is a weighted draw
-     * from the explicit pool; the rest are fallbacks if its mix is unavailable. */
     private seedCandidates(explicit?: Song): Song[] {
-        const pool = this.seedPool();
-        const seen = new Set<string>();
-        const candidates: Song[] = [];
-        const add = (track?: Song | null): void => {
-            if (!track?.info?.author) return;
-            const signature = trackSignature(track) || trackKey(track);
-            if (!signature || seen.has(signature)) return;
-            seen.add(signature);
-            candidates.push(track);
-        };
-
-        add(explicit);
-        if (pool.length) {
-            const weighted: Song[] = [];
-            pool.forEach((track, index) => {
-                const weight = AUTOPLAY_SEED_LANE_WEIGHTS[index] ?? 1;
-                for (let i = 0; i < weight; i++) weighted.push(track);
-            });
-            add(weighted[Math.floor(Math.random() * weighted.length)]);
-            for (const track of this.shuffle(pool)) add(track);
-        } else {
-            add(this.seed);
-            add(this.current);
-            for (const track of this.history.slice(-5)) add(track);
-        }
-        return candidates;
+        return buildSeedCandidates(this, explicit, items => this.shuffle(items));
     }
 
     /**
