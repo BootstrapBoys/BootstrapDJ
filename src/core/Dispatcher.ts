@@ -5,6 +5,7 @@ import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } fro
 import { isFinishedTrackReason } from '../lib/TrackEndReason.js';
 import { BootstrapClient } from './index.js';
 import { normalizeAuthor, trackKey, trackSignature } from './player/TrackIdentity.js';
+import { PresentationRegistry } from './player/PresentationRegistry.js';
 
 /** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
  * rather than following config.searchEngine (which may be Deezer/Spotify). */
@@ -188,7 +189,7 @@ export default class Dispatcher {
     /** "Leave in …" prompt shown when the queue drains; cleared on leave/requeue. */
     public queueEmptyPrompt: Message | null;
     /** Ephemeral command responses that should expire with the current track. */
-    private nowPlayingCommandMessages = new Map<Message, NodeJS.Timeout | null>();
+    private presentation?: PresentationRegistry;
     /** Set by /playleave: tear down the player when the queue drains. */
     public leaveOnEnd = false;
     /** 24/7 mode: pause at the end of the current track when the channel is empty. */
@@ -221,7 +222,6 @@ export default class Dispatcher {
         this.nowPlayingMessage = null;
         this.nowPlayingCollector = null;
         this.queueEmptyPrompt = null;
-        this.nowPlayingCommandMessages = new Map();
         this.persistTimer = setInterval(() => {
             // A paused player's position cannot change and pause() already wrote
             // the state. An idle dispatcher has no position or queue to save;
@@ -490,43 +490,16 @@ export default class Dispatcher {
         if (prompt) void prompt.delete().catch(() => {});
     }
 
-    /** Register a /nowplaying or !nowplaying response for track-scoped cleanup. */
     public registerNowPlayingMessage(message: Message, durationMs: number | null): void {
-        this.removeNowPlayingMessage(message);
-        const timer =
-            durationMs === null
-                ? null
-                : setTimeout(
-                      () => this.removeNowPlayingMessage(message),
-                      Math.min(Math.max(durationMs + 30_000, 15_000), 12 * 60 * 60 * 1000)
-                  );
-        (timer as unknown as { unref?: () => void })?.unref?.();
-        this.nowPlayingCommandMessages.set(message, timer);
+        (this.presentation ??= new PresentationRegistry()).register(message, durationMs);
     }
 
-    private removeNowPlayingMessage(message: Message): void {
-        if (!this.nowPlayingCommandMessages.has(message)) return;
-        const timer = this.nowPlayingCommandMessages.get(message);
-        if (timer) clearTimeout(timer);
-        this.nowPlayingCommandMessages.delete(message);
-        void message.delete().catch(() => {});
-    }
-
-    /** True when this message is a track-scoped /nowplaying reply. */
     public hasTrackScopedNowPlayingMessage(messageId: string): boolean {
-        for (const message of this.nowPlayingCommandMessages.keys()) {
-            if (message.id === messageId) return true;
-        }
-        return false;
+        return this.presentation?.has(messageId) ?? false;
     }
 
-    /** Delete every track-scoped now-playing response (track end/skip/stop). */
     public clearNowPlayingCommandMessages(): void {
-        for (const [message, timer] of Array.from(this.nowPlayingCommandMessages)) {
-            if (timer) clearTimeout(timer);
-            this.nowPlayingCommandMessages.delete(message);
-            void message.delete().catch(() => {});
-        }
+        this.presentation?.clear();
     }
 
     public destroy(preserveSession: boolean = false): void {
