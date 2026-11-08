@@ -1,67 +1,13 @@
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineFilterCommand, toggleFilter } from '../../lib/filterCommand.js';
 
-export default class lowPass extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'lowpass',
-            description: {
-                content: 'on/off lowpass filter',
-                examples: ['lowpass'],
-                usage: 'lowpass <number>',
-            },
-            category: 'filters',
-            aliases: ['lp'],
-            cooldown: 3,
-            args: false,
-            player: {
-                voice: true,
-                dj: true,
-                active: true,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: ['ManageGuild'],
-            },
-            slashCommand: false,
-        });
-    }
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        if (!ctx.guild) return await ctx.sendMessage({ content: 'This command only works in a server.' });
-        const player = client.queue.get(ctx.guild.id);
-        if (!player)
-            return await ctx.sendMessage({
-                embeds: [
-                    this.client
-                        .embed()
-                        .setColor(this.client.color.red)
-                        .setDescription('There is no music playing in this server.'),
-                ],
-            });
-
-        if (player.filters.includes('lowpass')) {
-            player.player.setLowPass({});
-            player.filters.splice(player.filters.indexOf('lowpass'), 1);
-            ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'Lowpass filter has been disabled',
-                        color: client.color.main,
-                    },
-                ],
-            });
-        } else {
-            player.player.setLowPass({ smoothing: 20 });
-            player.filters.push('lowpass');
-            ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'Lowpass filter has been enabled',
-                        color: client.color.main,
-                    },
-                ],
-            });
-        }
-    }
-}
+export default defineFilterCommand({
+    name: 'lowpass',
+    description: { content: 'on/off lowpass filter', examples: ['lowpass'], usage: 'lowpass <number>' },
+    aliases: ['lp'],
+    run: toggleFilter(
+        'lowpass',
+        'Lowpass',
+        player => player.player.setLowPass({ smoothing: 20 }),
+        player => player.player.setLowPass({})
+    ),
+});

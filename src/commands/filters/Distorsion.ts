@@ -1,57 +1,13 @@
-import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { defineFilterCommand, toggleFilter } from '../../lib/filterCommand.js';
 
-export default class Distorsion extends Command {
-    constructor(client: BootstrapClient) {
-        super(client, {
-            name: 'distorsion',
-            description: {
-                content: 'on/off distorsion filter',
-                examples: ['distorsion'],
-                usage: 'distorsion',
-            },
-            category: 'filters',
-            aliases: ['distorsion'],
-            cooldown: 3,
-            args: false,
-            player: {
-                voice: true,
-                dj: true,
-                active: true,
-                djPerm: null,
-            },
-            permissions: {
-                dev: false,
-                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
-                user: ['ManageGuild'],
-            },
-            slashCommand: false,
-            options: [],
-        });
-    }
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        if (!ctx.guild) return await ctx.sendMessage({ content: 'This command only works in a server.' });
-        const player = client.queue.get(ctx.guild.id);
-        if (!player)
-            return await ctx.sendMessage({
-                embeds: [
-                    this.client
-                        .embed()
-                        .setColor(this.client.color.red)
-                        .setDescription('There is no music playing in this server.'),
-                ],
-            });
-        if (player.filters.includes('distorsion')) {
-            player.player.setDistortion({});
-            player.filters.splice(player.filters.indexOf('distorsion'), 1);
-            ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'Distorsion filter has been disabled',
-                        color: client.color.main,
-                    },
-                ],
-            });
-        } else {
+export default defineFilterCommand({
+    name: 'distorsion',
+    description: { content: 'on/off distorsion filter', examples: ['distorsion'], usage: 'distorsion' },
+    aliases: ['distorsion'],
+    run: toggleFilter(
+        'distorsion',
+        'Distorsion',
+        player =>
             player.player.setDistortion({
                 sinOffset: 0,
                 sinScale: 1,
@@ -61,16 +17,7 @@ export default class Distorsion extends Command {
                 tanScale: 1,
                 offset: 0,
                 scale: 1,
-            });
-            player.filters.push('distorsion');
-            ctx.sendMessage({
-                embeds: [
-                    {
-                        description: 'Distorsion filter has been enabled',
-                        color: client.color.main,
-                    },
-                ],
-            });
-        }
-    }
-}
+            }),
+        player => player.player.setDistortion({})
+    ),
+});
