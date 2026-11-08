@@ -304,8 +304,9 @@ Total: **7–12 focused days**, then weekly soak maintenance.
 - CI runs format, lint, build, and coverage (`test:coverage`).
 - BotTest 5-minute dry run passed: 31 samples, RSS -17.7%, heap -18.0%,
   event-loop p99 21.4 ms, no uptime resets.
-- Full 24-hour workload soak is still pending; it needs a test member in the
-  voice channel for bridge-driven commands. The metrics-only profile is ready.
+- Full 24-hour workload soak started 2026-11-08T20:40:53Z on BotTest, using the
+  bot itself as the voice member for bridge-driven commands. Artifact:
+  `/root/BotTest/artifacts/soak/2026-11-08T20-40-53-391Z`; result pending.
 
 ## Definition of Done
 
