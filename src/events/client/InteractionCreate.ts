@@ -180,9 +180,8 @@ export default class InteractionCreate extends Event {
         }
 
         if (
-            focused.name === 'playlist' ||
-            (interaction.commandName === 'collection' &&
-                (focused.name === 'name' || focused.name === 'target'))
+            interaction.commandName === 'playlist' &&
+            (focused.name === 'name' || focused.name === 'target')
         ) {
             const playlists = await this.playlists(interaction.user.id);
             return await this.respond(

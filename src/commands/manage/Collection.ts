@@ -95,10 +95,10 @@ export default class Collection extends Command {
         const action = String(ctx.args[0] ?? this.get(ctx, 'action', 0) ?? 'list').toLowerCase();
         let name = String(ctx.args[1] ?? this.get(ctx, 'name', 1) ?? '').trim();
         client.logger.info(`[playlist] action=${action} name=${name} args=${ctx.args.join('|')}`);
-        const query = (this.get(ctx, 'query', 2) ?? '').trim();
-        const target = (this.get(ctx, 'target', 3) ?? '').trim();
-        const index = Number(this.get(ctx, 'index', 4) ?? 0);
-        let code = (this.get(ctx, 'code', 5) ?? '').trim();
+        const query = String(ctx.args[2] ?? this.get(ctx, 'query', 2) ?? '').trim();
+        const target = String(ctx.args[3] ?? this.get(ctx, 'target', 3) ?? '').trim();
+        const index = Number(ctx.args[4] ?? this.get(ctx, 'index', 4) ?? 0);
+        let code = String(ctx.args[5] ?? this.get(ctx, 'code', 5) ?? '').trim();
         // Prefix syntax has no named slots: `collection import <code>` puts
         // the code in args[1], not args[5].
         if (!ctx.isInteraction && (action === 'import' || action === 'unshare')) {
