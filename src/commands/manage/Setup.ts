@@ -10,7 +10,7 @@ import { getButtons } from '../../lib/Buttons.js';
 import { startSetupJanitor, stopSetupJanitor } from '../../lib/SetupSystem.js';
 
 export default class Setup extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'setup',
             description: {
@@ -22,12 +22,7 @@ export default class Setup extends Command {
             aliases: ['setup'],
             cooldown: 3,
             args: true,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks', 'ManageChannels'],
@@ -35,167 +30,131 @@ export default class Setup extends Command {
             },
             slashCommand: true,
             options: [
-                {
-                    name: 'create',
-                    description: 'Creates the song request channel',
-                    type: ApplicationCommandOptionType.Subcommand,
-                },
-                {
-                    name: 'delete',
-                    description: 'Deletes the song request channel',
-                    type: ApplicationCommandOptionType.Subcommand,
-                },
-                {
-                    name: 'info',
-                    description: 'Shows the song request channel',
-                    type: ApplicationCommandOptionType.Subcommand,
-                },
+                { name: 'create', description: 'Creates the song request channel', type: ApplicationCommandOptionType.Subcommand },
+                { name: 'delete', description: 'Deletes the song request channel', type: ApplicationCommandOptionType.Subcommand },
+                { name: 'info', description: 'Shows the song request channel', type: ApplicationCommandOptionType.Subcommand },
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
+
+    private subcommand(ctx: Context, args: string[]): string {
+        return ctx.isInteraction
+            ? (ctx.interaction?.options.data[0]?.name ?? '')
+            : (args[0] ?? '');
+    }
+
+    private async createChannel(client: BootstrapClient, ctx: Context): Promise<unknown> {
         const guild = ctx.guild;
-        const clientUser = client.user;
-        if (!guild || !clientUser) return;
-        let subCommand: string;
-        if (ctx.isInteraction) {
-            const interaction = ctx.interaction;
-            if (!interaction) return;
-            subCommand = interaction.options.data[0].name;
-        } else {
-            subCommand = args[0];
+        const me = client.user;
+        if (!guild || !me) return;
+        const existing = await client.db.getSetup(guild.id);
+        if (existing?.textId && existing.messageId) {
+            return await ctx.sendMessage({
+                embeds: [{ description: 'The song request channel already exists', color: client.color.red }],
+            });
         }
-        const embed = client.embed().setColor(client.color.main);
-        switch (subCommand) {
-            case 'create': {
-                const data = await client.db.getSetup(guild.id);
 
-                if (data && data.textId && data.messageId)
-                    return await ctx.sendMessage({
-                        embeds: [
-                            {
-                                description: 'The song request channel already exists',
-                                color: client.color.red,
-                            },
-                        ],
-                    });
-                const textChannel = await guild.channels.create({
-                    name: `${clientUser.username}-song-requests`,
-                    type: ChannelType.GuildText,
-                    topic: 'Song requests for the music bot',
-                    permissionOverwrites: [
-                        {
-                            type: OverwriteType.Member,
-                            id: clientUser.id,
-                            allow: [
-                                PermissionFlagsBits.ViewChannel,
-                                PermissionFlagsBits.SendMessages,
-                                PermissionFlagsBits.EmbedLinks,
-                                PermissionFlagsBits.ReadMessageHistory,
-                            ],
-                        },
-                        {
-                            type: OverwriteType.Role,
-                            id: guild.roles.everyone.id,
-                            allow: [
-                                PermissionFlagsBits.ViewChannel,
-                                PermissionFlagsBits.SendMessages,
-                                PermissionFlagsBits.ReadMessageHistory,
-                            ],
-                        },
+        const channel = await guild.channels.create({
+            name: `${me.username}-song-requests`,
+            type: ChannelType.GuildText,
+            topic: 'Song requests for the music bot',
+            permissionOverwrites: [
+                {
+                    type: OverwriteType.Member,
+                    id: me.id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.EmbedLinks,
+                        PermissionFlagsBits.ReadMessageHistory,
                     ],
-                });
-                const player = this.client.queue.get(guild.id);
-                const image = this.client.config.links.img;
-                const desc =
-                    player && player.queue && player.current
-                        ? `[${player.current.info.title}](${player.current.info.uri})`
-                        : 'Nothing playing right now';
+                },
+                {
+                    type: OverwriteType.Role,
+                    id: guild.roles.everyone.id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.ReadMessageHistory,
+                    ],
+                },
+            ],
+        });
 
-                embed.setDescription(desc).setImage(image);
-                await textChannel
-                    .send({
-                        embeds: [embed],
-                        components: getButtons(),
-                    })
-                    .then(async msg => {
-                        await client.db.setSetup(guild.id, textChannel.id, msg.id);
-                        startSetupJanitor(this.client, guild.id);
-                    });
-                const embed2 = client.embed().setColor(client.color.main);
-                await ctx.sendMessage({
-                    embeds: [
-                        embed2.setDescription(
-                            `The song request channel has been created in <#${textChannel.id}>`
-                        ),
-                    ],
-                });
-                break;
-            }
-            case 'delete': {
-                const data2 = await client.db.getSetup(guild.id);
-                if (!data2)
-                    return await ctx.sendMessage({
-                        embeds: [
-                            {
-                                description: 'The song request channel doesn\'t exist',
-                                color: client.color.red,
-                            },
-                        ],
-                    });
-                await client.db.deleteSetup(guild.id);
-                stopSetupJanitor(guild.id);
-                const channel = guild.channels.cache.get(data2.textId);
-                if (channel)
-                    await channel.delete().catch(() => {});
-                await ctx.sendMessage({
-                    embeds: [
-                        {
-                            description: 'The song request channel has been deleted',
-                            color: client.color.main,
-                        },
-                    ],
-                });
-                break;
-            }
+        const player = client.queue.get(guild.id);
+        const description =
+            player?.queue && player.current
+                ? `[${player.current.info.title}](${player.current.info.uri})`
+                : 'Nothing playing right now';
+        const mock = await channel.send({
+            embeds: [
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setDescription(description)
+                    .setImage(client.config.links.img),
+            ],
+            components: getButtons(),
+        });
+        await client.db.setSetup(guild.id, channel.id, mock.id);
+        startSetupJanitor(client, guild.id);
+        return await ctx.sendMessage({
+            embeds: [
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setDescription(`The song request channel has been created in <#${channel.id}>`),
+            ],
+        });
+    }
 
-            case 'info': {
-                const data3 = await client.db.getSetup(guild.id);
-                if (!data3)
-                    return await ctx.sendMessage({
-                        embeds: [
-                            {
-                                description: 'The song request channel doesn\'t exist',
-                                color: client.color.red,
-                            },
-                        ],
-                    });
-                const channel = guild.channels.cache.get(data3.textId);
-                if (!channel)
-                    return await ctx.sendMessage({
-                        embeds: [
-                            {
-                                description: 'The song request channel doesn\'t exist',
-                                color: client.color.red,
-                            },
-                        ],
-                    });
-                embed
-                    .setDescription(`The song request channel is <#${channel.id}>`)
-                    .setColor(client.color.main);
-                await ctx.sendMessage({
-                    embeds: [embed],
-                });
-                break;
-            }
+    private async deleteChannel(client: BootstrapClient, ctx: Context): Promise<unknown> {
+        const guild = ctx.guild;
+        if (!guild) return;
+        const setup = await client.db.getSetup(guild.id);
+        if (!setup) {
+            return await ctx.sendMessage({
+                embeds: [{ description: 'The song request channel doesn\'t exist', color: client.color.red }],
+            });
+        }
+        await client.db.deleteSetup(guild.id);
+        stopSetupJanitor(guild.id);
+        await guild.channels.cache.get(setup.textId)?.delete().catch(() => {});
+        return await ctx.sendMessage({
+            embeds: [{ description: 'The song request channel has been deleted', color: client.color.main }],
+        });
+    }
+
+    private async channelInfo(client: BootstrapClient, ctx: Context): Promise<unknown> {
+        const guild = ctx.guild;
+        if (!guild) return;
+        const setup = await client.db.getSetup(guild.id);
+        const channel = setup ? guild.channels.cache.get(setup.textId) : undefined;
+        if (!channel) {
+            return await ctx.sendMessage({
+                embeds: [{ description: 'The song request channel doesn\'t exist', color: client.color.red }],
+            });
+        }
+        return await ctx.sendMessage({
+            embeds: [
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setDescription(`The song request channel is <#${channel.id}>`),
+            ],
+        });
+    }
+
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
+        switch (this.subcommand(ctx, args)) {
+            case 'create':
+                return await this.createChannel(client, ctx);
+            case 'delete':
+                return await this.deleteChannel(client, ctx);
+            case 'info':
+                return await this.channelInfo(client, ctx);
             default:
-                break;
+                return undefined;
         }
     }
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */

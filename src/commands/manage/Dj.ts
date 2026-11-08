@@ -2,8 +2,10 @@ import { APIRole, ApplicationCommandOptionType, Role } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
+type RoleLike = Role | APIRole | null | undefined;
+
 export default class Dj extends Command {
-    constructor(client: BootstrapClient) {
+    public constructor(client: BootstrapClient) {
         super(client, {
             name: 'dj',
             description: {
@@ -15,12 +17,7 @@ export default class Dj extends Command {
             aliases: ['dj'],
             cooldown: 3,
             args: true,
-            player: {
-                voice: false,
-                dj: false,
-                active: false,
-                djPerm: null,
-            },
+            player: { voice: false, dj: false, active: false, djPerm: null },
             permissions: {
                 dev: false,
                 client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
@@ -54,114 +51,79 @@ export default class Dj extends Command {
                         },
                     ],
                 },
-                {
-                    name: 'clear',
-                    description: 'Clears all dj roles',
-                    type: ApplicationCommandOptionType.Subcommand,
-                },
-                {
-                    name: 'toggle',
-                    description: 'Toggles the dj role',
-                    type: ApplicationCommandOptionType.Subcommand,
-                },
+                { name: 'clear', description: 'Clears all dj roles', type: ApplicationCommandOptionType.Subcommand },
+                { name: 'toggle', description: 'Toggles the dj role', type: ApplicationCommandOptionType.Subcommand },
             ],
         });
     }
-    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
-        const guild = ctx.guild;
-        if (!guild) return;
-        let subCommand: string;
-        let role: Role | APIRole | null | undefined;
+
+    private resolve(ctx: Context, args: string[]): { sub: string; role: RoleLike } {
         if (ctx.isInteraction) {
-            const interaction = ctx.interaction;
-            if (!interaction) return;
-            const sub = interaction.options.data[0];
-            if (!sub) return;
-            subCommand = sub.name;
-            if (subCommand === 'add' || subCommand === 'remove') {
-                role = sub.options?.[0]?.role;
-            }
-        } else {
-            const message = ctx.message;
-            if (!message) return;
-            subCommand = args[0];
-            role = message.mentions.roles.first() || guild.roles.cache.get(args[1]);
+            const sub = ctx.interaction?.options.data[0];
+            return {
+                sub: sub?.name ?? '',
+                role: sub?.name === 'add' || sub?.name === 'remove' ? sub.options?.[0]?.role : undefined,
+            };
         }
-        const embed = client.embed().setColor(client.color.main);
-        let dj = await client.db.getDj(guild.id);
-        if (subCommand === 'add') {
-            if (!role)
-                return await ctx.sendMessage({
-                    embeds: [embed.setDescription('Please provide a role to add')],
-                });
-            const isExRole = await client.db
-                .getRoles(guild.id)
-                .then((r) => r.find((re) => re.roleId === role.id));
-            if (isExRole)
-                return await ctx.sendMessage({
-                    embeds: [embed.setDescription(`The dj role <@&${role.id}> is already added`)],
-                });
-            client.db.addRole(guild.id, role.id);
-            client.db.setDj(guild.id, true);
-            return await ctx.sendMessage({
-                embeds: [embed.setDescription(`The dj role <@&${role.id}> has been added`)],
-            });
-        } else if (subCommand === 'remove') {
-            if (!role)
-                return await ctx.sendMessage({
-                    embeds: [embed.setDescription('Please provide a role to remove')],
-                });
-            const isExRole = await client.db
-                .getRoles(guild.id)
-                .then((r) => r.find((re) => re.roleId === role.id));
-            if (!isExRole)
-                return await ctx.sendMessage({
-                    embeds: [embed.setDescription(`The dj role <@&${role.id}> is not added`)],
-                });
-            client.db.removeRole(guild.id, role.id);
-            return await ctx.sendMessage({
-                embeds: [embed.setDescription(`The dj role <@&${role.id}> has been removed`)],
-            });
-        } else if (subCommand === 'clear') {
-            if (!dj)
-                return await ctx.sendMessage({
-                    embeds: [embed.setDescription('There are no dj roles to clear')],
-                });
-            client.db.clearRoles(guild.id);
-            return await ctx.sendMessage({
-                embeds: [embed.setDescription(`All dj roles have been removed`)],
-            });
-        } else if (subCommand === 'toggle') {
-            if (!dj)
-                return await ctx.sendMessage({
-                    embeds: [embed.setDescription('There are no dj roles to toggle')],
-                });
-            const data = await client.db.getDj(guild.id);
-            if (data) {
-                client.db.setDj(guild.id, !data.mode);
+        const message = ctx.message;
+        return {
+            sub: args[0] ?? '',
+            role: message?.mentions.roles.first() ?? ctx.guild?.roles.cache.get(args[1]),
+        };
+    }
+
+    private reply(client: BootstrapClient, ctx: Context, description: string, error = false): Promise<unknown> {
+        return ctx.sendMessage({
+            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(description)],
+        });
+    }
+
+    public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
+        if (!ctx.guild) return;
+        const guild = ctx.guild;
+        const { sub, role } = this.resolve(ctx, args);
+        const dj = await client.db.getDj(guild.id);
+
+        switch (sub) {
+            case 'add': {
+                if (!role) return await this.reply(client, ctx, 'Please provide a role to add');
+                const roles = await client.db.getRoles(guild.id);
+                if (roles.some((entry: { roleId: string }) => entry.roleId === role.id)) {
+                    return await this.reply(client, ctx, `The dj role <@&${role.id}> is already added`);
+                }
+                await client.db.addRole(guild.id, role.id);
+                await client.db.setDj(guild.id, true);
+                return await this.reply(client, ctx, `The dj role <@&${role.id}> has been added`);
+            }
+            case 'remove': {
+                if (!role) return await this.reply(client, ctx, 'Please provide a role to remove');
+                const roles = await client.db.getRoles(guild.id);
+                if (!roles.some((entry: { roleId: string }) => entry.roleId === role.id)) {
+                    return await this.reply(client, ctx, `The dj role <@&${role.id}> is not added`);
+                }
+                await client.db.removeRole(guild.id, role.id);
+                return await this.reply(client, ctx, `The dj role <@&${role.id}> has been removed`);
+            }
+            case 'clear':
+                if (!dj) return await this.reply(client, ctx, 'There are no dj roles to clear');
+                await client.db.clearRoles(guild.id);
+                return await this.reply(client, ctx, 'All dj roles have been removed');
+            case 'toggle': {
+                if (!dj) return await this.reply(client, ctx, 'There are no dj roles to toggle');
+                const next = !dj.mode;
+                await client.db.setDj(guild.id, next);
+                return await this.reply(client, ctx, `The dj mode has been toggled to ${next ? 'enabled' : 'disabled'}`);
+            }
+            default:
                 return await ctx.sendMessage({
                     embeds: [
-                        embed.setDescription(
-                            `The dj mode has been toggled to ${!data.mode ? 'enabled' : 'disabled'}`
-                        ),
+                        client
+                            .embed()
+                            .setColor(client.color.red)
+                            .setDescription('Please provide a valid subcommand')
+                            .addFields({ name: 'Subcommands', value: '`add`, `remove`, `clear`, `toggle`' }),
                     ],
                 });
-            }
-        } else {
-            return await ctx.sendMessage({
-                embeds: [
-                    embed.setDescription('Please provide a valid subcommand').addFields({
-                        name: 'Subcommands',
-                        value: '`add`, `remove`, `clear`, `toggle`',
-                    }),
-                ],
-            });
         }
     }
 }
-
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
