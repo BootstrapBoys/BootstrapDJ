@@ -9,7 +9,11 @@ const BASS_BANDS = [
 
 export default defineFilterCommand({
     name: 'bassboost',
-    description: { content: 'on/off bassboost filter', examples: ['bassboost'], usage: 'bassboost' },
+    description: {
+        content: 'on/off bassboost filter',
+        examples: ['bassboost'],
+        usage: 'bassboost',
+    },
     aliases: ['bb'],
     run: toggleFilter(
         'bassboost',

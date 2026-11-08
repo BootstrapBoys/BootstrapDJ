@@ -56,7 +56,9 @@ export default class List extends Command {
             return await ctx.sendMessage({
                 embeds: [
                     embed.setDescription(
-                        own ? 'You don\'t have any playlists.' : `${target.username} doesn't have any playlists.`
+                        own
+                            ? "You don't have any playlists."
+                            : `${target.username} doesn't have any playlists.`
                     ),
                 ],
             });
@@ -64,8 +66,12 @@ export default class List extends Command {
 
         const rows = playlists
             .slice(0, MAX_ROWS)
-            .map(item => `**${item.name}** — ${item._count.songs} song${item._count.songs === 1 ? '' : 's'}`);
-        const extra = playlists.length > MAX_ROWS ? `\n…and ${playlists.length - MAX_ROWS} more` : '';
+            .map(
+                item =>
+                    `**${item.name}** — ${item._count.songs} song${item._count.songs === 1 ? '' : 's'}`
+            );
+        const extra =
+            playlists.length > MAX_ROWS ? `\n…and ${playlists.length - MAX_ROWS} more` : '';
         return await ctx.sendMessage({
             embeds: [
                 embed

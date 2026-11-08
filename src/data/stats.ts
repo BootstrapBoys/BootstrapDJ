@@ -13,15 +13,23 @@ export interface StatsPruneResult {
 export class StatsStore {
     public constructor(protected readonly prisma: PrismaClient) {}
 
-    public async pruneStats(options: {
-        now?: Date;
-        retentionDays?: number;
-        inactiveDays?: number;
-    } = {}): Promise<StatsPruneResult> {
+    public async pruneStats(
+        options: {
+            now?: Date;
+            retentionDays?: number;
+            inactiveDays?: number;
+        } = {}
+    ): Promise<StatsPruneResult> {
         const now = options.now ?? new Date();
         const retentionDays = options.retentionDays ?? config.statsRetentionDays;
         const inactiveDays = options.inactiveDays ?? config.statsInactiveDays;
-        const result: StatsPruneResult = { daily: 0, tracks: 0, listeners: 0, userTracks: 0, leases: 0 };
+        const result: StatsPruneResult = {
+            daily: 0,
+            tracks: 0,
+            listeners: 0,
+            userTracks: 0,
+            leases: 0,
+        };
 
         if (retentionDays > 0) {
             const cutoffDay = new Date(
@@ -29,7 +37,9 @@ export class StatsStore {
             )
                 .toISOString()
                 .slice(0, 10);
-            result.daily = (await this.prisma.statsDaily.deleteMany({ where: { day: { lt: cutoffDay } } })).count;
+            result.daily = (
+                await this.prisma.statsDaily.deleteMany({ where: { day: { lt: cutoffDay } } })
+            ).count;
         }
 
         if (inactiveDays > 0) {
@@ -129,7 +139,11 @@ export class StatsStore {
         return removed;
     }
 
-    public async incrementGameScore(guildId: string, userId: string, win: boolean): Promise<GameScore> {
+    public async incrementGameScore(
+        guildId: string,
+        userId: string,
+        win: boolean
+    ): Promise<GameScore> {
         return await this.prisma.gameScore.upsert({
             where: { guildId_userId: { guildId, userId } },
             create: { guildId, userId, wins: win ? 1 : 0, plays: 1 },
@@ -162,7 +176,14 @@ export class StatsStore {
             this.prisma.statsTrack.upsert({
                 where: { guildId_trackId: { guildId, trackId } },
                 create: { guildId, trackId, title, author, source, uri, seconds: value, plays: 1 },
-                update: { title, author, source, uri, seconds: { increment: value }, plays: { increment: 1 } },
+                update: {
+                    title,
+                    author,
+                    source,
+                    uri,
+                    seconds: { increment: value },
+                    plays: { increment: 1 },
+                },
             }),
             this.prisma.statsDaily.upsert({
                 where: { guildId_day: { guildId, day } },
@@ -186,7 +207,17 @@ export class StatsStore {
                     where: {
                         guildId_userId_trackId: { guildId, userId: requesterId, trackId },
                     },
-                    create: { guildId, userId: requesterId, trackId, title, author, source, uri, seconds: value, plays: 1 },
+                    create: {
+                        guildId,
+                        userId: requesterId,
+                        trackId,
+                        title,
+                        author,
+                        source,
+                        uri,
+                        seconds: value,
+                        plays: 1,
+                    },
                     update: {
                         title,
                         author,
@@ -210,7 +241,12 @@ export class StatsStore {
             rows.map(row =>
                 this.prisma.statsListener.upsert({
                     where: { guildId_userId: { guildId, userId: row.userId } },
-                    create: { guildId, userId: row.userId, seconds: row.seconds, deafSeconds: row.deafSeconds },
+                    create: {
+                        guildId,
+                        userId: row.userId,
+                        seconds: row.seconds,
+                        deafSeconds: row.deafSeconds,
+                    },
                     update: {
                         seconds: { increment: row.seconds },
                         deafSeconds: { increment: row.deafSeconds },
@@ -255,18 +291,40 @@ export class StatsStore {
         const dayKeys: string[] = [];
         const now = new Date();
         for (let offset = days - 1; offset >= 0; offset--) {
-            const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - offset));
+            const date = new Date(
+                Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - offset)
+            );
             dayKeys.push(date.toISOString().slice(0, 10));
         }
-        const [daily, topTracks, topListeners, topCommands, sources, hours, weekdays] = await Promise.all([
-            this.prisma.statsDaily.findMany({ where: { guildId, day: { in: dayKeys } } }),
-            this.prisma.statsTrack.findMany({ where: { guildId }, orderBy: { seconds: 'desc' }, take: 5 }),
-            this.prisma.statsListener.findMany({ where: { guildId }, orderBy: { seconds: 'desc' }, take: 5 }),
-            this.prisma.statsCommand.findMany({ where: { guildId }, orderBy: { count: 'desc' }, take: 5 }),
-            this.prisma.statsTrack.groupBy({ by: ['source'], where: { guildId }, _sum: { seconds: true, plays: true } }),
-            this.prisma.statsHour.findMany({ where: { guildId }, orderBy: { hour: 'asc' } }),
-            this.prisma.statsWeekday.findMany({ where: { guildId }, orderBy: { weekday: 'asc' } }),
-        ]);
+        const [daily, topTracks, topListeners, topCommands, sources, hours, weekdays] =
+            await Promise.all([
+                this.prisma.statsDaily.findMany({ where: { guildId, day: { in: dayKeys } } }),
+                this.prisma.statsTrack.findMany({
+                    where: { guildId },
+                    orderBy: { seconds: 'desc' },
+                    take: 5,
+                }),
+                this.prisma.statsListener.findMany({
+                    where: { guildId },
+                    orderBy: { seconds: 'desc' },
+                    take: 5,
+                }),
+                this.prisma.statsCommand.findMany({
+                    where: { guildId },
+                    orderBy: { count: 'desc' },
+                    take: 5,
+                }),
+                this.prisma.statsTrack.groupBy({
+                    by: ['source'],
+                    where: { guildId },
+                    _sum: { seconds: true, plays: true },
+                }),
+                this.prisma.statsHour.findMany({ where: { guildId }, orderBy: { hour: 'asc' } }),
+                this.prisma.statsWeekday.findMany({
+                    where: { guildId },
+                    orderBy: { weekday: 'asc' },
+                }),
+            ]);
         const dailyMap = new Map(daily.map(entry => [entry.day, entry]));
         return {
             days: dayKeys.map(day => ({
@@ -362,5 +420,4 @@ export class StatsStore {
             })),
         };
     }
-
 }

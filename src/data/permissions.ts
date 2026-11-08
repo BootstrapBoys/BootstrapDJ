@@ -68,7 +68,9 @@ export class PermissionStore extends SetupStore {
         scope: 'server' | 'user',
         userId: string
     ): Promise<number> {
-        const result = await this.prisma.commandMapping.deleteMany({ where: { guildId, scope, userId } });
+        const result = await this.prisma.commandMapping.deleteMany({
+            where: { guildId, scope, userId },
+        });
         return result.count;
     }
 
@@ -126,7 +128,9 @@ export class PermissionStore extends SetupStore {
         scope: 'server' | 'user',
         userId: string
     ): Promise<number> {
-        const result = await this.prisma.commandAlias.deleteMany({ where: { guildId, scope, userId } });
+        const result = await this.prisma.commandAlias.deleteMany({
+            where: { guildId, scope, userId },
+        });
         return result.count;
     }
 
@@ -176,7 +180,6 @@ export class PermissionStore extends SetupStore {
         const denied = matches.some(rule => !rule.allow);
         return allowed || !denied;
     }
-
 
     public async getDj(guildId: string): Promise<Dj | null> {
         return await this.prisma.dj.findUnique({
@@ -228,5 +231,4 @@ export class PermissionStore extends SetupStore {
             },
         });
     }
-
 }

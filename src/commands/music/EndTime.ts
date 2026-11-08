@@ -34,11 +34,14 @@ export function scheduleEndTime(
         clearTimeout(timer);
         pending.delete(guildId);
     };
-    const timer = setTimeout(() => {
-        pending.delete(guildId);
-        player.off('end', listener);
-        onElapsed();
-    }, Math.max(0, delayMs));
+    const timer = setTimeout(
+        () => {
+            pending.delete(guildId);
+            player.off('end', listener);
+            onElapsed();
+        },
+        Math.max(0, delayMs)
+    );
     timer.unref();
     player.once('end', listener);
     pending.set(guildId, { timer, player, listener });
@@ -48,13 +51,21 @@ export default class EndTime extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'endtime',
-            description: { content: 'Stops the current track at a given time', usage: 'endtime <time>', examples: ['endtime 2:30'] },
+            description: {
+                content: 'Stops the current track at a given time',
+                usage: 'endtime <time>',
+                examples: ['endtime 2:30'],
+            },
             category: 'music',
             aliases: ['sendtime', 'stopat'],
             cooldown: 3,
             args: true,
             player: { voice: true, dj: true, active: true, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [
                 {
@@ -73,13 +84,23 @@ export default class EndTime extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         const end = parseTime(args.join(' '));
         if (!end && end !== 0) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Give a time like `30s` or `02:30`.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Give a time like `30s` or `02:30`.'),
+                ],
             });
         }
         const duration = player.current.info.length;
@@ -91,7 +112,12 @@ export default class EndTime extends Command {
             cancelEndTime(guild.id);
             await player.skip();
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.main).setDescription('Skipped to the end point.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription('Skipped to the end point.'),
+                ],
             });
         }
         scheduleEndTime(guild.id, player.player, target - position, () => {

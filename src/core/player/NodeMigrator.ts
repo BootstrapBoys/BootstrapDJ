@@ -75,7 +75,10 @@ export class NodeMigrator {
         };
     }
 
-    public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
+    public async rebuild(
+        dispatcher: Dispatcher,
+        node: Node | undefined
+    ): Promise<Dispatcher | null> {
         if (this.moving.has(dispatcher.guildId)) return null;
         this.moving.add(dispatcher.guildId);
         try {

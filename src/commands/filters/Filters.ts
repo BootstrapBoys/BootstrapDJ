@@ -4,7 +4,11 @@ export default class Filters extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'filters',
-            description: { content: 'Shows active audio filters', usage: 'filters', examples: ['filters'] },
+            description: {
+                content: 'Shows active audio filters',
+                usage: 'filters',
+                examples: ['filters'],
+            },
             category: 'filters',
             aliases: ['activefilters'],
             cooldown: 3,
@@ -26,7 +30,12 @@ export default class Filters extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         const filters = player.filters.length ? player.filters.join(', ') : 'none';

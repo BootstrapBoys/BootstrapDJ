@@ -7,7 +7,11 @@ export default class Forward extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'forward',
-            description: { content: 'Winds the current track forward', usage: 'forward <time>', examples: ['forward 30s', 'forward 01:30'] },
+            description: {
+                content: 'Winds the current track forward',
+                usage: 'forward <time>',
+                examples: ['forward 30s', 'forward 01:30'],
+            },
             category: 'music',
             aliases: ['fw', 'forwards'],
             cooldown: 3,
@@ -36,18 +40,30 @@ export default class Forward extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         const ms = parseTime(args.join(' '));
         if (!ms) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Give a time like `30s` or `01:30`.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Give a time like `30s` or `01:30`.'),
+                ],
             });
         }
         const duration = player.current.info.length;
         const position =
-            duration > 0 ? Math.min(duration, player.player.position + ms) : player.player.position + ms;
+            duration > 0
+                ? Math.min(duration, player.player.position + ms)
+                : player.player.position + ms;
         player.seek(position);
         return await ctx.sendMessage({
             embeds: [

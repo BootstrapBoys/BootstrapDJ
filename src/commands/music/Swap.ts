@@ -6,7 +6,11 @@ export default class Swap extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'swap',
-            description: { content: 'Swaps two queued tracks', usage: 'swap <first> <second>', examples: ['swap 1 3'] },
+            description: {
+                content: 'Swaps two queued tracks',
+                usage: 'swap <first> <second>',
+                examples: ['swap 1 3'],
+            },
             category: 'music',
             aliases: ['swapqueue'],
             cooldown: 3,
@@ -43,7 +47,12 @@ export default class Swap extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || player.queue.length < 2) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('At least two queued tracks are required.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('At least two queued tracks are required.'),
+                ],
             });
         }
         const first = Number(args[0]);

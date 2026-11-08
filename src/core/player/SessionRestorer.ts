@@ -136,12 +136,7 @@ export async function restoreSessions(client: BootstrapClient): Promise<void> {
         sessions.map(async session => {
             if (!client.guilds.cache.has(session.guildId)) return;
             const claimed = await client.db
-                .claimSessionLease(
-                    session.guildId,
-                    botUser.id,
-                    botName,
-                    sessionLeaseTtlMs(client)
-                )
+                .claimSessionLease(session.guildId, botUser.id, botName, sessionLeaseTtlMs(client))
                 .catch(() => false);
             if (!claimed) return;
             await restoreSession(client, session, botUser);
@@ -205,16 +200,16 @@ export async function restoreSession(
     const guildId = session.guildId;
     const backoff = restoreRetries.get(guildId);
     if (backoff && backoff.notBefore > Date.now()) {
-        client.logger.debug(
-            `[session] ${guildId}: retry backoff active, keeping the saved queue`
-        );
+        client.logger.debug(`[session] ${guildId}: retry backoff active, keeping the saved queue`);
         return;
     }
     // A live player already owns this guild. Restoring a row on top of it
     // duplicates the queue and can hand callers the old dispatcher, so the
     // saved snapshot stays untouched for a later boot.
     if (client.queue.has(guildId)) {
-        client.logger.debug(`[session] ${guildId}: live player exists, not adopting the saved session`);
+        client.logger.debug(
+            `[session] ${guildId}: live player exists, not adopting the saved session`
+        );
         return;
     }
     const drop = async (reason: string): Promise<void> => {

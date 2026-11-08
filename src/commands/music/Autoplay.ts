@@ -35,7 +35,9 @@ export default defineMusicCommand({
     options: SEED_OPTIONS.map(name => ({
         name,
         description:
-            name === 'seed' ? 'First artist or song' : `${name === 'seed2' ? 'Second' : 'Third'} artist or song (optional)`,
+            name === 'seed'
+                ? 'First artist or song'
+                : `${name === 'seed2' ? 'Second' : 'Third'} artist or song (optional)`,
         type: ApplicationCommandOptionType.String,
         required: false,
     })),
@@ -44,7 +46,9 @@ export default defineMusicCommand({
         if (!guild) return;
 
         const seeds = ctx.isInteraction
-            ? SEED_OPTIONS.map(name => ctx.interaction?.options.getString(name)?.trim() ?? '').filter(Boolean)
+            ? SEED_OPTIONS.map(
+                  name => ctx.interaction?.options.getString(name)?.trim() ?? ''
+              ).filter(Boolean)
             : seedsFromArguments(args);
         const label = seeds.join(', ');
 

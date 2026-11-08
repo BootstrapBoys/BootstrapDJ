@@ -49,13 +49,20 @@ export default class Create extends Command {
         }
         if (await client.db.getPLaylist(author.id, name)) {
             return await ctx.sendMessage({
-                embeds: [{ description: 'A playlist with that name already exists', color: client.color.main }],
+                embeds: [
+                    {
+                        description: 'A playlist with that name already exists',
+                        color: client.color.main,
+                    },
+                ],
             });
         }
 
         await client.db.createPlaylist(author.id, name);
         return await ctx.sendMessage({
-            embeds: [{ description: `Playlist **${name}** has been created`, color: client.color.main }],
+            embeds: [
+                { description: `Playlist **${name}** has been created`, color: client.color.main },
+            ],
         });
     }
 }

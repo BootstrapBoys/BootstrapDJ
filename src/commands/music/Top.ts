@@ -8,17 +8,30 @@ export default class Top extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'top',
-            description: { content: 'Shows top search results for a query', usage: 'top [query]', examples: ['top', 'top NF'] },
+            description: {
+                content: 'Shows top search results for a query',
+                usage: 'top [query]',
+                examples: ['top', 'top NF'],
+            },
             category: 'music',
             aliases: ['topsongs', 'topresults'],
             cooldown: 3,
             args: false,
             defer: true,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [
-                { name: 'query', description: 'Search query; defaults to top hits', type: ApplicationCommandOptionType.String, required: false },
+                {
+                    name: 'query',
+                    description: 'Search query; defaults to top hits',
+                    type: ApplicationCommandOptionType.String,
+                    required: false,
+                },
             ],
         });
     }
@@ -28,12 +41,20 @@ export default class Top extends Command {
         const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         if (!res || res.loadType !== LoadType.SEARCH) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription(`No results for **${query}**.`)],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(`No results for **${query}**.`),
+                ],
             });
         }
         const lines = res.data
             .slice(0, 10)
-            .map((track, index) => `**${index + 1}.** [${track.info.title}](${track.info.uri}) — ${track.info.author}`);
+            .map(
+                (track, index) =>
+                    `**${index + 1}.** [${track.info.title}](${track.info.uri}) — ${track.info.author}`
+            );
         return await ctx.sendMessage({
             embeds: [
                 client

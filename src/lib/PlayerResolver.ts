@@ -26,9 +26,7 @@ export async function resolvePlayer(
     const storedVoice = existing?.voiceId
         ? (guild.channels.cache.get(existing.voiceId) ?? null)
         : null;
-    const storedText = existing
-        ? (guild.channels.cache.get(existing.channelId) ?? null)
-        : null;
+    const storedText = existing ? (guild.channels.cache.get(existing.channelId) ?? null) : null;
     const voice = voiceChannel ?? storedVoice;
     const text = textChannel ?? storedText;
 

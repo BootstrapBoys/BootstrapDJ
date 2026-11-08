@@ -26,7 +26,10 @@ export function affinityWeight(track: Track, affinity: AutoplayAffinity): number
     }
     const related = affinity.relatedArtists.some(name => {
         const normalized = normalizeAuthor(name);
-        return normalized && (author === normalized || author.includes(normalized) || normalized.includes(author));
+        return (
+            normalized &&
+            (author === normalized || author.includes(normalized) || normalized.includes(author))
+        );
     });
     return related ? AUTOPLAY_RELATED_WEIGHT : 1;
 }
@@ -85,7 +88,12 @@ export async function pickForSeed(seed: Song, host: SeedPickHost): Promise<Song 
         mix.every(track => {
             const author = normalizeAuthor(track.info?.author);
             const normalizedSeed = normalizeAuthor(seedArtist);
-            return !author || author === normalizedSeed || author.includes(normalizedSeed) || normalizedSeed.includes(author);
+            return (
+                !author ||
+                author === normalizedSeed ||
+                author.includes(normalizedSeed) ||
+                normalizedSeed.includes(author)
+            );
         });
 
     if (seedOnlyMix && related.length && Math.random() < AUTOPLAY_SPREAD_CHANCE) {

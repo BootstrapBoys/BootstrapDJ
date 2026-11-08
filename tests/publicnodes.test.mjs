@@ -13,7 +13,14 @@ import {
 
 test('parsePublicNodes keeps only usable v4 entries', () => {
     const nodes = parsePublicNodes([
-        { identifier: 'a', host: '  lava.example.com ', port: 2333, password: 'p', secure: false, version: 'v4' },
+        {
+            identifier: 'a',
+            host: '  lava.example.com ',
+            port: 2333,
+            password: 'p',
+            secure: false,
+            version: 'v4',
+        },
         { host: 'v3.example.com', port: 2333, password: 'p', secure: false, version: 'v3' },
         { host: '', port: 2333, version: 'v4' },
         { host: 'bad-port.example.com', port: 'x', version: 'v4' },

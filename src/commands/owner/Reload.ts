@@ -4,13 +4,21 @@ export default class Reload extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'reload',
-            description: { content: 'Reloads command modules without restarting (owner only)', usage: 'reload', examples: ['reload'] },
+            description: {
+                content: 'Reloads command modules without restarting (owner only)',
+                usage: 'reload',
+                examples: ['reload'],
+            },
             category: 'dev',
             aliases: ['reloadcommands'],
             cooldown: 10,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: true, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: true,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: false,
             options: [],
         });
@@ -23,7 +31,9 @@ export default class Reload extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(`Reloaded **${count}** commands. Slash metadata changes still need a restart.`),
+                    .setDescription(
+                        `Reloaded **${count}** commands. Slash metadata changes still need a restart.`
+                    ),
             ],
         });
     }

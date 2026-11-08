@@ -26,57 +26,69 @@ export default class Filter extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'filter',
-            description: { content: 'Apply or clear audio filters', usage: 'filter <effect> [value]', examples: ['filter bassboost', 'filter speed 1.2'] },
+            description: {
+                content: 'Apply or clear audio filters',
+                usage: 'filter <effect> [value]',
+                examples: ['filter bassboost', 'filter speed 1.2'],
+            },
             category: 'filters',
             aliases: ['filterset'],
             cooldown: 3,
             args: false,
             player: { voice: true, dj: true, active: true, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: ['ManageGuild'] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: ['ManageGuild'],
+            },
             slashCommand: true,
             options: [
-                ...Object.keys(SIMPLE).map(
-                    (name): ApplicationCommandOption => ({
-                        name,
-                        description: `Apply ${name}`,
-                        type: ApplicationCommandOptionType.Subcommand,
-                    })
-                ),
-                ...Object.keys(VALUED).map(
-                    (name): ApplicationCommandOption => ({
-                        name,
-                        description: `Apply ${name} with a value`,
-                        type: ApplicationCommandOptionType.Subcommand,
-                        options: [
-                            {
-                                name: 'value',
-                                description: 'Effect value',
-                                type: ApplicationCommandOptionType.Number,
-                                required: true,
-                            },
-                        ],
-                    })
-                ),
+                ...Object.keys(SIMPLE).map((name): ApplicationCommandOption => ({
+                    name,
+                    description: `Apply ${name}`,
+                    type: ApplicationCommandOptionType.Subcommand,
+                })),
+                ...Object.keys(VALUED).map((name): ApplicationCommandOption => ({
+                    name,
+                    description: `Apply ${name} with a value`,
+                    type: ApplicationCommandOptionType.Subcommand,
+                    options: [
+                        {
+                            name: 'value',
+                            description: 'Effect value',
+                            type: ApplicationCommandOptionType.Number,
+                            required: true,
+                        },
+                    ],
+                })),
             ],
         });
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const effect = (
-            ctx.isInteraction && ctx.interaction
-                ? ctx.interaction.options.data[0]?.name
-                : args[0]
+            ctx.isInteraction && ctx.interaction ? ctx.interaction.options.data[0]?.name : args[0]
         )?.toLowerCase();
         if (!effect) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Choose a filter effect.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Choose a filter effect.'),
+                ],
             });
         }
         const target = SIMPLE[effect] ?? VALUED[effect];
         const command = target ? client.commands.get(target) : null;
         if (!command) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription(`Unknown filter: **${effect}**.`)],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(`Unknown filter: **${effect}**.`),
+                ],
             });
         }
         const value =

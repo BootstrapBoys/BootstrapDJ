@@ -17,7 +17,9 @@ export type PlayLimits = {
 
 /** Read per-guild playback limits once per command invocation. */
 export async function getPlayLimits(client: BootstrapClient, guildId: string): Promise<PlayLimits> {
-    const settings: Record<string, string> = await client.db.getGuildSettings(guildId).catch(() => ({}));
+    const settings: Record<string, string> = await client.db
+        .getGuildSettings(guildId)
+        .catch(() => ({}));
     const number = (value: string | undefined, fallback: number): number => {
         // A blank stored value is "unset", not zero. Treating it as zero made
         // an empty maxqueue row silently unlimited.
@@ -41,11 +43,7 @@ export async function getPlayLimits(client: BootstrapClient, guildId: string): P
  * One guild-aware queue cap for every enqueue path. `maxQueue` is the
  * effective setting (guild override or `MAX_QUEUE_SIZE`); `0` means unlimited.
  */
-export function queueHasRoom(
-    player: Dispatcher,
-    limits: PlayLimits,
-    pending: number = 0
-): boolean {
+export function queueHasRoom(player: Dispatcher, limits: PlayLimits, pending: number = 0): boolean {
     if (limits.maxQueue <= 0) return true;
     const queued = player.queue.length + (player.current ? 1 : 0) + pending;
     return queued < limits.maxQueue;
@@ -82,8 +80,14 @@ export function checkTrack(
         return `You already have ${limits.maxUserTracks} tracks queued.`;
     }
     if (limits.maxUserTracksLength > 0) {
-        const total = requested.reduce((sum, item) => sum + (item.info.isStream ? 0 : item.info.length), 0);
-        if (total + (track.info.isStream ? 0 : track.info.length) > limits.maxUserTracksLength * 1000) {
+        const total = requested.reduce(
+            (sum, item) => sum + (item.info.isStream ? 0 : item.info.length),
+            0
+        );
+        if (
+            total + (track.info.isStream ? 0 : track.info.length) >
+            limits.maxUserTracksLength * 1000
+        ) {
             return `You already have ${formatDuration(limits.maxUserTracksLength * 1000)} of music queued.`;
         }
     }

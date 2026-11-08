@@ -39,7 +39,9 @@ export class VoiceStore {
     }
 
     public async removeOptOut(guildId: string, userId: string): Promise<boolean> {
-        const result = await this.prisma.voiceListenOptOut.deleteMany({ where: { guildId, userId } });
+        const result = await this.prisma.voiceListenOptOut.deleteMany({
+            where: { guildId, userId },
+        });
         return result.count > 0;
     }
 

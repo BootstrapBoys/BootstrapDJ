@@ -8,7 +8,7 @@ export default class Ping extends Command {
     public constructor(client: BootstrapClient) {
         super(client, {
             name: 'ping',
-            description: { content: 'Shows the bot\'s ping', examples: ['ping'], usage: 'ping' },
+            description: { content: "Shows the bot's ping", examples: ['ping'], usage: 'ping' },
             category: 'general',
             aliases: ['pong'],
             cooldown: 3,
@@ -38,9 +38,16 @@ export default class Ping extends Command {
             .setColor(client.color.main)
             .addFields(
                 { name: 'Bot Latency', value: latencyBlock(roundTrip), inline: true },
-                { name: 'API Latency', value: latencyBlock(Math.round(client.ws.ping)), inline: true }
+                {
+                    name: 'API Latency',
+                    value: latencyBlock(Math.round(client.ws.ping)),
+                    inline: true,
+                }
             )
-            .setFooter({ text: `Requested by ${author.tag}`, iconURL: author.avatarURL({}) ?? undefined })
+            .setFooter({
+                text: `Requested by ${author.tag}`,
+                iconURL: author.avatarURL({}) ?? undefined,
+            })
             .setTimestamp();
 
         return await ctx.editMessage({ content: '', embeds: [embed] });

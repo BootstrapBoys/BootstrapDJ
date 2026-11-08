@@ -7,7 +7,10 @@ export default defineMusicCommand({
     name: 'play',
     description: {
         content: 'Plays a song from YouTube or Spotify',
-        examples: ['play https://www.youtube.com/watch?v=QH2-TGUlwu4', 'play https://open.spotify.com/track/6WrI0LAC5M1Rw2MnX2ZvEg'],
+        examples: [
+            'play https://www.youtube.com/watch?v=QH2-TGUlwu4',
+            'play https://open.spotify.com/track/6WrI0LAC5M1Rw2MnX2ZvEg',
+        ],
         usage: 'play <song>',
     },
     aliases: ['p'],

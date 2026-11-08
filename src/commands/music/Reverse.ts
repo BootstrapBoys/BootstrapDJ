@@ -4,7 +4,11 @@ export default class Reverse extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'reverse',
-            description: { content: 'Reverses the queued tracks', usage: 'reverse', examples: ['reverse'] },
+            description: {
+                content: 'Reverses the queued tracks',
+                usage: 'reverse',
+                examples: ['reverse'],
+            },
             category: 'music',
             aliases: ['rev'],
             cooldown: 3,
@@ -26,7 +30,12 @@ export default class Reverse extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('There is no queue to reverse.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('There is no queue to reverse.'),
+                ],
             });
         }
         player.queue.reverse();
@@ -36,7 +45,9 @@ export default class Reverse extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Reversed ${player.queue.length} queued track${player.queue.length === 1 ? '' : 's'}.`),
+                    .setDescription(
+                        `Reversed ${player.queue.length} queued track${player.queue.length === 1 ? '' : 's'}.`
+                    ),
             ],
         });
     }

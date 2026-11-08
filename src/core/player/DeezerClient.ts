@@ -40,7 +40,9 @@ export class DeezerClient {
             return song.info.identifier;
         }
         if (song.info.isrc) {
-            const byIsrc = await this.fetchJson<DeezerTrackRef>(`${DEEZER_API}/track/isrc:${song.info.isrc}`);
+            const byIsrc = await this.fetchJson<DeezerTrackRef>(
+                `${DEEZER_API}/track/isrc:${song.info.isrc}`
+            );
             if (byIsrc?.id) return String(byIsrc.id);
         }
         const query = encodeURIComponent(`artist:"${song.info.author}" track:"${song.info.title}"`);
@@ -83,7 +85,9 @@ export class DeezerClient {
         }
         const response = await this.fetchJson<{ data?: DeezerChartTrack[] }>(AUTOPLAY_CHART_URL);
         const tracks = response?.data?.filter(track => track.link) ?? [];
-        const clean = tracks.filter(track => !track.explicit_lyrics && !track.explicit_content_lyrics);
+        const clean = tracks.filter(
+            track => !track.explicit_lyrics && !track.explicit_content_lyrics
+        );
         if (!clean.length) return [];
         chartCache = { at: Date.now(), tracks: clean };
         return clean;

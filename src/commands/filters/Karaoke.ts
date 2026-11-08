@@ -7,7 +7,8 @@ export default defineFilterCommand({
     run: toggleFilter(
         'karaoke',
         'Karaoke',
-        player => player.player.setKaraoke({ level: 1, monoLevel: 1, filterBand: 220, filterWidth: 100 }),
+        player =>
+            player.player.setKaraoke({ level: 1, monoLevel: 1, filterBand: 220, filterWidth: 100 }),
         player => player.player.setKaraoke()
     ),
 });

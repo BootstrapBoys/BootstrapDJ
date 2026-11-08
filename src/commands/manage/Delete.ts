@@ -42,7 +42,9 @@ export default class Delete extends Command {
 
         if (!(await client.db.getPLaylist(author.id, name))) {
             return await ctx.sendMessage({
-                embeds: [embed.setColor(client.color.red).setDescription('That playlist doesn\'t exist')],
+                embeds: [
+                    embed.setColor(client.color.red).setDescription("That playlist doesn't exist"),
+                ],
             });
         }
 

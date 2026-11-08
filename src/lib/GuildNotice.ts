@@ -44,9 +44,7 @@ export async function postGuildNotice(
         )
         .setTimestamp();
 
-    const channel = await client.channels
-        .fetch(client.config.logChannelId)
-        .catch(() => null);
+    const channel = await client.channels.fetch(client.config.logChannelId).catch(() => null);
     if (!(channel instanceof TextChannel)) return;
     return await channel.send({ embeds: [embed] });
 }

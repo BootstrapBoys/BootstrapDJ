@@ -22,7 +22,11 @@ export default class PlaySelect extends Command {
             args: true,
             defer: true,
             player: { voice: true, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [
                 {
@@ -42,17 +46,25 @@ export default class PlaySelect extends Command {
         const query = args.join(' ').trim();
         if (!query) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Provide a playlist URL or search term.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Provide a playlist URL or search term.'),
+                ],
             });
         }
 
         let player = client.queue.get(guild.id);
-        if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
+        if (!player || player.isStale)
+            player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
 
         const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         if (!res) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No results found.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('No results found.'),
+                ],
             });
         }
         const tracks: Track[] =
@@ -65,7 +77,9 @@ export default class PlaySelect extends Command {
                     : [];
         if (!tracks.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No tracks found.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('No tracks found.'),
+                ],
             });
         }
 
@@ -151,7 +165,8 @@ export default class PlaySelect extends Command {
         collector.on('collect', async interaction => {
             if (interaction.isButton()) {
                 if (interaction.customId === 'playselect:previous') page = Math.max(0, page - 1);
-                else if (interaction.customId === 'playselect:next') page = Math.min(pages - 1, page + 1);
+                else if (interaction.customId === 'playselect:next')
+                    page = Math.min(pages - 1, page + 1);
                 await interaction.update(build(page));
                 return;
             }
@@ -159,7 +174,10 @@ export default class PlaySelect extends Command {
             const selected = Number(interaction.values[0]);
             const track = tracks[selected];
             if (!track) {
-                await interaction.reply({ content: 'That track is no longer available.', ephemeral: true });
+                await interaction.reply({
+                    content: 'That track is no longer available.',
+                    ephemeral: true,
+                });
                 return;
             }
             await interaction.deferUpdate();

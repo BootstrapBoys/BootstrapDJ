@@ -10,7 +10,11 @@ export default class Shards extends Command {
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: false,
             options: [],
         });

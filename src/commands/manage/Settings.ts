@@ -66,10 +66,16 @@ export default class Settings extends Command {
     }
 
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
-        return ctx.sendMessage({ embeds: [client.embed().setColor(client.color.red).setDescription(text)] });
+        return ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.red).setDescription(text)],
+        });
     }
 
-    private async overview(client: BootstrapClient, ctx: Context, guildId: string): Promise<unknown> {
+    private async overview(
+        client: BootstrapClient,
+        ctx: Context,
+        guildId: string
+    ): Promise<unknown> {
         const values = await client.db.getGuildSettings(guildId);
         const autoplay = await client.db.getAutoplaySetting(guildId).catch(() => null);
         const lines = Object.entries(DEFAULTS)
@@ -123,14 +129,21 @@ export default class Settings extends Command {
             await client.db.deleteAutoplaySetting(guildId);
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.green).setDescription('Autoplay override removed.'),
+                    client
+                        .embed()
+                        .setColor(client.color.green)
+                        .setDescription('Autoplay override removed.'),
                 ],
             });
         }
 
         if (key === 'autoplaysource') {
             if (!['chart', 'curated', 'legacy'].includes(value)) {
-                return await this.fail(client, ctx, 'Source must be `chart`, `curated`, or `legacy`.');
+                return await this.fail(
+                    client,
+                    ctx,
+                    'Source must be `chart`, `curated`, or `legacy`.'
+                );
             }
             await client.db.setAutoplaySetting(guildId, {
                 source: value,
@@ -175,7 +188,9 @@ export default class Settings extends Command {
                     client
                         .embed()
                         .setColor(client.color.green)
-                        .setDescription(`Reset ${removed} guild setting${removed === 1 ? '' : 's'}.`),
+                        .setDescription(
+                            `Reset ${removed} guild setting${removed === 1 ? '' : 's'}.`
+                        ),
                 ],
             });
         }
@@ -206,7 +221,8 @@ export default class Settings extends Command {
             });
         }
 
-        if (field.value.length > VALUE_LIMIT) return await this.fail(client, ctx, 'That value is too long.');
+        if (field.value.length > VALUE_LIMIT)
+            return await this.fail(client, ctx, 'That value is too long.');
         if (key === 'ephemeral' && field.value !== 'true' && field.value !== 'false') {
             return await this.fail(
                 client,

@@ -4,13 +4,21 @@ export default class Support extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'support',
-            description: { content: 'How to get help with BootstrapDJ', usage: 'support', examples: ['support'] },
+            description: {
+                content: 'How to get help with BootstrapDJ',
+                usage: 'support',
+                examples: ['support'],
+            },
             category: 'info',
             aliases: ['helpme'],
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: false,
             options: [],
         });

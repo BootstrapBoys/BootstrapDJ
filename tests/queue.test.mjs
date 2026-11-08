@@ -5,7 +5,10 @@ import { makeDispatcher, makeSong, view } from './helpers.mjs';
 
 test('enqueue drops queued bot picks and seeds from the request', () => {
     const dispatcher = makeDispatcher({ autoplay: true });
-    dispatcher.queue.push(makeSong('bot1', { autoplay: true }), makeSong('bot2', { autoplay: true }));
+    dispatcher.queue.push(
+        makeSong('bot1', { autoplay: true }),
+        makeSong('bot2', { autoplay: true })
+    );
 
     const request = makeSong('user1');
     dispatcher.enqueue(request);
@@ -90,7 +93,6 @@ test('ensureLookahead refills after a skip consumes the pick', async () => {
     assert.equal(view(dispatcher), 'bot2(auto)');
 });
 
-
 test('fairPlay round-robins the queue by requester', () => {
     const dispatcher = makeDispatcher();
     const song = (title, userId) => {
@@ -127,7 +129,13 @@ test('queue-empty prompt is deleted when the player is destroyed or a request ar
     assert.equal(dispatcher.queueEmptyPrompt, null);
     assert.equal(prompt.deleted, true);
 
-    const second = { deleted: false, delete() { this.deleted = true; return Promise.resolve(); } };
+    const second = {
+        deleted: false,
+        delete() {
+            this.deleted = true;
+            return Promise.resolve();
+        },
+    };
     dispatcher.queueEmptyPrompt = second;
     dispatcher.enqueue(makeSong('next'));
     assert.equal(dispatcher.queueEmptyPrompt, null);
@@ -143,7 +151,10 @@ test('remove and clearQueue persist while playback is paused', () => {
     };
 
     dispatcher.remove(1);
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['a', 'c']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['a', 'c']
+    );
     assert.equal(persisted, 1);
 
     dispatcher.clearQueue();
@@ -166,7 +177,10 @@ test('setShuffle persists the new order', () => {
 
     dispatcher.setShuffle();
 
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['c', 'b', 'a']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['c', 'b', 'a']
+    );
     assert.equal(persisted, 1);
 });
 
@@ -184,7 +198,10 @@ test('ensureLookahead retries an empty autoplay pick instead of ending the queue
 
     assert.equal(attempts, 2);
     assert.equal(pick?.info.title, 'recovered');
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['recovered']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['recovered']
+    );
     assert.equal(dispatcher.lookaheadRetry, null);
 });
 

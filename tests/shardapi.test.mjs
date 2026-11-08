@@ -71,12 +71,12 @@ test('guildAccessFor rejects an unknown guild', async () => {
 });
 
 test('dashboardGuilds filters to guilds the OAuth user belongs to', async () => {
-    const c = client([
-        guild('g1', '1', [member('2')]),
-        guild('g2', '3', [member('4')]),
-    ]);
+    const c = client([guild('g1', '1', [member('2')]), guild('g2', '3', [member('4')])]);
     const rows = await dashboardGuilds(c, '2');
-    assert.deepEqual(rows.map(row => row.id), ['g1']);
+    assert.deepEqual(
+        rows.map(row => row.id),
+        ['g1']
+    );
 });
 
 test('playerSnapshot returns the fields the dashboard needs', () => {
@@ -117,7 +117,6 @@ test('dashboardFilter reports a missing player instead of throwing', () => {
     });
 });
 
-
 test('dashboardFilter applies a filter on the owning player', () => {
     const c = client([]);
     c.queue.set('g1', {
@@ -132,19 +131,19 @@ test('dashboardFilter applies a filter on the owning player', () => {
     assert.deepEqual(disabled.active, []);
 });
 
-
 test('dashboardPlayerAction seeks to a valid position', async () => {
     let sought = null;
     const c = client([]);
     c.queue.set('g1', {
         current: { info: { length: 10000 } },
-        seek: value => { sought = value; },
+        seek: value => {
+            sought = value;
+        },
     });
     const result = await dashboardPlayerAction(c, 'g1', 'seek', 4321);
     assert.equal(result.ok, true);
     assert.equal(sought, 4321);
 });
-
 
 test('all dashboard player actions map to the expected Dispatcher calls', async () => {
     const calls = [];
@@ -167,7 +166,10 @@ test('all dashboard player actions map to the expected Dispatcher calls', async 
         stop: () => calls.push(['stop']),
         setShuffle: () => calls.push(['shuffle']),
         persist: async () => calls.push(['persist']),
-        setLoop: value => { player.loop = value; calls.push(['loop', value]); },
+        setLoop: value => {
+            player.loop = value;
+            calls.push(['loop', value]);
+        },
         seek: value => calls.push(['seek', value]),
     };
     const c = client([]);

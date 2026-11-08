@@ -43,7 +43,10 @@ export default class ShoukakuClient extends Shoukaku {
 
     private forwardLifecycle(): void {
         this.on('ready', (name, reconnected) =>
-            this.client.shoukaku.emitPlayerEvent(reconnected ? 'nodeReconnect' : 'nodeConnect', name)
+            this.client.shoukaku.emitPlayerEvent(
+                reconnected ? 'nodeReconnect' : 'nodeConnect',
+                name
+            )
         );
         this.on('error', (name, error) =>
             this.client.shoukaku.emitPlayerEvent('nodeError', name, error)

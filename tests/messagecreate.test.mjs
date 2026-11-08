@@ -35,7 +35,11 @@ function makeHarness({ content, setupTextId = 'setup-channel' }) {
         cooldown: 0.001,
         args: false,
         player: { voice: false, dj: false, active: false, djPerm: null },
-        permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+        permissions: {
+            dev: false,
+            client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+            user: [],
+        },
         run: async (_client, ctx) => {
             commandRuns += 1;
             lastCtx = ctx;

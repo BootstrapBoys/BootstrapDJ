@@ -27,7 +27,8 @@ export default defineMusicCommand({
         if (!player) return;
 
         const volume = Number(args[0]);
-        if (!Number.isFinite(volume)) return await replyFail(client, ctx, 'Please provide a valid number.');
+        if (!Number.isFinite(volume))
+            return await replyFail(client, ctx, 'Please provide a valid number.');
         if (volume < MIN_VOLUME) {
             return await replyFail(client, ctx, `The volume can't be lower than ${MIN_VOLUME}.`);
         }

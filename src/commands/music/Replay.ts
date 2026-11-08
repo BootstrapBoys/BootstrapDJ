@@ -36,7 +36,11 @@ export default class Replay extends Command {
         const embed = client.embed();
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [embed.setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    embed
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         if (player.current.info.isStream || !player.current.info.isSeekable) {

@@ -52,7 +52,12 @@ function makeQueueClient(settings = {}) {
     const guild = {
         id: 'guild-1',
         shard: { id: 0 },
-        channels: { cache: new Map([[voice.id, voice], [text.id, text]]) },
+        channels: {
+            cache: new Map([
+                [voice.id, voice],
+                [text.id, text],
+            ]),
+        },
     };
     const queue = new Queue(client);
     client.queue = queue;
@@ -120,7 +125,10 @@ test('defaultshuffle waits for the first populated queue instead of shuffling no
     assert.equal(shuffles, 1);
     assert.equal(persists, 1);
     assert.equal(dispatcher.pendingDefaultShuffle, false);
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['b', 'a']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['b', 'a']
+    );
 
     dispatcher.timers.clearAll();
 });

@@ -48,7 +48,11 @@ test('addSong stores one row per track and rejects the same track twice', async 
     await db.createPlaylist(user, 'ParkerJack');
 
     // Same song re-searched: LavaSrc hands back a different `encoded`.
-    const first = await db.addSong(user, 'ParkerJack', track('Hurt', 'https://deezer.com/track/1', 'TOKEN-A'));
+    const first = await db.addSong(
+        user,
+        'ParkerJack',
+        track('Hurt', 'https://deezer.com/track/1', 'TOKEN-A')
+    );
     const duplicate = await db.addSong(
         user,
         'ParkerJack',
@@ -63,7 +67,11 @@ test('addSong stores one row per track and rejects the same track twice', async 
 });
 
 test('a different track is added alongside it', async () => {
-    const added = await db.addSong(user, 'ParkerJack', track('Other', 'https://deezer.com/track/2'));
+    const added = await db.addSong(
+        user,
+        'ParkerJack',
+        track('Other', 'https://deezer.com/track/2')
+    );
 
     assert.equal(added, true);
     assert.equal((await db.getSong(user, 'ParkerJack')).length, 2);
@@ -97,7 +105,6 @@ test('playlist names keep their internal spaces', async () => {
 
     assert.equal(found?.name, 'My Mix');
 });
-
 
 test('startup backfill keys legacy playlist rows', async () => {
     await db.createPlaylist(user, 'Legacy Backfill');

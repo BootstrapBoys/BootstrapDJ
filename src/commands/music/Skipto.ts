@@ -22,7 +22,8 @@ export default defineMusicCommand({
     ],
     run: async ({ client, ctx, player, args }) => {
         if (!player) return;
-        if (!player.queue.length) return await replyFail(client, ctx, 'There are no songs in the queue.');
+        if (!player.queue.length)
+            return await replyFail(client, ctx, 'There are no songs in the queue.');
 
         const target = Number(args[0]);
         const valid = Number.isInteger(target) && target >= 1 && target <= player.queue.length;

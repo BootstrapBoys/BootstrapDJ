@@ -7,7 +7,8 @@ export default defineMusicCommand({
     aliases: ['sh'],
     run: async ({ client, ctx, player }) => {
         if (!player) return;
-        if (!player.queue.length) return await replyFail(client, ctx, 'There are no songs in the queue.');
+        if (!player.queue.length)
+            return await replyFail(client, ctx, 'There are no songs in the queue.');
 
         player.setShuffle();
         return await replyOk(client, ctx, 'Shuffled the queue');

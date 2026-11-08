@@ -26,9 +26,19 @@ export default class SelfPrefix extends Command {
         });
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        error: boolean = false
+    ): Promise<unknown> {
         return ctx.sendMessage({
-            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
+            embeds: [
+                client
+                    .embed()
+                    .setColor(error ? client.color.red : client.color.main)
+                    .setDescription(text),
+            ],
         });
     }
 
@@ -44,7 +54,9 @@ export default class SelfPrefix extends Command {
                 return await this.reply(
                     client,
                     ctx,
-                    current ? `Your personal prefix is \`${current}\`.` : 'You have no personal prefix.'
+                    current
+                        ? `Your personal prefix is \`${current}\`.`
+                        : 'You have no personal prefix.'
                 );
             }
             case 'reset': {
@@ -60,7 +72,12 @@ export default class SelfPrefix extends Command {
         }
 
         if (action !== 'set') {
-            return await this.reply(client, ctx, 'Use `selfprefix set <prefix>` or `selfprefix reset`.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'Use `selfprefix set <prefix>` or `selfprefix reset`.',
+                true
+            );
         }
         const prefix = (args[1] ?? '').trim();
         if (!prefix || prefix.length > MAX_PREFIX) {

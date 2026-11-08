@@ -78,7 +78,11 @@ function harness({
             calls.destroyed += 1;
         },
     };
-    const coordinator = new DestroyCoordinator(host, { info: () => {}, warn: () => {}, error: () => {} });
+    const coordinator = new DestroyCoordinator(host, {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+    });
     return {
         coordinator,
         host,
@@ -235,7 +239,11 @@ test('Dispatcher.destroy delegates teardown and removes the queue entry', async 
             leaveVoiceChannel: async guildId => calls.left.push(guildId),
             emitPlayerEvent: (...args) => calls.events.push(args),
         },
-        utils: { updateStatus: () => { calls.status += 1; } },
+        utils: {
+            updateStatus: () => {
+                calls.status += 1;
+            },
+        },
         logger: { info: () => {}, warn: () => {}, error: () => {} },
     };
     const dispatcher = Object.create(Dispatcher.prototype);

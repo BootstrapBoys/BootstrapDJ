@@ -1,6 +1,12 @@
 import type BootstrapClient from '../core/BootstrapClient.js';
 import type Command from '../core/Command.js';
-import { ChannelType, Collection, EmbedBuilder, PermissionFlagsBits, type PermissionsString } from 'discord.js';
+import {
+    ChannelType,
+    Collection,
+    EmbedBuilder,
+    PermissionFlagsBits,
+    type PermissionsString,
+} from 'discord.js';
 
 /** The parts of a guild member the gate needs, kept structural for tests. */
 export interface GateMember {
@@ -56,10 +62,7 @@ function deny(content: string): GateResult {
  * grants dev-only commands to nobody, so a broken `OWNER_IDS` can never expose
  * `eval`, `shutdown` or `reload`.
  */
-export function isOwner(
-    memberId: string,
-    owners: readonly string[] | null | undefined
-): boolean {
+export function isOwner(memberId: string, owners: readonly string[] | null | undefined): boolean {
     return Array.isArray(owners) && owners.length > 0 && owners.includes(memberId);
 }
 
@@ -126,18 +129,18 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
     }
 
     if (!me.hasPermission(PermissionFlagsBits.EmbedLinks)) {
-        return deny('I don\'t have **`EmbedLinks`** permission.');
+        return deny("I don't have **`EmbedLinks`** permission.");
     }
 
     for (const permission of command.permissions.client) {
         if (!me.hasPermission(permission)) {
-            return deny('I don\'t have enough permissions to execute this command.');
+            return deny("I don't have enough permissions to execute this command.");
         }
     }
 
     for (const permission of command.permissions.user) {
         if (!member.hasPermission(permission)) {
-            return deny('You don\'t have enough permissions to use this command.');
+            return deny("You don't have enough permissions to use this command.");
         }
     }
 
@@ -235,7 +238,7 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
     }
 
     if (args.some(arg => arg.includes('@everyone') || arg.includes('@here'))) {
-        return deny('You can\'t mention everyone or here.');
+        return deny("You can't mention everyone or here.");
     }
 
     return { ok: true };

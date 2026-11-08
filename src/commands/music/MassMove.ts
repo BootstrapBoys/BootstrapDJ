@@ -6,7 +6,11 @@ export default class MassMove extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'massmove',
-            description: { content: 'Moves a block of queued tracks', usage: 'massmove <from> <to> <destination>', examples: ['massmove 2 4 1'] },
+            description: {
+                content: 'Moves a block of queued tracks',
+                usage: 'massmove <from> <to> <destination>',
+                examples: ['massmove 2 4 1'],
+            },
             category: 'music',
             aliases: ['mm'],
             cooldown: 3,
@@ -50,7 +54,12 @@ export default class MassMove extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || player.queue.length < 2) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('At least two queued tracks are required.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('At least two queued tracks are required.'),
+                ],
             });
         }
         const from = Number(args[0]);
@@ -84,7 +93,9 @@ export default class MassMove extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Moved ${block.length} track${block.length === 1 ? '' : 's'} to position ${destination}.`),
+                    .setDescription(
+                        `Moved ${block.length} track${block.length === 1 ? '' : 's'} to position ${destination}.`
+                    ),
             ],
         });
     }

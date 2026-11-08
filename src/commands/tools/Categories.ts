@@ -4,13 +4,21 @@ export default class Categories extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'categories',
-            description: { content: 'Lists all command categories', usage: 'categories', examples: ['categories'] },
+            description: {
+                content: 'Lists all command categories',
+                usage: 'categories',
+                examples: ['categories'],
+            },
             category: 'info',
             aliases: ['category'],
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: false,
             options: [],
         });
@@ -24,7 +32,9 @@ export default class Categories extends Command {
         }
         const lines = [...counts.entries()]
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([category, count]) => `**${category}** — ${count} command${count === 1 ? '' : 's'}`);
+            .map(
+                ([category, count]) => `**${category}** — ${count} command${count === 1 ? '' : 's'}`
+            );
         return await ctx.sendMessage({
             embeds: [
                 client

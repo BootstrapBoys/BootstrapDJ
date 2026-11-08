@@ -41,7 +41,10 @@ test('tracks queued but not played are rejected too', () => {
     const dispatcher = makeDispatcher();
     dispatcher.queue.push(makeSong('Queued', { uri: 'https://deezer.com/track/3' }));
 
-    assert.equal(dispatcher.chooseFrom([candidate('Queued', 'A', 'https://deezer.com/track/3')]), null);
+    assert.equal(
+        dispatcher.chooseFrom([candidate('Queued', 'A', 'https://deezer.com/track/3')]),
+        null
+    );
 });
 
 test('the last three artists are demoted, even in a thin mix', () => {
@@ -88,7 +91,11 @@ test('autoplay weights the seed artist above unrelated tracks', () => {
     const original = Math.random;
     Math.random = () => 0.3;
     try {
-        assert.equal(dispatcher.chooseFrom([other, seed], { seedArtist: 'Seed Artist', relatedArtists: [] })?.info.author, 'Seed Artist');
+        assert.equal(
+            dispatcher.chooseFrom([other, seed], { seedArtist: 'Seed Artist', relatedArtists: [] })
+                ?.info.author,
+            'Seed Artist'
+        );
     } finally {
         Math.random = original;
     }
@@ -97,9 +104,18 @@ test('autoplay weights the seed artist above unrelated tracks', () => {
 test('related artists sit between the seed artist and strangers', () => {
     const dispatcher = makeDispatcher();
     const affinity = { seedArtist: 'Seed Artist', relatedArtists: ['Close Artist'] };
-    assert.equal(dispatcher.affinityWeight(candidate('seed', 'Seed Artist', 'https://x/1'), affinity), 3);
-    assert.equal(dispatcher.affinityWeight(candidate('close', 'Close Artist', 'https://x/2'), affinity), 2);
-    assert.equal(dispatcher.affinityWeight(candidate('other', 'Other Artist', 'https://x/3'), affinity), 1);
+    assert.equal(
+        dispatcher.affinityWeight(candidate('seed', 'Seed Artist', 'https://x/1'), affinity),
+        3
+    );
+    assert.equal(
+        dispatcher.affinityWeight(candidate('close', 'Close Artist', 'https://x/2'), affinity),
+        2
+    );
+    assert.equal(
+        dispatcher.affinityWeight(candidate('other', 'Other Artist', 'https://x/3'), affinity),
+        1
+    );
 });
 
 test('pickForSeed uses the mix even when it contains only the seed artist', async () => {
@@ -154,7 +170,6 @@ test('the same seed reuses its mix instead of resolving it on every pick', async
     assert.equal(second, first);
 });
 
-
 test('the current track is rejected even when the mix uses another source', () => {
     const dispatcher = makeDispatcher();
     dispatcher.current = makeSong('Hate Myself', {
@@ -200,7 +215,10 @@ test('a comma-separated /autoplay seeds every lane and queues the first pick', a
         dispatcher.seeds.map(seed => seed.info.title),
         ['NF', 'Hotel Books']
     );
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['NF']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['NF']
+    );
 });
 
 test('the newest seed lane is drawn most often', () => {
@@ -253,7 +271,10 @@ test('enqueue can defer seed recording while a playlist is collected', () => {
     assert.equal(dispatcher.seeds.length, 0);
 
     dispatcher.enqueue(makeSong('two', { author: 'B', uri: 'https://x/two' }));
-    assert.deepEqual(dispatcher.seeds.map(track => track.info.title), ['two']);
+    assert.deepEqual(
+        dispatcher.seeds.map(track => track.info.title),
+        ['two']
+    );
 });
 
 test('a seed-only mix occasionally hops to a related artist', async () => {
@@ -292,8 +313,10 @@ test('cold start prefers the chart seed over curated and legacy seeds', async ()
     const dispatcher = makeDispatcher();
     dispatcher.client.config.autoplayChart = true;
     dispatcher.client.config.autoplaySeeds = ['curated'];
-    dispatcher.chartSeed = async () => makeSong('chart', { author: 'Chart Artist', uri: 'https://x/chart' });
-    dispatcher.curatedSeed = async () => makeSong('curated', { author: 'Curated Artist', uri: 'https://x/curated' });
+    dispatcher.chartSeed = async () =>
+        makeSong('chart', { author: 'Chart Artist', uri: 'https://x/chart' });
+    dispatcher.curatedSeed = async () =>
+        makeSong('curated', { author: 'Curated Artist', uri: 'https://x/curated' });
 
     const picked = await dispatcher.Autoplay();
 
@@ -305,13 +328,13 @@ test('cold start falls back to curated seeds when the chart yields nothing', asy
     dispatcher.client.config.autoplayChart = true;
     dispatcher.client.config.autoplaySeeds = ['curated'];
     dispatcher.chartSeed = async () => null;
-    dispatcher.curatedSeed = async () => makeSong('curated', { author: 'Curated Artist', uri: 'https://x/curated' });
+    dispatcher.curatedSeed = async () =>
+        makeSong('curated', { author: 'Curated Artist', uri: 'https://x/curated' });
 
     const picked = await dispatcher.Autoplay();
 
     assert.equal(picked?.info.title, 'curated');
 });
-
 
 test('a guild autoplay setting overrides the environment source and seeds', async () => {
     const dispatcher = makeDispatcher();
@@ -322,7 +345,8 @@ test('a guild autoplay setting overrides the environment source and seeds', asyn
         seeds: 'One, Two',
     });
     let seen = null;
-    dispatcher.chartSeed = async () => makeSong('chart', { author: 'Chart', uri: 'https://x/chart' });
+    dispatcher.chartSeed = async () =>
+        makeSong('chart', { author: 'Chart', uri: 'https://x/chart' });
     dispatcher.curatedSeed = async seeds => {
         seen = seeds;
         return makeSong('curated', { author: 'Curated', uri: 'https://x/curated' });

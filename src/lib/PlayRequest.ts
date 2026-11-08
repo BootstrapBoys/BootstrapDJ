@@ -81,9 +81,7 @@ export async function runPlayRequest(
         case LoadType.EMPTY:
             await ctx.sendMessage({
                 embeds: [
-                    embed
-                        .setColor(client.color.red)
-                        .setDescription('There were no results found.'),
+                    embed.setColor(client.color.red).setDescription('There were no results found.'),
                 ],
             });
             return;

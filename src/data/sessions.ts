@@ -22,7 +22,12 @@ export class SessionStore {
         return await this.prisma.botPresence.findUnique({ where: { botId } });
     }
 
-    public async claim(guildId: string, botId: string, botName: string, ttlMs: number = 60_000): Promise<boolean> {
+    public async claim(
+        guildId: string,
+        botId: string,
+        botName: string,
+        ttlMs: number = 60_000
+    ): Promise<boolean> {
         const now = new Date();
         const expiresAt = new Date(now.getTime() + ttlMs);
         try {

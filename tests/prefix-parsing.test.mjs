@@ -79,7 +79,10 @@ test('move accepts the word "to" between the two positions', async () => {
 
     await new Move(client).run(client, ctx, ctx.args);
 
-    assert.deepEqual(queue.map(track => track.info.title), ['c', 'a', 'b']);
+    assert.deepEqual(
+        queue.map(track => track.info.title),
+        ['c', 'a', 'b']
+    );
 });
 
 test('requested uses the mentioned user on the prefix path', async () => {

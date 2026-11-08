@@ -58,11 +58,7 @@ export function defineFilterCommand(definition: FilterDefinition): typeof Comman
             });
         }
 
-        public async run(
-            client: BootstrapClient,
-            ctx: Context,
-            args: string[]
-        ): Promise<unknown> {
+        public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
             if (!ctx.guild) {
                 return await ctx.sendMessage({ content: 'This command only works in a server.' });
             }

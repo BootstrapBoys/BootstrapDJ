@@ -27,9 +27,7 @@ async function register(client: BootstrapClient, dir: string, file: string): Pro
 export async function installEvents(client: BootstrapClient): Promise<void> {
     const pending: Array<Promise<void>> = [];
     for (const dir of fs.readdirSync(ROOT)) {
-        const files = fs
-            .readdirSync(path.join(ROOT, dir))
-            .filter(file => file.endsWith('.js'));
+        const files = fs.readdirSync(path.join(ROOT, dir)).filter(file => file.endsWith('.js'));
         for (const file of files) pending.push(register(client, dir, file));
     }
     await Promise.all(pending);

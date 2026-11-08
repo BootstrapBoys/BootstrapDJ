@@ -195,7 +195,10 @@ test('a playlist is limited per track and persisted once', async () => {
         calls.enqueued.map(entry => entry.title),
         ['one', 'three']
     );
-    assert.ok(calls.enqueued.every(entry => entry.persist === false), 'per-track persist is skipped');
+    assert.ok(
+        calls.enqueued.every(entry => entry.persist === false),
+        'per-track persist is skipped'
+    );
     assert.equal(calls.persisted, 1, 'the playlist is persisted once after the batch');
     assert.equal(calls.played, 1);
 });

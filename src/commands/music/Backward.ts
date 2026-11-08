@@ -7,7 +7,11 @@ export default class Backward extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'backward',
-            description: { content: 'Winds the current track backward', usage: 'backward <time>', examples: ['backward 30s', 'backward 01:30'] },
+            description: {
+                content: 'Winds the current track backward',
+                usage: 'backward <time>',
+                examples: ['backward 30s', 'backward 01:30'],
+            },
             category: 'music',
             aliases: ['bw', 'backwards', 'rewind'],
             cooldown: 3,
@@ -36,13 +40,23 @@ export default class Backward extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         const ms = parseTime(args.join(' '));
         if (!ms) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Give a time like `30s` or `01:30`.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Give a time like `30s` or `01:30`.'),
+                ],
             });
         }
         const position = Math.max(0, player.player.position - ms);

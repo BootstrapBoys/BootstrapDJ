@@ -180,7 +180,9 @@ export default class Lyrics extends Command {
                     ],
                 });
             }
-            track = client.utils.firstTrack(await client.queue.search(query, await resolveSearchEngine(client, ctx)));
+            track = client.utils.firstTrack(
+                await client.queue.search(query, await resolveSearchEngine(client, ctx))
+            );
             if (!track) {
                 return await ctx.sendMessage({
                     embeds: [
@@ -222,7 +224,9 @@ export default class Lyrics extends Command {
         const pages = paginateLyrics(result.text).slice(0, 10);
         if (!pages.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No lyrics found.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('No lyrics found.'),
+                ],
             });
         }
 

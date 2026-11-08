@@ -4,7 +4,11 @@ export default class RemoveLast extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'removelast',
-            description: { content: 'Removes the last queued track', usage: 'removelast', examples: ['removelast'] },
+            description: {
+                content: 'Removes the last queued track',
+                usage: 'removelast',
+                examples: ['removelast'],
+            },
             category: 'music',
             aliases: ['rl'],
             cooldown: 3,
@@ -26,7 +30,9 @@ export default class RemoveLast extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The queue is empty.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                ],
             });
         }
         const track = player.queue.pop();

@@ -29,7 +29,8 @@ export function describeCloseCode(code: number): CloseCodeInfo {
             return { summary: 'the node closed without sending a reason', expected: false };
         case 1006:
             return {
-                summary: 'the connection dropped without a close frame (network, crash, or firewall)',
+                summary:
+                    'the connection dropped without a close frame (network, crash, or firewall)',
                 expected: false,
             };
         case 1011:
@@ -39,7 +40,8 @@ export function describeCloseCode(code: number): CloseCodeInfo {
         case 1013:
             return { summary: 'the node asked us to retry later', expected: true };
         default:
-            if (code >= 4000) return { summary: 'the node closed with a custom code', expected: false };
+            if (code >= 4000)
+                return { summary: 'the node closed with a custom code', expected: false };
             return { summary: 'the connection closed unexpectedly', expected: false };
     }
 }
@@ -48,13 +50,17 @@ export function describeCloseCode(code: number): CloseCodeInfo {
 export function formatNodeError(error: unknown): string {
     if (error instanceof Error) return error.message || error.name;
     if (!error || typeof error !== 'object') {
-        return typeof error === 'string' && error.trim() ? error.trim() : 'no details from the server';
+        return typeof error === 'string' && error.trim()
+            ? error.trim()
+            : 'no details from the server';
     }
 
     const record = error as Record<string, unknown>;
     const parts: string[] = [];
-    if (typeof record.message === 'string' && record.message.trim()) parts.push(record.message.trim());
-    if (typeof record.code === 'string' || typeof record.code === 'number') parts.push(`code ${record.code}`);
+    if (typeof record.message === 'string' && record.message.trim())
+        parts.push(record.message.trim());
+    if (typeof record.code === 'string' || typeof record.code === 'number')
+        parts.push(`code ${record.code}`);
     if (typeof record.cause === 'string' && record.cause.trim()) parts.push(record.cause.trim());
 
     return parts.length ? parts.join(', ') : 'no details from the server';
@@ -94,11 +100,7 @@ export function isIncidentActive(node: string): boolean {
 }
 
 /** True at most once per interval, so a long outage gets one reminder, not spam. */
-export function takeReminder(
-    node: string,
-    reminderMs: number,
-    now: number = Date.now()
-): boolean {
+export function takeReminder(node: string, reminderMs: number, now: number = Date.now()): boolean {
     const incident = incidents.get(node);
     if (!incident || reminderMs <= 0) return false;
     if (now - incident.lastNoticeAt < reminderMs) return false;

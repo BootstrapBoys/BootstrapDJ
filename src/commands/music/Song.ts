@@ -8,7 +8,11 @@ export default class Song extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'song',
-            description: { content: 'Shows information about the current or searched song', usage: 'song [query]', examples: ['song', 'song The Search NF'] },
+            description: {
+                content: 'Shows information about the current or searched song',
+                usage: 'song [query]',
+                examples: ['song', 'song The Search NF'],
+            },
             category: 'music',
             aliases: ['songinfo'],
             cooldown: 3,
@@ -40,10 +44,17 @@ export default class Song extends Command {
         if (query) {
             if (!client.queue.hasNode) {
                 return await ctx.sendMessage({
-                    embeds: [client.embed().setColor(client.color.red).setDescription('No Lavalink node is available.')],
+                    embeds: [
+                        client
+                            .embed()
+                            .setColor(client.color.red)
+                            .setDescription('No Lavalink node is available.'),
+                    ],
                 });
             }
-            track = client.utils.firstTrack(await client.queue.search(query, await resolveSearchEngine(client, ctx)));
+            track = client.utils.firstTrack(
+                await client.queue.search(query, await resolveSearchEngine(client, ctx))
+            );
         }
         if (!track) {
             return await ctx.sendMessage({
@@ -51,7 +62,9 @@ export default class Song extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(query ? `No results for **${query}**.` : 'Nothing is playing right now.'),
+                        .setDescription(
+                            query ? `No results for **${query}**.` : 'Nothing is playing right now.'
+                        ),
                 ],
             });
         }

@@ -92,7 +92,11 @@ export default class Move extends Command {
 
         if (fromIndex === toIndex) {
             return await ctx.sendMessage({
-                embeds: [embed.setColor(client.color.main).setDescription('That track is already there.')],
+                embeds: [
+                    embed
+                        .setColor(client.color.main)
+                        .setDescription('That track is already there.'),
+                ],
             });
         }
 

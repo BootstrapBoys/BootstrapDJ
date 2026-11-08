@@ -75,11 +75,17 @@ export default class AutoplayConfig extends Command {
     }
 
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
-        return ctx.sendMessage({ embeds: [client.embed().setColor(client.color.red).setDescription(text)] });
+        return ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.red).setDescription(text)],
+        });
     }
 
     /** Server managers and configured DJ roles may change the policy. */
-    private async canConfigure(client: BootstrapClient, ctx: Context, guildId: string): Promise<boolean> {
+    private async canConfigure(
+        client: BootstrapClient,
+        ctx: Context,
+        guildId: string
+    ): Promise<boolean> {
         const member = ctx.member;
         if (!(member instanceof GuildMember)) return false;
         if (member.permissions.has(PermissionFlagsBits.ManageGuild)) return true;
@@ -106,7 +112,11 @@ export default class AutoplayConfig extends Command {
         return { source, seeds: rest.join(' ').trim() || undefined, reset: false };
     }
 
-    private async show(client: BootstrapClient, ctx: Context, setting: SettingRow | null): Promise<unknown> {
+    private async show(
+        client: BootstrapClient,
+        ctx: Context,
+        setting: SettingRow | null
+    ): Promise<unknown> {
         const envSeeds = client.config.autoplaySeeds;
         const storedSeeds = splitSeeds(setting?.seeds ?? '');
         const fallback: AutoplaySource = client.config.autoplayChart
@@ -162,7 +172,12 @@ export default class AutoplayConfig extends Command {
 
         if (ctx.isInteraction && input.source === undefined) {
             const raw = ctx.interaction?.options.getString('source');
-            if (raw) return await this.fail(client, ctx, 'Source must be `chart`, `curated`, or `legacy`.');
+            if (raw)
+                return await this.fail(
+                    client,
+                    ctx,
+                    'Source must be `chart`, `curated`, or `legacy`.'
+                );
         }
 
         if (input.reset) {
@@ -176,9 +191,17 @@ export default class AutoplayConfig extends Command {
             return await this.fail(client, ctx, 'Provide at least one seed.');
         }
 
-        const source = input.source ?? (seeds?.length ? 'curated' : (setting?.source as AutoplaySource | undefined)) ?? 'chart';
-        const persisted = seeds?.join(', ') ?? setting?.seeds ?? client.config.autoplaySeeds.join(', ');
+        const source =
+            input.source ??
+            (seeds?.length ? 'curated' : (setting?.source as AutoplaySource | undefined)) ??
+            'chart';
+        const persisted =
+            seeds?.join(', ') ?? setting?.seeds ?? client.config.autoplaySeeds.join(', ');
         await client.db.setAutoplaySetting(guild.id, { source, seeds: persisted });
-        return await this.show(client, ctx, await client.db.getAutoplaySetting(guild.id).catch(() => null));
+        return await this.show(
+            client,
+            ctx,
+            await client.db.getAutoplaySetting(guild.id).catch(() => null)
+        );
     }
 }

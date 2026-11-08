@@ -54,7 +54,10 @@ test('play takes the queue head, starts it, and records history', async () => {
     assert.equal(dispatcher.current, first);
     assert.equal(dispatcher.calls.play, 1);
     assert.equal(dispatcher.calls.stop, 0);
-    assert.deepEqual(dispatcher.history.map(track => track.info.title), ['first']);
+    assert.deepEqual(
+        dispatcher.history.map(track => track.info.title),
+        ['first']
+    );
     assert.equal(view(dispatcher), 'second');
 });
 

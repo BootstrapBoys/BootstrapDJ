@@ -52,7 +52,9 @@ export default class RemoveSong extends Command {
     }
 
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
-        return ctx.sendMessage({ embeds: [client.embed().setColor(client.color.red).setDescription(text)] });
+        return ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.red).setDescription(text)],
+        });
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
@@ -70,10 +72,11 @@ export default class RemoveSong extends Command {
                 : args.slice(1).join(' ')
         )?.trim();
 
-        if (!playlist || !query) return await this.fail(client, ctx, 'Provide a playlist and a song.');
+        if (!playlist || !query)
+            return await this.fail(client, ctx, 'Provide a playlist and a song.');
 
         const data = await client.db.getPLaylist(author.id, playlist);
-        if (!data) return await this.fail(client, ctx, 'That playlist doesn\'t exist.');
+        if (!data) return await this.fail(client, ctx, "That playlist doesn't exist.");
         if (!client.queue.hasNode) {
             return await this.fail(client, ctx, 'No Lavalink node is available right now.');
         }
@@ -91,7 +94,9 @@ export default class RemoveSong extends Command {
                     .embed()
                     .setColor(removed ? client.color.green : client.color.red)
                     .setDescription(
-                        removed ? `Removed ${label} from **${data.name}**.` : `${label} is not in **${data.name}**.`
+                        removed
+                            ? `Removed ${label} from **${data.name}**.`
+                            : `${label} is not in **${data.name}**.`
                     ),
             ],
         });

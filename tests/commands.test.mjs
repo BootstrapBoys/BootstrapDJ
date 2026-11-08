@@ -77,7 +77,6 @@ test('commands that do remote work before replying defer; fast ones do not', asy
     }
 });
 
-
 test('the new feature commands are registered and keep ephemeral defaults', async () => {
     for (const path of [
         'manage/AutoplayConfig',
@@ -133,7 +132,6 @@ test('slash replies default to ephemeral; queue and nowplaying stay public', asy
         assert.equal(new CommandClass(fakeClient).ephemeral, false, `${path} must stay public`);
     }
 });
-
 
 test('collection exposes the legacy playlist actions without exceeding Discord choice limits', async () => {
     const CollectionClass = (await import('../dist/commands/manage/Collection.js')).default;

@@ -54,7 +54,12 @@ import Dispatcher from '../dist/core/Dispatcher.js';
 test('track-scoped nowplaying messages are cleared on track end', () => {
     const dispatcher = Object.create(Dispatcher.prototype);
     let deleted = 0;
-    const message = { id: 'nowplaying-message', delete: async () => { deleted += 1; } };
+    const message = {
+        id: 'nowplaying-message',
+        delete: async () => {
+            deleted += 1;
+        },
+    };
 
     dispatcher.registerNowPlayingMessage(message, null);
     assert.equal(dispatcher.hasTrackScopedNowPlayingMessage('nowplaying-message'), true);

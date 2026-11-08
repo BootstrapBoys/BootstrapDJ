@@ -186,7 +186,14 @@ test('an expired session lease can be adopted by another bot', async () => {
 
 test('recent-track history survives dispatcher lifetime', async () => {
     const song = makeSong('Hurt', { uri: 'https://x/1', author: 'NIN', encoded: 'ENC' });
-    await db.recordRecentTrack('g1', JSON.stringify(toSaved(song)), song.info.title, song.info.author, song.info.uri ?? null, 'u1');
+    await db.recordRecentTrack(
+        'g1',
+        JSON.stringify(toSaved(song)),
+        song.info.title,
+        song.info.author,
+        song.info.uri ?? null,
+        'u1'
+    );
 
     const rows = await db.getRecentTracks('g1', 5);
     assert.equal(rows.length, 1);
@@ -244,7 +251,14 @@ test('waitForNode resolves on the node ready event before its deadline', async (
     const { EventEmitter } = await import('node:events');
     const shoukaku = new EventEmitter();
     let ready = false;
-    const client = { queue: { get hasNode() { return ready; } }, shoukaku };
+    const client = {
+        queue: {
+            get hasNode() {
+                return ready;
+            },
+        },
+        shoukaku,
+    };
 
     const started = Date.now();
     const pending = waitForNode(client, 5000);
@@ -259,7 +273,14 @@ test('waitForNode resolves on the node ready event before its deadline', async (
 
 test('waitForNode gives up when no node ever connects', async () => {
     const { EventEmitter } = await import('node:events');
-    const client = { queue: { get hasNode() { return false; } }, shoukaku: new EventEmitter() };
+    const client = {
+        queue: {
+            get hasNode() {
+                return false;
+            },
+        },
+        shoukaku: new EventEmitter(),
+    };
 
     assert.equal(await waitForNode(client, 120), false);
 });

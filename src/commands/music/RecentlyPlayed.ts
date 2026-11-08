@@ -4,7 +4,11 @@ export default class RecentlyPlayed extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'recentlyplayed',
-            description: { content: 'Shows recently played tracks', usage: 'recentlyplayed', examples: ['recentlyplayed'] },
+            description: {
+                content: 'Shows recently played tracks',
+                usage: 'recentlyplayed',
+                examples: ['recentlyplayed'],
+            },
             category: 'music',
             aliases: ['history', 'rp'],
             cooldown: 3,
@@ -27,7 +31,12 @@ export default class RecentlyPlayed extends Command {
         const history = (player?.history ?? []).slice(-10).reverse();
         if (!history.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.main).setDescription('No playback history yet.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription('No playback history yet.'),
+                ],
             });
         }
         const lines = history.map(

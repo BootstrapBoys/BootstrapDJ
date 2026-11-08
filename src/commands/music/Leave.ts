@@ -16,11 +16,15 @@ export default defineMusicCommand({
     run: async ({ client, ctx, player }) => {
         const guild = ctx.guild;
         if (!guild) return;
-        if (!player) return await replyFail(client, ctx, 'I\'m not in a voice channel');
+        if (!player) return await replyFail(client, ctx, "I'm not in a voice channel");
 
         const channelId = voiceChannelId(player, guild.id);
         try {
-            await replyOk(client, ctx, channelId ? `Left <#${channelId}>` : 'Left the voice channel');
+            await replyOk(
+                client,
+                ctx,
+                channelId ? `Left <#${channelId}>` : 'Left the voice channel'
+            );
         } finally {
             // A failed or slow reply must never keep the bot connected.
             player.destroy();

@@ -25,7 +25,12 @@ function makeCommand(overrides = {}) {
     );
 }
 
-function makeMember({ id = 'member', denied = [], voice = { id: 'member-vc', type: ChannelType.GuildVoice }, roles = [] } = {}) {
+function makeMember({
+    id = 'member',
+    denied = [],
+    voice = { id: 'member-vc', type: ChannelType.GuildVoice },
+    roles = [],
+} = {}) {
     return {
         id,
         roleIds: roles,
@@ -95,8 +100,13 @@ test('gate respects locked sessions but lets managers unlock', async () => {
 
     const manager = makeMember({ denied: [] });
     manager.hasPermission = permission =>
-        permission === PermissionFlagsBits.ManageGuild || permission === 'SendMessages' || permission === 'ViewChannel' || permission === 'EmbedLinks';
-    const allowed = await evaluateCommand(makeInput({ settings: { locked: 'true' }, member: manager }));
+        permission === PermissionFlagsBits.ManageGuild ||
+        permission === 'SendMessages' ||
+        permission === 'ViewChannel' ||
+        permission === 'EmbedLinks';
+    const allowed = await evaluateCommand(
+        makeInput({ settings: { locked: 'true' }, member: manager })
+    );
     assert.deepEqual(allowed, { ok: true });
 });
 
@@ -120,9 +130,7 @@ test('gate honors command permissions, threads, disabled commands and channels',
     );
     assert.match(wrongChannel.response.content, /restricted/);
 
-    const wrongVoice = await evaluateCommand(
-        makeInput({ settings: { voicechannel: 'other' } })
-    );
+    const wrongVoice = await evaluateCommand(makeInput({ settings: { voicechannel: 'other' } }));
     assert.match(wrongVoice.response.content, /must be in/);
 });
 
@@ -139,7 +147,10 @@ test('gate silently drops an invisible channel and DMs on missing SendMessages',
 
 test('gate checks bot, user and developer permissions', async () => {
     const noEmbed = makeMember({ denied: [PermissionFlagsBits.EmbedLinks] });
-    assert.match((await evaluateCommand(makeInput({ me: noEmbed }))).response.content, /EmbedLinks/);
+    assert.match(
+        (await evaluateCommand(makeInput({ me: noEmbed }))).response.content,
+        /EmbedLinks/
+    );
 
     const noClientPermission = makeMember({ denied: ['ViewChannel'] });
     assert.match(
@@ -233,7 +244,9 @@ test('gate checks active players and DJ roles', async () => {
         /Nothing is playing/
     );
 
-    const djCommand = makeCommand({ player: { voice: true, dj: true, active: false, djPerm: null } });
+    const djCommand = makeCommand({
+        player: { voice: true, dj: true, active: false, djPerm: null },
+    });
     const djClient = makeClient({
         db: {
             ...makeClient().db,
@@ -276,7 +289,10 @@ test('gate checks active players and DJ roles', async () => {
 
     const manager = makeMember({ roles: [] });
     manager.hasPermission = permission =>
-        permission === PermissionFlagsBits.ManageGuild || permission === 'SendMessages' || permission === 'ViewChannel' || permission === 'EmbedLinks';
+        permission === PermissionFlagsBits.ManageGuild ||
+        permission === 'SendMessages' ||
+        permission === 'ViewChannel' ||
+        permission === 'EmbedLinks';
     assert.deepEqual(
         await evaluateCommand(makeInput({ command: djCommand, client: djClient, member: manager })),
         { ok: true }

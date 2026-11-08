@@ -6,10 +6,10 @@ BootstrapDJ is maintained as a self-hosted project. Security fixes are applied
 to the current `4.1.x` line and the latest `main` branch. Older forks and
 modified deployments are not supported.
 
-| Version | Supported |
-| ------- | --------- |
+| Version | Supported          |
+| ------- | ------------------ |
 | 4.1.x   | :white_check_mark: |
-| < 4.1   | :x: |
+| < 4.1   | :x:                |
 
 ## Reporting a Vulnerability
 

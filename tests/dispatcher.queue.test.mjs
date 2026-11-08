@@ -44,7 +44,10 @@ test('a user request purges filler and persists the final queue once', () => {
 
     dispatcher.enqueue(makeSong('request'));
 
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['request']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['request']
+    );
     assert.equal(saves, 1);
 });
 
@@ -60,6 +63,9 @@ test('disabling autoplay purges filler and persists once', async () => {
 
     await dispatcher.setAutoplay(false);
 
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['user']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['user']
+    );
     assert.equal(saves, 1);
 });

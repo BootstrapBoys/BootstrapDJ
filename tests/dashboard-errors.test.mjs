@@ -4,11 +4,7 @@ import test from 'node:test';
 
 import config from '../dist/config.js';
 import { route } from '../dist/dashboard/server.js';
-import {
-    FULL_ACCESS,
-    dashboardFilter,
-    dashboardPlayerAction,
-} from '../dist/dashboard/shardApi.js';
+import { FULL_ACCESS, dashboardFilter, dashboardPlayerAction } from '../dist/dashboard/shardApi.js';
 
 const CSRF = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
@@ -110,11 +106,7 @@ test('unknown settings, filters, actions and missing players return 4xx', async 
     const unknownFilter = await post(
         '/api/filter',
         { guildId: 'g1', filter: 'not-a-filter', enabled: true },
-        makeClient(
-            new Map([
-                ['g1', { filters: [], filterValues: {}, player: {} }],
-            ])
-        )
+        makeClient(new Map([['g1', { filters: [], filterValues: {}, player: {} }]]))
     );
     assert.equal(unknownFilter.status, 400);
 

@@ -36,7 +36,9 @@ export default class Save extends Command {
     }
 
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
-        return ctx.sendMessage({ embeds: [client.embed().setColor(client.color.red).setDescription(text)] });
+        return ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.red).setDescription(text)],
+        });
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {

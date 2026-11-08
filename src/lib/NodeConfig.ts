@@ -46,10 +46,18 @@ export function parseFallbackNodes(raw: string | undefined): ConfiguredNode[] {
     return nodes;
 }
 
-export function toNodeOptions(primary: ConfiguredNode | null, fallbacks: ConfiguredNode[]): NodeOption[] {
+export function toNodeOptions(
+    primary: ConfiguredNode | null,
+    fallbacks: ConfiguredNode[]
+): NodeOption[] {
     const nodes: NodeOption[] = [];
     if (primary && primary.url) {
-        nodes.push({ name: primary.name, url: primary.url, auth: primary.auth, secure: primary.secure });
+        nodes.push({
+            name: primary.name,
+            url: primary.url,
+            auth: primary.auth,
+            secure: primary.secure,
+        });
     }
     for (const fallback of fallbacks) {
         nodes.push({

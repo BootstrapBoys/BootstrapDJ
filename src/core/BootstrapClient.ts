@@ -78,7 +78,10 @@ export default class BootstrapClient extends Client {
         return guildAccessFor(this, userId, guildId);
     }
 
-    public dashboardLocalPlayer(guildId: string): { found: boolean; player: PlayerSnapshot | null } {
+    public dashboardLocalPlayer(guildId: string): {
+        found: boolean;
+        player: PlayerSnapshot | null;
+    } {
         return dashboardPlayer(this, guildId);
     }
 
@@ -155,7 +158,9 @@ export default class BootstrapClient extends Client {
         });
     }
 
-    public async preferredBotStatus(guildId: string): Promise<{ allowed: boolean; name: string | null }> {
+    public async preferredBotStatus(
+        guildId: string
+    ): Promise<{ allowed: boolean; name: string | null }> {
         if (!this.config.botsFile || !this.user) return { allowed: true, name: null };
         let bots;
         try {
@@ -194,7 +199,11 @@ export default class BootstrapClient extends Client {
                 .pruneStats()
                 .then(result => {
                     const removed =
-                        result.daily + result.tracks + result.listeners + result.userTracks + result.leases;
+                        result.daily +
+                        result.tracks +
+                        result.listeners +
+                        result.userTracks +
+                        result.leases;
                     if (!removed) return;
                     this.logger.info(
                         `[stats] pruned ${result.daily} daily, ${result.tracks} tracks, ${result.listeners} listeners, ${result.userTracks} per-user tracks, ${result.leases} expired leases`
@@ -216,7 +225,9 @@ export default class BootstrapClient extends Client {
         try {
             const best = await findBestPublicNode(this.config.publicNodeListUrl);
             if (!best) {
-                this.logger.warn('[nodes] no public Lavalink node answered the probe; starting without a node');
+                this.logger.warn(
+                    '[nodes] no public Lavalink node answered the probe; starting without a node'
+                );
                 return [];
             }
             this.logger.info(

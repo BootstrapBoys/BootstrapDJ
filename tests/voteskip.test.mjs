@@ -17,9 +17,7 @@ function harness() {
     const guild = {
         id: 'g1',
         channels: {
-            cache: new Map([
-                ['voice-1', { id: 'voice-1', type: ChannelType.GuildVoice, members }],
-            ]),
+            cache: new Map([['voice-1', { id: 'voice-1', type: ChannelType.GuildVoice, members }]]),
         },
     };
     let skips = 0;
@@ -65,10 +63,7 @@ test('track replacement clears the outstanding votes', async () => {
     const h = harness();
     await h.run('u1');
 
-    const start = new TrackStart(
-        { guilds: { cache: new Map() } },
-        'events/player/TrackStart.js'
-    );
+    const start = new TrackStart({ guilds: { cache: new Map() } }, 'events/player/TrackStart.js');
     await start.run({ guildId: 'g1' }, h.player.current, {
         nowPlayingCollector: null,
         clearNowPlayingCommandMessages: () => {},

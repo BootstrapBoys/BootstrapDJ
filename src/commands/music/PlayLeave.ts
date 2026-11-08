@@ -9,17 +9,30 @@ export default class PlayLeave extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'playleave',
-            description: { content: 'Plays a request and leaves voice when the queue ends', usage: 'playleave <query>', examples: ['playleave NF The Search'] },
+            description: {
+                content: 'Plays a request and leaves voice when the queue ends',
+                usage: 'playleave <query>',
+                examples: ['playleave NF The Search'],
+            },
             category: 'music',
             aliases: ['pleave'],
             cooldown: 3,
             args: true,
             defer: true,
             player: { voice: true, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [
-                { name: 'query', description: 'Track, search term, or playlist URL', type: ApplicationCommandOptionType.String, required: true },
+                {
+                    name: 'query',
+                    description: 'Track, search term, or playlist URL',
+                    type: ApplicationCommandOptionType.String,
+                    required: true,
+                },
             ],
         });
     }
@@ -31,13 +44,20 @@ export default class PlayLeave extends Command {
         const query = args.join(' ').trim();
         if (!query) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Provide something to play.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Provide something to play.'),
+                ],
             });
         }
         const res = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         if (!res) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No results found.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('No results found.'),
+                ],
             });
         }
         const tracks =
@@ -50,15 +70,21 @@ export default class PlayLeave extends Command {
                     : [];
         if (!tracks.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No tracks found.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('No tracks found.'),
+                ],
             });
         }
         let player = client.queue.get(guild.id);
-        if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
+        if (!player || player.isStale)
+            player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
         const limits = await getPlayLimits(client, guild.id);
         const accepted: typeof tracks = [];
         let rejection: string | null = null;
-        for (const track of tracks.slice(0, limits.maxPlaylistTracks || client.config.maxPlaylistSize)) {
+        for (const track of tracks.slice(
+            0,
+            limits.maxPlaylistTracks || client.config.maxPlaylistSize
+        )) {
             const song = player.buildTrack(track, author);
             rejection = checkTrack(player, song, author.id, limits);
             if (rejection) break;

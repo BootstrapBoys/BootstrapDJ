@@ -55,9 +55,19 @@ export default class Permissions extends Command {
         });
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        error: boolean = false
+    ): Promise<unknown> {
         return ctx.sendMessage({
-            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
+            embeds: [
+                client
+                    .embed()
+                    .setColor(error ? client.color.red : client.color.main)
+                    .setDescription(text),
+            ],
         });
     }
 
@@ -109,9 +119,7 @@ export default class Permissions extends Command {
             action = (args[0] ?? 'list').toLowerCase();
             commandName = args[1]?.toLowerCase() ?? null;
             selected =
-                ctx.message?.mentions.users.first() ??
-                ctx.message?.mentions.roles.first() ??
-                null;
+                ctx.message?.mentions.users.first() ?? ctx.message?.mentions.roles.first() ?? null;
         }
 
         const validActions = ['list', 'allow', 'deny', 'reset', 'claim', 'transfer'];
@@ -138,7 +146,10 @@ export default class Permissions extends Command {
                 `**Bot owner:** ${owner ? `<@${owner}>` : 'unclaimed'}`,
                 ...rules
                     .slice(0, 20)
-                    .map(rule => `${rule.allow ? '✅' : '⛔'} **${rule.command}** — <@${rule.targetId}>`),
+                    .map(
+                        rule =>
+                            `${rule.allow ? '✅' : '⛔'} **${rule.command}** — <@${rule.targetId}>`
+                    ),
             ];
             return await ctx.sendMessage({
                 embeds: [
@@ -152,7 +163,10 @@ export default class Permissions extends Command {
         }
 
         if (action === 'reset') {
-            const removed = await client.db.clearPermissionRules(guild.id, commandName ?? undefined);
+            const removed = await client.db.clearPermissionRules(
+                guild.id,
+                commandName ?? undefined
+            );
             return await this.reply(
                 client,
                 ctx,

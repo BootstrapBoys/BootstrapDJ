@@ -20,7 +20,7 @@ export default class Invite extends Command {
         super(client, {
             name: 'invite',
             description: {
-                content: 'Sends the bot\'s invite link',
+                content: "Sends the bot's invite link",
                 examples: ['invite'],
                 usage: 'invite',
             },

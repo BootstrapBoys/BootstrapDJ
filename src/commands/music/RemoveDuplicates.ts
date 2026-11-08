@@ -5,7 +5,11 @@ export default class RemoveDuplicates extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'removeduplicates',
-            description: { content: 'Removes duplicate queued tracks', usage: 'removeduplicates', examples: ['removeduplicates'] },
+            description: {
+                content: 'Removes duplicate queued tracks',
+                usage: 'removeduplicates',
+                examples: ['removeduplicates'],
+            },
             category: 'music',
             aliases: ['rd', 'dedupe'],
             cooldown: 3,
@@ -27,7 +31,9 @@ export default class RemoveDuplicates extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The queue is empty.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                ],
             });
         }
         const before = player.queue.length;

@@ -172,7 +172,12 @@ export async function remotePlayerAction(
                     value: number
                 ): Promise<ActionError>;
             } => typeof Reflect.get(value, 'dashboardLocalPlayerAction') === 'function';
-            const miss: ActionError = { ok: false, found: false, status: 404, error: 'Unknown guild' };
+            const miss: ActionError = {
+                ok: false,
+                found: false,
+                status: 404,
+                error: 'Unknown guild',
+            };
             if (!host(shard)) return miss;
             return shard.dashboardLocalPlayerAction(context.guildId, context.action, context.value);
         },

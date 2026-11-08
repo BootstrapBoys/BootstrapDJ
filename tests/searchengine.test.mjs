@@ -12,7 +12,12 @@ test('prefix searches use the prefix engine without a settings lookup', async ()
     let calls = 0;
     const probe = {
         ...client,
-        db: { getGuildSettings: async () => { calls += 1; return {}; } },
+        db: {
+            getGuildSettings: async () => {
+                calls += 1;
+                return {};
+            },
+        },
     };
     const engine = await resolveSearchEngine(probe, { isInteraction: false, guild: { id: 'g' } });
     assert.equal(engine, 'ytsearch');
@@ -20,7 +25,10 @@ test('prefix searches use the prefix engine without a settings lookup', async ()
 });
 
 test('slash searches use guild searchtype then the default engine', async () => {
-    const configured = await resolveSearchEngine(client, { isInteraction: true, guild: { id: 'g' } });
+    const configured = await resolveSearchEngine(client, {
+        isInteraction: true,
+        guild: { id: 'g' },
+    });
     assert.equal(configured, 'ytmsearch');
 
     const fallback = await resolveSearchEngine(

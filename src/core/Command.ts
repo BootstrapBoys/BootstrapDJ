@@ -42,7 +42,11 @@ export interface CommandOptions {
     category?: string;
 }
 
-const DEFAULT_CLIENT_PERMISSIONS: PermissionsString[] = ['SendMessages', 'ViewChannel', 'EmbedLinks'];
+const DEFAULT_CLIENT_PERMISSIONS: PermissionsString[] = [
+    'SendMessages',
+    'ViewChannel',
+    'EmbedLinks',
+];
 
 const DEFAULT_COPY: CommandCopy = Object.freeze({
     content: 'No description provided',
@@ -126,7 +130,11 @@ export default class Command {
     }
 
     /** Subclasses replace this; the default keeps metadata-only commands safe. */
-    public async run(_client: BootstrapClient, _message: unknown, _args: string[]): Promise<unknown> {
+    public async run(
+        _client: BootstrapClient,
+        _message: unknown,
+        _args: string[]
+    ): Promise<unknown> {
         return await Promise.resolve();
     }
 }

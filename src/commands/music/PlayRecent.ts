@@ -9,7 +9,11 @@ export default class PlayRecent extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'playrecent',
-            description: { content: 'Queues tracks from recent playback history', usage: 'playrecent [count]', examples: ['playrecent 5'] },
+            description: {
+                content: 'Queues tracks from recent playback history',
+                usage: 'playrecent [count]',
+                examples: ['playrecent 5'],
+            },
             category: 'music',
             aliases: ['pr'],
             cooldown: 3,
@@ -49,18 +53,19 @@ export default class PlayRecent extends Command {
         // history for rows written before the table existed.
         const stored = await client.db.getRecentTracks(guild.id, count + 1).catch(() => []);
         const currentId = player.current ? trackIdentity(player.current) : null;
-        const recent = (stored.length
-            ? stored
-                  .map(row => {
-                      try {
-                          return fromSaved(JSON.parse(row.payload) as SavedTrack, author);
-                      } catch {
-                          return null;
-                      }
-                  })
-                  .filter((track): track is NonNullable<typeof track> => Boolean(track))
-                  .reverse()
-            : player.history.slice(-(count + 1))
+        const recent = (
+            stored.length
+                ? stored
+                      .map(row => {
+                          try {
+                              return fromSaved(JSON.parse(row.payload) as SavedTrack, author);
+                          } catch {
+                              return null;
+                          }
+                      })
+                      .filter((track): track is NonNullable<typeof track> => Boolean(track))
+                      .reverse()
+                : player.history.slice(-(count + 1))
         )
             .filter(track => !currentId || trackIdentity(track) !== currentId)
             .slice(-count);
@@ -70,7 +75,9 @@ export default class PlayRecent extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('No playback history yet, or only the current track is available.'),
+                        .setDescription(
+                            'No playback history yet, or only the current track is available.'
+                        ),
                 ],
             });
         }
@@ -98,7 +105,9 @@ export default class PlayRecent extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Queued ${accepted.length} recent track${accepted.length === 1 ? '' : 's'}.`),
+                    .setDescription(
+                        `Queued ${accepted.length} recent track${accepted.length === 1 ? '' : 's'}.`
+                    ),
             ],
         });
     }

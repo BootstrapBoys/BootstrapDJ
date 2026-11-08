@@ -624,7 +624,9 @@ export class EarlBridge {
         } else if (response.loadType === LoadType.PLAYLIST) {
             const playlistLimit = this.client.config.maxPlaylistSize;
             const candidates =
-                playlistLimit > 0 ? response.data.tracks.slice(0, playlistLimit) : response.data.tracks;
+                playlistLimit > 0
+                    ? response.data.tracks.slice(0, playlistLimit)
+                    : response.data.tracks;
             const accepted: Song[] = [];
             let playlistDuration = 0;
             let skipped = 0;
@@ -655,7 +657,10 @@ export class EarlBridge {
                 accepted.push(song);
             }
             if (accepted.length === 0) {
-                return { status: 200, message: 'No tracks from that playlist fit this server’s limits.' };
+                return {
+                    status: 200,
+                    message: 'No tracks from that playlist fit this server’s limits.',
+                };
             }
             // Batch insert: persist once after the whole playlist, and reverse
             // the enqueueNext order so the playlist keeps its original order.

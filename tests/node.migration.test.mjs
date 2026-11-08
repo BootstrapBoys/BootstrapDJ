@@ -110,11 +110,11 @@ test('rebuild transfers current, queue, history and seeds exactly once', async (
     const { dispatcher, events } = makeDispatcher();
     const { client, events: clientEvents } = makeClient(guild);
     const rebuilt = makeRebuilt(events);
-    const migrator = new NodeMigrator(
-        client,
-        async () => rebuilt,
-        { info: () => {}, warn: () => {}, error: () => {} }
-    );
+    const migrator = new NodeMigrator(client, async () => rebuilt, {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+    });
 
     const result = await migrator.rebuild(dispatcher, node);
 
@@ -124,7 +124,10 @@ test('rebuild transfers current, queue, history and seeds exactly once', async (
         rebuilt.queue.map(track => track.info.title),
         ['current', 'next']
     );
-    assert.deepEqual(rebuilt.history.map(track => track.info.title), ['old']);
+    assert.deepEqual(
+        rebuilt.history.map(track => track.info.title),
+        ['old']
+    );
     assert.equal(rebuilt.previous?.info.title, 'previous');
     assert.equal(rebuilt.loop, 'repeat');
     assert.equal(rebuilt.autoplay, true);
@@ -163,11 +166,11 @@ test('rebuild samples the position before the old player is torn down', async ()
     const { client } = makeClient(guild);
     const rebuilt = makeRebuilt([]);
     rebuilt.play = async () => {};
-    const migrator = new NodeMigrator(
-        client,
-        async () => rebuilt,
-        { info: () => {}, warn: () => {}, error: () => {} }
-    );
+    const migrator = new NodeMigrator(client, async () => rebuilt, {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+    });
 
     await migrator.rebuild(dispatcher, node);
 
@@ -195,11 +198,11 @@ test('a resume position sampled before the switch wins over the live position', 
     });
     const { client } = makeClient(guild);
     const rebuilt = makeRebuilt(events);
-    const migrator = new NodeMigrator(
-        client,
-        async () => rebuilt,
-        { info: () => {}, warn: () => {}, error: () => {} }
-    );
+    const migrator = new NodeMigrator(client, async () => rebuilt, {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+    });
 
     await migrator.rebuild(dispatcher, node);
 
@@ -260,15 +263,18 @@ test('a skipped queue rebuild does not duplicate the head track', async () => {
     const { client } = makeClient(guild);
     const rebuilt = makeRebuilt([]);
     rebuilt.play = async () => {};
-    const migrator = new NodeMigrator(
-        client,
-        async () => rebuilt,
-        { info: () => {}, warn: () => {}, error: () => {} }
-    );
+    const migrator = new NodeMigrator(client, async () => rebuilt, {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+    });
 
     await migrator.rebuild(dispatcher, node);
 
-    assert.deepEqual(rebuilt.queue.map(track => track.info.title), ['next']);
+    assert.deepEqual(
+        rebuilt.queue.map(track => track.info.title),
+        ['next']
+    );
 });
 
 test('rebuild waits for the migrated volume before starting playback', async () => {
@@ -285,11 +291,11 @@ test('rebuild waits for the migrated volume before starting playback', async () 
         events.push(`volume:${value}`);
     };
     rebuilt.play = async () => events.push('play');
-    const migrator = new NodeMigrator(
-        client,
-        async () => rebuilt,
-        { info: () => {}, warn: () => {}, error: () => {} }
-    );
+    const migrator = new NodeMigrator(client, async () => rebuilt, {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+    });
 
     const migrating = migrator.rebuild(dispatcher, node);
     await new Promise(resolve => setImmediate(resolve));
@@ -300,10 +306,10 @@ test('rebuild waits for the migrated volume before starting playback', async () 
     releaseVolume();
     await migrating;
 
-    assert.deepEqual(events.filter(event => event === 'volume:100' || event === 'play'), [
-        'volume:100',
-        'play',
-    ]);
+    assert.deepEqual(
+        events.filter(event => event === 'volume:100' || event === 'play'),
+        ['volume:100', 'play']
+    );
     assert.ok(clientEvents.includes('playerCreate'));
 });
 
@@ -318,11 +324,11 @@ test('a replacement that fails mid-restore is torn down and the session kept', a
     const cleaned = [];
     rebuilt.destroy = preserve => cleaned.push(preserve);
     const errors = [];
-    const migrator = new NodeMigrator(
-        client,
-        async () => rebuilt,
-        { info: () => {}, warn: () => {}, error: message => errors.push(message) }
-    );
+    const migrator = new NodeMigrator(client, async () => rebuilt, {
+        info: () => {},
+        warn: () => {},
+        error: message => errors.push(message),
+    });
 
     const result = await migrator.rebuild(dispatcher, node);
 

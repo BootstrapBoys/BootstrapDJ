@@ -31,7 +31,12 @@ export default class StayConnected extends Command {
         });
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, colour: ColorResolvable): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        colour: ColorResolvable
+    ): Promise<unknown> {
         return ctx.sendMessage({ embeds: [client.embed().setColor(colour).setDescription(text)] });
     }
 
@@ -51,7 +56,12 @@ export default class StayConnected extends Command {
 
         if (await client.db.get_247(guild.id)) {
             await client.db.delete_247(guild.id);
-            return await this.reply(client, ctx, '**247 mode has been disabled**', client.color.red);
+            return await this.reply(
+                client,
+                ctx,
+                '**247 mode has been disabled**',
+                client.color.red
+            );
         }
 
         await client.db.set_247(guild.id, textChannel.id, voiceChannel.id);

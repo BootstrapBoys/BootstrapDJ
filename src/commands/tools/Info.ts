@@ -30,7 +30,11 @@ export default class Info extends Command {
     public constructor(client: BootstrapClient) {
         super(client, {
             name: 'info',
-            description: { content: 'Information about the bot', examples: ['info'], usage: 'info' },
+            description: {
+                content: 'Information about the bot',
+                examples: ['info'],
+                usage: 'info',
+            },
             category: 'info',
             aliases: ['botinfo', 'bi', 'about'],
             cooldown: 3,

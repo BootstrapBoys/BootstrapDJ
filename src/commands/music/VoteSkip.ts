@@ -15,13 +15,21 @@ export default class VoteSkip extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'voteskip',
-            description: { content: 'Starts or joins a vote to skip the current track', usage: 'voteskip', examples: ['voteskip'] },
+            description: {
+                content: 'Starts or joins a vote to skip the current track',
+                usage: 'voteskip',
+                examples: ['voteskip'],
+            },
             category: 'music',
             aliases: ['vskip'],
             cooldown: 3,
             args: false,
             player: { voice: true, dj: false, active: true, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [],
         });
@@ -34,13 +42,27 @@ export default class VoteSkip extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         const channel = player.voiceId ? guild.channels.cache.get(player.voiceId) : null;
-        if (!channel || (channel.type !== ChannelType.GuildVoice && channel.type !== ChannelType.GuildStageVoice)) {
+        if (
+            !channel ||
+            (channel.type !== ChannelType.GuildVoice &&
+                channel.type !== ChannelType.GuildStageVoice)
+        ) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('I am not in a voice channel.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('I am not in a voice channel.'),
+                ],
             });
         }
         const listeners = channel.members.filter(member => !member.user.bot).size;
@@ -68,7 +90,12 @@ export default class VoteSkip extends Command {
             votes.delete(guild.id);
             await player.skip();
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.main).setDescription('Vote passed — skipping the track.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.main)
+                        .setDescription('Vote passed — skipping the track.'),
+                ],
             });
         }
         return await ctx.sendMessage({

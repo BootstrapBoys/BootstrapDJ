@@ -53,9 +53,19 @@ export default class Listen extends Command {
         return args[0] ?? '';
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        error: boolean = false
+    ): Promise<unknown> {
         return ctx.sendMessage({
-            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
+            embeds: [
+                client
+                    .embed()
+                    .setColor(error ? client.color.red : client.color.main)
+                    .setDescription(text),
+            ],
         });
     }
 
@@ -109,15 +119,26 @@ export default class Listen extends Command {
         const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return;
         if (!(await hasDjAccess(client, guild.id, member))) {
-            return await this.reply(client, ctx, 'You need the DJ role to enable voice commands.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'You need the DJ role to enable voice commands.',
+                true
+            );
         }
         const voice = ctx.voiceChannel;
         if (!voice) return await this.reply(client, ctx, 'Join a voice channel first.', true);
 
         const setup = await client.db.getSetup(guild.id);
-        const textId = setup?.textId ?? (ctx.channel instanceof TextChannel ? ctx.channel.id : null);
+        const textId =
+            setup?.textId ?? (ctx.channel instanceof TextChannel ? ctx.channel.id : null);
         if (!textId) {
-            return await this.reply(client, ctx, 'I need a text channel for replies — run `/setup` first.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'I need a text channel for replies — run `/setup` first.',
+                true
+            );
         }
 
         const started = await this.call('/listen/start', {
@@ -143,7 +164,11 @@ export default class Listen extends Command {
         await updateSetup(client, guild).catch(() => {});
         const optedOut = await client.db.listVoiceOptOuts(guild.id);
         await this.pushOptOuts(optedOut.map(entry => entry.userId));
-        return await this.reply(client, ctx, `Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`);
+        return await this.reply(
+            client,
+            ctx,
+            `Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`
+        );
     }
 
     private async disable(client: BootstrapClient, ctx: Context, userId: string): Promise<unknown> {
@@ -152,7 +177,12 @@ export default class Listen extends Command {
         const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return;
         if (!(await hasDjAccess(client, guild.id, member))) {
-            return await this.reply(client, ctx, 'You need the DJ role to disable voice commands.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'You need the DJ role to disable voice commands.',
+                true
+            );
         }
 
         const stopped = await this.call('/listen/stop');
@@ -196,7 +226,9 @@ export default class Listen extends Command {
                 state?.textChannelId ? `**Replies in:** <#${state.textChannelId}>` : null,
                 `**Listener:** ${listener.active === true ? 'connected' : 'not connected'}`,
                 `**Opted out:** ${
-                    optOuts.length > 0 ? optOuts.map(entry => `<@${entry.userId}>`).join(', ') : 'nobody'
+                    optOuts.length > 0
+                        ? optOuts.map(entry => `<@${entry.userId}>`).join(', ')
+                        : 'nobody'
                 }`,
             ].filter((line): line is string => Boolean(line));
             return await this.reply(client, ctx, lines.join('\n'));

@@ -142,9 +142,7 @@ export class PlaybackEngine {
     /** A player action nobody awaits must not become an unhandled rejection. */
     private callPlayer(action: string, run: () => Promise<unknown>): void {
         void run().catch(error => {
-            this.ports.logger.warn(
-                `[queue] ${action} failed for ${this.guildId}: ${error}`
-            );
+            this.ports.logger.warn(`[queue] ${action} failed for ${this.guildId}: ${error}`);
         });
     }
 

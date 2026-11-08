@@ -21,10 +21,20 @@ const botUser = { id: 'bot', username: 'Bootstrap', tag: 'Bootstrap#0001' };
 function makeChannel(type, members = []) {
     const collection = new Collection();
     for (const [index, member] of members.entries()) collection.set(`m${index}`, member);
-    return { id: type === ChannelType.GuildVoice ? 'voice-1' : 'text-1', type, members: collection };
+    return {
+        id: type === ChannelType.GuildVoice ? 'voice-1' : 'text-1',
+        type,
+        members: collection,
+    };
 }
 
-function makeRestoreHarness({ session, stay = null, listeners = [], text = null, live = false } = {}) {
+function makeRestoreHarness({
+    session,
+    stay = null,
+    listeners = [],
+    text = null,
+    live = false,
+} = {}) {
     const calls = {
         create: 0,
         deleted: [],
@@ -139,7 +149,10 @@ test('restore rejoins, rebuilds queue, volume, loop, autoplay and position', asy
         volume: 55,
         paused: true,
     });
-    assert.deepEqual(dispatcher.queue.map(track => track.info.title), ['Queued']);
+    assert.deepEqual(
+        dispatcher.queue.map(track => track.info.title),
+        ['Queued']
+    );
     assert.equal(dispatcher.current?.info.title, 'Saved');
     assert.equal(dispatcher.history.length, 1);
     assert.equal(dispatcher.restoring, false);
@@ -158,7 +171,10 @@ test('restore with queued tracks only starts the queue head', async () => {
     assert.deepEqual(harness.calls.restored, ['play']);
     assert.equal(harness.calls.played.length, 0);
     assert.deepEqual(harness.calls.paused, []);
-    assert.deepEqual(harness.dispatcher.queue.map(track => track.info.title), ['Queued']);
+    assert.deepEqual(
+        harness.dispatcher.queue.map(track => track.info.title),
+        ['Queued']
+    );
     assert.equal(harness.dispatcher.restoring, false);
 });
 
@@ -217,7 +233,11 @@ test('invalid saved JSON is deleted and never creates a player', async () => {
         session: savedSession({ queue: '{not json', current: null }),
     });
 
-    await restoreSession(harness.client, savedSession({ queue: '{not json', current: null }), botUser);
+    await restoreSession(
+        harness.client,
+        savedSession({ queue: '{not json', current: null }),
+        botUser
+    );
 
     assert.deepEqual(harness.calls.deleted, ['guild-1']);
     assert.equal(harness.calls.create, 0);

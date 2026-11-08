@@ -4,7 +4,9 @@ import test from 'node:test';
 import { cleanLyrics, paginateLyrics } from '../dist/commands/music/Lyrics.js';
 
 test('lyrics cleanup removes LRC timestamps and contributor headers', () => {
-    const cleaned = cleanLyrics('[00:01.00] First line\nContributors Lyrics\n\n[00:02.00] Second line');
+    const cleaned = cleanLyrics(
+        '[00:01.00] First line\nContributors Lyrics\n\n[00:02.00] Second line'
+    );
     assert.equal(cleaned, 'First line\n\nSecond line');
 });
 

@@ -7,7 +7,11 @@ export default class RemoveUser extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'removeuser',
-            description: { content: 'Removes a user’s queued tracks', usage: 'removeuser <user>', examples: ['removeuser @user'] },
+            description: {
+                content: 'Removes a user’s queued tracks',
+                usage: 'removeuser <user>',
+                examples: ['removeuser @user'],
+            },
             category: 'music',
             aliases: ['ru'],
             cooldown: 3,
@@ -36,7 +40,9 @@ export default class RemoveUser extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The queue is empty.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                ],
             });
         }
         const target = ctx.isInteraction
@@ -44,7 +50,12 @@ export default class RemoveUser extends Command {
             : await client.users.fetch(String(args[0]).replace(/[<@!>]/g, '')).catch(() => null);
         if (!target) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Could not resolve that user.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Could not resolve that user.'),
+                ],
             });
         }
         const before = player.queue.length;

@@ -12,7 +12,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../commands');
 export type SlashBody = RESTPostAPIChatInputApplicationCommandsJSONBody;
 type SlashRoute = ReturnType<typeof Routes.applicationCommands>;
@@ -25,7 +24,12 @@ function commandFiles(dir: string): string[] {
     return fs.readdirSync(path.join(ROOT, dir)).filter(file => file.endsWith('.js'));
 }
 
-async function register(client: BootstrapClient, dir: string, file: string, bust: boolean): Promise<SlashBody | null> {
+async function register(
+    client: BootstrapClient,
+    dir: string,
+    file: string,
+    bust: boolean
+): Promise<SlashBody | null> {
     const module = await import(`../commands/${dir}/${file}${bust ? `?update=${Date.now()}` : ''}`);
     const CommandClass = module.default as new (client: BootstrapClient) => Command;
     const command = new CommandClass(client);
@@ -87,7 +91,8 @@ export function attachSlashPublisher(client: BootstrapClient, body: SlashBody[])
             }
         }
         if (!routes.length) {
-            if (shardedNonCoordinator) client.logger.info('[slash] no command routes for this shard');
+            if (shardedNonCoordinator)
+                client.logger.info('[slash] no command routes for this shard');
             return;
         }
         const payload = body.slice(0, 100);

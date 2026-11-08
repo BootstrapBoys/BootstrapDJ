@@ -4,7 +4,11 @@ export default class SelectRandom extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'selectrandom',
-            description: { content: 'Moves a random queued track to the front', usage: 'selectrandom', examples: ['selectrandom'] },
+            description: {
+                content: 'Moves a random queued track to the front',
+                usage: 'selectrandom',
+                examples: ['selectrandom'],
+            },
             category: 'music',
             aliases: ['randompick'],
             cooldown: 3,
@@ -26,7 +30,9 @@ export default class SelectRandom extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The queue is empty.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                ],
             });
         }
         const index = Math.floor(Math.random() * player.queue.length);

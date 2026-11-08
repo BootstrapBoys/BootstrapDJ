@@ -36,20 +36,33 @@ export default class Eval extends Command {
         });
     }
 
-    private async deliver(client: BootstrapClient, ctx: Context, output: string, authorId: string): Promise<void> {
+    private async deliver(
+        client: BootstrapClient,
+        ctx: Context,
+        output: string,
+        authorId: string
+    ): Promise<void> {
         if (output.length > OUTPUT_LIMIT) {
             // A paste service is not a dependency; the transcript travels as a
             // file instead.
             await ctx.sendMessage({
-                files: [new AttachmentBuilder(Buffer.from(output, 'utf8'), { name: 'eval-output.txt' })],
+                files: [
+                    new AttachmentBuilder(Buffer.from(output, 'utf8'), { name: 'eval-output.txt' }),
+                ],
             });
             return;
         }
 
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder().setStyle(ButtonStyle.Danger).setLabel('Delete').setCustomId('eval-delete')
+            new ButtonBuilder()
+                .setStyle(ButtonStyle.Danger)
+                .setLabel('Delete')
+                .setCustomId('eval-delete')
         );
-        const message = await ctx.sendMessage({ content: `\`\`\`js\n${output}\n\`\`\``, components: [row] });
+        const message = await ctx.sendMessage({
+            content: `\`\`\`js\n${output}\n\`\`\``,
+            components: [row],
+        });
         const collector = message.createMessageComponentCollector({
             time: COLLECTOR_MS,
             filter: (interaction: MessageComponentInteraction) =>

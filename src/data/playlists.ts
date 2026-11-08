@@ -65,7 +65,10 @@ export class PlaylistStore {
             if (existing) return false;
             const legacy = await this.legacyDuplicate(playlist.id, key);
             if (legacy) {
-                await this.prisma.song.update({ where: { id: legacy.id }, data: { trackKey: key } });
+                await this.prisma.song.update({
+                    where: { id: legacy.id },
+                    data: { trackKey: key },
+                });
                 return false;
             }
         }
@@ -106,7 +109,11 @@ export class PlaylistStore {
         });
     }
 
-    public async createShare(ownerId: string, name: string, code: string): Promise<CollectionShare> {
+    public async createShare(
+        ownerId: string,
+        name: string,
+        code: string
+    ): Promise<CollectionShare> {
         return await this.prisma.collectionShare.create({ data: { code, ownerId, name } });
     }
 

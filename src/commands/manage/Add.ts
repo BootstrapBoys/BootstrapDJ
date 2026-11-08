@@ -72,7 +72,7 @@ export default class Add extends Command {
         if (!query) return await this.fail(client, ctx, 'Please provide a song');
 
         const playlist = await client.db.getPLaylist(author.id, name);
-        if (!playlist) return await this.fail(client, ctx, 'That playlist doesn\'t exist');
+        if (!playlist) return await this.fail(client, ctx, "That playlist doesn't exist");
 
         const result = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         const tracks = result ? tracksFor(result.loadType, result.data) : [];
@@ -86,7 +86,12 @@ export default class Add extends Command {
         }
         const suffix = duplicates > 0 ? ` (${duplicates} already in the playlist)` : '';
         return await ctx.sendMessage({
-            embeds: [{ description: `Added ${added} to ${playlist.name}${suffix}`, color: client.color.green }],
+            embeds: [
+                {
+                    description: `Added ${added} to ${playlist.name}${suffix}`,
+                    color: client.color.green,
+                },
+            ],
         });
     }
 }

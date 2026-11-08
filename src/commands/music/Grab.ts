@@ -29,7 +29,7 @@ export default defineMusicCommand({
             await author.send({ embeds: [card] });
             return await replyDone(client, ctx, '**I sent you a DM.**');
         } catch {
-            return await replyFail(client, ctx, '**I couldn\'t send you a DM.**');
+            return await replyFail(client, ctx, "**I couldn't send you a DM.**");
         }
     },
 });

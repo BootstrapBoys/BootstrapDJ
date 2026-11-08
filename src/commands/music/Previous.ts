@@ -4,7 +4,11 @@ export default class Previous extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'previous',
-            description: { content: 'Plays the previous track again', usage: 'previous', examples: ['previous'] },
+            description: {
+                content: 'Plays the previous track again',
+                usage: 'previous',
+                examples: ['previous'],
+            },
             category: 'music',
             aliases: ['prev'],
             cooldown: 3,
@@ -26,7 +30,12 @@ export default class Previous extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.previous) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('There is no previous track.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('There is no previous track.'),
+                ],
             });
         }
         const title = player.previous.info.title;

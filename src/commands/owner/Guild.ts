@@ -33,13 +33,28 @@ function inviteChannel(guild: Guild): InvitableChannel | null {
             ) {
                 return false;
             }
-            return Boolean(channel.permissionsFor(me)?.has(PermissionFlagsBits.CreateInstantInvite));
+            return Boolean(
+                channel.permissionsFor(me)?.has(PermissionFlagsBits.CreateInstantInvite)
+            );
         }) ?? null
     );
 }
 
 function formatGuildDate(date: Date): string {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+    ];
     return `${String(date.getDate()).padStart(2, '0')}/${months[date.getMonth()]}/${date.getFullYear()}`;
 }
 
@@ -79,36 +94,44 @@ export default class GuildCommand extends Command {
         return [...this.client.guilds.cache.values()].sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    private rows(page: number, totalPages: number, guilds: Guild[]): ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] {
+    private rows(
+        page: number,
+        totalPages: number,
+        guilds: Guild[]
+    ): ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] {
         const start = page * PAGE_SIZE;
         const menu = new StringSelectMenuBuilder()
             .setCustomId('guild-select')
             .setPlaceholder(`Select a guild (${page + 1}/${totalPages})`)
             .addOptions(
-                guilds.slice(start, start + PAGE_SIZE).map(guild =>
-                    new StringSelectMenuOptionBuilder()
-                        .setLabel(guild.name.slice(0, 100))
-                        .setDescription(`${guild.memberCount} members · ${guild.id}`.slice(0, 100))
-                        .setValue(guild.id)
-                )
+                guilds
+                    .slice(start, start + PAGE_SIZE)
+                    .map(guild =>
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel(guild.name.slice(0, 100))
+                            .setDescription(
+                                `${guild.memberCount} members · ${guild.id}`.slice(0, 100)
+                            )
+                            .setValue(guild.id)
+                    )
             );
-        const menuRow =
-            new ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>().addComponents(menu);
+        const menuRow = new ActionRowBuilder<
+            StringSelectMenuBuilder | ButtonBuilder
+        >().addComponents(menu);
         if (totalPages <= 1) return [menuRow];
 
-        const nav =
-            new ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('guild-page-prev')
-                    .setLabel('Previous')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(page === 0),
-                new ButtonBuilder()
-                    .setCustomId('guild-page-next')
-                    .setLabel('Next')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(page >= totalPages - 1)
-            );
+        const nav = new ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId('guild-page-prev')
+                .setLabel('Previous')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(page === 0),
+            new ButtonBuilder()
+                .setCustomId('guild-page-next')
+                .setLabel('Next')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(page >= totalPages - 1)
+        );
         return [menuRow, nav];
     }
 
@@ -117,7 +140,12 @@ export default class GuildCommand extends Command {
         let inviteLink: string | null = null;
         if (invite) {
             const created = await invite
-                .createInvite({ maxAge: 0, maxUses: 0, unique: true, reason: 'Owner guild inspection' })
+                .createInvite({
+                    maxAge: 0,
+                    maxUses: 0,
+                    unique: true,
+                    reason: 'Owner guild inspection',
+                })
                 .catch(() => null);
             if (created) inviteLink = `https://discord.gg/${created.code}`;
         }
@@ -126,7 +154,9 @@ export default class GuildCommand extends Command {
             .embed()
             .setColor(this.client.color.main)
             .setTitle('Joined a Guild !!')
-            .setThumbnail(guild.iconURL({ size: 256 }) ?? this.client.user?.displayAvatarURL() ?? null)
+            .setThumbnail(
+                guild.iconURL({ size: 256 }) ?? this.client.user?.displayAvatarURL() ?? null
+            )
             .addFields(
                 { name: 'Name', value: `\`${guild.name}\`` },
                 { name: 'ID', value: `\`${guild.id}\`` },
@@ -140,7 +170,9 @@ export default class GuildCommand extends Command {
                 { name: 'Creation Date', value: formatGuildDate(guild.createdAt) },
                 {
                     name: 'Guild Invite',
-                    value: inviteLink ? `[Here is ${guild.name} invite](${inviteLink})` : 'No invite available',
+                    value: inviteLink
+                        ? `[Here is ${guild.name} invite](${inviteLink})`
+                        : 'No invite available',
                 },
                 {
                     name: `${this.client.user?.username ?? 'BootstrapDJ'}'s Server Count`,
@@ -156,7 +188,12 @@ export default class GuildCommand extends Command {
         const guilds = this.pages();
         if (!guilds.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The bot is not in any guilds.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('The bot is not in any guilds.'),
+                ],
             });
         }
         const selected = args[0]?.trim();
@@ -166,7 +203,12 @@ export default class GuildCommand extends Command {
                 guilds.find(candidate => candidate.name.toLowerCase() === selected.toLowerCase());
             if (!guild) {
                 return await ctx.sendMessage({
-                    embeds: [client.embed().setColor(client.color.red).setDescription('That guild was not found.')],
+                    embeds: [
+                        client
+                            .embed()
+                            .setColor(client.color.red)
+                            .setDescription('That guild was not found.'),
+                    ],
                 });
             }
             // fetchOwner plus an invite creation can exceed Discord's three
@@ -183,13 +225,19 @@ export default class GuildCommand extends Command {
         const collector = message.createMessageComponentCollector({ time: 120_000 });
         collector.on('collect', async interaction => {
             if (interaction.user.id !== author.id) {
-                await interaction.reply({ content: 'This menu belongs to someone else.', ephemeral: true });
+                await interaction.reply({
+                    content: 'This menu belongs to someone else.',
+                    ephemeral: true,
+                });
                 return;
             }
             if (interaction.isStringSelectMenu() && interaction.customId === 'guild-select') {
                 const guild = client.guilds.cache.get(interaction.values[0]);
                 if (!guild) {
-                    await interaction.reply({ content: 'That guild is no longer available.', ephemeral: true });
+                    await interaction.reply({
+                        content: 'That guild is no longer available.',
+                        ephemeral: true,
+                    });
                     return;
                 }
                 await interaction.deferUpdate();
@@ -200,7 +248,8 @@ export default class GuildCommand extends Command {
             }
             if (interaction.isButton()) {
                 if (interaction.customId === 'guild-page-prev') page = Math.max(0, page - 1);
-                if (interaction.customId === 'guild-page-next') page = Math.min(totalPages - 1, page + 1);
+                if (interaction.customId === 'guild-page-next')
+                    page = Math.min(totalPages - 1, page + 1);
                 await interaction.update({ components: this.rows(page, totalPages, guilds) });
             }
         });

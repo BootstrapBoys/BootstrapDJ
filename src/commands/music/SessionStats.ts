@@ -4,13 +4,21 @@ export default class SessionStats extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'sessionstats',
-            description: { content: 'Shows statistics for the current playback session', usage: 'sessionstats', examples: ['sessionstats'] },
+            description: {
+                content: 'Shows statistics for the current playback session',
+                usage: 'sessionstats',
+                examples: ['sessionstats'],
+            },
             category: 'music',
             aliases: ['session'],
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [],
         });
@@ -22,7 +30,12 @@ export default class SessionStats extends Command {
         const player = client.queue.get(guild.id);
         if (!player) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('No session is active.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('No session is active.'),
+                ],
             });
         }
         const played = player.history.reduce((sum, track) => sum + (track.info.length || 0), 0);
@@ -40,8 +53,16 @@ export default class SessionStats extends Command {
                                 : 'Nothing',
                             inline: false,
                         },
-                        { name: 'Tracks played', value: String(player.history.length), inline: true },
-                        { name: 'Played time', value: client.utils.formatTime(played), inline: true },
+                        {
+                            name: 'Tracks played',
+                            value: String(player.history.length),
+                            inline: true,
+                        },
+                        {
+                            name: 'Played time',
+                            value: client.utils.formatTime(played),
+                            inline: true,
+                        },
                         { name: 'Queue', value: String(player.queue.length), inline: true },
                         { name: 'Volume', value: `${player.volume}%`, inline: true },
                         { name: 'Loop', value: player.loop, inline: true },

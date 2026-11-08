@@ -6,7 +6,11 @@ export default class RemoveKeyword extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'removekeyword',
-            description: { content: 'Removes queued tracks matching a keyword', usage: 'removekeyword <keyword>', examples: ['removekeyword live'] },
+            description: {
+                content: 'Removes queued tracks matching a keyword',
+                usage: 'removekeyword <keyword>',
+                examples: ['removekeyword live'],
+            },
             category: 'music',
             aliases: ['rk'],
             cooldown: 3,
@@ -35,13 +39,17 @@ export default class RemoveKeyword extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('The queue is empty.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                ],
             });
         }
         const keyword = args.join(' ').trim().toLowerCase();
         if (!keyword) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Provide a keyword.')],
+                embeds: [
+                    client.embed().setColor(client.color.red).setDescription('Provide a keyword.'),
+                ],
             });
         }
         const before = player.queue.length;

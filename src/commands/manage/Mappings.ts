@@ -106,9 +106,19 @@ export default class Mappings extends Command {
         };
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        error: boolean = false
+    ): Promise<unknown> {
         return ctx.sendMessage({
-            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
+            embeds: [
+                client
+                    .embed()
+                    .setColor(error ? client.color.red : client.color.main)
+                    .setDescription(text),
+            ],
         });
     }
 
@@ -121,7 +131,12 @@ export default class Mappings extends Command {
         const request = this.read(ctx);
         const { action, scope, trigger, expansion } = request;
         if (scope === 'server' && !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return await this.reply(client, ctx, 'You need Manage Server for server mappings.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'You need Manage Server for server mappings.',
+                true
+            );
         }
         const userId = scope === 'user' ? author.id : '';
 
@@ -131,7 +146,9 @@ export default class Mappings extends Command {
                 if (mappings.length === 0) {
                     return await this.reply(client, ctx, 'No custom mappings are set.');
                 }
-                const lines = mappings.map(entry => `\`${entry.trigger}\` → \`${entry.expansion}\` (${entry.scope})`);
+                const lines = mappings.map(
+                    entry => `\`${entry.trigger}\` → \`${entry.expansion}\` (${entry.scope})`
+                );
                 return await ctx.sendMessage({
                     embeds: [
                         client
@@ -155,7 +172,12 @@ export default class Mappings extends Command {
         }
 
         if (!/^[a-z0-9_-]{1,32}$/.test(trigger)) {
-            return await this.reply(client, ctx, 'Triggers must be 1–32 letters, numbers, `_` or `-`.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'Triggers must be 1–32 letters, numbers, `_` or `-`.',
+                true
+            );
         }
 
         if (action === 'remove') {
@@ -166,14 +188,20 @@ export default class Mappings extends Command {
                         .embed()
                         .setColor(removed ? client.color.green : client.color.red)
                         .setDescription(
-                            removed ? `Removed mapping \`${trigger}\`.` : `No mapping \`${trigger}\` exists.`
+                            removed
+                                ? `Removed mapping \`${trigger}\`.`
+                                : `No mapping \`${trigger}\` exists.`
                         ),
                 ],
             });
         }
 
-        if (!expansion) return await this.reply(client, ctx, 'Provide the command expansion.', true);
-        const target = expansion.split(/\s+/)[0]?.replace(/^[^\w]+/, '').toLowerCase();
+        if (!expansion)
+            return await this.reply(client, ctx, 'Provide the command expansion.', true);
+        const target = expansion
+            .split(/\s+/)[0]
+            ?.replace(/^[^\w]+/, '')
+            .toLowerCase();
         if (!target || !client.commands.has(target)) {
             return await this.reply(
                 client,
@@ -189,7 +217,9 @@ export default class Mappings extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(`Mapping \`${trigger}\` → \`${expansion}\` (${scope}) created.`),
+                    .setDescription(
+                        `Mapping \`${trigger}\` → \`${expansion}\` (${scope}) created.`
+                    ),
             ],
         });
     }

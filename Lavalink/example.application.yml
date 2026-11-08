@@ -14,224 +14,224 @@
 # ============================================================================
 
 server:
-  # REST/WebSocket port used by the bot. 443 is common when TLS is terminated
-  # by a reverse proxy; 2333 is Lavalink's default.
-  port: 2333
-  address: 0.0.0.0
-  # Uncomment when a TLS-terminating proxy expects HTTP/2 upstream.
-  # http2:
-  #   enabled: true
+    # REST/WebSocket port used by the bot. 443 is common when TLS is terminated
+    # by a reverse proxy; 2333 is Lavalink's default.
+    port: 2333
+    address: 0.0.0.0
+    # Uncomment when a TLS-terminating proxy expects HTTP/2 upstream.
+    # http2:
+    #   enabled: true
 
 plugins:
-  # --------------------------------------------------------------------------
-  # LavaSrc — Spotify, Deezer, Apple Music, Yandex Music, Flowery TTS
-  # --------------------------------------------------------------------------
-  lavasrc:
-    # Search fallbacks tried in order. ISRC gives the best match; the search
-    # provider handles tracks that have no ISRC.
-    providers:
-      - "dzisrc:%ISRC%"
-      - "dzsearch:%QUERY%"
-      # - "spsearch:%QUERY%" # add other providers as needed
+    # --------------------------------------------------------------------------
+    # LavaSrc — Spotify, Deezer, Apple Music, Yandex Music, Flowery TTS
+    # --------------------------------------------------------------------------
+    lavasrc:
+        # Search fallbacks tried in order. ISRC gives the best match; the search
+        # provider handles tracks that have no ISRC.
+        providers:
+            - 'dzisrc:%ISRC%'
+            - 'dzsearch:%QUERY%'
+            # - "spsearch:%QUERY%" # add other providers as needed
 
-    # Enable only the sources you have credentials for. Disabled sources do
-    # not register and will make their search prefixes fail.
-    sources:
-      spotify: false
-      applemusic: false
-      deezer: false
-      yandexmusic: false
-      flowerytts: false
-      youtube: true # LavaSrc YouTube search; leave false if using youtube-plugin search
+        # Enable only the sources you have credentials for. Disabled sources do
+        # not register and will make their search prefixes fail.
+        sources:
+            spotify: false
+            applemusic: false
+            deezer: false
+            yandexmusic: false
+            flowerytts: false
+            youtube: true # LavaSrc YouTube search; leave false if using youtube-plugin search
 
-    spotify:
-      clientId: "" # Spotify Developer Dashboard
-      clientSecret: "" # Spotify Developer Dashboard
-      countryCode: "US" # ISO 3166-1 alpha-2; used for artist top tracks
-      playlistLoadLimit: 6 # pages of 100 tracks
-      albumLoadLimit: 6 # pages of 50 tracks
+        spotify:
+            clientId: '' # Spotify Developer Dashboard
+            clientSecret: '' # Spotify Developer Dashboard
+            countryCode: 'US' # ISO 3166-1 alpha-2; used for artist top tracks
+            playlistLoadLimit: 6 # pages of 100 tracks
+            albumLoadLimit: 6 # pages of 50 tracks
 
-    applemusic:
-      countryCode: "US" # ISO 3166-1 alpha-2
-      # Use either mediaAPIToken, or the Apple Music key trio below.
-      mediaAPIToken: ""
-      keyID: ""
-      teamID: ""
-      musicKitKey: ""
-      playlistLoadLimit: 6 # pages of 300 tracks
-      albumLoadLimit: 6 # pages of 300 tracks
+        applemusic:
+            countryCode: 'US' # ISO 3166-1 alpha-2
+            # Use either mediaAPIToken, or the Apple Music key trio below.
+            mediaAPIToken: ''
+            keyID: ''
+            teamID: ''
+            musicKitKey: ''
+            playlistLoadLimit: 6 # pages of 300 tracks
+            albumLoadLimit: 6 # pages of 300 tracks
 
-    deezer:
-      # Deezer needs a valid ARL. Leave blank to keep the source disabled.
-      arl: ""
-      # Only needed for legacy encrypted-track support; may be left blank.
-      masterDecryptionKey: ""
+        deezer:
+            # Deezer needs a valid ARL. Leave blank to keep the source disabled.
+            arl: ''
+            # Only needed for legacy encrypted-track support; may be left blank.
+            masterDecryptionKey: ''
 
-    yandexmusic:
-      accessToken: ""
+        yandexmusic:
+            accessToken: ''
 
-    flowerytts:
-      voice: "default voice" # case-sensitive voice name
-      translate: false
-      silence: 1000 # milliseconds; 0–10000
-      speed: 1.0 # 0.5–10.0
-      audioFormat: "mp3" # mp3, ogg_opus, ogg_vorbis, aac, wav, flac
+        flowerytts:
+            voice: 'default voice' # case-sensitive voice name
+            translate: false
+            silence: 1000 # milliseconds; 0–10000
+            speed: 1.0 # 0.5–10.0
+            audioFormat: 'mp3' # mp3, ogg_opus, ogg_vorbis, aac, wav, flac
 
-  # --------------------------------------------------------------------------
-  # YouTube plugin — recommended for reliable YouTube playback
-  # --------------------------------------------------------------------------
-  # Pin a release or snapshot. Snapshot builds are immutable commit hashes;
-  # update the commit deliberately after testing playback.
-  youtube:
-    enabled: false
-    allowSearch: true
-    allowDirectVideoIds: true
-    allowDirectPlaylistIds: true
-    clients:
-      - MUSIC
-      - ANDROID_VR
-      - WEB
-      - WEBEMBEDDED
-      - TV
-      - IOS
-      - ANDROID_MUSIC
-      - MWEB
-    # OAuth can reduce YouTube restrictions, but needs a refresh token. Keep
-    # this disabled unless you have one and understand the account risk.
-    oauth:
-      enabled: false
-      refreshToken: ""
-    # Optional remote cipher service for signature-protected videos. Leave the
-    # URL blank to rely on the plugin's local cipher handling.
-    remoteCipher:
-      url: ""
-      userAgent: "bootstrapdj"
+    # --------------------------------------------------------------------------
+    # YouTube plugin — recommended for reliable YouTube playback
+    # --------------------------------------------------------------------------
+    # Pin a release or snapshot. Snapshot builds are immutable commit hashes;
+    # update the commit deliberately after testing playback.
+    youtube:
+        enabled: false
+        allowSearch: true
+        allowDirectVideoIds: true
+        allowDirectPlaylistIds: true
+        clients:
+            - MUSIC
+            - ANDROID_VR
+            - WEB
+            - WEBEMBEDDED
+            - TV
+            - IOS
+            - ANDROID_MUSIC
+            - MWEB
+        # OAuth can reduce YouTube restrictions, but needs a refresh token. Keep
+        # this disabled unless you have one and understand the account risk.
+        oauth:
+            enabled: false
+            refreshToken: ''
+        # Optional remote cipher service for signature-protected videos. Leave the
+        # URL blank to rely on the plugin's local cipher handling.
+        remoteCipher:
+            url: ''
+            userAgent: 'bootstrapdj'
 
-  # --------------------------------------------------------------------------
-  # Optional plugins
-  # --------------------------------------------------------------------------
-  # DuncteBot adds Mixcloud, Reddit, TikTok, Bandcamp and other sources.
-  # Enable only the sources you actually want; several are not music-focused.
-  # dunctebot:
-  #   ttsLanguage: "en-AU"
-  #   sources:
-  #     getyarn: false
-  #     clypit: false
-  #     tts: false
-  #     pornhub: false
-  #     reddit: false
-  #     ocremix: false
-  #     tiktok: false
-  #     mixcloud: false
-  #     soundgasm: false
+    # --------------------------------------------------------------------------
+    # Optional plugins
+    # --------------------------------------------------------------------------
+    # DuncteBot adds Mixcloud, Reddit, TikTok, Bandcamp and other sources.
+    # Enable only the sources you actually want; several are not music-focused.
+    # dunctebot:
+    #   ttsLanguage: "en-AU"
+    #   sources:
+    #     getyarn: false
+    #     clypit: false
+    #     tts: false
+    #     pornhub: false
+    #     reddit: false
+    #     ocremix: false
+    #     tiktok: false
+    #     mixcloud: false
+    #     soundgasm: false
 
 lavalink:
-  # Plugin coordinates are downloaded at boot and cached in pluginsDir.
-  plugins:
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
-      repository: "https://maven.lavalink.dev/releases"
-      snapshot: false
+    # Plugin coordinates are downloaded at boot and cached in pluginsDir.
+    plugins:
+        - dependency: 'com.github.topi314.lavasrc:lavasrc-plugin:4.8.3'
+          repository: 'https://maven.lavalink.dev/releases'
+          snapshot: false
 
-    # YouTube plugin. Use a release version for stable deployments, or pin a
-    # tested snapshot commit as shown here.
-    - dependency: "dev.lavalink.youtube:youtube-plugin:2be8e542d3f6f178e048dca565892684c2e40177"
-      repository: "https://maven.lavalink.dev/releases"
-      snapshot: true
+        # YouTube plugin. Use a release version for stable deployments, or pin a
+        # tested snapshot commit as shown here.
+        - dependency: 'dev.lavalink.youtube:youtube-plugin:2be8e542d3f6f178e048dca565892684c2e40177'
+          repository: 'https://maven.lavalink.dev/releases'
+          snapshot: true
 
-    # Optional:
-    # - dependency: "com.dunctebot:skybot-lavalink-plugin:1.7.2"
-    #   repository: "https://maven.lavalink.dev/releases"
-    #   snapshot: false
+        # Optional:
+        # - dependency: "com.dunctebot:skybot-lavalink-plugin:1.7.2"
+        #   repository: "https://maven.lavalink.dev/releases"
+        #   snapshot: false
 
-  pluginsDir: "./plugins" # optional; defaults to ./plugins
+    pluginsDir: './plugins' # optional; defaults to ./plugins
 
-  server:
-    # Must match LAVALINK_AUTH in the bot's .env. Use a long random value.
-    password: "change-me"
+    server:
+        # Must match LAVALINK_AUTH in the bot's .env. Use a long random value.
+        password: 'change-me'
 
-    # Lavalink's built-in source managers. Disable youtube here when the
-    # youtube-plugin above is enabled to avoid two managers claiming it.
-    sources:
-      youtube: false
-      bandcamp: true
-      soundcloud: true
-      twitch: true
-      vimeo: true
-      http: true
-      local: false
+        # Lavalink's built-in source managers. Disable youtube here when the
+        # youtube-plugin above is enabled to avoid two managers claiming it.
+        sources:
+            youtube: false
+            bandcamp: true
+            soundcloud: true
+            twitch: true
+            vimeo: true
+            http: true
+            local: false
 
-    filters:
-      volume: true
-      equalizer: true
-      karaoke: true
-      timescale: true
-      tremolo: true
-      vibrato: true
-      distortion: true
-      rotation: true
-      channelMix: true
-      lowPass: true
+        filters:
+            volume: true
+            equalizer: true
+            karaoke: true
+            timescale: true
+            tremolo: true
+            vibrato: true
+            distortion: true
+            rotation: true
+            channelMix: true
+            lowPass: true
 
-    # Audio buffering and encoder tuning. Higher quality/CPU values are fine
-    # for a small private node; lower them if the host is CPU-constrained.
-    bufferDurationMs: 400 # JDA-NAS buffer; <=0 disables NAS
-    frameBufferDurationMs: 5000 # audio kept buffered
-    opusEncodingQuality: 10 # 0–10; 10 is best and most CPU-expensive
-    resamplingQuality: HIGH # LOW | MEDIUM | HIGH
-    trackStuckThresholdMs: 10000 # no audio progress for this long = stuck
-    useSeekGhosting: true
-    youtubePlaylistLoadLimit: 6 # pages of 100 tracks
-    playerUpdateInterval: 5 # seconds between player updates
-    youtubeSearchEnabled: true
-    soundcloudSearchEnabled: true
-    gc-warnings: true
+        # Audio buffering and encoder tuning. Higher quality/CPU values are fine
+        # for a small private node; lower them if the host is CPU-constrained.
+        bufferDurationMs: 400 # JDA-NAS buffer; <=0 disables NAS
+        frameBufferDurationMs: 5000 # audio kept buffered
+        opusEncodingQuality: 10 # 0–10; 10 is best and most CPU-expensive
+        resamplingQuality: HIGH # LOW | MEDIUM | HIGH
+        trackStuckThresholdMs: 10000 # no audio progress for this long = stuck
+        useSeekGhosting: true
+        youtubePlaylistLoadLimit: 6 # pages of 100 tracks
+        playerUpdateInterval: 5 # seconds between player updates
+        youtubeSearchEnabled: true
+        soundcloudSearchEnabled: true
+        gc-warnings: true
 
-    # Optional rate limiting. Uncomment and tune for a public-facing node.
-    # ratelimit:
-    #   ipBlocks: ["2001:db8::/32"]
-    #   excludedIps: ["127.0.0.1"]
-    #   strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
-    #   searchTriggersFail: true
-    #   retryLimit: -1 # -1 = LavaPlayer default, 0 = infinite, >0 = retries
+        # Optional rate limiting. Uncomment and tune for a public-facing node.
+        # ratelimit:
+        #   ipBlocks: ["2001:db8::/32"]
+        #   excludedIps: ["127.0.0.1"]
+        #   strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
+        #   searchTriggersFail: true
+        #   retryLimit: -1 # -1 = LavaPlayer default, 0 = infinite, >0 = retries
 
-    # Optional HTTP proxy for outbound source requests. Useful when the node
-    # must egress through a fixed IP.
-    # httpConfig:
-    #   proxyHost: "localhost"
-    #   proxyPort: 3128
-    #   proxyUser: ""
-    #   proxyPassword: ""
+        # Optional HTTP proxy for outbound source requests. Useful when the node
+        # must egress through a fixed IP.
+        # httpConfig:
+        #   proxyHost: "localhost"
+        #   proxyPort: 3128
+        #   proxyUser: ""
+        #   proxyPassword: ""
 
 metrics:
-  prometheus:
-    enabled: false
-    endpoint: /metrics
+    prometheus:
+        enabled: false
+        endpoint: /metrics
 
 sentry:
-  dsn: ""
-  environment: ""
-  # tags:
-  #   some_key: some_value
+    dsn: ''
+    environment: ''
+    # tags:
+    #   some_key: some_value
 
 logging:
-  file:
-    path: ./logs/
+    file:
+        path: ./logs/
 
-  level:
-    root: INFO
-    lavalink: INFO
+    level:
+        root: INFO
+        lavalink: INFO
 
-  request:
-    enabled: true
-    includeClientInfo: true
-    includeHeaders: false
-    includeQueryString: true
-    # Keep false in production unless you need to debug query payloads; request
-    # bodies can contain user search terms.
-    includePayload: false
-    maxPayloadLength: 10000
+    request:
+        enabled: true
+        includeClientInfo: true
+        includeHeaders: false
+        includeQueryString: true
+        # Keep false in production unless you need to debug query payloads; request
+        # bodies can contain user search terms.
+        includePayload: false
+        maxPayloadLength: 10000
 
-  logback:
-    rollingpolicy:
-      max-file-size: 1GB
-      max-history: 30
+    logback:
+        rollingpolicy:
+            max-file-size: 1GB
+            max-history: 30

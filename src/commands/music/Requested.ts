@@ -6,7 +6,11 @@ export default class Requested extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'requested',
-            description: { content: 'Shows queued tracks requested by a user', usage: 'requested [user]', examples: ['requested', 'requested @user'] },
+            description: {
+                content: 'Shows queued tracks requested by a user',
+                usage: 'requested [user]',
+                examples: ['requested', 'requested @user'],
+            },
             category: 'music',
             aliases: ['req'],
             cooldown: 3,
@@ -35,7 +39,12 @@ export default class Requested extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         const target = ctx.isInteraction
@@ -52,7 +61,9 @@ export default class Requested extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setDescription(`No queued tracks were requested by **${target.username}**.`),
+                        .setDescription(
+                            `No queued tracks were requested by **${target.username}**.`
+                        ),
                 ],
             });
         }

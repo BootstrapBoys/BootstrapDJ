@@ -9,7 +9,7 @@ export default class Prefix extends Command {
         super(client, {
             name: 'prefix',
             description: {
-                content: 'Shows the bot\'s prefix',
+                content: "Shows the bot's prefix",
                 examples: ['prefix set', 'prefix reset', 'prefix set !'],
                 usage: 'prefix set, prefix reset, prefix set !',
             },
@@ -47,9 +47,19 @@ export default class Prefix extends Command {
         });
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        error: boolean = false
+    ): Promise<unknown> {
         return ctx.sendMessage({
-            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
+            embeds: [
+                client
+                    .embed()
+                    .setColor(error ? client.color.red : client.color.main)
+                    .setDescription(text),
+            ],
         });
     }
 
@@ -58,14 +68,23 @@ export default class Prefix extends Command {
         if (!guildId) return;
 
         const interaction = ctx.interaction;
-        const sub = interaction ? interaction.options.getSubcommand(false) ?? '' : (args[0] ?? '');
-        const value = interaction ? (interaction.options.getString('prefix') ?? '') : (args[1] ?? '');
+        const sub = interaction
+            ? (interaction.options.getSubcommand(false) ?? '')
+            : (args[0] ?? '');
+        const value = interaction
+            ? (interaction.options.getString('prefix') ?? '')
+            : (args[1] ?? '');
 
         const record = await client.db.get(guildId);
         const current = record?.prefix ?? client.config.prefix;
 
         if (sub === 'set') {
-            if (!value) return await this.reply(client, ctx, `The prefix for this server is \`${current}\``);
+            if (!value)
+                return await this.reply(
+                    client,
+                    ctx,
+                    `The prefix for this server is \`${current}\``
+                );
             const pieces = value
                 .split(',')
                 .map(piece => piece.trim())
@@ -83,9 +102,18 @@ export default class Prefix extends Command {
         }
 
         if (sub === 'reset') {
-            if (!record) return await this.reply(client, ctx, `The prefix for this server is \`${client.config.prefix}\``);
+            if (!record)
+                return await this.reply(
+                    client,
+                    ctx,
+                    `The prefix for this server is \`${client.config.prefix}\``
+                );
             await client.db.setPrefix(guildId, client.config.prefix);
-            return await this.reply(client, ctx, `The prefix for this server is now \`${client.config.prefix}\``);
+            return await this.reply(
+                client,
+                ctx,
+                `The prefix for this server is now \`${client.config.prefix}\``
+            );
         }
 
         return await this.reply(

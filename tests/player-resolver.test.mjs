@@ -21,7 +21,12 @@ function makeHarness({ stale = true, hasNode = true } = {}) {
     const freshPlayer = { guildId: 'guild', channelId: 'text', voiceId: 'voice', isStale: false };
     const guild = {
         id: 'guild',
-        channels: { cache: new Map([[voice.id, voice], [text.id, text]]) },
+        channels: {
+            cache: new Map([
+                [voice.id, voice],
+                [text.id, text],
+            ]),
+        },
     };
     const client = {
         queue: {
@@ -34,7 +39,14 @@ function makeHarness({ stale = true, hasNode = true } = {}) {
         },
         guilds: { cache: new Map([[guild.id, guild]]) },
         color: { red: 0xff0000, main: 0x2f3136 },
-        embed: () => ({ setColor() { return this; }, setDescription() { return this; } }),
+        embed: () => ({
+            setColor() {
+                return this;
+            },
+            setDescription() {
+                return this;
+            },
+        }),
     };
     return { client, guild, voice, text, stalePlayer, freshPlayer, calls };
 }

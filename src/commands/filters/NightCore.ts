@@ -2,7 +2,11 @@ import { defineFilterCommand, toggleFilter } from '../../lib/filterCommand.js';
 
 export default defineFilterCommand({
     name: 'nightcore',
-    description: { content: 'on/off nightcore filter', examples: ['nightcore'], usage: 'nightcore' },
+    description: {
+        content: 'on/off nightcore filter',
+        examples: ['nightcore'],
+        usage: 'nightcore',
+    },
     aliases: ['nc'],
     user: [],
     run: toggleFilter(

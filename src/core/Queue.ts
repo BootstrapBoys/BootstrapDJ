@@ -149,7 +149,10 @@ export class Queue extends Map<string, Dispatcher> {
         return dispatcher;
     }
 
-    public async rebuild(dispatcher: Dispatcher, node: Node | undefined): Promise<Dispatcher | null> {
+    public async rebuild(
+        dispatcher: Dispatcher,
+        node: Node | undefined
+    ): Promise<Dispatcher | null> {
         const inflight = this.rebuilds.get(dispatcher.guildId);
         if (inflight) return await inflight;
         const run = this.migrator.rebuild(dispatcher, node);
@@ -255,7 +258,9 @@ export class Queue extends Map<string, Dispatcher> {
             !literal &&
             isFallbackNode(node.name) &&
             !/^ytm?search:/i.test(query) &&
-            (result === null || result.loadType === LoadType.EMPTY || result.loadType === LoadType.ERROR);
+            (result === null ||
+                result.loadType === LoadType.EMPTY ||
+                result.loadType === LoadType.ERROR);
         if (retryOnFallback) {
             result = (await this.resolve(node, `ytsearch:${query}`)) ?? result;
         }

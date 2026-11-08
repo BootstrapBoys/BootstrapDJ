@@ -15,13 +15,21 @@ export default class Tip extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'tip',
-            description: { content: 'Shows a random BootstrapDJ tip', usage: 'tip', examples: ['tip'] },
+            description: {
+                content: 'Shows a random BootstrapDJ tip',
+                usage: 'tip',
+                examples: ['tip'],
+            },
             category: 'info',
             aliases: ['tips'],
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: false,
             options: [],
         });
@@ -31,11 +39,7 @@ export default class Tip extends Command {
         const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
         return await ctx.sendMessage({
             embeds: [
-                client
-                    .embed()
-                    .setColor(client.color.main)
-                    .setTitle('Tip')
-                    .setDescription(tip),
+                client.embed().setColor(client.color.main).setTitle('Tip').setDescription(tip),
             ],
         });
     }

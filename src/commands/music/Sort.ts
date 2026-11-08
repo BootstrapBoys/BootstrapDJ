@@ -7,7 +7,11 @@ export default class Sort extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'sort',
-            description: { content: 'Sorts the queued tracks', usage: 'sort <by> [order]', examples: ['sort by:title order:asc'] },
+            description: {
+                content: 'Sorts the queued tracks',
+                usage: 'sort <by> [order]',
+                examples: ['sort by:title order:asc'],
+            },
             category: 'music',
             aliases: ['sortqueue'],
             cooldown: 3,
@@ -52,12 +56,16 @@ export default class Sort extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('There is no queue to sort.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('There is no queue to sort.'),
+                ],
             });
         }
-        const field = (ctx.isInteraction
-            ? ctx.interaction?.options.getString('by')
-            : args[0]) as SortField | undefined;
+        const field = (ctx.isInteraction ? ctx.interaction?.options.getString('by') : args[0]) as
+            SortField | undefined;
         const direction = ((ctx.isInteraction
             ? ctx.interaction?.options.getString('order')
             : args[1]) ?? 'asc') as SortDirection;
@@ -73,7 +81,12 @@ export default class Sort extends Command {
         }
         if (!['asc', 'desc'].includes(direction)) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Order must be `asc` or `desc`.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Order must be `asc` or `desc`.'),
+                ],
             });
         }
         player.queue = sortQueue(player.queue, field, direction);
@@ -83,7 +96,9 @@ export default class Sort extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Sorted ${player.queue.length} queued tracks by **${field}** (${direction}).`),
+                    .setDescription(
+                        `Sorted ${player.queue.length} queued tracks by **${field}** (${direction}).`
+                    ),
             ],
         });
     }

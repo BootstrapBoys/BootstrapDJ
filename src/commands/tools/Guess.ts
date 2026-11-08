@@ -1,9 +1,4 @@
-import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    ComponentType,
-} from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 
@@ -11,14 +6,22 @@ export default class Guess extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'guess',
-            description: { content: 'Starts a guess-the-song game for the current track', usage: 'guess', examples: ['guess'] },
+            description: {
+                content: 'Starts a guess-the-song game for the current track',
+                usage: 'guess',
+                examples: ['guess'],
+            },
             category: 'games',
             aliases: ['guessthesong'],
             cooldown: 5,
             args: false,
             ephemeral: false,
             player: { voice: true, dj: false, active: true, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: true,
             options: [],
         });
@@ -30,7 +33,12 @@ export default class Guess extends Command {
         const player = client.queue.get(guild.id);
         if (!player?.current) {
             return await ctx.sendMessage({
-                embeds: [client.embed().setColor(client.color.red).setDescription('Nothing is playing right now.')],
+                embeds: [
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription('Nothing is playing right now.'),
+                ],
             });
         }
         const titles = [
@@ -72,11 +80,18 @@ export default class Guess extends Command {
             const answer = choices[index];
             if (interaction.guildId) {
                 await client.db
-                    .incrementGameScore(interaction.guildId, interaction.user.id, answer === correct)
+                    .incrementGameScore(
+                        interaction.guildId,
+                        interaction.user.id,
+                        answer === correct
+                    )
                     .catch(() => null);
             }
             await interaction.reply({
-                content: answer === correct ? `Correct — **${correct}**!` : `Not quite. The answer was **${correct}**.`,
+                content:
+                    answer === correct
+                        ? `Correct — **${correct}**!`
+                        : `Not quite. The answer was **${correct}**.`,
                 ephemeral: true,
             });
             if (answer === correct) collector.stop('correct');

@@ -26,8 +26,12 @@ function makeHarness({ humans = 0, stay = null, timeout = '0.03' } = {}) {
     };
     const player = {
         pauseWhenEmpty: false,
-        destroy: () => { destroys += 1; },
-        resume247: () => { resumes += 1; },
+        destroy: () => {
+            destroys += 1;
+        },
+        resume247: () => {
+            resumes += 1;
+        },
     };
     const client = {
         user: { id: 'bot' },
@@ -62,11 +66,14 @@ test('a listener joining before the timer cancels the teardown', async () => {
     const harness = makeHarness({ humans: 1 });
     await harness.event.run({}, harness.state);
     harness.channel.members.set('human-1', { user: { bot: false } });
-    await harness.event.run({}, {
-        ...harness.state,
-        channelId: 'vc',
-        channel: harness.channel,
-    });
+    await harness.event.run(
+        {},
+        {
+            ...harness.state,
+            channelId: 'vc',
+            channel: harness.channel,
+        }
+    );
     await delay(55);
     assert.deepEqual(harness.counts(), { destroys: 0, resumes: 0 });
 });
@@ -98,11 +105,14 @@ test('a listener joining a paused 24/7 session resumes it', async () => {
     const harness = makeHarness({ stay: { guildId: 'guild' } });
     harness.player.pauseWhenEmpty = true;
     harness.channel.members.set('human-1', { user: { bot: false } });
-    await harness.event.run({}, {
-        ...harness.state,
-        channelId: 'vc',
-        channel: harness.channel,
-    });
+    await harness.event.run(
+        {},
+        {
+            ...harness.state,
+            channelId: 'vc',
+            channel: harness.channel,
+        }
+    );
     assert.deepEqual(harness.counts(), { destroys: 0, resumes: 1 });
     assert.equal(harness.player.pauseWhenEmpty, false);
 });

@@ -2,7 +2,11 @@ import { defineFilterCommand, toggleFilter } from '../../lib/filterCommand.js';
 
 export default defineFilterCommand({
     name: 'distorsion',
-    description: { content: 'on/off distorsion filter', examples: ['distorsion'], usage: 'distorsion' },
+    description: {
+        content: 'on/off distorsion filter',
+        examples: ['distorsion'],
+        usage: 'distorsion',
+    },
     aliases: ['distorsion'],
     run: toggleFilter(
         'distorsion',

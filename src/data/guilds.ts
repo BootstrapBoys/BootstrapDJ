@@ -1,4 +1,9 @@
-import type { AutoplaySetting, Guild, GuildSetting, PrismaClient } from '../generated/prisma/client.js';
+import type {
+    AutoplaySetting,
+    Guild,
+    GuildSetting,
+    PrismaClient,
+} from '../generated/prisma/client.js';
 import config from '../config.js';
 
 /** Short TTLs: another bot process may write the same SQLite file. */
@@ -8,7 +13,10 @@ const SETTINGS_CACHE_TTL_MS = 5_000;
 /** Guild rows, prefixes, per-guild settings, and autoplay overrides. */
 export class GuildStore {
     private readonly guildCache = new Map<string, { at: number; row: Guild }>();
-    private readonly settingsCache = new Map<string, { at: number; data: Record<string, string> }>();
+    private readonly settingsCache = new Map<
+        string,
+        { at: number; data: Record<string, string> }
+    >();
 
     public constructor(private readonly prisma: PrismaClient) {}
 
@@ -106,7 +114,10 @@ export class GuildStore {
         return await this.prisma.autoplaySetting.findUnique({ where: { guildId } });
     }
 
-    public async setAutoplay(guildId: string, data: { source: string; seeds: string }): Promise<AutoplaySetting> {
+    public async setAutoplay(
+        guildId: string,
+        data: { source: string; seeds: string }
+    ): Promise<AutoplaySetting> {
         return await this.prisma.autoplaySetting.upsert({
             where: { guildId },
             update: data,

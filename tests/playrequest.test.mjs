@@ -68,7 +68,12 @@ function makeClient(player, response, overrides = {}) {
             },
         },
         db: { getGuildSettings: async () => ({}) },
-        config: { searchEngine: 'dzsearch', prefixSearchEngine: 'ytsearch', maxQueueSize: 100, maxPlaylistSize: 100 },
+        config: {
+            searchEngine: 'dzsearch',
+            prefixSearchEngine: 'ytsearch',
+            maxQueueSize: 100,
+            maxPlaylistSize: 100,
+        },
         embed: () => new EmbedBuilder(),
         color: { red: 0xff0000, main: 0x00ff00 },
         logger: { error: () => {} },
@@ -98,13 +103,19 @@ test('track requests enqueue at the end for play and at the front for playnext',
     const ctx = makeCtx();
 
     await runPlayRequest(client, ctx, ['query'], 'queue');
-    assert.deepEqual(player.queue.map(track => track.info.title), ['A']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['A']
+    );
     assert.equal(client.stats().lastEngine, 'ytsearch');
     assert.match(ctx.replies[0].embeds[0].data.description, /to the queue/);
 
     player.queue.length = 0;
     await runPlayRequest(client, ctx, ['query'], 'next');
-    assert.deepEqual(player.queue.map(track => track.info.title), ['A']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['A']
+    );
     assert.equal(client.stats().lastEngine, 'ytsearch');
     assert.match(ctx.replies[1].embeds[0].data.description, /play next/);
 });
@@ -118,13 +129,22 @@ test('playlist requests preserve their order in both modes and only seed play', 
     const ctx = makeCtx();
 
     await runPlayRequest(client, ctx, ['query'], 'queue');
-    assert.deepEqual(player.queue.map(track => track.info.title), ['A', 'B', 'C']);
-    assert.deepEqual(player.seeded.map(track => track.info.title), ['A', 'B', 'C']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['A', 'B', 'C']
+    );
+    assert.deepEqual(
+        player.seeded.map(track => track.info.title),
+        ['A', 'B', 'C']
+    );
 
     player.queue.length = 0;
     player.seeded = null;
     await runPlayRequest(client, ctx, ['query'], 'next');
-    assert.deepEqual(player.queue.map(track => track.info.title), ['A', 'B', 'C']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['A', 'B', 'C']
+    );
     assert.equal(player.seeded, null);
 });
 
@@ -166,7 +186,10 @@ test('a search response uses its first track', async () => {
     const ctx = makeCtx();
 
     await runPlayRequest(client, ctx, ['query'], 'queue');
-    assert.deepEqual(player.queue.map(track => track.info.title), ['First']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['First']
+    );
 });
 
 test('track limits and queue caps reject before enqueueing', async () => {
@@ -197,7 +220,10 @@ test('the guild maxqueue override replaces MAX_QUEUE_SIZE in both directions', a
     const roomyCtx = makeCtx();
 
     await runPlayRequest(roomyClient, roomyCtx, ['query'], 'queue');
-    assert.deepEqual(roomy.queue.map(track => track.info.title), ['existing', 'A']);
+    assert.deepEqual(
+        roomy.queue.map(track => track.info.title),
+        ['existing', 'A']
+    );
 
     const strict = makePlayer([rawTrack('existing')]);
     const strictClient = makeClient(strict, { loadType: LoadType.TRACK, data: rawTrack('A') });
@@ -241,7 +267,10 @@ test('playlist limits and rejected tracks are reflected in the reply count', asy
     const ctx = makeCtx();
 
     await runPlayRequest(client, ctx, ['query'], 'queue');
-    assert.deepEqual(player.queue.map(track => track.info.title), ['Short']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['Short']
+    );
     assert.match(ctx.replies[0].embeds[0].data.description, /Added 1 songs/);
 
     const oversized = makeClient(makePlayer(), {
@@ -253,7 +282,6 @@ test('playlist limits and rejected tracks are reflected in the reply count', asy
     await runPlayRequest(oversized, oversizedCtx, ['query'], 'queue');
     assert.match(oversizedCtx.replies[0].embeds[0].data.description, /playlist is too long/);
 });
-
 
 test('slash play keeps the configured engine while prefix uses ytsearch', async () => {
     const player = makePlayer();
@@ -270,11 +298,10 @@ test('playnext inserts ahead of an existing queue in both prefix and slash conte
     const ctx = makeCtx(false);
 
     await runPlayRequest(client, ctx, ['query'], 'next');
-    assert.deepEqual(player.queue.map(track => track.info.title), [
-        'new',
-        'existing-1',
-        'existing-2',
-    ]);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['new', 'existing-1', 'existing-2']
+    );
 });
 
 test('playnext playlists obey per-user limits while the batch is still pending', async () => {
@@ -288,7 +315,10 @@ test('playnext playlists obey per-user limits while the batch is still pending',
 
     await runPlayRequest(client, ctx, ['query'], 'next');
 
-    assert.deepEqual(player.queue.map(track => track.info.title), ['A']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['A']
+    );
     assert.match(ctx.replies[0].embeds[0].data.description, /Added 1 songs/);
 });
 
@@ -305,6 +335,9 @@ test('playnext playlists obey the configured queue cap while the batch is pendin
 
     await runPlayRequest(client, ctx, ['query'], 'next');
 
-    assert.deepEqual(player.queue.map(track => track.info.title), ['A', 'B']);
+    assert.deepEqual(
+        player.queue.map(track => track.info.title),
+        ['A', 'B']
+    );
     assert.match(ctx.replies[0].embeds[0].data.description, /Added 2 songs/);
 });

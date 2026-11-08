@@ -20,7 +20,22 @@ function analyze(uri: string, timeoutMs: number): Promise<LoudnessResult> {
     return new Promise(resolve => {
         const child = spawn(
             'ffmpeg',
-            ['-hide_banner', '-nostats', '-loglevel', 'info', '-vn', '-t', String(SAMPLE_SECONDS), '-i', uri, '-af', 'ebur128=peak=true', '-f', 'null', '-'],
+            [
+                '-hide_banner',
+                '-nostats',
+                '-loglevel',
+                'info',
+                '-vn',
+                '-t',
+                String(SAMPLE_SECONDS),
+                '-i',
+                uri,
+                '-af',
+                'ebur128=peak=true',
+                '-f',
+                'null',
+                '-',
+            ],
             { stdio: ['ignore', 'ignore', 'pipe'] }
         );
         let stderr = '';
@@ -62,7 +77,11 @@ export async function loudnessOf(uri: string, timeoutMs: number = 25_000): Promi
 }
 
 /** Convert measured LUFS and a target into a clamped player volume. */
-export function volumeForLoudness(measuredLufs: number, targetLufs: number, baseVolume: number = 100): number {
+export function volumeForLoudness(
+    measuredLufs: number,
+    targetLufs: number,
+    baseVolume: number = 100
+): number {
     const gainDb = Math.max(-12, Math.min(12, targetLufs - measuredLufs));
     return Math.max(1, Math.min(200, Math.round(baseVolume * 10 ** (gainDb / 20))));
 }

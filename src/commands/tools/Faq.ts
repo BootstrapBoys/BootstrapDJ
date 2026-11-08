@@ -4,13 +4,21 @@ export default class Faq extends Command {
     constructor(client: BootstrapClient) {
         super(client, {
             name: 'faq',
-            description: { content: 'Common BootstrapDJ usage questions', usage: 'faq', examples: ['faq'] },
+            description: {
+                content: 'Common BootstrapDJ usage questions',
+                usage: 'faq',
+                examples: ['faq'],
+            },
             category: 'info',
             aliases: ['howtouse'],
             cooldown: 3,
             args: false,
             player: { voice: false, dj: false, active: false, djPerm: null },
-            permissions: { dev: false, client: ['SendMessages', 'ViewChannel', 'EmbedLinks'], user: [] },
+            permissions: {
+                dev: false,
+                client: ['SendMessages', 'ViewChannel', 'EmbedLinks'],
+                user: [],
+            },
             slashCommand: false,
             options: [],
         });

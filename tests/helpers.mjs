@@ -4,7 +4,14 @@ export const fakeUser = { id: '1', tag: 'tester#0001' };
 
 export function makeSong(
     title,
-    { uri, encoded = title, author = 'A', sourceName = 'deezer', identifier = title, autoplay = false } = {}
+    {
+        uri,
+        encoded = title,
+        author = 'A',
+        sourceName = 'deezer',
+        identifier = title,
+        autoplay = false,
+    } = {}
 ) {
     return new Song(
         {

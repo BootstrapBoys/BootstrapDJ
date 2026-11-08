@@ -8,7 +8,10 @@ export interface FailureDecision {
 
 /** Count a failed play; the third failure drops the track instead of requeueing
  * it forever and blocking the rest of the queue. */
-export function recordPlayFailure(current: Song, failedTracks: Map<string, number>): FailureDecision {
+export function recordPlayFailure(
+    current: Song,
+    failedTracks: Map<string, number>
+): FailureDecision {
     const key = current.info?.uri ?? current.encoded;
     const failures = (failedTracks.get(key) ?? 0) + 1;
     if (failures >= 3) {

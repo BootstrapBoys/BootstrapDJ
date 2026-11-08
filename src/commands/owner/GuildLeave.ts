@@ -4,7 +4,11 @@ export default class GuildLeave extends Command {
     public constructor(client: BootstrapClient) {
         super(client, {
             name: 'guildleave',
-            description: { content: 'Leave a guild', examples: ['guildleave'], usage: 'guildleave' },
+            description: {
+                content: 'Leave a guild',
+                examples: ['guildleave'],
+                usage: 'guildleave',
+            },
             category: 'dev',
             aliases: ['gl'],
             cooldown: 3,

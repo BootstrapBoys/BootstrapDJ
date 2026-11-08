@@ -7,7 +7,8 @@ export default defineMusicCommand({
     aliases: ['sk'],
     run: async ({ client, ctx, player }) => {
         if (!player) return;
-        if (!player.queue.length) return await replyFail(client, ctx, 'There are no songs in the queue.');
+        if (!player.queue.length)
+            return await replyFail(client, ctx, 'There are no songs in the queue.');
 
         player.skip();
         if (!ctx.isInteraction) {

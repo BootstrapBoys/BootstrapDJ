@@ -59,7 +59,11 @@ export default defineMusicCommand({
                         .addFields(
                             { name: 'Queued tracks', value: '0', inline: true },
                             { name: 'Queue length', value: '0:00', inline: true },
-                            { name: 'Autoplay', value: player.autoplay ? 'on' : 'off', inline: true },
+                            {
+                                name: 'Autoplay',
+                                value: player.autoplay ? 'on' : 'off',
+                                inline: true,
+                            },
                             { name: 'Loop', value: player.loop, inline: true }
                         ),
                 ],

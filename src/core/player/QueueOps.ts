@@ -45,8 +45,7 @@ export function rememberSeedState(
             song,
             ...state.seeds.filter(
                 existing =>
-                    trackSignature(existing) !== signature &&
-                    trackKey(existing) !== trackKey(song)
+                    trackSignature(existing) !== signature && trackKey(existing) !== trackKey(song)
             ),
         ].slice(0, AUTOPLAY_SEEDS),
     };

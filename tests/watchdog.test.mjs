@@ -41,7 +41,13 @@ function makeClient({ nodes, dispatchers = [], queueNode = null } = {}) {
 
     const client = {
         isReady: () => true,
-        logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {}, success: () => {} },
+        logger: {
+            info: () => {},
+            warn: () => {},
+            error: () => {},
+            debug: () => {},
+            success: () => {},
+        },
         config: {
             lavalink: [{ name: 'primary', url: 'primary:2333' }],
             nodeFallback: false,

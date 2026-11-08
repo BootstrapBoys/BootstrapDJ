@@ -117,16 +117,28 @@ export default class Collection extends Command {
                     required: false,
                     minValue: 1,
                 },
-                { name: 'code', description: 'Share code', type: ApplicationCommandOptionType.String, required: false },
+                {
+                    name: 'code',
+                    description: 'Share code',
+                    type: ApplicationCommandOptionType.String,
+                    required: false,
+                },
             ],
         });
     }
 
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
-        return ctx.sendMessage({ embeds: [client.embed().setColor(client.color.red).setDescription(text)] });
+        return ctx.sendMessage({
+            embeds: [client.embed().setColor(client.color.red).setDescription(text)],
+        });
     }
 
-    private note(client: BootstrapClient, ctx: Context, text: string, colour: ColorResolvable): Promise<unknown> {
+    private note(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        colour: ColorResolvable
+    ): Promise<unknown> {
         return ctx.sendMessage({ embeds: [client.embed().setColor(colour).setDescription(text)] });
     }
 
@@ -208,18 +220,34 @@ export default class Collection extends Command {
         }
         const lines = playlists
             .slice(0, LIST_LIMIT)
-            .map(item => `**${item.name}** — ${item._count.songs} track${item._count.songs === 1 ? '' : 's'}`);
+            .map(
+                item =>
+                    `**${item.name}** — ${item._count.songs} track${item._count.songs === 1 ? '' : 's'}`
+            );
         return await ctx.sendMessage({
             embeds: [
-                client.embed().setColor(client.color.main).setTitle('Your collections').setDescription(lines.join('\n')),
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setTitle('Your collections')
+                    .setDescription(lines.join('\n')),
             ],
         });
     }
 
-    private async shares(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
+    private async shares(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
         const shares = await client.db.listCollectionShares(request.authorId);
         if (shares.length === 0) {
-            return await this.note(client, ctx, 'You have no shared collections.', client.color.main);
+            return await this.note(
+                client,
+                ctx,
+                'You have no shared collections.',
+                client.color.main
+            );
         }
         const lines = shares.map(share => `\`${share.code}\` — **${share.name}**`);
         return await ctx.sendMessage({
@@ -233,7 +261,11 @@ export default class Collection extends Command {
         });
     }
 
-    private async import(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
+    private async import(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
         if (!request.code) return await this.fail(client, ctx, 'Provide a share code.');
         const share = await client.db.getCollectionShare(request.code);
         if (!share) return await this.fail(client, ctx, 'That share code is not valid.');
@@ -252,7 +284,11 @@ export default class Collection extends Command {
         );
     }
 
-    private async unshare(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
+    private async unshare(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
         if (!request.code) return await this.fail(client, ctx, 'Provide a share code.');
         const removed = await client.db.deleteCollectionShare(request.authorId, request.code);
         return await this.note(
@@ -263,7 +299,11 @@ export default class Collection extends Command {
         );
     }
 
-    private async create(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
+    private async create(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
         if (request.name.length > NAME_LIMIT) {
             return await this.fail(client, ctx, 'Collection names can be at most 50 characters.');
         }
@@ -271,10 +311,19 @@ export default class Collection extends Command {
             return await this.fail(client, ctx, 'That collection already exists.');
         }
         await client.db.createPlaylist(request.authorId, request.name);
-        return await this.note(client, ctx, `Created collection **${request.name}**.`, client.color.green);
+        return await this.note(
+            client,
+            ctx,
+            `Created collection **${request.name}**.`,
+            client.color.green
+        );
     }
 
-    private async delete(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
+    private async delete(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
         const removed = await client.db.deletePlaylist(request.authorId, request.name);
         return await this.note(
             client,
@@ -323,7 +372,9 @@ export default class Collection extends Command {
         }
         const lines = rows.slice(0, VIEW_LIMIT).map((row, position) => {
             try {
-                const parsed = JSON.parse(row.track) as { info?: { title?: string; author?: string } };
+                const parsed = JSON.parse(row.track) as {
+                    info?: { title?: string; author?: string };
+                };
                 return `**${position + 1}.** ${parsed.info?.title ?? 'Unknown'} — ${parsed.info?.author ?? ''}`;
             } catch {
                 return `**${position + 1}.** Unknown track`;
@@ -346,39 +397,59 @@ export default class Collection extends Command {
         return await this.note(client, ctx, `Cleared **${request.name}**.`, client.color.green);
     }
 
-    private async removeSong(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
-        if (!request.query) return await this.fail(client, ctx, 'Provide a track name or URL to remove.');
-        if (!client.queue.hasNode) return await this.fail(client, ctx, 'No Lavalink node is available right now.');
+    private async removeSong(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
+        if (!request.query)
+            return await this.fail(client, ctx, 'Provide a track name or URL to remove.');
+        if (!client.queue.hasNode)
+            return await this.fail(client, ctx, 'No Lavalink node is available right now.');
 
         const track = client.utils.firstTrack(
             await client.queue.search(request.query, await resolveSearchEngine(client, ctx))
         );
-        if (!track) return await this.fail(client, ctx, `No results found for **${request.query}**.`);
+        if (!track)
+            return await this.fail(client, ctx, `No results found for **${request.query}**.`);
 
         const removed = await client.db.removeSong(request.authorId, request.name, songKey(track));
         const label = `[${track.info.title}](${track.info.uri})`;
         return await this.note(
             client,
             ctx,
-            removed ? `Removed ${label} from **${request.name}**.` : `${label} is not in **${request.name}**.`,
+            removed
+                ? `Removed ${label} from **${request.name}**.`
+                : `${label} is not in **${request.name}**.`,
             removed ? client.color.green : client.color.red
         );
     }
 
-    private async removeAt(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
-        if (!request.index) return await this.fail(client, ctx, 'Provide the 1-based track index to remove.');
+    private async removeAt(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
+        if (!request.index)
+            return await this.fail(client, ctx, 'Provide the 1-based track index to remove.');
         const removed = await client.db.removeSongAt(request.authorId, request.name, request.index);
         return await this.note(
             client,
             ctx,
-            removed ? `Removed track ${request.index} from **${request.name}**.` : 'No track at that index.',
+            removed
+                ? `Removed track ${request.index} from **${request.name}**.`
+                : 'No track at that index.',
             removed ? client.color.green : client.color.red
         );
     }
 
     private async add(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
-        if (!request.query) return await this.fail(client, ctx, 'Provide a track, search term, or playlist URL.');
-        const result = await client.queue.search(request.query, await resolveSearchEngine(client, ctx));
+        if (!request.query)
+            return await this.fail(client, ctx, 'Provide a track, search term, or playlist URL.');
+        const result = await client.queue.search(
+            request.query,
+            await resolveSearchEngine(client, ctx)
+        );
         if (!result) return await this.fail(client, ctx, 'No results found.');
 
         let tracks: Track[] = [];
@@ -398,15 +469,21 @@ export default class Collection extends Command {
         );
     }
 
-    private async replicate(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
-        if (!request.target) return await this.fail(client, ctx, 'Provide a target collection name.');
+    private async replicate(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
+        if (!request.target)
+            return await this.fail(client, ctx, 'Provide a target collection name.');
         const merge = request.action === 'merge';
         if (!merge && (await client.db.getPLaylist(request.authorId, request.target))) {
             return await this.fail(client, ctx, 'The target collection already exists.');
         }
         if (!merge) await client.db.createPlaylist(request.authorId, request.target);
         const copied = await this.copyInto(client, request.authorId, request.name, request.target);
-        if (request.action === 'rename') await client.db.deletePlaylist(request.authorId, request.name);
+        if (request.action === 'rename')
+            await client.db.deletePlaylist(request.authorId, request.name);
 
         const verb = merge
             ? 'Merged'
@@ -425,7 +502,10 @@ export default class Collection extends Command {
 
     private async load(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
         const voice = ctx.voiceChannel;
-        if (!voice || (voice.type !== ChannelType.GuildVoice && voice.type !== ChannelType.GuildStageVoice)) {
+        if (
+            !voice ||
+            (voice.type !== ChannelType.GuildVoice && voice.type !== ChannelType.GuildStageVoice)
+        ) {
             return await this.fail(client, ctx, 'Join a voice channel first.');
         }
         const guild = ctx.guild;
@@ -436,7 +516,8 @@ export default class Collection extends Command {
         if (rows.length === 0) return await this.fail(client, ctx, 'That collection is empty.');
 
         let player = client.queue.get(guild.id);
-        if (!player || player.isStale) player = await client.queue.create(guild, voice, ctx.channel);
+        if (!player || player.isStale)
+            player = await client.queue.create(guild, voice, ctx.channel);
         const limits = await getPlayLimits(client, guild.id);
 
         const queued: Song[] = [];

@@ -108,7 +108,11 @@ export function rankNodes(probes: ProbeResult[]): ProbeResult[] {
     return [...probes].sort((a, b) => scoreNode(a) - scoreNode(b));
 }
 
-export function shouldFallback(waitMs: number, afterSeconds: number, hasFallback: boolean): boolean {
+export function shouldFallback(
+    waitMs: number,
+    afterSeconds: number,
+    hasFallback: boolean
+): boolean {
     if (hasFallback) return false;
     if (afterSeconds <= 0) return false;
     return waitMs >= afterSeconds * 1000;
@@ -188,6 +192,8 @@ export async function findBestPublicNode(
         for (const result of results) if (result) usable.push(result);
     }
 
-    const ranked = rankNodes(usable).filter(probe => !isFallbackBlocked(toNodeOption(probe.entry).name));
+    const ranked = rankNodes(usable).filter(
+        probe => !isFallbackBlocked(toNodeOption(probe.entry).name)
+    );
     return ranked[0] ?? null;
 }

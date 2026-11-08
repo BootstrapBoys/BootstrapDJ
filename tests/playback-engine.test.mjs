@@ -22,7 +22,16 @@ function harness(overrides = {}) {
         failedTracks: new Map(),
         ...overrides,
     };
-    const calls = { play: 0, stop: 0, pause: [], seek: [], removed: [], persisted: 0, restarts: 0, volumes: [] };
+    const calls = {
+        play: 0,
+        stop: 0,
+        pause: [],
+        seek: [],
+        removed: [],
+        persisted: 0,
+        restarts: 0,
+        volumes: [],
+    };
     const scheduled = [];
     let pauseTimeout = null;
     let clearPauseCalls = 0;
@@ -48,7 +57,9 @@ function harness(overrides = {}) {
         stop: async () => {
             calls.stop += 1;
         },
-        setVolume: async value => { calls.volumes.push(value); },
+        setVolume: async value => {
+            calls.volumes.push(value);
+        },
         positionValue: 5000,
     };
 
@@ -138,8 +149,14 @@ test('engine play takes the queue head, records history and persists', async () 
 
     assert.equal(h.state.current, first);
     assert.equal(h.calls.play, 1);
-    assert.deepEqual(h.state.history.map(track => track.info.title), ['first']);
-    assert.deepEqual(h.state.queue.map(track => track.info.title), ['second']);
+    assert.deepEqual(
+        h.state.history.map(track => track.info.title),
+        ['first']
+    );
+    assert.deepEqual(
+        h.state.queue.map(track => track.info.title),
+        ['second']
+    );
     assert.equal(h.calls.persisted, 1);
 });
 
@@ -263,7 +280,10 @@ test('engine play counts the fourth failure and requeues below the drop limit', 
 
     assert.equal(h.state.current, null);
     assert.equal(h.state.failedTracks.get(track.info.uri), 1);
-    assert.deepEqual(h.state.queue.map(item => item.info.title), ['broken']);
+    assert.deepEqual(
+        h.state.queue.map(item => item.info.title),
+        ['broken']
+    );
 });
 
 test('engine play drops a track on its third counted failure', async () => {
@@ -335,7 +355,10 @@ test('engine skip trims exactly skipto - 1 queued entries', () => {
 
     h.engine.skip(2);
 
-    assert.deepEqual(h.state.queue.map(track => track.info.title), ['b', 'c']);
+    assert.deepEqual(
+        h.state.queue.map(track => track.info.title),
+        ['b', 'c']
+    );
     assert.equal(h.calls.stop, 1);
 });
 
@@ -404,7 +427,10 @@ test('a dropped third failure advances to the queued head on the next play', asy
 
     await h.engine.play(4);
     assert.equal(h.state.current, null);
-    assert.deepEqual(h.state.queue.map(track => track.info.title), ['next']);
+    assert.deepEqual(
+        h.state.queue.map(track => track.info.title),
+        ['next']
+    );
 
     h.player.play = async () => {
         h.calls.play += 1;
@@ -413,7 +439,10 @@ test('a dropped third failure advances to the queued head on the next play', asy
 
     assert.equal(h.state.current, next);
     assert.deepEqual(h.state.queue, []);
-    assert.deepEqual(h.state.history.map(track => track.info.title), ['next']);
+    assert.deepEqual(
+        h.state.history.map(track => track.info.title),
+        ['next']
+    );
 });
 
 test('stop then play keeps the player volume untouched', async () => {

@@ -60,13 +60,14 @@ export default class Load extends Command {
         const name = args.join(' ').trim();
 
         const playlist = await client.db.getPLaylist(author.id, name);
-        if (!playlist) return await this.fail(client, ctx, 'That playlist doesn\'t exist');
+        if (!playlist) return await this.fail(client, ctx, "That playlist doesn't exist");
 
         const rows = await client.db.getSong(author.id, name);
         if (rows.length === 0) return await this.fail(client, ctx, 'That playlist is empty');
 
         let player = client.queue.get(guild.id);
-        if (!player || player.isStale) player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
+        if (!player || player.isStale)
+            player = await client.queue.create(guild, ctx.voiceChannel, ctx.channel);
         const limits = await getPlayLimits(client, guild.id);
 
         const queued: Song[] = [];

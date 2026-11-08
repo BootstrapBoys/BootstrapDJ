@@ -111,10 +111,14 @@ test('a settings batch writes guild keys and autoplay in one transaction', async
 
 test('a failed settings upsert rolls the whole batch back', async () => {
     await assert.rejects(() =>
-        db.applySettings('gfail', { defaultvolume: '50', broken: null }, {
-            source: 'chart',
-            seeds: '',
-        })
+        db.applySettings(
+            'gfail',
+            { defaultvolume: '50', broken: null },
+            {
+                source: 'chart',
+                seeds: '',
+            }
+        )
     );
 
     assert.deepEqual(await db.getGuildSettings('gfail'), {});
@@ -169,7 +173,6 @@ test('server aliases take precedence over user aliases', async () => {
     assert.equal((await db.getCommandAlias('g1', 'b', 'u1'))?.command, 'play');
 });
 
-
 test('command mappings resolve server before user scope', async () => {
     await db.setCommandMapping('g1', 'user', 'u1', 'r', 'play one');
     assert.equal((await db.getCommandMapping('g1', 'r', 'u1'))?.expansion, 'play one');
@@ -179,7 +182,6 @@ test('command mappings resolve server before user scope', async () => {
     assert.equal((await db.getCommandMapping('g1', 'r', 'u1'))?.expansion, 'play one');
 });
 
-
 test('user prefixes round-trip and reset', async () => {
     await db.setUserPrefix('g1', 'u1', '?');
     assert.equal(await db.getUserPrefix('g1', 'u1'), '?');
@@ -188,12 +190,16 @@ test('user prefixes round-trip and reset', async () => {
 });
 
 test('profiles store customization and privacy', async () => {
-    const profile = await db.setProfile('u1', { color: '#ff8800', bio: 'Music first', privacy: 'private', visible: false });
+    const profile = await db.setProfile('u1', {
+        color: '#ff8800',
+        bio: 'Music first',
+        privacy: 'private',
+        visible: false,
+    });
     assert.equal(profile.color, '#ff8800');
     assert.equal(profile.privacy, 'private');
     assert.equal((await db.getProfile('u1'))?.bio, 'Music first');
 });
-
 
 test('game scores increment and rank by wins', async () => {
     await db.incrementGameScore('g1', 'u1', true);
@@ -205,7 +211,6 @@ test('game scores increment and rank by wins', async () => {
     assert.equal(board[0].plays, 1);
 });
 
-
 test('SQLite initialization enables WAL', async () => {
     await db.initialize();
     const rows = await prisma.$queryRawUnsafe('PRAGMA journal_mode');
@@ -213,9 +218,42 @@ test('SQLite initialization enables WAL', async () => {
 });
 
 test('personal stats aggregate requested tracks and listener time', async () => {
-    await prisma.statsListener.create({ data: { guildId: 'personal', userId: 'u1', seconds: 7200, deafSeconds: 60, lastSeen: new Date() } });
-    await prisma.statsUserTrack.create({ data: { guildId: 'personal', userId: 'u1', trackId: 't1', title: 'Track One', author: 'Artist', source: 'deezer', uri: 'https://example.com/1', seconds: 180, plays: 2, lastPlayed: new Date() } });
-    await prisma.statsUserTrack.create({ data: { guildId: 'personal', userId: 'u1', trackId: 't2', title: 'Track Two', author: 'Artist', source: 'deezer', seconds: 240, plays: 1, lastPlayed: new Date() } });
+    await prisma.statsListener.create({
+        data: {
+            guildId: 'personal',
+            userId: 'u1',
+            seconds: 7200,
+            deafSeconds: 60,
+            lastSeen: new Date(),
+        },
+    });
+    await prisma.statsUserTrack.create({
+        data: {
+            guildId: 'personal',
+            userId: 'u1',
+            trackId: 't1',
+            title: 'Track One',
+            author: 'Artist',
+            source: 'deezer',
+            uri: 'https://example.com/1',
+            seconds: 180,
+            plays: 2,
+            lastPlayed: new Date(),
+        },
+    });
+    await prisma.statsUserTrack.create({
+        data: {
+            guildId: 'personal',
+            userId: 'u1',
+            trackId: 't2',
+            title: 'Track Two',
+            author: 'Artist',
+            source: 'deezer',
+            seconds: 240,
+            plays: 1,
+            lastPlayed: new Date(),
+        },
+    });
     const stats = await db.getUserStats('personal', 'u1');
     assert.equal(stats.listenedSeconds, 7200);
     assert.equal(stats.totalPlays, 3);
@@ -223,7 +261,16 @@ test('personal stats aggregate requested tracks and listener time', async () => 
     assert.equal(stats.uniqueTracks, 2);
     assert.equal(stats.tracks[0].title, 'Track One');
     assert.equal(stats.tracks[0].plays, 2);
-    await db.recordTrackPlay('personal', 't3', 'Track Three', 'Artist', 'deezer', 60, 'https://example.com/3', 'u1');
+    await db.recordTrackPlay(
+        'personal',
+        't3',
+        'Track Three',
+        'Artist',
+        'deezer',
+        60,
+        'https://example.com/3',
+        'u1'
+    );
     const after = await db.getUserStats('personal', 'u1');
     assert.equal(after.totalPlays, 4);
     assert.equal(after.uniqueTracks, 3);
@@ -236,34 +283,118 @@ test('stats retention keeps recent rows and each guild top 100', async () => {
     const recent = new Date('2026-05-30T00:00:00Z');
     await prisma.statsDaily.create({ data: { guildId: 'g1', day: '2025-01-01', seconds: 10 } });
     await prisma.statsDaily.create({ data: { guildId: 'g1', day: '2026-05-30', seconds: 20 } });
-    await prisma.statsTrack.create({ data: { guildId: 'g1', trackId: 'top', title: 'Top', author: 'A', source: 'deezer', seconds: 1000, plays: 1, lastPlayed: old } });
-    await prisma.statsTrack.create({ data: { guildId: 'g1', trackId: 'tail', title: 'Tail', author: 'A', source: 'deezer', seconds: 1, plays: 1, lastPlayed: old } });
-    await prisma.statsTrack.create({ data: { guildId: 'g1', trackId: 'new', title: 'New', author: 'A', source: 'deezer', seconds: 5, plays: 1, lastPlayed: recent } });
+    await prisma.statsTrack.create({
+        data: {
+            guildId: 'g1',
+            trackId: 'top',
+            title: 'Top',
+            author: 'A',
+            source: 'deezer',
+            seconds: 1000,
+            plays: 1,
+            lastPlayed: old,
+        },
+    });
+    await prisma.statsTrack.create({
+        data: {
+            guildId: 'g1',
+            trackId: 'tail',
+            title: 'Tail',
+            author: 'A',
+            source: 'deezer',
+            seconds: 1,
+            plays: 1,
+            lastPlayed: old,
+        },
+    });
+    await prisma.statsTrack.create({
+        data: {
+            guildId: 'g1',
+            trackId: 'new',
+            title: 'New',
+            author: 'A',
+            source: 'deezer',
+            seconds: 5,
+            plays: 1,
+            lastPlayed: recent,
+        },
+    });
     // 100 old, low-play rows fill the retained top-100 slot with 99 of them,
     // so exactly one old row falls outside the protection.
     for (let index = 0; index < 100; index++) {
         await prisma.statsTrack.create({
-            data: { guildId: 'g1', trackId: `old-${index}`, title: `Old ${index}`, author: 'A', source: 'deezer', seconds: 1, plays: 1, lastPlayed: old },
+            data: {
+                guildId: 'g1',
+                trackId: `old-${index}`,
+                title: `Old ${index}`,
+                author: 'A',
+                source: 'deezer',
+                seconds: 1,
+                plays: 1,
+                lastPlayed: old,
+            },
         });
     }
-    await prisma.statsListener.create({ data: { guildId: 'g1', userId: 'top', seconds: 500, lastSeen: old } });
-    await prisma.statsListener.create({ data: { guildId: 'g1', userId: 'new', seconds: 2, lastSeen: recent } });
+    await prisma.statsListener.create({
+        data: { guildId: 'g1', userId: 'top', seconds: 500, lastSeen: old },
+    });
+    await prisma.statsListener.create({
+        data: { guildId: 'g1', userId: 'new', seconds: 2, lastSeen: recent },
+    });
     for (let index = 0; index < 100; index++) {
         await prisma.statsListener.create({
             data: { guildId: 'g1', userId: `old-${index}`, seconds: 1, lastSeen: old },
         });
     }
-    await prisma.sessionLease.create({ data: { guildId: 'expired', botId: 'b', botName: 'B', expiresAt: old, updatedAt: old } });
-    await prisma.sessionLease.create({ data: { guildId: 'live', botId: 'b', botName: 'B', expiresAt: new Date('2026-06-01T13:00:00Z'), updatedAt: now } });
+    await prisma.sessionLease.create({
+        data: { guildId: 'expired', botId: 'b', botName: 'B', expiresAt: old, updatedAt: old },
+    });
+    await prisma.sessionLease.create({
+        data: {
+            guildId: 'live',
+            botId: 'b',
+            botName: 'B',
+            expiresAt: new Date('2026-06-01T13:00:00Z'),
+            updatedAt: now,
+        },
+    });
 
     const result = await db.pruneStats({ now, retentionDays: 90, inactiveDays: 180 });
     assert.deepEqual(result, { daily: 1, tracks: 3, listeners: 2, userTracks: 0, leases: 1 });
-    assert.equal((await prisma.statsDaily.count({ where: { guildId: 'g1' } })), 1);
-    assert.equal((await prisma.statsTrack.count({ where: { guildId: 'g1' } })), 100);
-    assert.equal((await prisma.statsListener.count({ where: { guildId: 'g1' } })), 100);
-    assert.equal((await prisma.statsTrack.findUnique({ where: { guildId_trackId: { guildId: 'g1', trackId: 'top' } } }))?.seconds, 1000);
-    assert.equal((await prisma.statsTrack.findUnique({ where: { guildId_trackId: { guildId: 'g1', trackId: 'new' } } }))?.seconds, 5);
-    assert.equal((await prisma.statsListener.findUnique({ where: { guildId_userId: { guildId: 'g1', userId: 'top' } } }))?.seconds, 500);
-    assert.equal((await prisma.statsListener.findUnique({ where: { guildId_userId: { guildId: 'g1', userId: 'new' } } }))?.seconds, 2);
-    assert.equal((await prisma.sessionLease.count()), 1);
+    assert.equal(await prisma.statsDaily.count({ where: { guildId: 'g1' } }), 1);
+    assert.equal(await prisma.statsTrack.count({ where: { guildId: 'g1' } }), 100);
+    assert.equal(await prisma.statsListener.count({ where: { guildId: 'g1' } }), 100);
+    assert.equal(
+        (
+            await prisma.statsTrack.findUnique({
+                where: { guildId_trackId: { guildId: 'g1', trackId: 'top' } },
+            })
+        )?.seconds,
+        1000
+    );
+    assert.equal(
+        (
+            await prisma.statsTrack.findUnique({
+                where: { guildId_trackId: { guildId: 'g1', trackId: 'new' } },
+            })
+        )?.seconds,
+        5
+    );
+    assert.equal(
+        (
+            await prisma.statsListener.findUnique({
+                where: { guildId_userId: { guildId: 'g1', userId: 'top' } },
+            })
+        )?.seconds,
+        500
+    );
+    assert.equal(
+        (
+            await prisma.statsListener.findUnique({
+                where: { guildId_userId: { guildId: 'g1', userId: 'new' } },
+            })
+        )?.seconds,
+        2
+    );
+    assert.equal(await prisma.sessionLease.count(), 1);
 });

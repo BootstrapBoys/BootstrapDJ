@@ -72,9 +72,19 @@ export default class Alias extends Command {
         return (ctx.args[FIELDS.indexOf(field)] ?? '').trim();
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, error: boolean = false): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        error: boolean = false
+    ): Promise<unknown> {
         return ctx.sendMessage({
-            embeds: [client.embed().setColor(error ? client.color.red : client.color.main).setDescription(text)],
+            embeds: [
+                client
+                    .embed()
+                    .setColor(error ? client.color.red : client.color.main)
+                    .setDescription(text),
+            ],
         });
     }
 
@@ -87,7 +97,12 @@ export default class Alias extends Command {
         const action = (this.field(ctx, 'action') || 'list').toLowerCase();
         const scope: AliasScope = this.field(ctx, 'scope') === 'user' ? 'user' : 'server';
         if (scope === 'server' && !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return await this.reply(client, ctx, 'You need Manage Server for server aliases.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'You need Manage Server for server aliases.',
+                true
+            );
         }
         const userId = scope === 'user' ? author.id : '';
 
@@ -97,7 +112,9 @@ export default class Alias extends Command {
                 if (aliases.length === 0) {
                     return await this.reply(client, ctx, 'No custom aliases are set.');
                 }
-                const lines = aliases.map(entry => `\`${entry.alias}\` → \`${entry.command}\` (${entry.scope})`);
+                const lines = aliases.map(
+                    entry => `\`${entry.alias}\` → \`${entry.command}\` (${entry.scope})`
+                );
                 return await ctx.sendMessage({
                     embeds: [
                         client
@@ -122,7 +139,12 @@ export default class Alias extends Command {
 
         const alias = this.field(ctx, 'alias').toLowerCase();
         if (!/^[a-z0-9_-]{1,32}$/.test(alias)) {
-            return await this.reply(client, ctx, 'Alias names must be 1–32 letters, numbers, `_` or `-`.', true);
+            return await this.reply(
+                client,
+                ctx,
+                'Alias names must be 1–32 letters, numbers, `_` or `-`.',
+                true
+            );
         }
 
         if (action === 'remove') {
@@ -132,17 +154,28 @@ export default class Alias extends Command {
                     client
                         .embed()
                         .setColor(removed ? client.color.green : client.color.red)
-                        .setDescription(removed ? `Removed alias \`${alias}\`.` : `No alias \`${alias}\` exists.`),
+                        .setDescription(
+                            removed
+                                ? `Removed alias \`${alias}\`.`
+                                : `No alias \`${alias}\` exists.`
+                        ),
                 ],
             });
         }
 
-        const target = this.field(ctx, 'command').toLowerCase().replace(/^[^\w]+/, '');
+        const target = this.field(ctx, 'command')
+            .toLowerCase()
+            .replace(/^[^\w]+/, '');
         if (!client.commands.has(target)) {
             return await this.reply(client, ctx, `Unknown command: **${target || 'none'}**.`, true);
         }
         if (client.commands.has(alias) || client.aliases.has(alias)) {
-            return await this.reply(client, ctx, `\`${alias}\` is already a command or alias.`, true);
+            return await this.reply(
+                client,
+                ctx,
+                `\`${alias}\` is already a command or alias.`,
+                true
+            );
         }
 
         await client.db.setCommandAlias(guild.id, scope, userId, alias, target);

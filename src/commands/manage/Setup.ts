@@ -56,7 +56,12 @@ export default class Setup extends Command {
         return args[0] ?? '';
     }
 
-    private reply(client: BootstrapClient, ctx: Context, text: string, colour: number): Promise<unknown> {
+    private reply(
+        client: BootstrapClient,
+        ctx: Context,
+        text: string,
+        colour: number
+    ): Promise<unknown> {
         return ctx.sendMessage({ embeds: [{ description: text, color: colour }] });
     }
 
@@ -67,7 +72,12 @@ export default class Setup extends Command {
 
         const existing = await client.db.getSetup(guild.id);
         if (existing?.textId && existing.messageId) {
-            return await this.reply(client, ctx, 'The song request channel already exists', client.color.red);
+            return await this.reply(
+                client,
+                ctx,
+                'The song request channel already exists',
+                client.color.red
+            );
         }
 
         const channel = await guild.channels.create({
@@ -127,13 +137,26 @@ export default class Setup extends Command {
         if (!guild) return;
         const setup = await client.db.getSetup(guild.id);
         if (!setup) {
-            return await this.reply(client, ctx, 'The song request channel doesn\'t exist', client.color.red);
+            return await this.reply(
+                client,
+                ctx,
+                "The song request channel doesn't exist",
+                client.color.red
+            );
         }
 
         await client.db.deleteSetup(guild.id);
         stopSetupJanitor(guild.id);
-        await guild.channels.cache.get(setup.textId)?.delete().catch(() => {});
-        return await this.reply(client, ctx, 'The song request channel has been deleted', client.color.main);
+        await guild.channels.cache
+            .get(setup.textId)
+            ?.delete()
+            .catch(() => {});
+        return await this.reply(
+            client,
+            ctx,
+            'The song request channel has been deleted',
+            client.color.main
+        );
     }
 
     private async channelInfo(client: BootstrapClient, ctx: Context): Promise<unknown> {
@@ -142,7 +165,12 @@ export default class Setup extends Command {
         const setup = await client.db.getSetup(guild.id);
         const channel = setup ? guild.channels.cache.get(setup.textId) : undefined;
         if (!channel) {
-            return await this.reply(client, ctx, 'The song request channel doesn\'t exist', client.color.red);
+            return await this.reply(
+                client,
+                ctx,
+                "The song request channel doesn't exist",
+                client.color.red
+            );
         }
         return await this.reply(
             client,

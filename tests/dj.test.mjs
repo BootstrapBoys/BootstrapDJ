@@ -54,7 +54,10 @@ function makeHarness() {
 test('removing the last DJ role also disables DJ mode', async () => {
     const harness = makeHarness();
 
-    await new Dj({ config: {}, logger: {} }).run(harness.client, harness.ctx, ['remove', '<@&role-1>']);
+    await new Dj({ config: {}, logger: {} }).run(harness.client, harness.ctx, [
+        'remove',
+        '<@&role-1>',
+    ]);
 
     assert.deepEqual(harness.calls.removed, ['role-1']);
     assert.deepEqual(harness.calls.mode, [false]);

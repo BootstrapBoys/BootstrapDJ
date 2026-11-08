@@ -27,13 +27,10 @@ test('malformed fallback lists are ignored rather than throwing', () => {
 });
 
 test('toNodeOptions keeps the primary first and fallbacks in order', () => {
-    const options = toNodeOptions(
-        { name: 'main', url: 'main:443', auth: 'a', secure: true },
-        [
-            { name: 'eu-1', url: 'eu:443', auth: 'b', secure: true },
-            { name: 'us-1', url: 'us:2333', auth: 'c', secure: false },
-        ]
-    );
+    const options = toNodeOptions({ name: 'main', url: 'main:443', auth: 'a', secure: true }, [
+        { name: 'eu-1', url: 'eu:443', auth: 'b', secure: true },
+        { name: 'us-1', url: 'us:2333', auth: 'c', secure: false },
+    ]);
 
     assert.deepEqual(
         options.map(node => node.name),

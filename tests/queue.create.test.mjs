@@ -52,10 +52,7 @@ test('concurrent first-time creates coalesce into one spawn', async () => {
     const { client, state } = makeClient();
     const queue = new Queue(client);
 
-    const [first, second] = await Promise.all([
-        seedPlayer(queue),
-        seedPlayer(queue),
-    ]);
+    const [first, second] = await Promise.all([seedPlayer(queue), seedPlayer(queue)]);
 
     assert.equal(state.joins, 1);
     assert.equal(first, second);
