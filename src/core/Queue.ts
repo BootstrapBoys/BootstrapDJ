@@ -1,8 +1,8 @@
 import { Channel, Guild } from 'discord.js';
 import { LavalinkResponse, LoadType, Node } from 'shoukaku';
 
-import { BootstrapClient, Dispatcher } from './index.js';
 import { isFallbackNode } from '../lib/PublicNodes.js';
+import { BootstrapClient, Dispatcher } from './index.js';
 
 type ResumableState = {
     current: Dispatcher['current'];

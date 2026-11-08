@@ -2,8 +2,8 @@
 import { ChannelType, Message, User } from 'discord.js';
 import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } from 'shoukaku';
 
-import { BootstrapClient } from './index.js';
 import { isFinishedTrackReason } from '../lib/TrackEndReason.js';
+import { BootstrapClient } from './index.js';
 
 /** Autoplay needs YouTube video ids to build a mix, so this prefix is fixed
  * rather than following config.searchEngine (which may be Deezer/Spotify). */

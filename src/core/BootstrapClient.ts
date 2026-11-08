@@ -2,8 +2,6 @@ import type { EarlCommandHandler, EarlSetupRefresher } from '../types.js';
 import { Client, ClientOptions, Collection, EmbedBuilder, Events, Interaction } from 'discord.js';
 import type { NodeOption } from 'shoukaku';
 
-import { Command, Queue, ShoukakuClient } from './index.js';
-import Logger from './Logger.js';
 import config from '../config.js';
 import { startDashboard } from '../dashboard/server.js';
 import {
@@ -25,6 +23,8 @@ import { installEvents } from '../lib/EventManager.js';
 import { findBestPublicNode, toNodeOption } from '../lib/PublicNodes.js';
 import { Utils } from '../lib/Utils.js';
 import loadPlugins from '../plugin/index.js';
+import { Command, Queue, ShoukakuClient } from './index.js';
+import Logger from './Logger.js';
 
 const CONTROL_BUTTON_IDS = new Set([
     'LOW_VOL_BUT',
