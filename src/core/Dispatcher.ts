@@ -5,7 +5,6 @@ import { LoadType, Node, Player, Track, TrackEndEvent, TrackExceptionEvent } fro
 import { isFinishedTrackReason } from '../lib/TrackEndReason.js';
 import { BootstrapClient } from './index.js';
 import { PresentationRegistry } from './player/PresentationRegistry.js';
-import { persistSession } from './player/SessionWriter.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
 import {
     PlaybackEngine,
@@ -404,23 +403,7 @@ export default class Dispatcher {
      * deleted when playback ends normally, so a later boot has nothing stale.
      */
     public async persist(): Promise<void> {
-        if (!this.voiceId || this.restoring) return;
-        try {
-            await persistSession(this.client.db, {
-                guildId: this.guildId,
-                textId: this.channelId,
-                voiceId: this.voiceId,
-                current: this.current,
-                queue: this.queue,
-                position: this.player.position,
-                loop: this.loop,
-                autoplay: this.autoplay,
-                volume: this.player.volume,
-                paused: this.paused,
-            });
-        } catch (error) {
-            this.client.logger.error(`[session] persist failed for ${this.guildId}: ${error}`);
-        }
+        await this.engine.persist();
     }
 
     public setLoop(loop: 'off' | 'repeat' | 'queue'): void {
