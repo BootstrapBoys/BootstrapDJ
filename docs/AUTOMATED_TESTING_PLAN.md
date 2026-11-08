@@ -294,6 +294,19 @@ summary and the first failing metric.
 
 Total: **7–12 focused days**, then weekly soak maintenance.
 
+## Implementation Status
+
+- `GET /api/metrics` is implemented behind dashboard auth.
+- `tooling/soak/{run,metrics,workload,report}.mjs`, `thresholds.json`, and
+  `README.md` are implemented.
+- `tooling/bottest-soak.sh` builds/restarts BotTest, waits for metrics, runs the
+  soak, and can stop the test bot afterward.
+- CI runs format, lint, build, and coverage (`test:coverage`).
+- BotTest 5-minute dry run passed: 31 samples, RSS -17.7%, heap -18.0%,
+  event-loop p99 21.4 ms, no uptime resets.
+- Full 24-hour workload soak is still pending; it needs a test member in the
+  voice channel for bridge-driven commands. The metrics-only profile is ready.
+
 ## Definition of Done
 
 - CI enforces format/lint/build/tests and publishes coverage.
