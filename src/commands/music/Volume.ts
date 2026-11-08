@@ -33,9 +33,9 @@ export default defineMusicCommand({
                 embeds: [client.embed().setColor(client.color.red).setDescription('The volume can\'t be higher than 200.')],
             });
         }
-        player.player.setGlobalVolume(volume);
+        await player.player.setGlobalVolume(volume);
         return await ctx.sendMessage({
-            embeds: [client.embed().setColor(client.color.main).setDescription(`Set the volume to ${player.player.volume}`)],
+            embeds: [client.embed().setColor(client.color.main).setDescription(`Set the volume to ${volume}`)],
         });
     },
 });
