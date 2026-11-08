@@ -1,0 +1,229 @@
+# Automated Testing Plan
+
+Goal: make every merge independently verifiable and add the missing long-run
+proof: a repeatable **24-hour soak with performance capture** on an isolated test
+bot.
+
+Current baseline:
+- `node --test tests/*.test.mjs`: **353 tests**
+- CI: format, lint, build, tests
+- BotTest: isolated Discord app, SQLite DB, dashboard `8796`, bridge `8792`
+- 10-stage staging matrix already exists (`docs/STAGING_TEST_PLAN.md`)
+- Missing: scheduled integration/E2E runs, chaos automation, soak metrics,
+  long-run thresholds, and artifact retention
+
+## Test Pyramid
+
+| Level | Scope | Where | Cadence | Target |
+|---|---|---|---|---|
+| L0 Static | format, lint, tsc, build | CI | every push/PR | < 2 min |
+| L1 Unit | pure logic, stores, state machines | CI | every push/PR | < 5 min |
+| L2 Integration | temp SQLite, fake player/Lavalink, dashboard HTTP | CI | every PR + nightly | < 10 min |
+| L3 Staging E2E | real Discord + Lavalink | BotTest host | nightly + pre-merge | < 20 min |
+| L4 Chaos | node loss, failover, restore, restart | BotTest host | weekly + pre-release | < 1 h |
+| L5 Soak | 24 h mixed workload + metrics | BotTest host | weekly/monthly | 24 h |
+| L6 Security | auth, CSRF, rate limits, owner gate | CI + BotTest | every PR + nightly | < 5 min |
+
+No level replaces another. A green unit suite does not approve a playback or
+migration change without L3.
+
+## What to Automate First
+
+1. **CI quality gate** — already present; add coverage reporting.
+2. **Integration suite** — temporary SQLite plus fake Shoukaku player and fake
+   Discord interactions; no real network.
+3. **BotTest smoke** — non-interactive commands through the bridge/REST or a
+   test-only command runner; avoid UI/CDP for the routine path.
+4. **Session/restart test** — start playback, restart, assert current track,
+   position tolerance, queue, loop, volume, autoplay.
+5. **Failover test** — primary → backup → primary, assert resume and no queue
+   loss.
+6. **Soak harness** — the main missing piece.
+
+## Test Data and Isolation
+
+- Dedicated test guild, test bot token, test DB, test dashboard port, test
+  bridge port.
+- Never point tests at `prisma/bootstrapdj.db`, production token, production
+  dashboard, or the production Lavalink session.
+- Use a copy/seed DB with known playlists and deterministic tracks.
+- Clean up guild messages, voice connections, sessions and temp DBs in
+  `after()` hooks.
+- Unit tests use fake clocks/timers; only L3+ may sleep for real.
+
+## Coverage
+
+Add `node --test --experimental-test-coverage` to CI and publish:
+- lines, branches, functions
+- per-directory summary
+- diff coverage on PRs
+
+Initial targets:
+- overall: **75% lines / 65% branches** (from 67.64 / 61.48)
+- critical modules (`core/player`, `data`, `dashboard/auth`): **85% lines**
+- no decrease on changed lines
+
+Do not chase coverage with assertion-free tests. Critical lifecycle branches
+must be exercised: stop/retry, rebuild, restore failure, node loss, queue end.
+
+## 24-Hour Soak Harness
+
+Create `tooling/soak/`:
+
+```
+tooling/soak/
+  run.mjs          # orchestrator, checkpoints, teardown
+  workload.mjs     # scripted Discord/Lavalink actions
+  metrics.mjs      # process, DB, node and queue sampling
+  thresholds.json  # pass/fail limits
+  report.mjs       # JSON + Markdown summary
+```
+
+### Run contract
+
+```bash
+SOAK_HOURS=24 \
+SOAK_GUILD_ID=... \
+SOAK_TEXT_CHANNEL_ID=... \
+SOAK_VOICE_CHANNEL_ID=... \
+node tooling/soak/run.mjs
+```
+
+Required environment: test token, test DB, BotTest API/bridge, primary and
+backup Lavalink. Refuse to start if `PRODUCTION=true`, the guild is not the test
+guild, or the DB is the production path.
+
+### Workload loop
+
+Every 5–10 minutes, mix:
+- play a search result, skip, pause/resume, seek, volume, loop
+- enqueue 10–50 tracks, remove/move/shuffle/clear
+- load a playlist, add/remove a playlist track
+- toggle autoplay, let it run for several tracks
+- idle for 10 minutes
+- read `/nowplaying`, `/queue`, dashboard state
+- every 2 hours: restart the bot and verify restore
+- every 4 hours: primary → backup → primary failover
+- once: session row deletion after natural queue end
+
+Add bounded randomization and a fixed seed for reproducibility.
+
+### Metrics sampled every 15–30 seconds
+
+Process:
+- RSS, heap used/total, external, array buffers
+- CPU user/system
+- event-loop delay p50/p95/p99/max (`perf_hooks.monitorEventLoopDelay`)
+- active handles/requests (`process.getActiveResourcesInfo()`)
+- GC count/pause if `--trace-gc` is enabled
+
+Application:
+- dispatchers, players, queue depth, sessions
+- timers/listeners/collectors created vs cleared
+- command success/error counts
+- unhandled rejections/exceptions
+- Lavalink `/v4/stats` (players, playing, memory, CPU)
+- DB size, WAL size, Song/Session/Playlist row counts
+- dashboard request latency/error rate
+
+Write JSONL continuously; flush on every sample so a crash keeps evidence.
+
+### Checkpoints
+
+At start, 1h, 6h, 12h, 24h:
+- write a summary row
+- optionally take a heap snapshot at 1h and 24h
+- record DB row counts and file sizes
+- record queue/session/timer counts
+- run a short functional probe (play/skip/pause/queue/stop)
+
+### Pass/fail thresholds (initial)
+
+- zero unhandled rejections and zero process exits
+- RSS after 24h within **10%** of the 1h warm baseline, or explained
+- heap used after 24h within **15%** of the 1h baseline
+- event-loop p99 **< 50 ms**, max **< 500 ms**
+- timers/listeners/collectors return to baseline after cleanup ± small constant
+- no dispatcher, player, session, or queue-row leak after teardown
+- restore and failover probes pass at every checkpoint
+- DB/WAL growth bounded; no unbounded Song/Session accumulation
+- dashboard p95 **< 250 ms** on loopback
+
+Thresholds live in `thresholds.json`; changing one requires a note in the report.
+
+### Artifacts
+
+Per run, keep:
+- commit SHA, branch, dirty state, Node/npm versions, OS, Lavalink versions
+- `metrics.jsonl`
+- `summary.json` and `summary.md`
+- BotTest stdout/stderr logs
+- heap snapshots (if enabled)
+- DB copy and row counts
+- failure screenshots only for UI-driven runs
+
+Retain 30 days locally; upload the summary and JSONL to CI artifacts or the
+wiki. Never upload tokens, `.env`, or raw DB containing user data.
+
+## Automation and Scheduling
+
+- **Every push/PR:** L0 + L1 + fast L2, coverage summary.
+- **Nightly:** full L2, L3 BotTest smoke, security suite, restore test.
+- **Weekly:** chaos/failover and a **24-hour soak** on BotTest.
+- **Pre-release:** L3 + L4 + 24-hour soak; production deploy only after pass.
+
+Use a systemd timer or cron on the BotTest host for L3–L5, because Discord voice
+and Lavalink are not suitable for GitHub-hosted runners. The job must:
+1. pull the target SHA
+2. build and migrate a disposable test DB
+3. start BotTest
+4. run the harness
+5. stop BotTest and clean up
+6. write summary + exit non-zero on threshold failure
+
+A simple lock file prevents overlapping soak runs. Notify on failure with the
+summary and the first failing metric.
+
+## Failure Handling
+
+- Fail on product errors; retry only infrastructure failures (Lavalink connect,
+  network) with bounded backoff.
+- On crash, preserve logs/metrics and mark the run failed; do not auto-restart
+  into a passing result.
+- Quarantine flaky tests with an owner and expiry; do not silently skip.
+- A soak failure blocks the release until triaged or explicitly waived.
+
+## Security Tests
+
+- `OWNER_IDS` missing/empty/malformed fails closed
+- dashboard anonymous mode refused unless explicit loopback opt-in
+- OAuth state/session/CSRF negative cases
+- XFF spoofing and rate-limit bucket cap
+- bridge auth timing-safe, 401 without secret
+- no token/error leakage in logs or user replies
+
+## Implementation Phases
+
+1. **Harness foundation (1–2 days):** metrics sampler, workload driver, run
+   lock, JSONL, summary, teardown.
+2. **Integration suite (2–3 days):** fake player/Lavalink/Discord, temp DB
+   fixtures, dashboard HTTP tests.
+3. **BotTest automation (1–2 days):** start/stop, test-only command runner,
+   nightly smoke, restore test, artifact upload.
+4. **Chaos (1–2 days):** automated node stop/start, migration assertions,
+   switch-back.
+5. **Soak and thresholds (1–2 days):** 1h dry run, 6h tuning, then 24h;
+   calibrate thresholds from 3 clean runs.
+6. **CI/reporting (1 day):** coverage, nightly/weekly schedules, notifications,
+   documentation.
+
+Total: **7–12 focused days**, then weekly soak maintenance.
+
+## Definition of Done
+
+- CI enforces format/lint/build/tests and publishes coverage.
+- Integration suite runs without real Discord/Lavalink and is green.
+- BotTest nightly smoke and restart/failover tests run unattended.
+- A 24-hour soak completes with metrics, summary, and no threshold breach.
+- Failures produce a useful artifact bundle and a non-zero exit.
+- Runbook documents how to start, stop, inspect, and waive a soak.
