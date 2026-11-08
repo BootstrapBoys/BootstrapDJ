@@ -20,6 +20,16 @@ import {
 
 import { BootstrapClient } from './index.js';
 
+type ReplyTarget = 'reply' | 'message';
+type OutboundPayload = string | BaseMessageOptions;
+
+/**
+ * Normalized wrapper around either a slash interaction or a prefix message.
+ *
+ * Commands should not branch on Discord's transport. This class keeps the two
+ * entry paths behind one reply API while preserving each transport's deletion
+ * and ephemeral behavior.
+ */
 export default class Context {
     public ctx: CommandInteraction | Message;
     public interaction: ChatInputCommandInteraction | null;
@@ -34,27 +44,28 @@ export default class Context {
         | GuildTextBasedChannel
         | TextChannel
         | DMChannel
-        | null = null;
+        | null;
     public guild: Guild | null;
     public createdAt: Date;
     public createdTimestamp: number;
     public member: GuildMemberResolvable | GuildMember | APIInteractionGuildMember | null;
     public args: string[] = [];
     public msg: Message | null = null;
-    /** Slash command feedback is private unless the command opts out. */
+    /** Slash feedback is private unless the command or guild opts out. */
     public ephemeral: boolean;
-    /** Per-guild auto-delete override in seconds; null uses config. */
+    /** Per-guild auto-delete override in seconds; null falls back to config. */
     public deleteAfter: number | null = null;
+
     private deleteTimer: NodeJS.Timeout | null = null;
-    constructor(
+
+    public constructor(
         ctx: ChatInputCommandInteraction | Message,
         args: readonly unknown[],
         ephemeral: boolean = true
     ) {
         this.ctx = ctx;
-        this.interaction = this.ctx instanceof ChatInputCommandInteraction ? this.ctx : null;
-        this.message = this.ctx instanceof Message ? this.ctx : null;
-        this.channel = this.ctx.channel;
+        this.interaction = ctx instanceof ChatInputCommandInteraction ? ctx : null;
+        this.message = ctx instanceof Message ? ctx : null;
         this.id = ctx.id;
         this.channelId = ctx.channelId;
         this.client = ctx.client as BootstrapClient;
@@ -65,18 +76,15 @@ export default class Context {
         this.createdTimestamp = ctx.createdTimestamp;
         this.member = ctx.member;
         this.ephemeral = ephemeral;
-        this.setArgs(args);
+        this.replaceArgs(args);
     }
 
-
-    /** Typed accessors: the constructor sets exactly one of the two, and
-     * `isInteraction` reflects that, so these cannot disagree in practice. */
-    private get cmd(): ChatInputCommandInteraction {
+    private get slash(): ChatInputCommandInteraction {
         if (!this.interaction) throw new Error('Context is not tied to an interaction');
         return this.interaction;
     }
 
-    private get messageChannel(): TextChannel {
+    private get prefixChannel(): TextChannel {
         if (!this.message) throw new Error('Context is not tied to a message');
         return this.message.channel as TextChannel;
     }
@@ -86,151 +94,120 @@ export default class Context {
     }
 
     public setArgs(args: readonly unknown[]): void {
-        if (this.isInteraction) {
-            this.args = args.map(arg => {
-                const value = (arg as { value?: unknown }).value;
-                if (value === undefined || value === null) return '';
-                if (typeof value === 'string') return value;
-                if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-                return JSON.stringify(value) ?? '';
-            });
-        } else {
-            this.args = args.map(String);
-        }
+        this.replaceArgs(args);
     }
 
+    private replaceArgs(args: readonly unknown[]): void {
+        this.args = this.isInteraction ? args.map(valueOfInteractionOption) : args.map(String);
+    }
 
-    /**
-     * The invoking member's voice channel. The handler already rejects members
-     * who are not connected, so null here means they left during the invocation.
-     */
     public get voiceChannel(): VoiceBasedChannel | null {
         const member = this.member;
         if (!member || typeof member !== 'object' || !('voice' in member)) return null;
         return member.voice?.channel ?? null;
     }
-    /**
-     * Acknowledge the interaction before slow work (Lavalink searches, playlist
-     * resolution). Discord fails the command if the first reply takes over 3s.
-     */
+
+    /** Acknowledge before slow work so Discord's three-second deadline is met. */
     public async defer(ephemeral: boolean = false): Promise<void> {
         if (!this.isInteraction) return;
-        if (this.cmd.deferred || this.cmd.replied) return;
-        await this.cmd.deferReply({ ephemeral });
+        if (this.slash.deferred || this.slash.replied) return;
+        await this.slash.deferReply({ ephemeral });
     }
 
-    /** Interaction replies are typed as Message | InteractionResponse; the
-     * latter still needs a fetch before it can be edited or deleted. */
-    private async settle(response: Message | InteractionResponse<boolean>): Promise<Message> {
-        return response instanceof Message ? response : await this.cmd.fetchReply();
+    private async settled(response: Message | InteractionResponse<boolean>): Promise<Message> {
+        return response instanceof Message ? response : await this.slash.fetchReply();
     }
 
-    private ephemeralPayload(content: string | BaseMessageOptions): string | InteractionReplyOptions {
+    private scopedPayload(content: OutboundPayload): string | InteractionReplyOptions {
         if (!this.isInteraction || !this.ephemeral) return content;
-        if (content && typeof content === 'object' && !Array.isArray(content))
-            return { ...content, ephemeral: true };
-        return { content: String(content), ephemeral: true };
+        if (typeof content === 'string') return { content, ephemeral: true };
+        return { ...content, ephemeral: true };
     }
 
-    public async sendMessage(
-        content: string | BaseMessageOptions,
-        deleteAfter?: number
-    ): Promise<Message> {
-        if (this.isInteraction) {
-            const response = this.deferred
-                ? await this.cmd.editReply(content)
-                : await this.cmd.reply(this.ephemeralPayload(content));
-            this.msg = await this.settle(response);
-            this.armDelete(content, 'reply', deleteAfter);
-            return this.msg;
-        } else {
-            this.msg = await this.messageChannel.send(content);
-            this.armDelete(content, 'message', deleteAfter);
-            return this.msg;
-        }
+    private shouldSkipDeletion(content: OutboundPayload): boolean {
+        if (this.isInteraction && this.ephemeral) return true;
+        if (typeof content === 'string') return false;
+        if (content.components?.length) return true;
+        return Boolean((content as InteractionReplyOptions).ephemeral);
     }
 
-    /**
-     * (Re)arm deletion of this context's reply so command output doesn't
-     * linger. Called after every send/edit — the last thing displayed decides
-     * the lifetime. Messages carrying components (pickers, paginators) are
-     * exempt, and an exempt edit cancels a pending timer.
-     */
-    private armDelete(
-        content: string | BaseMessageOptions,
-        target: 'reply' | 'message',
-        seconds?: number
-    ): void {
+    private armDeletion(content: OutboundPayload, target: ReplyTarget, seconds?: number): void {
         if (this.deleteTimer) {
             clearTimeout(this.deleteTimer);
             this.deleteTimer = null;
         }
-        const timeout = seconds ?? this.deleteAfter ?? this.client.config.deleteAfter;
-        if (!timeout || timeout <= 0) return;
-        if (this.isInteraction && this.ephemeral) return;
-        if (typeof content !== 'string' && content.components?.length) return;
-        if (
-            typeof content !== 'string' &&
-            'ephemeral' in content &&
-            Boolean((content as InteractionReplyOptions).ephemeral)
-        )
-            return;
+        const delay = seconds ?? this.deleteAfter ?? this.client.config.deleteAfter;
+        if (!delay || delay <= 0 || this.shouldSkipDeletion(content)) return;
+
         const timer = setTimeout(() => {
-            const removal =
-                target === 'reply'
-                    ? this.cmd.deleteReply()
-                    : this.msg?.delete();
+            const removal = target === 'reply' ? this.slash.deleteReply() : this.msg?.delete();
             Promise.resolve(removal).catch(() => {});
-        }, timeout * 1000);
+        }, delay * 1000);
         (timer as unknown as { unref?: () => void }).unref?.();
         this.deleteTimer = timer;
     }
-    public async editMessage(content: string | BaseMessageOptions): Promise<Message> {
-        if (this.isInteraction) {
-            if (this.msg || this.deferred) {
-                const response = await this.cmd.editReply(content);
-                this.msg = await this.settle(response);
-                this.armDelete(content, 'reply');
-            }
-            if (!this.msg) throw new Error('No interaction message to edit');
-            return this.msg;
-        } else {
+
+    private async sendPrefix(content: OutboundPayload, seconds?: number): Promise<Message> {
+        this.msg = await this.prefixChannel.send(content);
+        this.armDeletion(content, 'message', seconds);
+        return this.msg;
+    }
+
+    public async sendMessage(content: OutboundPayload, deleteAfter?: number): Promise<Message> {
+        if (!this.isInteraction) return await this.sendPrefix(content, deleteAfter);
+
+        const response = this.deferred
+            ? await this.slash.editReply(content)
+            : await this.slash.reply(this.scopedPayload(content));
+        this.msg = await this.settled(response);
+        this.armDeletion(content, 'reply', deleteAfter);
+        return this.msg;
+    }
+
+    public async editMessage(content: OutboundPayload): Promise<Message> {
+        if (!this.isInteraction) {
             if (!this.msg) throw new Error('No message to edit');
             this.msg = await this.msg.edit(content);
-            this.armDelete(content, 'message');
+            this.armDeletion(content, 'message');
             return this.msg;
         }
-    }
-    public async sendDeferMessage(content: string | BaseMessageOptions): Promise<Message> {
-        if (this.isInteraction) {
-            await this.cmd.deferReply({ ephemeral: this.ephemeral });
-            this.msg = await this.cmd.fetchReply();
-            this.armDelete(content, 'reply');
-            return this.msg;
-        } else {
-            this.msg = await this.messageChannel.send(content);
-            this.armDelete(content, 'message');
-            return this.msg;
+
+        if (this.msg || this.deferred) {
+            this.msg = await this.settled(await this.slash.editReply(content));
+            this.armDeletion(content, 'reply');
         }
+        if (!this.msg) throw new Error('No interaction message to edit');
+        return this.msg;
     }
-    public async sendFollowUp(content: string | BaseMessageOptions): Promise<void> {
-        if (this.isInteraction) {
-            const response = await this.cmd.followUp(this.ephemeralPayload(content));
-            this.msg = response instanceof Message ? response : await this.cmd.fetchReply();
-            this.armDelete(content, 'message');
-        } else {
-            this.msg = await this.messageChannel.send(content);
-            this.armDelete(content, 'message');
+
+    public async sendDeferMessage(content: OutboundPayload): Promise<Message> {
+        if (!this.isInteraction) return await this.sendPrefix(content);
+
+        await this.slash.deferReply({ ephemeral: this.ephemeral });
+        this.msg = await this.slash.fetchReply();
+        this.armDeletion(content, 'reply');
+        return this.msg;
+    }
+
+    public async sendFollowUp(content: OutboundPayload): Promise<void> {
+        if (!this.isInteraction) {
+            await this.sendPrefix(content);
+            return;
         }
+        const response = await this.slash.followUp(this.scopedPayload(content));
+        this.msg = response instanceof Message ? response : await this.slash.fetchReply();
+        this.armDeletion(content, 'message');
     }
+
     public get deferred(): boolean {
-        if (this.isInteraction) return this.cmd.deferred;
-        return Boolean(this.msg);
+        return this.isInteraction ? this.slash.deferred : Boolean(this.msg);
     }
 }
 
-/**
- * Project: BootstrapDJ
- * Author: Zebz213
- * Company: BootstrapBoys
- */
+function valueOfInteractionOption(option: unknown): string {
+    const value = (option as { value?: unknown }).value;
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return JSON.stringify(value) ?? '';
+}
