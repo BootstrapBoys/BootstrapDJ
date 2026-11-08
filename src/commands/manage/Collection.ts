@@ -46,7 +46,7 @@ export default class Collection extends Command {
                     ],
                 },
                 { name: 'name', description: 'Collection name', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
-                { name: 'query', description: 'Track or playlist URL for add', type: ApplicationCommandOptionType.String, required: false },
+                { name: 'query', description: 'Track or playlist URL for add', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
                 { name: 'target', description: 'Destination name for rename/copy/merge', type: ApplicationCommandOptionType.String, required: false, autocomplete: true },
                 { name: 'index', description: '1-based track position for remove', type: ApplicationCommandOptionType.Integer, required: false, minValue: 1 },
                 { name: 'code', description: 'Share code', type: ApplicationCommandOptionType.String, required: false },

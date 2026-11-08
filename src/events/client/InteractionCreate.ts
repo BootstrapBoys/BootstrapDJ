@@ -179,6 +179,11 @@ export default class InteractionCreate extends Event {
             );
         }
 
+        if (interaction.commandName === 'playlist' && focused.name === 'query') {
+            const term = focused.value.trim();
+            return await this.respond(interaction, term ? await this.tracks(term) : []);
+        }
+
         if (
             interaction.commandName === 'playlist' &&
             (focused.name === 'name' || focused.name === 'target')
