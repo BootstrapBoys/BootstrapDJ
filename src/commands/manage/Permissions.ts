@@ -92,14 +92,37 @@ export default class Permissions extends Command {
         return await this.reply(client, ctx, `Bot ownership set to <@${target.id}>.`);
     }
 
-    public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
+    public async run(client: BootstrapClient, ctx: Context, args: string[] = []): Promise<unknown> {
         const guild = ctx.guild;
-        const interaction = ctx.interaction;
-        if (!guild || !interaction) return;
+        const author = ctx.author;
+        if (!guild || !author) return;
 
-        const action = interaction.options.getString('action') ?? 'list';
-        const commandName = interaction.options.getString('command')?.toLowerCase() ?? null;
-        const selected = interaction.options.getMentionable('target') as Mentionable;
+        const interaction = ctx.interaction;
+        let action: string;
+        let commandName: string | null;
+        let selected: Mentionable;
+        if (interaction) {
+            action = interaction.options.getString('action') ?? 'list';
+            commandName = interaction.options.getString('command')?.toLowerCase() ?? null;
+            selected = interaction.options.getMentionable('target') as Mentionable;
+        } else {
+            action = (args[0] ?? 'list').toLowerCase();
+            commandName = args[1]?.toLowerCase() ?? null;
+            selected =
+                ctx.message?.mentions.users.first() ??
+                ctx.message?.mentions.roles.first() ??
+                null;
+        }
+
+        const validActions = ['list', 'allow', 'deny', 'reset', 'claim', 'transfer'];
+        if (!validActions.includes(action)) {
+            return await this.reply(
+                client,
+                ctx,
+                'Please use `list`, `allow`, `deny`, `reset`, `claim`, or `transfer`.',
+                true
+            );
+        }
 
         if (action === 'claim' || action === 'transfer') {
             return await this.transferOwnership(client, ctx, action, selected);

@@ -88,6 +88,11 @@ export default class Prefix extends Command {
             return await this.reply(client, ctx, `The prefix for this server is now \`${client.config.prefix}\``);
         }
 
-        return undefined;
+        return await this.reply(
+            client,
+            ctx,
+            'Please use `prefix set <prefix>` or `prefix reset`.',
+            true
+        );
     }
 }

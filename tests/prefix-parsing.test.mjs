@@ -7,6 +7,7 @@ import { LoadType } from 'shoukaku';
 import Add from '../dist/commands/manage/Add.js';
 import CollectionCommand from '../dist/commands/manage/Collection.js';
 import Mappings from '../dist/commands/manage/Mappings.js';
+import Prefix from '../dist/commands/manage/Prefix.js';
 import Move from '../dist/commands/music/Move.js';
 import Profile from '../dist/commands/tools/Profile.js';
 import Requested from '../dist/commands/music/Requested.js';
@@ -246,4 +247,23 @@ test('playlist add keeps every word after the name as the search query', async (
 
     assert.equal(query, 'never gonna give');
     assert.equal(added, 1);
+});
+
+test('an unknown prefix subcommand is reported instead of silently ignored', async () => {
+    let sent;
+    const client = {
+        ...embedClient(),
+        config: { prefix: '!' },
+        db: { get: async () => ({ prefix: '!' }) },
+    };
+    const ctx = prefixCtx(['bogus'], {
+        sendMessage: async payload => {
+            sent = payload;
+            return payload;
+        },
+    });
+
+    await new Prefix(fakeClient).run(client, ctx, ctx.args);
+
+    assert.match(sent.embeds[0].data.description, /prefix set/);
 });
