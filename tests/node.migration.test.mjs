@@ -306,3 +306,27 @@ test('rebuild waits for the migrated volume before starting playback', async () 
     ]);
     assert.ok(clientEvents.includes('playerCreate'));
 });
+
+test('a replacement that fails mid-restore is torn down and the session kept', async () => {
+    const guild = makeGuild();
+    const { dispatcher } = makeDispatcher();
+    const { client } = makeClient(guild);
+    const rebuilt = makeRebuilt([]);
+    rebuilt.play = async () => {
+        throw new Error('lavalink rejected the resumed track');
+    };
+    const cleaned = [];
+    rebuilt.destroy = preserve => cleaned.push(preserve);
+    const errors = [];
+    const migrator = new NodeMigrator(
+        client,
+        async () => rebuilt,
+        { info: () => {}, warn: () => {}, error: message => errors.push(message) }
+    );
+
+    const result = await migrator.rebuild(dispatcher, node);
+
+    assert.equal(result, null);
+    assert.deepEqual(cleaned, [true], 'the half-built player is destroyed with the session kept');
+    assert.ok(errors.some(message => /saved session kept/.test(message)));
+});

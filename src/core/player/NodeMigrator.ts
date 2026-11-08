@@ -89,7 +89,14 @@ export class NodeMigrator {
         dispatcher: Dispatcher,
         node: Node | undefined
     ): Promise<Dispatcher | null> {
-        if (!node || !dispatcher.channelId || !dispatcher.voiceId) return null;
+        if (!node || !dispatcher.channelId || !dispatcher.voiceId) {
+            this.logger.warn(
+                `[queue] cannot rebuild ${dispatcher.guildId}: node=${Boolean(node)} text=${Boolean(
+                    dispatcher.channelId
+                )} voice=${Boolean(dispatcher.voiceId)}`
+            );
+            return null;
+        }
         const guild = this.client.guilds.cache.get(dispatcher.guildId);
         const voice = guild?.channels.cache.get(dispatcher.voiceId);
         const channel = guild?.channels.cache.get(dispatcher.channelId);
@@ -106,8 +113,9 @@ export class NodeMigrator {
         );
         await dispatcher.destroyAndWait(true);
 
+        let rebuilt: Dispatcher | null = null;
         try {
-            const rebuilt = await this.spawn(guild, voice, channel, node);
+            rebuilt = await this.spawn(guild, voice, channel, node);
             rebuilt.current = null;
             rebuilt.queue = state.current ? [state.current, ...state.queue] : state.queue;
             rebuilt.history = state.history;
@@ -158,7 +166,22 @@ export class NodeMigrator {
             );
             return rebuilt;
         } catch (error) {
-            this.logger.error(`[queue] could not move ${guild.id} to "${node.name}": ${error}`);
+            // The old player is already gone. A replacement that failed midway
+            // must not stay registered with a half-restored queue, or the next
+            // command sees a live dispatcher that cannot play. Keep the saved
+            // session so a later boot/lease tick can retry.
+            if (rebuilt) {
+                try {
+                    rebuilt.destroy(true);
+                } catch (cleanupError) {
+                    this.logger.warn(
+                        `[queue] could not clean up failed rebuild for ${guild.id}: ${cleanupError}`
+                    );
+                }
+            }
+            this.logger.error(
+                `[queue] could not move ${guild.id} to "${node.name}": ${error} (saved session kept)`
+            );
             return null;
         }
     }

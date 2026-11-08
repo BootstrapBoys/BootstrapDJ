@@ -210,6 +210,13 @@ export async function restoreSession(
         );
         return;
     }
+    // A live player already owns this guild. Restoring a row on top of it
+    // duplicates the queue and can hand callers the old dispatcher, so the
+    // saved snapshot stays untouched for a later boot.
+    if (client.queue.has(guildId)) {
+        client.logger.debug(`[session] ${guildId}: live player exists, not adopting the saved session`);
+        return;
+    }
     const drop = async (reason: string): Promise<void> => {
         restoreRetries.delete(guildId);
         await client.db.deleteSession(guildId);
@@ -284,6 +291,12 @@ export async function restoreSession(
 
         if (!savedCurrent) {
             await dispatcher.play();
+            // A queued-only snapshot can still be paused (paused then skipped
+            // right before shutdown). Starting the head must keep that state.
+            if (session.paused) {
+                await dispatcher.player.setPaused(true);
+                dispatcher.paused = true;
+            }
             dispatcher.restoring = false;
             client.logger.info(
                 `[session] restored ${queued.length} queued track(s) in ${guild.name}`

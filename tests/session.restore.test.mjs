@@ -24,11 +24,12 @@ function makeChannel(type, members = []) {
     return { id: type === ChannelType.GuildVoice ? 'voice-1' : 'text-1', type, members: collection };
 }
 
-function makeRestoreHarness({ session, stay = null, listeners = [], text = null } = {}) {
+function makeRestoreHarness({ session, stay = null, listeners = [], text = null, live = false } = {}) {
     const calls = {
         create: 0,
         deleted: [],
         played: [],
+        paused: [],
         volumes: [],
         destroyed: [],
         restored: [],
@@ -59,6 +60,7 @@ function makeRestoreHarness({ session, stay = null, listeners = [], text = null 
         player: {
             setGlobalVolume: async value => calls.volumes.push(value),
             playTrack: async payload => calls.played.push(payload),
+            setPaused: async value => calls.paused.push(value),
         },
         play: async () => calls.restored.push('play'),
         destroy: preserve => calls.destroyed.push(preserve),
@@ -76,7 +78,7 @@ function makeRestoreHarness({ session, stay = null, listeners = [], text = null 
         logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
         guilds: { cache: new Map([[guild.id, guild]]) },
         queue: {
-            has: () => false,
+            has: () => live,
             create: async () => {
                 calls.create += 1;
                 return dispatcher;
@@ -144,19 +146,50 @@ test('restore rejoins, rebuilds queue, volume, loop, autoplay and position', asy
 });
 
 test('restore with queued tracks only starts the queue head', async () => {
+    const session = savedSession({ current: null, paused: false });
     const harness = makeRestoreHarness({
-        session: savedSession({ current: null }),
+        session,
         listeners: [{ user: { bot: false } }],
     });
-    const session = savedSession({ current: null });
 
     await restoreSession(harness.client, session, botUser);
 
     assert.equal(harness.calls.create, 1);
     assert.deepEqual(harness.calls.restored, ['play']);
     assert.equal(harness.calls.played.length, 0);
+    assert.deepEqual(harness.calls.paused, []);
     assert.deepEqual(harness.dispatcher.queue.map(track => track.info.title), ['Queued']);
     assert.equal(harness.dispatcher.restoring, false);
+});
+
+test('a paused queued-only restore starts the head and keeps it paused', async () => {
+    const session = savedSession({ current: null, paused: true });
+    const harness = makeRestoreHarness({
+        session,
+        listeners: [{ user: { bot: false } }],
+    });
+
+    await restoreSession(harness.client, session, botUser);
+
+    assert.deepEqual(harness.calls.restored, ['play']);
+    assert.deepEqual(harness.calls.paused, [true]);
+    assert.equal(harness.dispatcher.paused, true);
+});
+
+test('restore refuses to adopt a live dispatcher', async () => {
+    const session = savedSession();
+    const harness = makeRestoreHarness({
+        session,
+        live: true,
+        listeners: [{ user: { bot: false } }],
+    });
+
+    await restoreSession(harness.client, session, botUser);
+
+    assert.equal(harness.calls.create, 0);
+    assert.deepEqual(harness.calls.deleted, []);
+    assert.deepEqual(harness.calls.restored, []);
+    assert.deepEqual(harness.calls.played, []);
 });
 
 test('an expired session is deleted without joining voice', async () => {
