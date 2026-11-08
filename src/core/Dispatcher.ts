@@ -10,6 +10,7 @@ import { persistSession } from './player/SessionWriter.js';
 import { PlaybackTimers } from './player/PlaybackTimers.js';
 import { DeezerClient } from './player/DeezerClient.js';
 import { AUTOPLAY_SEEDS, buildSeedCandidates, buildSeedPool } from './player/AutoplaySeeds.js';
+import { affinityWeight, type AutoplayAffinity, chooseFrom } from './player/AutoplayPicker.js';
 import type { SavedTrack } from './player/TrackCodec.js';
 
 export { toSaved } from './player/TrackCodec.js';
@@ -25,27 +26,13 @@ type MixCacheEntry = { at: number; tracks: Track[] };
 const relatedTracksCache = new Map<string, MixCacheEntry>();
 const AUTOPLAY_CACHE_LIMIT = 100;
 const AUTOPLAY_MIX_TTL_MS = 10 * 60_000;
-/** Draw from the relevance-ordered head of a mix; its tail is loosely related. */
-const AUTOPLAY_HEAD = 12;
-
 /** Related artists are listed closest-first; use a wider nearest neighbourhood
  * so a session can leave the seeded artists without jumping genres. */
 const AUTOPLAY_RELATED = 6;
 
-/** Weighted draws keep picks near the requested artists without camping on
- * them. Lowering the seed weight (relative to related/strangers) is the spread
- * knob: raise it for tighter, lower it for wider. */
-const AUTOPLAY_SEED_WEIGHT = 3;
-const AUTOPLAY_RELATED_WEIGHT = 2;
-
 /** A seed-only radio would otherwise never leave that artist. Occasionally
  * take a related-artist lane before the mix so the session can breathe. */
 const AUTOPLAY_SPREAD_CHANCE = 0.35;
-
-type AutoplayAffinity = {
-    seedArtist: string;
-    relatedArtists: string[];
-};
 
 type AutoplaySource = 'chart' | 'curated' | 'legacy';
 
@@ -713,43 +700,17 @@ export default class Dispatcher {
     }
 
 
-    /** How close a candidate is to what the user actually asked for. */
     private affinityWeight(track: Track, affinity: AutoplayAffinity): number {
-        const author = normalizeAuthor(track.info?.author);
-        if (!author) return 1;
-        const seed = normalizeAuthor(affinity.seedArtist);
-        if (seed && (author === seed || author.includes(seed) || seed.includes(author))) {
-            return AUTOPLAY_SEED_WEIGHT;
-        }
-        const related = affinity.relatedArtists.some(name => {
-            const normalized = normalizeAuthor(name);
-            return normalized && (author === normalized || author.includes(normalized) || normalized.includes(author));
-        });
-        return related ? AUTOPLAY_RELATED_WEIGHT : 1;
+        return affinityWeight(track, affinity);
     }
 
-    /** Choose from candidates, skipping recent tracks and demoting the artists
-     * heard in the last few tracks, so a thin mix (a niche artist's radio can
-     * be mostly that artist) still drifts instead of looping one name.
-     * `affinity` biases the draw toward the requested artist and its closest
-     * neighbours; without it the pick stays uniform (playlist/search callers). */
     private chooseFrom(tracks: Track[], affinity?: AutoplayAffinity): Song | null {
-        const botUser = this.client.user;
-        if (!botUser) return null;
-        const usable = tracks.filter(track => track?.encoded && !this.isRecent(track));
-        if (!usable.length) return null;
-        const avoid = new Set(
-            this.history
-                .slice(-3)
-                .map(track => track.info?.author)
-                .filter((author): author is string => Boolean(author))
-        );
-        const varied = usable.filter(track => !avoid.has(track.info?.author));
-        const pool = (varied.length ? varied : usable).slice(0, AUTOPLAY_HEAD);
-        const draw = affinity
-            ? pool.flatMap(track => Array(this.affinityWeight(track, affinity)).fill(track) as Track[])
-            : pool;
-        return this.buildTrack(draw[Math.floor(Math.random() * draw.length)], botUser);
+        return chooseFrom(tracks, affinity, {
+            history: this.history,
+            botUser: this.client.user,
+            isRecent: track => this.isRecent(track),
+            buildTrack: (track, user) => this.buildTrack(track, user),
+        });
     }
 
     /** Search a free-text query and pick one result. */
