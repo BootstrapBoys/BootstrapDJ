@@ -178,6 +178,13 @@ DASHBOARD_PUBLIC_URL="https://dj.example.com/"
 ```
 
 Open `http://127.0.0.1:8795/` locally, or put it behind an HTTPS reverse proxy.
+
+A loopback bind alone is not authentication. With no `DASHBOARD_TOKEN` and no
+OAuth, the dashboard refuses to start; for a local-only, unauthenticated
+dashboard set `DASHBOARD_ALLOW_ANONYMOUS="true"`. That opt-in is refused when
+`DASHBOARD_PUBLIC_URL` is set or the bind is not loopback, because a proxied
+port makes every caller look local.
+
 The recommended login method is Discord OAuth:
 
 ```dotenv

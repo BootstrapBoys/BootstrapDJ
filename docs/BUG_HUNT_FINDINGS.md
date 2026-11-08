@@ -4,6 +4,25 @@ Baseline: `a92b636` / docs `3a0d0c6`
 Sources: four read-only domain audits; probes under
 `/home/hermes/.hermes/cache/scratch/`; static gates 209/209.
 
+## Fix status — P0/P1
+
+BUG-001 through BUG-010 are fixed on `experimental/rewrite`, one commit per
+finding with a regression test. Final gate: 242/242 tests, `npm run build`,
+`npm run lint`, `npx tsc --noEmit`, `git diff --check` clean.
+
+| ID | Status | Fix |
+|---|---|---|
+| BUG-001 | fixed | strict snowflake-array parse; both dev gates fail closed |
+| BUG-002 | fixed | per-guild session write queue in the data facade |
+| BUG-003 | fixed | explicit `DASHBOARD_ALLOW_ANONYMOUS`, loopback-only, refused with a public URL |
+| BUG-004 | fixed | engine-owned retry handle, control generation, `current` cleared on stop |
+| BUG-005 | fixed | per-guild in-flight rebuild/create promises; `create()` awaits the replacement |
+| BUG-006 | fixed | prefix paginators delete on collector end/stop |
+| BUG-007 | fixed | ephemeral defer plus `deferred || replied` edit path |
+| BUG-008 | fixed | startup rejection logs and exits 1 |
+| BUG-009 | fixed | per-node incidents; primary failover runs outside the alert gate |
+| BUG-010 | fixed | transient restore failures keep the row with bounded backoff |
+
 ## P0 — fix immediately
 
 ### BUG-001 — OWNER_IDS parse is fail-open

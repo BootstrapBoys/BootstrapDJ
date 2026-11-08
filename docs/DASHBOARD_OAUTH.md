@@ -38,6 +38,14 @@ When all OAuth values are present, the dashboard requires a Discord session. If 
 The static `DASHBOARD_TOKEN` is ignored in OAuth mode, and NPM does not need to
 inject `X-Dashboard-Token`.
 
+## Anonymous loopback mode
+
+Anonymous owner access is never implicit. Without `DASHBOARD_TOKEN` or OAuth the
+server refuses to start unless `DASHBOARD_ALLOW_ANONYMOUS="true"` is set, and
+even then it starts only on a loopback bind with no `DASHBOARD_PUBLIC_URL`.
+Setting the flag on a proxied or non-loopback deployment is refused, because the
+dashboard cannot tell a local operator from a forwarded request.
+
 ## Sharded deployments
 
 When `SHARD_COUNT` is positive, only shard 0 serves the dashboard. Guild lists,
