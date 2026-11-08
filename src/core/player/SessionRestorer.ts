@@ -155,17 +155,45 @@ export async function clearStaleNowPlaying(
 }
 
 /**
- * Restore one saved session. Any failure deletes the row: a rejected payload
- * would otherwise be reclaimed and retried on every handoff tick, joining and
- * leaving voice forever.
+ * Restore one saved session.
+ *
+ * Permanent validation failures (expired row, missing/non-voice channel,
+ * unparseable JSON, an empty voice channel after its wait window) delete the
+ * row because no retry can fix them. Transport failures (rejoin, resolve,
+ * playTrack) keep the row and back off: one Lavalink hiccup must not destroy a
+ * 200-track queue, and the caller releases the lease so a later boot/handoff
+ * tick can retry.
  */
+
+/** Bounded retry cadence for transient failures: 15s doubling to 5 minutes. */
+const RETRY_BASE_MS = 15_000;
+const RETRY_MAX_MS = 5 * 60_000;
+const restoreRetries = new Map<string, { failures: number; notBefore: number }>();
+
+/** Test seam: forget transient-failure backoff between cases. */
+export function resetRestoreRetries(): void {
+    restoreRetries.clear();
+}
+
+function retryDelayMs(failures: number): number {
+    return Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** Math.min(Math.max(failures, 1) - 1, 5));
+}
+
 export async function restoreSession(
     client: BootstrapClient,
     session: Session,
     botUser: User
 ): Promise<void> {
     const guildId = session.guildId;
+    const backoff = restoreRetries.get(guildId);
+    if (backoff && backoff.notBefore > Date.now()) {
+        client.logger.debug(
+            `[session] ${guildId}: retry backoff active, keeping the saved queue`
+        );
+        return;
+    }
     const drop = async (reason: string): Promise<void> => {
+        restoreRetries.delete(guildId);
         await client.db.deleteSession(guildId);
         client.logger.info(`[session] ${reason}`);
     };
@@ -220,6 +248,7 @@ export async function restoreSession(
     }
 
     let dispatcher: Dispatcher | null = null;
+    let succeeded = false;
     try {
         dispatcher = await client.queue.create(guild, voiceChannel, textChannel);
         dispatcher.restoring = true;
@@ -235,6 +264,7 @@ export async function restoreSession(
             client.logger.info(
                 `[session] restored ${queued.length} queued track(s) in ${guild.name}`
             );
+            succeeded = true;
             return;
         }
 
@@ -257,14 +287,24 @@ export async function restoreSession(
                 savedCurrent.position / 1000
             )}s with ${queued.length} queued in ${guild.name}`
         );
+        succeeded = true;
     } catch (error) {
         if (dispatcher) {
             dispatcher.restoring = false;
             dispatcher.destroy(true);
         }
-        client.logger.error(`[session] restore failed for ${guildId}: ${error}`);
-        await client.db.deleteSession(guildId).catch(() => {});
+        // Transport failures are retryable: keep the row and back off instead
+        // of erasing a queue over one Lavalink hiccup.
+        const failures = (restoreRetries.get(guildId)?.failures ?? 0) + 1;
+        const delay = retryDelayMs(failures);
+        restoreRetries.set(guildId, { failures, notBefore: Date.now() + delay });
+        client.logger.warn(
+            `[session] restore deferred for ${guildId} after a transport failure (attempt ${failures}, retry in ${Math.round(
+                delay / 1000
+            )}s); keeping the saved queue: ${error}`
+        );
     } finally {
         if (dispatcher) dispatcher.restoring = false;
+        if (succeeded) restoreRetries.delete(guildId);
     }
 }

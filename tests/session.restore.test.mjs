@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 
 import { ChannelType, Collection } from 'discord.js';
 
 import {
     clearStaleNowPlaying,
+    resetRestoreRetries,
     restoreSession,
     restoreSessions,
 } from '../dist/core/player/SessionRestorer.js';
 import { toSaved } from '../dist/core/Dispatcher.js';
 import { makeSong } from './helpers.mjs';
+
+beforeEach(() => resetRestoreRetries());
 
 const botUser = { id: 'bot', username: 'Bootstrap', tag: 'Bootstrap#0001' };
 
@@ -27,6 +30,7 @@ function makeRestoreHarness({ session, stay = null, listeners = [], text = null 
         volumes: [],
         destroyed: [],
         restored: [],
+        released: [],
     };
     const voice = makeChannel(ChannelType.GuildVoice, listeners);
     const textChannel = text ?? makeChannel(ChannelType.GuildText);
@@ -66,7 +70,7 @@ function makeRestoreHarness({ session, stay = null, listeners = [], text = null 
             sessionRestoreAge: 3600,
             sessionEmptyWait: 0,
         },
-        logger: { info: () => {}, warn: () => {}, error: () => {} },
+        logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
         guilds: { cache: new Map([[guild.id, guild]]) },
         queue: {
             has: () => false,
@@ -81,7 +85,7 @@ function makeRestoreHarness({ session, stay = null, listeners = [], text = null 
             get_247: async () => stay,
             getSessions: async () => [session],
             claimSessionLease: async () => true,
-            releaseSessionLease: async () => {},
+            releaseSessionLease: async guildId => calls.released.push(guildId),
         },
     };
     return { client, guild, voice, textChannel, dispatcher, calls };
@@ -202,20 +206,41 @@ test('24/7 restores even when the channel is empty', async () => {
     assert.deepEqual(harness.calls.deleted, []);
 });
 
-test('a failed restore destroys the player without deleting a replacement', async () => {
+test('a transient restore failure keeps the saved row and backs off', async () => {
     const harness = makeRestoreHarness({
         session: savedSession(),
         listeners: [{ user: { bot: false } }],
     });
     harness.dispatcher.player.playTrack = async () => {
-        throw new Error('rejected payload');
+        throw new Error('lavalink 502');
     };
 
     await restoreSession(harness.client, savedSession(), botUser);
 
-    assert.deepEqual(harness.calls.destroyed, [true]);
-    assert.deepEqual(harness.calls.deleted, ['guild-1']);
+    assert.equal(harness.calls.create, 1);
+    assert.deepEqual(harness.calls.destroyed, [true], 'the half-built player is torn down');
+    assert.deepEqual(harness.calls.deleted, [], 'a transport failure must not delete the queue');
     assert.equal(harness.dispatcher.restoring, false);
+
+    // Inside the backoff window a second attempt must not rejoin voice.
+    await restoreSession(harness.client, savedSession(), botUser);
+    assert.equal(harness.calls.create, 1);
+    assert.deepEqual(harness.calls.deleted, []);
+});
+
+test('a transient boot-restore failure releases the lease and keeps the row', async () => {
+    const harness = makeRestoreHarness({
+        session: savedSession(),
+        listeners: [{ user: { bot: false } }],
+    });
+    harness.dispatcher.player.playTrack = async () => {
+        throw new Error('lavalink 502');
+    };
+
+    await restoreSessions(harness.client);
+
+    assert.deepEqual(harness.calls.deleted, []);
+    assert.deepEqual(harness.calls.released, ['guild-1']);
 });
 
 test('boot restore is skipped for a non-preferred fleet child', async () => {
