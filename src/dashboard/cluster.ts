@@ -159,13 +159,8 @@ export async function remotePlayerAction(
     guildId: string,
     action: string,
     value: number
-): Promise<void> {
-    if (!client.shard) {
-        const local = await client.dashboardLocalPlayerAction(guildId, action, value);
-        if (!local.found) throw new Error('Unknown guild');
-        if (!local.ok) throw new Error(local.error ?? 'Player action failed');
-        return;
-    }
+): Promise<ActionError> {
+    if (!client.shard) return await client.dashboardLocalPlayerAction(guildId, action, value);
     const results = await client.shard.broadcastEval(
         (shard, context) => {
             const host = (
@@ -177,15 +172,14 @@ export async function remotePlayerAction(
                     value: number
                 ): Promise<ActionError>;
             } => typeof Reflect.get(value, 'dashboardLocalPlayerAction') === 'function';
-            const miss: ActionError = { ok: false, found: false };
+            const miss: ActionError = { ok: false, found: false, status: 404, error: 'Unknown guild' };
             if (!host(shard)) return miss;
             return shard.dashboardLocalPlayerAction(context.guildId, context.action, context.value);
         },
         { context: { guildId, action, value } }
     );
     const hit = results.find(entry => entry.found);
-    if (!hit) throw new Error('Unknown guild');
-    if (!hit.ok) throw new Error(hit.error ?? 'Player action failed');
+    return hit ?? { ok: false, found: false, status: 404, error: 'Unknown guild' };
 }
 
 export async function remoteFilter(
@@ -194,12 +188,8 @@ export async function remoteFilter(
     id: string,
     enabled: boolean,
     value?: number
-): Promise<string[]> {
-    if (!client.shard) {
-        const local = client.dashboardLocalFilter(guildId, id, enabled, value);
-        if (!local.found) throw new Error('No active player');
-        return local.active;
-    }
+): Promise<FilterResult> {
+    if (!client.shard) return client.dashboardLocalFilter(guildId, id, enabled, value);
     const results = await client.shard.broadcastEval(
         (shard, context) => {
             const host = (
@@ -212,7 +202,14 @@ export async function remoteFilter(
                     value?: number
                 ): FilterResult;
             } => typeof Reflect.get(value, 'dashboardLocalFilter') === 'function';
-            if (!host(shard)) return { found: false, active: [] };
+            if (!host(shard)) {
+                return {
+                    found: false,
+                    active: [],
+                    status: 404,
+                    error: 'No active player',
+                };
+            }
             return shard.dashboardLocalFilter(
                 context.guildId,
                 context.id,
@@ -222,9 +219,14 @@ export async function remoteFilter(
         },
         { context: { guildId, id, enabled, value } }
     );
-    const hit = results.find(entry => entry.found);
-    if (!hit) throw new Error('No active player');
-    return hit.active;
+    return (
+        results.find(entry => entry.found) ?? {
+            found: false,
+            active: [],
+            status: 404,
+            error: 'No active player',
+        }
+    );
 }
 
 /** Settings are cached per process; every shard must drop its copy. */

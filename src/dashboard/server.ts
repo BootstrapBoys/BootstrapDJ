@@ -225,7 +225,7 @@ async function decorateStats(
     return { ...data, topTracks: tracks, sources, topListeners: listeners };
 }
 
-async function route(
+export async function route(
     client: BootstrapClient,
     req: http.IncomingMessage,
     res: http.ServerResponse
@@ -394,15 +394,21 @@ async function route(
             return;
         }
         const value = body.value === undefined ? undefined : Number(body.value);
-        const active = await remoteFilter(
+        const result = await remoteFilter(
             client,
             guildId,
             bodyText(body.filter),
             Boolean(body.enabled),
             value
         );
+        if (!result.found || result.error) {
+            sendJson(res, result.status ?? (result.found ? 400 : 404), {
+                error: result.error ?? 'Filter update failed',
+            });
+            return;
+        }
         accessCache.invalidateGuild(guildId);
-        sendJson(res, 200, { ok: true, filters: { active } });
+        sendJson(res, 200, { ok: true, filters: { active: result.active } });
         return;
     }
 
@@ -461,7 +467,18 @@ async function route(
             guildDenied(res);
             return;
         }
-        await remotePlayerAction(client, guildId, bodyText(body.action), Number(body.value ?? 0));
+        const result = await remotePlayerAction(
+            client,
+            guildId,
+            bodyText(body.action),
+            Number(body.value ?? 0)
+        );
+        if (!result.ok) {
+            sendJson(res, result.status ?? (result.found ? 400 : 404), {
+                error: result.error ?? 'Player action failed',
+            });
+            return;
+        }
         accessCache.invalidateGuild(guildId);
         const updated = await remotePlayer(client, guildId);
         sendJson(res, 200, { ok: true, player: updated.player });

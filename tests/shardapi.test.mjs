@@ -109,7 +109,12 @@ test('playerSnapshot returns the fields the dashboard needs', () => {
 
 test('dashboardFilter reports a missing player instead of throwing', () => {
     const result = dashboardFilter(client([]), 'g1', 'bassboost', true, 0.5);
-    assert.deepEqual(result, { found: false, active: [] });
+    assert.deepEqual(result, {
+        found: false,
+        active: [],
+        status: 404,
+        error: 'No active player',
+    });
 });
 
 

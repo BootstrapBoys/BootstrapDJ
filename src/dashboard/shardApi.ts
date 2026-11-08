@@ -58,12 +58,18 @@ export interface PlayerSnapshot {
 export interface FilterResult {
     found: boolean;
     active: string[];
+    /** User-safe reason the filter write failed. */
+    error?: string;
+    /** HTTP status the dashboard route should return on failure. */
+    status?: number;
 }
 
 export interface ActionError {
     ok: boolean;
     found: boolean;
     error?: string;
+    /** HTTP status the dashboard route should return on failure. */
+    status?: number;
 }
 
 /** Dashboard preview of the queue: enough rows to fill the panel, no more. */
@@ -181,7 +187,7 @@ export async function dashboardPlayerAction(
     value: number
 ): Promise<ActionError> {
     const player = client.queue.get(guildId);
-    if (!player) return { ok: false, found: true, error: 'No active player' };
+    if (!player) return { ok: false, found: true, status: 404, error: 'No active player' };
 
     try {
         switch (action) {
@@ -234,6 +240,7 @@ export async function dashboardPlayerAction(
         return {
             ok: false,
             found: true,
+            status: 400,
             error: error instanceof Error ? error.message : String(error),
         };
     }
@@ -247,7 +254,18 @@ export function dashboardFilter(
     value?: number
 ): FilterResult {
     const player = client.queue.get(guildId);
-    if (!player) return { found: false, active: [] };
-    applyFilter(player, id, enabled, value);
+    if (!player) {
+        return { found: false, active: [], status: 404, error: 'No active player' };
+    }
+    try {
+        applyFilter(player, id, enabled, value);
+    } catch (error) {
+        return {
+            found: true,
+            active: [...player.filters],
+            status: 400,
+            error: error instanceof Error ? error.message : String(error),
+        };
+    }
     return { found: true, active: [...player.filters] };
 }
