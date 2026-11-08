@@ -13,6 +13,36 @@ function makeRequest(headers = {}) {
     return { headers, socket: { remoteAddress: '127.0.0.1' } };
 }
 
+/** Pin the auth-related config for one case, then restore it. */
+async function withConfig(patch, run) {
+    const saved = {};
+    const savedEnv = process.env.DASHBOARD_OAUTH_CLIENT_ID;
+    for (const [key, value] of Object.entries(patch)) {
+        saved[key] = config[key];
+        config[key] = value;
+    }
+    delete process.env.DASHBOARD_OAUTH_CLIENT_ID;
+    try {
+        await run();
+    } finally {
+        for (const [key, value] of Object.entries(saved)) config[key] = value;
+        if (savedEnv === undefined) delete process.env.DASHBOARD_OAUTH_CLIENT_ID;
+        else process.env.DASHBOARD_OAUTH_CLIENT_ID = savedEnv;
+    }
+}
+
+function noAuthConfig(patch = {}) {
+    return {
+        dashboardToken: '',
+        dashboardAllowAnonymous: false,
+        dashboardPublicUrl: '',
+        dashboardOAuthClientSecret: '',
+        dashboardOAuthRedirectUri: '',
+        dashboardSessionSecret: '',
+        ...patch,
+    };
+}
+
 test('loopback detection covers the accepted spellings only', () => {
     for (const host of ['127.0.0.1', 'localhost', '::1', '[::1]', ' LOCALHOST ']) {
         assert.equal(isLoopbackHost(host), true, host);
@@ -36,51 +66,42 @@ test('anonymous access is opt-in and voided by a public URL', () => {
     assert.equal(anonymousAccessAllowed({ ...base, publicUrl: '   ' }), true);
 });
 
-test('the default dashboard configuration refuses anonymous owner access', () => {
-    assert.equal(config.dashboardToken, '');
-    assert.equal(config.dashboardAllowAnonymous, false);
-
-    assert.equal(authorized(makeRequest()), false);
-    const identity = viewer(makeRequest());
-    assert.equal(identity.owner, false);
-    assert.equal(identity.admin, false);
-    assert.match(identity.name, /Unauthenticated/);
+test('a dashboard with no token or anonymous opt-in refuses access', async () => {
+    await withConfig(noAuthConfig(), () => {
+        assert.equal(authorized(makeRequest()), false);
+        const identity = viewer(makeRequest());
+        assert.equal(identity.owner, false);
+        assert.equal(identity.admin, false);
+        assert.match(identity.name, /Unauthenticated/);
+    });
 });
 
-test('an explicit anonymous loopback opt-in restores local owner access', () => {
-    const original = config.dashboardAllowAnonymous;
-    config.dashboardAllowAnonymous = true;
-    try {
+test('an explicit anonymous loopback opt-in restores local owner access', async () => {
+    await withConfig(noAuthConfig({ dashboardAllowAnonymous: true }), () => {
         assert.equal(authorized(makeRequest()), true);
         assert.equal(viewer(makeRequest()).owner, true);
-    } finally {
-        config.dashboardAllowAnonymous = original;
-    }
+    });
 });
 
-test('a public URL refuses anonymous access even with the flag set', () => {
-    const original = { allow: config.dashboardAllowAnonymous, url: config.dashboardPublicUrl };
-    config.dashboardAllowAnonymous = true;
-    config.dashboardPublicUrl = 'https://dj.example.org';
-    try {
-        assert.equal(authorized(makeRequest()), false);
-        assert.equal(viewer(makeRequest()).owner, false);
-    } finally {
-        config.dashboardAllowAnonymous = original.allow;
-        config.dashboardPublicUrl = original.url;
-    }
+test('a public URL refuses anonymous access even with the flag set', async () => {
+    await withConfig(
+        noAuthConfig({
+            dashboardAllowAnonymous: true,
+            dashboardPublicUrl: 'https://dj.example.org',
+        }),
+        () => {
+            assert.equal(authorized(makeRequest()), false);
+            assert.equal(viewer(makeRequest()).owner, false);
+        }
+    );
 });
 
-test('token mode still authenticates its header and bearer forms', () => {
-    const original = config.dashboardToken;
-    config.dashboardToken = 'secret-token';
-    try {
+test('token mode still authenticates its header and bearer forms', async () => {
+    await withConfig(noAuthConfig({ dashboardToken: 'secret-token' }), () => {
         assert.equal(authorized(makeRequest()), false);
         assert.equal(authorized(makeRequest({ 'x-dashboard-token': 'secret-token' })), true);
         assert.equal(authorized(makeRequest({ authorization: 'Bearer secret-token' })), true);
         assert.equal(authorized(makeRequest({ 'x-dashboard-token': 'wrong' })), false);
         assert.equal(viewer(makeRequest()).owner, true);
-    } finally {
-        config.dashboardToken = original;
-    }
+    });
 });
