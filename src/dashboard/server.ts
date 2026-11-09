@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 import http from 'node:http';
 
 import config from '../config.js';
-import type { BootstrapClient } from '../core/index.js';
 import {
     anonymousDashboardAllowed,
     authorized,
@@ -23,19 +22,10 @@ import {
     viewer,
 } from './auth.js';
 import { GuildAccessCache } from './accessCache.js';
-import {
-    clearSettingsCaches,
-    readAccess,
-    remoteFilter,
-    remoteGuildIds,
-    remoteGuilds,
-    remotePlayer,
-    remotePlayerAction,
-} from './cluster.js';
+import type { DashboardHost } from './host.js';
 import { renderDashboard, renderLoginPage } from './page.js';
-import { collectMetrics } from './metrics.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
-import { effectiveSettings, initialState, saveSettings, SettingValidationError } from './state.js';
+import { initialState, SettingValidationError } from './state.js';
 
 const MAX_BODY_BYTES = 64_000;
 const RATE_WINDOW_MS = 60_000;
@@ -128,7 +118,7 @@ function bodyText(value: unknown, fallback: string = ''): string {
  * rights at all; token mode is the operator and therefore has every right.
  */
 async function resolveAccess(
-    client: BootstrapClient,
+    host: DashboardHost,
     req: http.IncomingMessage,
     guildId: string,
     fresh: boolean = false
@@ -143,7 +133,7 @@ async function resolveAccess(
         if (cached) return cached;
     }
 
-    const result = await readAccess(client, session?.id ?? null, guildId);
+    const result = await host.access(session?.id ?? null, guildId);
     if (!result.found || !result.access.member) return NO_ACCESS;
 
     accessCache.set(cacheKey, result.access);
@@ -151,16 +141,16 @@ async function resolveAccess(
 }
 
 async function guildAllowed(
-    client: BootstrapClient,
+    host: DashboardHost,
     req: http.IncomingMessage,
     guildId: string
 ): Promise<boolean> {
-    return (await resolveAccess(client, req, guildId)).member;
+    return (await resolveAccess(host, req, guildId)).member;
 }
 
 /** OAuth callback: validate state, exchange the code, and gate on bot membership. */
 async function completeOAuth(
-    client: BootstrapClient,
+    host: DashboardHost,
     req: http.IncomingMessage,
     res: http.ServerResponse,
     url: URL
@@ -187,7 +177,7 @@ async function completeOAuth(
         return;
     }
 
-    const botGuilds = new Set(await remoteGuildIds(client));
+    const botGuilds = new Set(await host.guildIds());
     if (!identity.guilds.some(guild => botGuilds.has(guild.id))) {
         sendText(res, 403, 'you must share a guild with this bot');
         return;
@@ -199,11 +189,11 @@ async function completeOAuth(
 
 /** Attach service icons and listener identities to the raw statistics rows. */
 async function decorateStats(
-    client: BootstrapClient,
+    host: DashboardHost,
     data: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
     const iconFor = (source: unknown): string | null =>
-        client.config.icons[bodyText(source).toLowerCase()] ?? null;
+        host.config.icons[bodyText(source).toLowerCase()] ?? null;
     const rows = (value: unknown): Array<Record<string, unknown>> =>
         Array.isArray(value) ? value.filter(isRecord) : [];
 
@@ -211,14 +201,11 @@ async function decorateStats(
     const sources = rows(data.sources).map(entry => ({ ...entry, icon: iconFor(entry.source) }));
     const listeners = await Promise.all(
         rows(data.topListeners).map(async entry => {
-            const userId = bodyText(entry.userId);
-            const user =
-                client.users.cache.get(userId) ??
-                (await client.users.fetch(userId).catch(() => null));
+            const user = await host.user(bodyText(entry.userId));
             return {
                 ...entry,
-                name: user?.username ?? 'Unknown user',
-                avatar: user?.displayAvatarURL() ?? null,
+                name: user?.name ?? 'Unknown user',
+                avatar: user?.avatar ?? null,
             };
         })
     );
@@ -227,7 +214,7 @@ async function decorateStats(
 }
 
 export async function route(
-    client: BootstrapClient,
+    host: DashboardHost,
     req: http.IncomingMessage,
     res: http.ServerResponse
 ): Promise<void> {
@@ -274,7 +261,7 @@ export async function route(
         return;
     }
     if (method === 'GET' && path === '/auth/callback' && oauthEnabled()) {
-        await completeOAuth(client, req, res, url);
+        await completeOAuth(host, req, res, url);
         return;
     }
 
@@ -316,23 +303,23 @@ export async function route(
     if (method === 'GET' && path === '/api/guilds') {
         const csrf = issueCsrfToken(req, res);
         const session = oauthEnabled() ? readSession(req) : null;
-        const guilds = await remoteGuilds(client, session?.id ?? null);
+        const guilds = await host.guilds(session?.id ?? null);
         sendJson(res, 200, { csrf, guilds, viewer: viewer(req) });
         return;
     }
 
     if (method === 'GET' && path === '/api/metrics') {
-        sendJson(res, 200, collectMetrics(client));
+        sendJson(res, 200, await host.metrics());
         return;
     }
 
     if (method === 'GET' && path === '/api/player-state') {
         const guildId = url.searchParams.get('guildId') ?? '';
-        if (!(await guildAllowed(client, req, guildId))) {
+        if (!(await guildAllowed(host, req, guildId))) {
             guildDenied(res);
             return;
         }
-        const data = await remotePlayer(client, guildId);
+        const data = await host.player(guildId);
         if (!data.found) {
             guildDenied(res);
             return;
@@ -343,19 +330,19 @@ export async function route(
 
     if (method === 'GET' && path === '/api/state') {
         const guildId = url.searchParams.get('guildId') ?? '';
-        const access = await resolveAccess(client, req, guildId);
+        const access = await resolveAccess(host, req, guildId);
         if (!access.member) {
             guildDenied(res);
             return;
         }
-        const remote = await remotePlayer(client, guildId);
+        const remote = await host.player(guildId);
         if (!remote.found) {
             guildDenied(res);
             return;
         }
         const data = initialState(guildId, remote.player);
         data.permissions = access;
-        data.settings = access.settings ? await effectiveSettings(client, guildId) : {};
+        data.settings = access.settings ? await host.settings(guildId) : {};
         sendJson(res, 200, data);
         return;
     }
@@ -363,7 +350,7 @@ export async function route(
     if (method === 'POST' && path === '/api/settings') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        if (!(await resolveAccess(client, req, guildId, true)).settings) {
+        if (!(await resolveAccess(host, req, guildId, true)).settings) {
             guildDenied(res);
             return;
         }
@@ -373,9 +360,9 @@ export async function route(
                 for (const [key, value] of Object.entries(body.settings)) {
                     values[key] = bodyText(value);
                 }
-                await saveSettings(client, guildId, values);
+                await host.saveSettings(guildId, values);
             } else {
-                await saveSettings(client, guildId, {
+                await host.saveSettings(guildId, {
                     [bodyText(body.key)]: bodyText(body.value),
                 });
             }
@@ -387,21 +374,19 @@ export async function route(
             throw error;
         }
         accessCache.invalidateGuild(guildId);
-        await clearSettingsCaches(client, guildId);
-        sendJson(res, 200, { ok: true, settings: await effectiveSettings(client, guildId) });
+        sendJson(res, 200, { ok: true, settings: await host.settings(guildId) });
         return;
     }
 
     if (method === 'POST' && path === '/api/filter') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        if (!(await resolveAccess(client, req, guildId, true)).settings) {
+        if (!(await resolveAccess(host, req, guildId, true)).settings) {
             guildDenied(res);
             return;
         }
         const value = body.value === undefined ? undefined : Number(body.value);
-        const result = await remoteFilter(
-            client,
+        const result = await host.filter(
             guildId,
             bodyText(body.filter),
             Boolean(body.enabled),
@@ -420,7 +405,7 @@ export async function route(
 
     if (method === 'GET' && path === '/api/me/stats') {
         const guildId = url.searchParams.get('guildId') ?? '';
-        if (!(await resolveAccess(client, req, guildId)).member) {
+        if (!(await resolveAccess(host, req, guildId)).member) {
             guildDenied(res);
             return;
         }
@@ -429,13 +414,13 @@ export async function route(
             sendJson(res, 401, { error: 'Personal statistics require Discord login' });
             return;
         }
-        sendJson(res, 200, await client.db.getUserStats(guildId, session.id));
+        sendJson(res, 200, await host.userStats(guildId, session.id));
         return;
     }
 
     if (method === 'GET' && path === '/api/stats') {
         const guildId = url.searchParams.get('guildId') ?? '';
-        if (!(await guildAllowed(client, req, guildId))) {
+        if (!(await guildAllowed(host, req, guildId))) {
             guildDenied(res);
             return;
         }
@@ -443,15 +428,15 @@ export async function route(
         const days = Number.isFinite(requested)
             ? Math.min(90, Math.max(1, Math.floor(requested)))
             : 7;
-        const stats = await client.db.getStats(guildId, days);
-        sendJson(res, 200, await decorateStats(client, stats));
+        const stats = await host.stats(guildId, days);
+        sendJson(res, 200, await decorateStats(host, stats));
         return;
     }
 
     if (method === 'POST' && path === '/api/stats/clear') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        const access = await resolveAccess(client, req, guildId, true);
+        const access = await resolveAccess(host, req, guildId, true);
         if (!access.member) {
             guildDenied(res);
             return;
@@ -460,7 +445,7 @@ export async function route(
             sendJson(res, 403, { error: 'Only the server owner can clear statistics' });
             return;
         }
-        const removed = await client.db.clearStats(guildId);
+        const removed = await host.clearStats(guildId);
         accessCache.invalidateGuild(guildId);
         sendJson(res, 200, { ok: true, removed });
         return;
@@ -469,12 +454,11 @@ export async function route(
     if (method === 'POST' && path === '/api/player') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
-        if (!(await resolveAccess(client, req, guildId, true)).controls) {
+        if (!(await resolveAccess(host, req, guildId, true)).controls) {
             guildDenied(res);
             return;
         }
-        const result = await remotePlayerAction(
-            client,
+        const result = await host.playerAction(
             guildId,
             bodyText(body.action),
             Number(body.value ?? 0)
@@ -486,7 +470,7 @@ export async function route(
             return;
         }
         accessCache.invalidateGuild(guildId);
-        const updated = await remotePlayer(client, guildId);
+        const updated = await host.player(guildId);
         sendJson(res, 200, { ok: true, player: updated.player });
         return;
     }
@@ -495,15 +479,15 @@ export async function route(
 }
 
 async function handle(
-    client: BootstrapClient,
+    host: DashboardHost,
     req: http.IncomingMessage,
     res: http.ServerResponse
 ): Promise<void> {
     securityHeaders(res);
     try {
-        await route(client, req, res);
+        await route(host, req, res);
     } catch (error) {
-        client.logger.warn(
+        host.logger.warn(
             `[dashboard] ${req.method} ${req.url ?? '/'} failed: ${
                 error instanceof Error ? error.message : String(error)
             }`
@@ -516,32 +500,31 @@ async function handle(
     }
 }
 
-export function startDashboard(client: BootstrapClient): void {
-    if (!client.isCoordinator) return;
+export function startDashboard(host: DashboardHost): void {
     if (!config.dashboardPort) return;
 
-    const host = config.dashboardHost;
-    const loopback = isLoopbackHost(host);
+    const hostName = config.dashboardHost;
+    const loopback = isLoopbackHost(hostName);
     if (!loopback && !config.dashboardToken && !oauthEnabled()) {
-        client.logger.error(
+        host.logger.error(
             '[dashboard] refusing non-loopback bind without DASHBOARD_TOKEN or Discord OAuth'
         );
         return;
     }
     if (!config.dashboardToken && !oauthEnabled() && !anonymousDashboardAllowed()) {
-        client.logger.error(
+        host.logger.error(
             '[dashboard] refusing to start without authentication: configure DASHBOARD_TOKEN or Discord OAuth, or opt in with DASHBOARD_ALLOW_ANONYMOUS=1 on a loopback bind with no DASHBOARD_PUBLIC_URL'
         );
         return;
     }
 
     const server = http.createServer((req, res) => {
-        void handle(client, req, res);
+        void handle(host, req, res);
     });
     server.on('error', error => {
-        client.logger.error(`[dashboard] server error: ${error}`);
+        host.logger.error(`[dashboard] server error: ${error.message}`);
     });
-    server.listen(config.dashboardPort, host, () => {
-        client.logger.info(`[dashboard] http://${host}:${config.dashboardPort}`);
+    server.listen(config.dashboardPort, hostName, () => {
+        host.logger.info(`[dashboard] http://${hostName}:${config.dashboardPort}`);
     });
 }

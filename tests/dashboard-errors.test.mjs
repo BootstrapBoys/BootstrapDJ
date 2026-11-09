@@ -3,6 +3,7 @@ import { Readable } from 'node:stream';
 import test from 'node:test';
 
 import config from '../dist/config.js';
+import { createLocalDashboardHost } from '../dist/dashboard/localHost.js';
 import { route } from '../dist/dashboard/server.js';
 import { FULL_ACCESS, dashboardFilter, dashboardPlayerAction } from '../dist/dashboard/shardApi.js';
 
@@ -41,6 +42,7 @@ function makeResponse() {
 
 function makeClient(queue = new Map()) {
     const client = {
+        config,
         guilds: { cache: new Map([['g1', { id: 'g1', name: 'Guild' }]]) },
         queue,
         logger: { warn: () => {}, error: () => {}, info: () => {} },
@@ -88,7 +90,7 @@ async function post(path, body, client) {
         const req = makeRequest(body);
         req.url = path;
         const res = makeResponse();
-        await route(client, req, res);
+        await route(createLocalDashboardHost(client), req, res);
         status = res.state.status;
         payload = res.state.body;
     });

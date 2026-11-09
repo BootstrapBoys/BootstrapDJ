@@ -3,6 +3,8 @@ import { Client, ClientOptions, Collection, EmbedBuilder, Events, Interaction } 
 import type { NodeOption } from 'shoukaku';
 
 import config from '../config.js';
+import { startDashboardControl } from '../dashboard/control.js';
+import { createLocalDashboardHost } from '../dashboard/localHost.js';
 import { startDashboard } from '../dashboard/server.js';
 import {
     type AccessResult,
@@ -147,7 +149,11 @@ export default class BootstrapClient extends Client {
 
         await this.login(token);
         this.startHeartbeat();
-        startDashboard(this);
+        if (config.dashboardMode === 'sidecar') {
+            startDashboardControl(this);
+        } else if (this.isCoordinator) {
+            startDashboard(createLocalDashboardHost(this));
+        }
 
         this.on(Events.InteractionCreate, async (interaction: Interaction): Promise<void> => {
             if (!interaction.isButton() || !interaction.guildId) return;

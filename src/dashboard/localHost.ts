@@ -1,0 +1,48 @@
+import type { BootstrapClient } from '../core/index.js';
+import {
+    readAccess,
+    remoteFilter,
+    remoteGuildIds,
+    remoteGuilds,
+    remotePlayer,
+    remotePlayerAction,
+} from './cluster.js';
+import { collectMetrics } from './metrics.js';
+import { effectiveSettings, saveSettings } from './state.js';
+import type { DashboardHost, DashboardUserIdentity } from './host.js';
+
+/** Embedded dashboard backend: calls the live bot in the same process. */
+export function createLocalDashboardHost(client: BootstrapClient): DashboardHost {
+    const user = async (userId: string): Promise<DashboardUserIdentity | null> => {
+        const cached = client.users.cache.get(userId);
+        const member = cached ?? (await client.users.fetch(userId).catch(() => null));
+        if (!member) return null;
+        return {
+            name: member.username,
+            avatar: member.displayAvatarURL(),
+        };
+    };
+
+    return {
+        config: { icons: client.config.icons },
+        logger: {
+            error: message => client.logger.error(message),
+            warn: message => client.logger.warn(message),
+            info: message => client.logger.info(message),
+        },
+        guilds: userId => remoteGuilds(client, userId),
+        guildIds: () => remoteGuildIds(client),
+        access: (userId, guildId) => readAccess(client, userId, guildId),
+        player: guildId => remotePlayer(client, guildId),
+        playerAction: (guildId, action, value) =>
+            remotePlayerAction(client, guildId, action, value),
+        filter: (guildId, id, enabled, value) => remoteFilter(client, guildId, id, enabled, value),
+        settings: guildId => effectiveSettings(client, guildId),
+        saveSettings: (guildId, values) => saveSettings(client, guildId, values),
+        userStats: (guildId, userId) => client.db.getUserStats(guildId, userId),
+        stats: (guildId, days) => client.db.getStats(guildId, days),
+        clearStats: guildId => client.db.clearStats(guildId),
+        metrics: async () => collectMetrics(client),
+        user,
+    };
+}

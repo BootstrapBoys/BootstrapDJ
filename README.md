@@ -187,6 +187,33 @@ DASHBOARD_PUBLIC_URL="https://dj.example.com/"
 
 Open `http://127.0.0.1:8795/` locally, or put it behind an HTTPS reverse proxy.
 
+### Dashboard sidecar
+
+For dashboard development without restarting the bot, run the dashboard as a
+separate process:
+
+```dotenv
+DASHBOARD_MODE="sidecar"
+DASHBOARD_PORT="8795"
+DASHBOARD_CONTROL_PORT="8796"
+DASHBOARD_CONTROL_SECRET="<openssl rand -hex 32>"
+```
+
+The bot then exposes only an authenticated loopback control API on
+`DASHBOARD_CONTROL_PORT`; it does not start the dashboard HTTP server. Start the
+dashboard sidecar with `npm run dashboard` (or under pm2 as `dashboard`), and
+restart only that process after a dashboard change:
+
+```bash
+npm run build
+pm2 restart dashboard
+```
+
+`npx prisma generate && npm run build` also works. The control secret is shared
+by the two processes and must stay out of Git; `DASHBOARD_CONTROL_PORT` must
+remain loopback-only. The embedded default remains `DASHBOARD_MODE="embedded"`,
+where the bot serves the dashboard itself.
+
 A loopback bind alone is not authentication. With no `DASHBOARD_TOKEN` and no
 OAuth, the dashboard refuses to start; for a local-only, unauthenticated
 dashboard set `DASHBOARD_ALLOW_ANONYMOUS="true"`. That opt-in is refused when
