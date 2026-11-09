@@ -4,6 +4,9 @@ BootstrapDJ is a self-hosted Discord music bot built with TypeScript, Discord.js
 Shoukaku, Lavalink v4, and Prisma. It supports slash commands and text prefix
 commands, and every feature is available without a premium tier.
 
+> BootstrapDJ is a fork of [appujet/lavamusic](https://github.com/appujet/lavamusic),
+> substantially rewritten and maintained by BootstrapBoys.
+
 <p align="center">
   <a href="https://discord.com/oauth2/authorize?client_id=1029680163790794772&permissions=4298238976&scope=bot%20applications.commands">Invite BootstrapDJ</a>
   ·
@@ -293,8 +296,9 @@ tests/            Node test suite
 
 BootstrapDJ is distributed under the [GPL-3.0 License](LICENSE).
 
-BootstrapDJ is a [BootstrapBoys](https://github.com/zebz213) project. It is based
-on the LavaMusic project and uses [Discord.js](https://discord.js.org/),
+BootstrapDJ is a [BootstrapBoys](https://github.com/zebz213) project. It is forked
+from the [LavaMusic project](https://github.com/appujet/lavamusic) and uses
+[Discord.js](https://discord.js.org/),
 [Shoukaku](https://github.com/shipgirlproject/Shoukaku), and
 [Lavalink](https://github.com/lavalink-devs/Lavalink).
 
