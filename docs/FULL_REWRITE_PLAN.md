@@ -41,7 +41,7 @@ Each batch follows the same loop:
 6. Run `node tooling/rewrite-audit.mjs <upstream-src>` and compare the batch.
 7. Commit one batch; do not mix batches.
 8. Live-test the batch if it affects playback, setup, dashboard, or voice.
-9. Update `docs/REWRITE_AUDIT.md` and `FORK-LOG-2026-11-08.md`.
+9. Update `docs/REWRITE_AUDIT.md` and `docs/STAGING_TEST_RESULTS.md`.
 
 If a batch fails a gate, revert that batch only; never continue on a broken
 baseline.

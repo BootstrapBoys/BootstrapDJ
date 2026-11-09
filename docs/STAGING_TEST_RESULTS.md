@@ -13,7 +13,7 @@ Tester:
 | 5 — Session and restart | PASS | FEAR restored at 100s with 1 queued, volume 25, autoplay on, loop repeat |
 | 6 — Dashboard and API | PASS | `/`, `/api/guilds`, `/api/state`, `/api/player-state` all HTTP 200; anonymous loopback opt-in verified |
 | 7 — Plugins and bridge | PASS | bridge 401 without auth, 200 with auth; plugin shutdown/watchdog regression tests pass |
-| 8 — Isolated failover | PASS (recorded separately) | `FORK-LOG-2026-11-08.md` |
+| 8 — Isolated failover | PASS | BotTest isolated to test Lavalink 2335/2336; A stopped → B resumed at 4s; A restarted → switched back at 58s; test nodes/env removed; production untouched |
 | 9 — Negative/edge cases | PASS (smoke) | seek overflow, missing playlist, large skip; bot stayed online, no fatal errors |
 | 10 — Cleanup | PASS | BotTest stopped; test nodes removed; production processes online |
 

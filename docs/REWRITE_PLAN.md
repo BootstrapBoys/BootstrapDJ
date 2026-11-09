@@ -385,7 +385,7 @@ Required checks:
 | Dashboard | `/`, `/api/state`, `/api/player-state`, `/api/player` actions |
 | Failover | isolated test Lavalink only; never stop production nodes |
 
-Record each result in `FORK-LOG-2026-11-08.md` with commit, time, and observed
+Record each result in `docs/STAGING_TEST_RESULTS.md` with commit, time, and observed
 state. A failure blocks merge.
 
 ## Phase 8 — Overlap and Dead-Code Audit
