@@ -12,7 +12,7 @@ commands, and every feature is available without a premium tier.
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Node.js >= 24.17](https://img.shields.io/badge/node-%3E%3D24.17-43853D.svg)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6.svg)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7.0-3178C6.svg)](https://www.typescriptlang.org/)
 
 ## Features
 
@@ -28,8 +28,9 @@ commands, and every feature is available without a premium tier.
   `/filter`, plus `/filters` to inspect active effects.
 - **Autoplay** — Deezer chart seeds, curated fallback seeds, and weighted
   related-track discovery.
-- **Collections** — create, load, share, import, merge, rename, copy, and clear
-  playlists through `/collection`.
+- **Playlists** — create, load, share, import, merge, rename, copy, and clear
+  playlists through `/playlist`; the legacy `/collection` command remains a
+  prefix alias.
 - **Song-request channel** — ordinary messages become song requests; known
   prefix commands still work there.
 - **Saved sessions** — queues survive a restart when session restore is enabled.
@@ -116,21 +117,23 @@ Optional:
 The complete reference is [`.env.example`](.env.example). The most important
 groups are:
 
-| Group     | Variables                                                                                                   | Notes                                                                                                     |
-| --------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Discord   | `BOT_TOKEN`, `TOKEN`, `CLIENT_ID`, `GUILD_ID`, `PRODUCTION`                                                 | `BOT_TOKEN` wins over the legacy `TOKEN` alias. `GUILD_ID` enables single-guild mode.                     |
-| Commands  | `PREFIX`, `OWNER_IDS`                                                                                       | `PREFIX` accepts comma-separated prefixes. `OWNER_IDS` is a JSON array.                                   |
-| Presence  | `BOT_STATUS`, `BOT_ACTIVITY`, `BOT_ACTIVITY_TYPE`, `BOT_STATUS_MODE`                                        | `BOT_STATUS_MODE` is `static`, `track`, or `count`.                                                       |
-| Search    | `SEARCH_ENGINE`, `PREFIX_SEARCH_ENGINE`                                                                     | Slash commands use the guild `searchtype` or `SEARCH_ENGINE`; prefix commands use `PREFIX_SEARCH_ENGINE`. |
-| Limits    | `MAX_QUEUE_SIZE`, `MAX_PLAYLIST_SIZE`                                                                       | Per-guild limits can also be set with `/settings`.                                                        |
-| Autoplay  | `AUTOPLAY_CHART`, `AUTOPLAY_SEEDS`, `AUTOPLAY_SEED`                                                         | Chart, curated seeds, then a final fallback seed.                                                         |
-| Lavalink  | `LAVALINK_URL`, `LAVALINK_AUTH`, `LAVALINK_SECURE`, `LAVALINK_FALLBACKS`                                    | `LAVALINK_FALLBACKS` is a JSON array of standby nodes.                                                    |
-| Sessions  | `SESSION_RESTORE_AGE`, `SESSION_EMPTY_WAIT`                                                                 | Restore a saved queue for up to six hours by default.                                                     |
-| Messages  | `COMMAND_DELETE_AFTER`, `SETUP_CLEANUP_INTERVAL`                                                            | Set either to `0` to disable that timer.                                                                  |
-| Storage   | `DATABASE_URL`, `STATS_RETENTION_DAYS`, `STATS_INACTIVE_DAYS`, `STATS_PRUNE_INTERVAL_HOURS`                 | SQLite defaults to `prisma/bootstrapdj.db`; WAL mode is enabled at startup.                               |
-| Dashboard | `DASHBOARD_PORT`, `DASHBOARD_HOST`, `DASHBOARD_PUBLIC_URL`, `DASHBOARD_OAUTH_*`, `DASHBOARD_SESSION_SECRET` | `DASHBOARD_PORT=0` disables the dashboard.                                                                |
-| Multi-bot | `BOTS_FILE`, `BOT_NAME`, `BOT_ID`, `BOT_PRIORITY`                                                           | Optional local child-process setup; see below.                                                            |
-| Sharding  | `SHARD_COUNT`                                                                                               | Optional Discord shard count; `0` uses Discord's automatic count. Only shard 0 owns shared services.      |
+| Group     | Variables                                                                                                                                | Notes                                                                                                     |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Discord   | `BOT_TOKEN`, `TOKEN`, `CLIENT_ID`, `GUILD_ID`, `PRODUCTION`                                                                              | `BOT_TOKEN` wins over the legacy `TOKEN` alias. `GUILD_ID` enables single-guild mode.                     |
+| Commands  | `PREFIX`, `OWNER_IDS`                                                                                                                    | `PREFIX` accepts comma-separated prefixes. `OWNER_IDS` is a JSON array.                                   |
+| Presence  | `BOT_STATUS`, `BOT_ACTIVITY`, `BOT_ACTIVITY_TYPE`, `BOT_STATUS_MODE`                                                                     | `BOT_STATUS_MODE` is `static`, `track`, or `count`.                                                       |
+| Search    | `SEARCH_ENGINE`, `PREFIX_SEARCH_ENGINE`                                                                                                  | Slash commands use the guild `searchtype` or `SEARCH_ENGINE`; prefix commands use `PREFIX_SEARCH_ENGINE`. |
+| Limits    | `MAX_QUEUE_SIZE`, `MAX_PLAYLIST_SIZE`                                                                                                    | Per-guild limits can also be set with `/settings`.                                                        |
+| Autoplay  | `AUTOPLAY_CHART`, `AUTOPLAY_SEEDS`, `AUTOPLAY_SEED`                                                                                      | Chart, curated seeds, then a final fallback seed.                                                         |
+| Lavalink  | `LAVALINK_URL`, `LAVALINK_AUTH`, `LAVALINK_SECURE`, `LAVALINK_NAME`, `LAVALINK_FALLBACKS`, `AUTO_NODE`, `NODE_FALLBACK`                  | `LAVALINK_FALLBACKS` is a JSON array of standby nodes; a second local Lavalink is the reliable failover.  |
+| Sessions  | `SESSION_RESTORE_AGE`, `SESSION_EMPTY_WAIT`                                                                                              | Restore a saved queue for up to six hours by default.                                                     |
+| Messages  | `COMMAND_DELETE_AFTER`, `SETUP_CLEANUP_INTERVAL`                                                                                         | Set either to `0` to disable that timer.                                                                  |
+| Storage   | `DATABASE_URL`, `STATS_RETENTION_DAYS`, `STATS_INACTIVE_DAYS`, `STATS_PRUNE_INTERVAL_HOURS`                                              | SQLite defaults to `prisma/bootstrapdj.db`; WAL mode is enabled at startup.                               |
+| Dashboard | `DASHBOARD_PORT`, `DASHBOARD_HOST`, `DASHBOARD_PUBLIC_URL`, `DASHBOARD_OAUTH_*`, `DASHBOARD_SESSION_SECRET`, `DASHBOARD_ALLOW_ANONYMOUS` | `DASHBOARD_PORT=0` disables the dashboard; anonymous mode is loopback-only.                               |
+| Voice     | `EARL_CONTROL_URL`, `EARL_BRIDGE_SECRET`, `VOICE_BRIDGE_PORT`, `EARL_LIVE_BADGE_URL`                                                     | Optional Earl the Ear listener bridge; keep the control API on localhost.                                 |
+| Logging   | `LOG_CHANNEL_ID`                                                                                                                         | Channel for bot logs; blank disables logging.                                                             |
+| Multi-bot | `BOTS_FILE`, `BOT_NAME`, `BOT_ID`, `BOT_PRIORITY`                                                                                        | Optional local child-process setup; see below.                                                            |
+| Sharding  | `SHARD_COUNT`                                                                                                                            | Optional Discord shard count; `0` uses Discord's automatic count. Only shard 0 owns shared services.      |
 
 ### Slash replies and ephemeral mode
 
@@ -148,24 +151,26 @@ messages. `deleteafter` still controls auto-deletion when a reply is public.
 
 ## Commands
 
-BootstrapDJ exposes **71 top-level slash commands**. Many commands also work with
-the prefix, and some advanced commands are prefix-only. Run `/utility commands`
+BootstrapDJ exposes **72 top-level slash commands**. Many commands also work with
+the prefix, and some helper commands are prefix-only. Run `/utility commands`
 or `!utility commands` to see the live command status, prefix, and disabled
 commands for the current guild.
 
-| Category      | Examples                                                                                                                                                                                                                                                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Playback      | `/play`, `/playnext`, `/playrecent`, `/playselect`, `/nowplaying`, `/queue`, `/pause`, `/resume`, `/skip`, `/skipto`, `/previous`, `/replay`, `/seek`, `/backward`, `/forward`, `/stop`, `/join`, `/leave`, `/volume`, `/loop`, `/shuffle`, `/shufflerepeat`, `/voteskip`, `/sessionstats`, `/playleave`, `/radio`, `/fairplay` |
-| Queue editing | `/clearqueue`, `/remove`, `/removelast`, `/removeduplicates`, `/removekeyword`, `/removeuser`, `/massremove`, `/massmove`, `/move`, `/swap`, `/sort`, `/reverse`, `/selectrandom`, `/recentlyplayed`, `/requested`, `/removeabsent`                                                                                             |
-| Discovery     | `/artist`, `/album`, `/song`, `/top`, `/playlistsearch`, `/lyrics`, `/grab`, `/guess`                                                                                                                                                                                                                                           |
-| Filters       | `/filter` and `/filters`, including `8d`, `bassboost`, `nightcore`, `pitch`, `rate`, `speed`, `rotation`, `tremolo`, `vibrato`, and `reset`                                                                                                                                                                                     |
-| Collections   | `/collection` with list, create, delete, view, add, remove, load, save, rename, copy, merge, clear, share, import, unshare, and shares actions                                                                                                                                                                                  |
-| Settings      | `/settings`, `/setup`, `/247`, `/prefix`, `/alias`, `/mappings`, `/permissions`, `/dj`, `/listen`; `selfprefix` is prefix-only                                                                                                                                                                                                  |
-| Information   | `/help`, `/info`, `/invite`, `/ping`, `/stats`, `/leaderboard`, `/profile`, `/lavalink`, `/utility`                                                                                                                                                                                                                             |
-| Utility pages | `/utility overview`, `stats`, `shards`, `categories`, `faq`, `tip`, `premium`, `support`, `leaderboard`, `commands`, `dashboard`                                                                                                                                                                                                |
+| Category      | Slash commands                                                                                                                                                                                                                      |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Playback      | `/play`, `/playnext`, `/queue`, `/nowplaying`, `/pause`, `/resume`, `/skip`, `/previous`, `/seek`, `/stop`, `/volume`, `/loop`, `/shuffle`, `/join`, `/leave`, `/autoplay`                                                          |
+| Queue editing | `/clearqueue`, `/remove`, `/move`, `/massmove`, `/massremove`, `/removeduplicates`, `/removekeyword`, `/removeuser`, `/removeabsent`, `/removelast`, `/reverse`, `/sort`, `/swap`, `/selectrandom`, `/recentlyplayed`, `/requested` |
+| Discovery     | `/artist`, `/album`, `/song`, `/top`, `/playlistsearch`, `/lyrics`, `/grab`, `/guess`                                                                                                                                               |
+| Filters       | `/filter` and `/filters`; individual filter names are prefix-only                                                                                                                                                                   |
+| Playlists     | `/playlist` with list, create, delete, view, add, remove, removesong, load, save, rename, copy, clone, merge, clear, share, import, unshare, and shares actions                                                                     |
+| Settings      | `/settings`, `/setup`, `/247`, `/prefix`, `/alias`, `/mappings`, `/permissions`, `/dj`, `/listen`; `selfprefix` is prefix-only                                                                                                      |
+| Information   | `/help`, `/invite`, `/ping`, `/profile`, `/lavalink`, `/utility`; `/utility` includes overview, stats, shards, categories, faq, tip, premium, support, leaderboard, commands, and dashboard                                         |
+| Owner         | `/guild` (owner/dev only); other owner commands are prefix-only                                                                                                                                                                     |
 
-`/utility premium` is an informational page: no feature in this project is gated
-behind a paid tier.
+Prefix-only helpers include `!info`, `!stats`, `!leaderboard`, `!categories`,
+`!faq`, `!tip`, `!support`, `!shards`, the legacy playlist-management
+commands, and the individual filter toggles. `/utility premium` is an
+informational page: no feature in this project is gated behind a paid tier.
 
 ## Dashboard
 
@@ -197,9 +202,10 @@ DASHBOARD_SESSION_SECRET="a-long-random-secret"
 Every guild the bot is in is discovered automatically. Any member of that guild
 can sign in; access disappears when the bot leaves the guild. The session is an
 HMAC-signed, HTTP-only cookie and expires after 24 hours. Dashboard controls are
-read-only for ordinary members; configured DJ roles and **Manage Server** unlock
-playback controls and settings, and Clear-statistics is restricted to each guild’s owner. Add the
-exact redirect URI to the Discord Developer Portal before starting the bot.
+read-only for ordinary members; configured DJ roles unlock playback controls,
+while **Manage Server** / **Administrator** unlock settings and filters.
+Clear-statistics is restricted to each guild’s owner. Add the exact redirect URI
+to the Discord Developer Portal before starting the bot.
 
 See [docs/DASHBOARD_OAUTH.md](docs/DASHBOARD_OAUTH.md) for the full OAuth setup,
 reverse-proxy notes, and local token-mode fallback.
@@ -244,26 +250,32 @@ for details.
 ```bash
 npm run build       # compile TypeScript
 npm test            # build, then run the Node test suite
-npm run lint        # ESLint
+npm run test:coverage  # build, run tests with coverage
+npm run lint        # Oxlint type-aware/type-check
 npm run format      # Prettier check
+npm run soak        # optional soak harness; requires tooling/Lavalink setup
 ```
 
-The test suite covers the command gate, playback request handling, prefix
-routing, session restore, voice teardown, retention/WAL boundaries, and dashboard
-command surfaces. Current test count is **136**.
+The test suite covers the command gate, playback engine, queue/session restore,
+voice teardown, retention/WAL boundaries, dashboard surfaces, and the rewritten
+core. Current test count is **366**. A clean `npm ci` runs `prisma generate`
+through `postinstall`; the generated client is not committed.
 
 ## Project layout
 
 ```text
 src/
   commands/       slash and prefix commands grouped by area
+  core/           client, dispatcher, queue, playback engine and session lifecycle
+  data/           Prisma data access and retention
   dashboard/      local web dashboard and OAuth server
-  database/       Prisma data access and retention
   events/         Discord and player event handlers
-  structures/     client, dispatcher, queue, and command framework
-  utils/          gate, search, session, setup, and response helpers
+  lib/            command gate, search, request handling, reply helpers and settings
+  plugin/         optional local plugins
 prisma/           schema and default SQLite database
-docs/             dashboard, storage, and parity documentation
+scripts/          host boot/start scripts
+tooling/          soak, chaos and rewrite-audit tools
+docs/             dashboard, storage, architecture and parity documentation
 tests/            Node test suite
 ```
 
