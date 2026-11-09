@@ -17,6 +17,6 @@ Tester:
 | 9 — Negative/edge cases | PASS (smoke) | seek overflow, missing playlist, large skip; bot stayed online, no fatal errors |
 | 10 — Cleanup | PASS | BotTest stopped; test nodes removed; production processes online |
 
-Overall: PASS on f5103b9. Tests 351/351. Merge/deploy still requires approval.
+Overall: PASS on f5103b9. Tests 351/351 at that checkpoint. The rewrite was later merged into `main` at `867e12f` and deployed to production; the current suite is 366/366.
 
-Production verification: `DJBoot`, `Lavalink`, `Lavalink-Backup` online; untouched.
+Production deployment verification (2026-11-09): `DJBoot` at `867e12f`, schema pushed, both Lavalink nodes ready, and playlist positions verified (`Song.position`, 46 rows, 0–45, no nulls).

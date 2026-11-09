@@ -204,7 +204,7 @@ Rollback:
 
 ## Status
 
-Implemented on `experimental/rewrite`: formatting commit `7e7ed43`; schema/order commit `98a64dc`. BotTest DB migrated after backup `/root/BotTestDBBackups/20261108-201101.db`; existing `SmokeList` backfilled to strict positions `0..19`; live append produced 39 tracks at `0..38`. Production not migrated; deploy remains pending approval.
+Implemented on `experimental/rewrite`: formatting commit `7e7ed43`; schema/order commit `98a64dc`. BotTest DB migrated after backup `/root/BotTestDBBackups/20261108-201101.db`; existing `SmokeList` backfilled to strict positions `0..19`; live append produced 39 tracks at `0..38`. The rewrite merged into `main` at `867e12f`; production DB migrated after backup `/root/BotDBBackups/20261109-214326`, and `Song.position` verified with 46 rows at positions `0..45` and no nulls. A live playlist load smoke test remains.
 
 ## Estimate
 

@@ -1,6 +1,6 @@
 # Dependency majors — status
 
-Checked 2026-11-08 on `experimental/rewrite`.
+Checked 2026-11-09 on `main` (the rewrite merged at `867e12f`).
 
 ## TypeScript 7 — unblocked
 
@@ -21,7 +21,7 @@ Verified:
 
 - `npm run lint` — 0 warnings, 0 errors
 - `npm run build` — passes
-- `npm test` — 153/153
+- `npm test` — 366/366
 
 Trade-off: Oxlint does not currently implement every `typescript-eslint` rule.
 The old `typedef` and `eslint-plugin-import-x` ordering rules are gone;
