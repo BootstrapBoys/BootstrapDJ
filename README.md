@@ -10,7 +10,7 @@ commands, and every feature is available without a premium tier.
 <p align="center">
   <a href="https://discord.com/oauth2/authorize?client_id=1029680163790794772&permissions=4298238976&scope=bot%20applications.commands">Invite BootstrapDJ</a>
   ·
-  <a href="https://github.com/zebz213/BootstrapDJ/issues">Report a bug</a>
+  <a href="https://github.com/BootstrapBoys/BootstrapDJ/issues">Report a bug</a>
 </p>
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
@@ -66,7 +66,7 @@ Optional:
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/zebz213/BootstrapDJ.git
+    git clone https://github.com/BootstrapBoys/BootstrapDJ.git
     cd BootstrapDJ
     ```
 

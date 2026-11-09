@@ -16,7 +16,7 @@ modified deployments are not supported.
 Please do **not** open a public issue for a security problem.
 
 Use GitHub's private **Security → Report a vulnerability** flow for
-`zebz213/BootstrapDJ`, or contact the repository owner directly through
+`BootstrapBoys/BootstrapDJ`, or contact the repository owner directly through
 GitHub. Include:
 
 - the affected version or commit,

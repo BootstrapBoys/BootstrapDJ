@@ -36,7 +36,7 @@ export default class Support extends Command {
                             'Use `/help <command>` for usage details and `/faq` for common questions.',
                             '',
                             'For bugs or feature requests, open an issue on the BootstrapDJ repository:',
-                            'https://github.com/zebz213/BootstrapDJ/issues',
+                            'https://github.com/BootstrapBoys/BootstrapDJ/issues',
                             '',
                             'No support tier or paid priority queue exists.',
                         ].join('\n')

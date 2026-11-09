@@ -53,7 +53,7 @@ function paginateLyrics(text: string, maxChars: number = 3500): string[] {
 
 async function fetchJson(url: string): Promise<unknown> {
     const response = await fetch(url, {
-        headers: { 'User-Agent': 'BootstrapDJ/4.1 (https://github.com/zebz213/BootstrapDJ)' },
+        headers: { 'User-Agent': 'BootstrapDJ/4.1 (https://github.com/BootstrapBoys/BootstrapDJ)' },
         signal: AbortSignal.timeout(6_000),
     });
     if (!response.ok) return null;

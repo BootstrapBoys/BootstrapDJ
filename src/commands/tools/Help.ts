@@ -57,7 +57,7 @@ export default class Help extends Command {
             .setDescription(
                 `Hey there! I'm ${
                     client.user?.username ?? 'BootstrapDJ'
-                }, a music bot made with [BootstrapDJ](https://github.com/zebz213/BootstrapDJ) and Discord. You can use \`${prefix}help <command>\` to get more info on a command.`
+                }, a music bot made with [BootstrapDJ](https://github.com/BootstrapBoys/BootstrapDJ) and Discord. You can use \`${prefix}help <command>\` to get more info on a command.`
             )
             .setFooter({ text: `Use ${prefix}help <command> for more info on a command` });
 

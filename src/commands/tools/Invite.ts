@@ -4,7 +4,7 @@ import { BootstrapClient, Command, Context } from '../../core/index.js';
 
 /** Channel management, messages, embeds, history, voice, and slash commands. */
 const INVITE_PERMISSIONS = 4298501200;
-const ISSUES_URL = 'https://github.com/zebz213/BootstrapDJ/issues';
+const ISSUES_URL = 'https://github.com/BootstrapBoys/BootstrapDJ/issues';
 
 function inviteUrl(clientId: string): string {
     const scope = 'bot%20applications.commands';

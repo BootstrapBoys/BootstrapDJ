@@ -34,7 +34,7 @@ export default class ShoukakuClient extends Shoukaku {
             reconnectTries: 20,
             restTimeout: 30_000,
             // NAME/VERSION only: several public nodes reject other user agents.
-            userAgent: 'BootstrapDJ/4.1.0 (https://github.com/zebz213/BootstrapDJ)',
+            userAgent: 'BootstrapDJ/4.1.0 (https://github.com/BootstrapBoys/BootstrapDJ)',
             nodeResolver: pool => preferConnected(client, pool),
         });
         this.client = client;

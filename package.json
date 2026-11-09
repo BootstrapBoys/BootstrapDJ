@@ -28,7 +28,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/zebz213/BootstrapDJ.git"
+        "url": "git+https://github.com/BootstrapBoys/BootstrapDJ.git"
     },
     "keywords": [
         "discord",
@@ -43,9 +43,9 @@
     "author": "Zebz213",
     "license": "GPL-3.0",
     "bugs": {
-        "url": "https://github.com/zebz213/BootstrapDJ/issues"
+        "url": "https://github.com/BootstrapBoys/BootstrapDJ/issues"
     },
-    "homepage": "https://github.com/zebz213/BootstrapDJ#readme",
+    "homepage": "https://github.com/BootstrapBoys/BootstrapDJ#readme",
     "devDependencies": {
         "@types/node": "~26.6.6",
         "@types/signale": "^1.4.7",
