@@ -8,6 +8,18 @@ import {
     remotePlayerAction,
 } from './cluster.js';
 import { collectMetrics } from './metrics.js';
+import {
+    addPlaylistTracks,
+    clearPlaylist,
+    createPlaylist,
+    deletePlaylist,
+    getPlaylistTracks,
+    listPlaylists,
+    loadPlaylist,
+    removePlaylistTrack,
+    removePlaylistTrackAt,
+    renamePlaylist,
+} from './playlists.js';
 import { effectiveSettings, saveSettings } from './state.js';
 import type { DashboardHost, DashboardUserIdentity } from './host.js';
 
@@ -44,5 +56,16 @@ export function createLocalDashboardHost(client: BootstrapClient): DashboardHost
         clearStats: guildId => client.db.clearStats(guildId),
         metrics: async () => collectMetrics(client),
         user,
+        playlists: userId => listPlaylists(client, userId),
+        playlistTracks: (userId, name) => getPlaylistTracks(client, userId, name),
+        createPlaylist: (userId, name) => createPlaylist(client, userId, name),
+        renamePlaylist: (userId, name, newName) => renamePlaylist(client, userId, name, newName),
+        deletePlaylist: (userId, name) => deletePlaylist(client, userId, name),
+        addPlaylistTracks: (userId, name, query) => addPlaylistTracks(client, userId, name, query),
+        removePlaylistTrack: (userId, name, key) => removePlaylistTrack(client, userId, name, key),
+        removePlaylistTrackAt: (userId, name, index) =>
+            removePlaylistTrackAt(client, userId, name, index),
+        clearPlaylist: (userId, name) => clearPlaylist(client, userId, name),
+        loadPlaylist: (guildId, userId, name) => loadPlaylist(client, guildId, userId, name),
     };
 }

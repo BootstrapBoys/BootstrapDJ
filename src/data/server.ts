@@ -318,6 +318,10 @@ export default class ServerData extends PermissionStore {
         await this.playlists.create(userId, name);
     }
 
+    public async renamePlaylist(userId: string, name: string, newName: string): Promise<boolean> {
+        return await this.playlists.rename(userId, name, newName);
+    }
+
     public async deletePlaylist(userId: string, name: string): Promise<boolean> {
         return await this.playlists.remove(userId, name);
     }

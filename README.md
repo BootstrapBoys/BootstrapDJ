@@ -33,7 +33,8 @@ commands, and every feature is available without a premium tier.
   related-track discovery.
 - **Playlists** — create, load, share, import, merge, rename, copy, and clear
   playlists through `/playlist`; the legacy `/collection` command remains a
-  prefix alias.
+  prefix alias. The dashboard can also create, rename, delete, edit, and queue
+  your playlists.
 - **Song-request channel** — ordinary messages become song requests; known
   prefix commands still work there.
 - **Saved sessions** — queues survive a restart when session restore is enabled.
@@ -234,8 +235,11 @@ can sign in; access disappears when the bot leaves the guild. The session is an
 HMAC-signed, HTTP-only cookie and expires after 24 hours. Dashboard controls are
 read-only for ordinary members; configured DJ roles unlock playback controls,
 while **Manage Server** / **Administrator** unlock settings and filters.
-Clear-statistics is restricted to each guild’s owner. Add the exact redirect URI
-to the Discord Developer Portal before starting the bot.
+Clear-statistics is restricted to each guild’s owner. The playlist button lets
+the signed-in member create, rename, delete, edit, add tracks to, and load their
+own playlists into the active queue. Song titles in both statistics views link to
+the stored source, or to a YouTube search when no URI was recorded. Add the exact
+redirect URI to the Discord Developer Portal before starting the bot.
 
 See [docs/DASHBOARD_OAUTH.md](docs/DASHBOARD_OAUTH.md) for the full OAuth setup,
 reverse-proxy notes, and local token-mode fallback.

@@ -761,6 +761,229 @@ export const BROWSER_SCRIPT = String.raw`
         if (volumeDragging) holdVolume(VOLUME_HOLD_MS);
     });
 
+    // ---- playlists --------------------------------------------------------
+
+    let playlistSelected = '';
+
+    function renderPlaylistList(playlists) {
+        const container = find('#playlist-list');
+        container.textContent = '';
+        if (!playlists.length) {
+            container.appendChild(element('div', 'playlist-empty', 'No playlists yet.'));
+            return;
+        }
+        for (const item of playlists) {
+            const row = element('div', 'playlist-row' + (item.name === playlistSelected ? ' active' : ''));
+            row.appendChild(element('span', 'playlist-name', item.name));
+            row.appendChild(
+                element(
+                    'span',
+                    'small',
+                    item.trackCount + ' track' + (item.trackCount === 1 ? '' : 's')
+                )
+            );
+            row.onclick = () => {
+                playlistSelected = item.name;
+                renderPlaylistList(playlists);
+                void loadPlaylistTracks(item.name);
+            };
+            container.appendChild(row);
+        }
+    }
+
+    async function loadPlaylists() {
+        try {
+            const data = await request('/api/playlists');
+            const playlists = data.playlists || [];
+            if (playlistSelected && !playlists.some(item => item.name === playlistSelected)) {
+                playlistSelected = '';
+            }
+            renderPlaylistList(playlists);
+            if (!playlistSelected) {
+                const detail = find('#playlist-detail');
+                detail.textContent = '';
+                detail.appendChild(element('div', 'small', 'Select a playlist to edit or load it.'));
+                return;
+            }
+            await loadPlaylistTracks(playlistSelected);
+        } catch (error) {
+            notify(error.message, true);
+        }
+    }
+
+    async function loadPlaylistTracks(name) {
+        const detail = find('#playlist-detail');
+        detail.textContent = '';
+        detail.appendChild(element('div', 'small', 'Loading tracks…'));
+        try {
+            const data = await request('/api/playlists/tracks?name=' + encodeURIComponent(name));
+            renderPlaylistDetail(name, data.tracks || []);
+        } catch (error) {
+            detail.textContent = '';
+            detail.appendChild(element('div', 'error', error.message));
+        }
+    }
+
+    function playlistActionButton(label, className) {
+        const button = element('button', className || 'icon-btn', label);
+        return button;
+    }
+
+    function renderPlaylistDetail(name, tracks) {
+        const detail = find('#playlist-detail');
+        detail.textContent = '';
+        const head = element('div', 'playlist-detail-head');
+        head.appendChild(element('h3', '', name));
+
+        const rename = playlistActionButton('Rename');
+        rename.onclick = async () => {
+            const next = window.prompt('Rename playlist', name);
+            if (!next || next.trim() === name) return;
+            try {
+                await postJson('/api/playlists', {
+                    action: 'rename',
+                    name,
+                    newName: next.trim(),
+                });
+                playlistSelected = next.trim();
+                notify('Playlist renamed');
+                await loadPlaylists();
+            } catch (error) {
+                notify(error.message, true);
+            }
+        };
+        head.appendChild(rename);
+
+        const remove = playlistActionButton('Delete');
+        remove.onclick = async () => {
+            if (!window.confirm('Delete the playlist "' + name + '"? This cannot be undone.')) return;
+            try {
+                await postJson('/api/playlists', { action: 'delete', name });
+                playlistSelected = '';
+                notify('Playlist deleted');
+                await loadPlaylists();
+            } catch (error) {
+                notify(error.message, true);
+            }
+        };
+        head.appendChild(remove);
+
+        const load = playlistActionButton('Load to queue', 'primary');
+        load.disabled = !state.access.controls;
+        load.title = state.access.controls
+            ? 'Append this playlist to the current queue'
+            : 'Playback controls are required';
+        load.onclick = async () => {
+            try {
+                const result = await postJson('/api/playlists/load', {
+                    guildId: state.guildId,
+                    name,
+                });
+                notify(
+                    'Queued ' +
+                        (result.queued || 0) +
+                        ' track' +
+                        ((result.queued || 0) === 1 ? '' : 's') +
+                        ((result.skipped || 0) ? ' (' + result.skipped + ' skipped)' : '')
+                );
+                closePlaylists();
+                await loadState();
+            } catch (error) {
+                notify(error.message, true);
+            }
+        };
+        head.appendChild(load);
+        detail.appendChild(head);
+
+        if (!tracks.length) {
+            detail.appendChild(element('div', 'playlist-empty', 'This playlist is empty.'));
+        } else {
+            tracks.forEach((track, index) => {
+                const row = element('div', 'playlist-track');
+                row.appendChild(element('span', 'track-pos', String(index + 1)));
+                const main = element('div', 'track-main');
+                const title = element('div', 'track-title');
+                title.innerHTML = trackTitle(track);
+                main.appendChild(title);
+                const meta = element(
+                    'div',
+                    'track-meta',
+                    (track.author || 'Unknown artist') +
+                        ' · ' +
+                        formatDuration(track.duration) +
+                        (track.source ? ' · ' + track.source : '')
+                );
+                main.appendChild(meta);
+                row.appendChild(main);
+                const removeTrack = element('button', 'track-remove', 'Remove');
+                removeTrack.title = 'Remove this track';
+                removeTrack.onclick = async () => {
+                    try {
+                        await postJson('/api/playlists/tracks', {
+                            action: 'removeAt',
+                            name,
+                            index: index + 1,
+                        });
+                        notify('Track removed');
+                        await loadPlaylistTracks(name);
+                        await loadPlaylists();
+                    } catch (error) {
+                        notify(error.message, true);
+                    }
+                };
+                row.appendChild(removeTrack);
+                detail.appendChild(row);
+            });
+        }
+
+        const add = element('div', 'playlist-add');
+        const query = element('input');
+        query.id = 'playlist-add-query';
+        query.placeholder = 'Song name, URL, or playlist URL';
+        query.setAttribute('aria-label', 'Add a track to the playlist');
+        const addButton = playlistActionButton('Add track', 'primary');
+        addButton.onclick = async () => {
+            const value = query.value.trim();
+            if (!value) return;
+            try {
+                const result = await postJson('/api/playlists/tracks', {
+                    action: 'add',
+                    name,
+                    query: value,
+                });
+                notify(
+                    'Added ' +
+                        (result.added || 0) +
+                        ' track' +
+                        ((result.added || 0) === 1 ? '' : 's') +
+                        ((result.skipped || 0) ? ' (' + result.skipped + ' skipped)' : '')
+                );
+                query.value = '';
+                await loadPlaylistTracks(name);
+                await loadPlaylists();
+            } catch (error) {
+                notify(error.message, true);
+            }
+        };
+        add.appendChild(query);
+        add.appendChild(addButton);
+        detail.appendChild(add);
+
+        const clear = playlistActionButton('Clear playlist');
+        clear.onclick = async () => {
+            if (!window.confirm('Remove every track from "' + name + '"?')) return;
+            try {
+                await postJson('/api/playlists/tracks', { action: 'clear', name });
+                notify('Playlist cleared');
+                await loadPlaylistTracks(name);
+                await loadPlaylists();
+            } catch (error) {
+                notify(error.message, true);
+            }
+        };
+        detail.appendChild(clear);
+    }
+
     // ---- modals ----------------------------------------------------------
 
     const settingsModal = find('#settings-modal');
@@ -815,11 +1038,46 @@ export const BROWSER_SCRIPT = String.raw`
         if (event.target === personalModal) closePersonal();
     });
 
+    const playlistsModal = find('#playlists-modal');
+
+    function openPlaylists() {
+        playlistsModal.classList.add('open');
+        void loadPlaylists();
+    }
+
+    function closePlaylists() {
+        playlistsModal.classList.remove('open');
+    }
+
+    find('#playlists-btn').onclick = openPlaylists;
+    find('#playlists-close').onclick = closePlaylists;
+    playlistsModal.addEventListener('click', event => {
+        if (event.target === playlistsModal) closePlaylists();
+    });
+    find('#playlist-create').onclick = async () => {
+        const input = find('#playlist-name');
+        const name = input.value.trim();
+        if (!name) return;
+        try {
+            await postJson('/api/playlists', { action: 'create', name });
+            input.value = '';
+            playlistSelected = name;
+            notify('Playlist created');
+            await loadPlaylists();
+        } catch (error) {
+            notify(error.message, true);
+        }
+    };
+    find('#playlist-name').addEventListener('keydown', event => {
+        if (event.key === 'Enter') find('#playlist-create').click();
+    });
+
     document.addEventListener('keydown', event => {
         if (event.key !== 'Escape') return;
         closeSettings();
         closeStats();
         closePersonal();
+        closePlaylists();
     });
 
     // ---- statistics ------------------------------------------------------
@@ -877,13 +1135,29 @@ export const BROWSER_SCRIPT = String.raw`
         return 'conic-gradient(' + stops.join(',') + ')';
     }
 
+    function trackHref(track) {
+        if (track.uri && /^https?:/i.test(track.uri)) return track.uri;
+        const title = (track.title || '').trim();
+        const author = (track.author || '').trim();
+        if (!title) return '';
+        return 'https://www.youtube.com/results?search_query=' + encodeURIComponent((title + ' ' + author).trim());
+    }
+
+    function trackTitle(track) {
+        const title = escapeHtml(track.title);
+        const href = trackHref(track);
+        return href
+            ? '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + title + '</a>'
+            : title;
+    }
+
     function renderPersonal(data) {
         const tracks = data.tracks || [];
         const rows = tracks
             .map(item => {
                 return (
                     '<div class="stat-row"><span class="stat-main">' +
-                    escapeHtml(item.title) +
+                    trackTitle(item) +
                     '<br><span class="stat-sub">' +
                     escapeHtml(item.author) +
                     ' · ' +
@@ -920,18 +1194,14 @@ export const BROWSER_SCRIPT = String.raw`
     }
 
     function trackRow(track) {
-        const title = escapeHtml(track.title);
-        const linked =
-            track.uri && /^https?:/i.test(track.uri)
-                ? '<a href="' + escapeHtml(track.uri) + '" target="_blank" rel="noopener">' + title + '</a>'
-                : title;
+        const title = trackTitle(track);
         const icon = track.icon
             ? '<img class="service-icon" src="' + escapeHtml(safeUrl(track.icon)) + '" alt="">'
             : '';
         return (
             '<span class="stat-main">' +
             icon +
-            linked +
+            title +
             '<br><span class="stat-sub">' +
             escapeHtml(track.author) +
             ' · ' +

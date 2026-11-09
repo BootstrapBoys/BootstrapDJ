@@ -21,6 +21,21 @@ export class PlaylistStore {
         await this.prisma.playlist.create({ data: { userId, name } });
     }
 
+    public async rename(userId: string, name: string, newName: string): Promise<boolean> {
+        const playlist = await this.get(userId, name);
+        if (!playlist) return false;
+        try {
+            await this.prisma.playlist.update({
+                where: { id: playlist.id },
+                data: { name: newName },
+            });
+            return true;
+        } catch (error) {
+            if ((error as { code?: string }).code === 'P2002') return false;
+            throw error;
+        }
+    }
+
     public async remove(userId: string, name: string): Promise<boolean> {
         const playlist = await this.get(userId, name);
         if (!playlist) return false;

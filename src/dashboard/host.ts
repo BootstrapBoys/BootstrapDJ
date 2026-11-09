@@ -11,6 +11,36 @@ export type DashboardUserIdentity = {
     avatar: string | null;
 };
 
+export type PlaylistSummary = {
+    name: string;
+    trackCount: number;
+};
+
+export type PlaylistTrack = {
+    key: string;
+    title: string;
+    author: string;
+    duration: number;
+    uri: string | null;
+    source: string;
+};
+
+export type PlaylistMutationResult = {
+    ok: boolean;
+    error?: string;
+    status?: number;
+};
+
+export type PlaylistAddResult = PlaylistMutationResult & {
+    added?: number;
+    skipped?: number;
+};
+
+export type PlaylistLoadResult = PlaylistMutationResult & {
+    queued?: number;
+    skipped?: number;
+};
+
 /**
  * Everything the dashboard routes need from the bot.
  *
@@ -38,6 +68,20 @@ export interface DashboardHost {
     clearStats(guildId: string): Promise<number>;
     metrics(): Promise<Record<string, unknown>>;
     user(userId: string): Promise<DashboardUserIdentity | null>;
+    playlists(userId: string): Promise<PlaylistSummary[]>;
+    playlistTracks(userId: string, name: string): Promise<PlaylistTrack[]>;
+    createPlaylist(userId: string, name: string): Promise<PlaylistMutationResult>;
+    renamePlaylist(userId: string, name: string, newName: string): Promise<PlaylistMutationResult>;
+    deletePlaylist(userId: string, name: string): Promise<PlaylistMutationResult>;
+    addPlaylistTracks(userId: string, name: string, query: string): Promise<PlaylistAddResult>;
+    removePlaylistTrack(userId: string, name: string, key: string): Promise<PlaylistMutationResult>;
+    removePlaylistTrackAt(
+        userId: string,
+        name: string,
+        index: number
+    ): Promise<PlaylistMutationResult>;
+    clearPlaylist(userId: string, name: string): Promise<PlaylistMutationResult>;
+    loadPlaylist(guildId: string, userId: string, name: string): Promise<PlaylistLoadResult>;
 }
 
 /** Error returned by the dashboard sidecar's loopback control client. */

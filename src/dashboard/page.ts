@@ -332,6 +332,74 @@ button.primary {
     cursor: pointer;
 }
 
+/* Playlists */
+.playlist-card { width: min(980px, 100%); }
+.playlist-create {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+.playlist-create input { flex: 1; min-width: 190px; }
+.playlist-layout {
+    display: grid;
+    grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+    gap: 14px;
+    min-height: 320px;
+}
+.playlist-list {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    max-height: 58vh;
+    overflow: auto;
+}
+.playlist-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--line-soft);
+    border-radius: 9px;
+    background: var(--panel-2);
+    cursor: pointer;
+}
+.playlist-row:hover { border-color: var(--line-strong); }
+.playlist-row.active { border-color: var(--accent); background: #202a3d; }
+.playlist-row .playlist-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playlist-detail { min-width: 0; }
+.playlist-detail-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.playlist-detail-head h3 { margin: 0 auto 0 0; font-size: 15px; }
+.playlist-track {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid var(--line-soft);
+}
+.playlist-track:first-child { border-top: 0; }
+.playlist-track .track-pos { color: var(--muted); width: 22px; flex: none; text-align: right; }
+.playlist-track .track-main { min-width: 0; flex: 1; }
+.playlist-track .track-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playlist-track .track-meta { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playlist-track .track-remove {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 6px;
+}
+.playlist-track .track-remove:hover { color: var(--bad); }
+.playlist-add { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.playlist-add input { flex: 1; min-width: 180px; }
+.playlist-empty { color: var(--muted); padding: 12px 0; }
+.playlist-detail > .small { margin-top: 0; }
+@media (max-width: 720px) {
+    .playlist-layout { grid-template-columns: 1fr; }
+    .playlist-list { max-height: 180px; }
+}
+
 /* Statistics */
 .stats-card { width: min(1120px, 100%); }
 .stats-toolbar { display: flex; gap: 8px; align-items: center; }
@@ -576,6 +644,7 @@ export function renderDashboard(oauth: boolean): string {
     <select id="guild"></select>
     <button id="personal-btn" class="gear" title="My stats" aria-label="Open my stats" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></button>
     <button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button>
+    <button id="playlists-btn" class="gear" title="Playlists" aria-label="Open playlists"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12v2H4zm0 5h12v2H4zm0 5h12v2H4zm15-8v7.2a2.8 2.8 0 1 1-2-2.6V7l4-1v2z"/></svg></button>
     <button id="settings-btn" class="gear" title="Settings" aria-label="Open settings" style="display:none">⚙</button>
     <button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
   </div>
@@ -612,6 +681,19 @@ ${VOLUME_CONTROL}
   <div class="modal-card stats-card">
     <div class="modal-head"><h2 id="personal-title">My stats</h2><button class="icon-btn" id="personal-close" aria-label="Close my stats">✕</button></div>
     <div id="personal-content"></div>
+  </div>
+</div>
+<div id="playlists-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="playlists-title">
+  <div class="modal-card playlist-card">
+    <div class="modal-head"><h2 id="playlists-title">Playlists</h2><button class="icon-btn" id="playlists-close" aria-label="Close playlists">✕</button></div>
+    <div class="playlist-create">
+      <input id="playlist-name" maxlength="50" placeholder="New playlist name" aria-label="New playlist name">
+      <button id="playlist-create" class="primary">Create playlist</button>
+    </div>
+    <div class="playlist-layout">
+      <div id="playlist-list" class="playlist-list"><div class="small">Loading playlists…</div></div>
+      <div id="playlist-detail" class="playlist-detail"><div class="small">Select a playlist to edit or load it.</div></div>
+    </div>
   </div>
 </div>
 <div id="toast"></div>

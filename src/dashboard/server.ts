@@ -148,6 +148,11 @@ async function guildAllowed(
     return (await resolveAccess(host, req, guildId)).member;
 }
 
+/** Playlists are owned by the signed-in Discord user; token mode uses the owner. */
+function dashboardUserId(req: http.IncomingMessage): string {
+    return readSession(req)?.id ?? config.owners[0] ?? 'dashboard';
+}
+
 /** OAuth callback: validate state, exchange the code, and gate on bot membership. */
 async function completeOAuth(
     host: DashboardHost,
@@ -448,6 +453,82 @@ export async function route(
         const removed = await host.clearStats(guildId);
         accessCache.invalidateGuild(guildId);
         sendJson(res, 200, { ok: true, removed });
+        return;
+    }
+
+    if (method === 'GET' && path === '/api/playlists') {
+        const userId = dashboardUserId(req);
+        sendJson(res, 200, { playlists: await host.playlists(userId) });
+        return;
+    }
+
+    if (method === 'POST' && path === '/api/playlists') {
+        const body = await readBody(req);
+        const userId = dashboardUserId(req);
+        const action = bodyText(body.action);
+        const name = bodyText(body.name);
+        let result;
+        if (action === 'create') {
+            result = await host.createPlaylist(userId, name);
+        } else if (action === 'rename') {
+            result = await host.renamePlaylist(userId, name, bodyText(body.newName));
+        } else if (action === 'delete') {
+            result = await host.deletePlaylist(userId, name);
+        } else {
+            sendJson(res, 400, { ok: false, error: 'Unknown playlist action' });
+            return;
+        }
+        sendJson(res, result.ok ? 200 : (result.status ?? 400), result);
+        return;
+    }
+
+    if (method === 'GET' && path === '/api/playlists/tracks') {
+        const userId = dashboardUserId(req);
+        const name = url.searchParams.get('name') ?? '';
+        sendJson(res, 200, { tracks: await host.playlistTracks(userId, name) });
+        return;
+    }
+
+    if (method === 'POST' && path === '/api/playlists/tracks') {
+        const body = await readBody(req);
+        const userId = dashboardUserId(req);
+        const name = bodyText(body.name);
+        const action = bodyText(body.action);
+        let result;
+        if (action === 'add') {
+            result = await host.addPlaylistTracks(userId, name, bodyText(body.query));
+        } else if (action === 'remove') {
+            result = await host.removePlaylistTrack(userId, name, bodyText(body.key));
+        } else if (action === 'removeAt') {
+            result = await host.removePlaylistTrackAt(userId, name, Number(body.index ?? 0));
+        } else if (action === 'clear') {
+            result = await host.clearPlaylist(userId, name);
+        } else {
+            sendJson(res, 400, { ok: false, error: 'Unknown playlist track action' });
+            return;
+        }
+        sendJson(res, result.ok ? 200 : (result.status ?? 400), result);
+        return;
+    }
+
+    if (method === 'POST' && path === '/api/playlists/load') {
+        const body = await readBody(req);
+        const guildId = bodyText(body.guildId);
+        const name = bodyText(body.name);
+        const access = await resolveAccess(host, req, guildId, true);
+        if (!access.member) {
+            guildDenied(res);
+            return;
+        }
+        if (!access.controls) {
+            sendJson(res, 403, {
+                ok: false,
+                error: 'Playback controls are required to load a playlist.',
+            });
+            return;
+        }
+        const result = await host.loadPlaylist(guildId, dashboardUserId(req), name);
+        sendJson(res, result.ok ? 200 : (result.status ?? 400), result);
         return;
     }
 

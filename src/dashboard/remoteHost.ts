@@ -6,6 +6,13 @@ import type {
     FilterResult,
     PlayerSnapshot,
 } from './shardApi.js';
+import type {
+    PlaylistAddResult,
+    PlaylistLoadResult,
+    PlaylistMutationResult,
+    PlaylistSummary,
+    PlaylistTrack,
+} from './host.js';
 import { SettingValidationError } from './state.js';
 import { type DashboardHost, DashboardRemoteError, type DashboardUserIdentity } from './host.js';
 
@@ -162,5 +169,108 @@ export class RemoteDashboardHost implements DashboardHost {
             'GET',
             `/internal/user?id=${encodeURIComponent(userId)}`
         );
+    }
+
+    public async playlists(userId: string): Promise<PlaylistSummary[]> {
+        return await this.request<PlaylistSummary[]>(
+            'GET',
+            `/internal/playlists?userId=${encodeURIComponent(userId)}`
+        );
+    }
+
+    public async playlistTracks(userId: string, name: string): Promise<PlaylistTrack[]> {
+        const query = new URLSearchParams({ userId, name });
+        return await this.request<PlaylistTrack[]>(
+            'GET',
+            `/internal/playlists/tracks?${query.toString()}`
+        );
+    }
+
+    public async createPlaylist(userId: string, name: string): Promise<PlaylistMutationResult> {
+        return await this.request<PlaylistMutationResult>('POST', '/internal/playlists', {
+            action: 'create',
+            userId,
+            name,
+        });
+    }
+
+    public async renamePlaylist(
+        userId: string,
+        name: string,
+        newName: string
+    ): Promise<PlaylistMutationResult> {
+        return await this.request<PlaylistMutationResult>('POST', '/internal/playlists', {
+            action: 'rename',
+            userId,
+            name,
+            newName,
+        });
+    }
+
+    public async deletePlaylist(userId: string, name: string): Promise<PlaylistMutationResult> {
+        return await this.request<PlaylistMutationResult>('POST', '/internal/playlists', {
+            action: 'delete',
+            userId,
+            name,
+        });
+    }
+
+    public async addPlaylistTracks(
+        userId: string,
+        name: string,
+        query: string
+    ): Promise<PlaylistAddResult> {
+        return await this.request<PlaylistAddResult>('POST', '/internal/playlists/tracks', {
+            action: 'add',
+            userId,
+            name,
+            query,
+        });
+    }
+
+    public async removePlaylistTrack(
+        userId: string,
+        name: string,
+        key: string
+    ): Promise<PlaylistMutationResult> {
+        return await this.request<PlaylistMutationResult>('POST', '/internal/playlists/tracks', {
+            action: 'remove',
+            userId,
+            name,
+            key,
+        });
+    }
+
+    public async removePlaylistTrackAt(
+        userId: string,
+        name: string,
+        index: number
+    ): Promise<PlaylistMutationResult> {
+        return await this.request<PlaylistMutationResult>('POST', '/internal/playlists/tracks', {
+            action: 'removeAt',
+            userId,
+            name,
+            index,
+        });
+    }
+
+    public async clearPlaylist(userId: string, name: string): Promise<PlaylistMutationResult> {
+        return await this.request<PlaylistMutationResult>('POST', '/internal/playlists/tracks', {
+            action: 'clear',
+            userId,
+            name,
+        });
+    }
+
+    public async loadPlaylist(
+        guildId: string,
+        userId: string,
+        name: string
+    ): Promise<PlaylistLoadResult> {
+        return await this.request<PlaylistLoadResult>('POST', '/internal/playlists/load', {
+            guildId,
+            userId,
+            name,
+        });
     }
 }

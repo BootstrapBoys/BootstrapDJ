@@ -12,6 +12,18 @@ import {
     remotePlayerAction,
 } from './cluster.js';
 import { collectMetrics } from './metrics.js';
+import {
+    addPlaylistTracks,
+    clearPlaylist,
+    createPlaylist,
+    deletePlaylist,
+    getPlaylistTracks,
+    listPlaylists,
+    loadPlaylist,
+    removePlaylistTrack,
+    removePlaylistTrackAt,
+    renamePlaylist,
+} from './playlists.js';
 import { effectiveSettings, saveSettings, SettingValidationError } from './state.js';
 
 const MAX_BODY_BYTES = 64_000;
@@ -201,6 +213,101 @@ async function handleControl(
         const cached = client.users.cache.get(userId);
         const user = cached ?? (await client.users.fetch(userId).catch(() => null));
         json(res, 200, user ? { name: user.username, avatar: user.displayAvatarURL() } : null);
+        return;
+    }
+
+    if (method === 'GET' && path === '/internal/playlists') {
+        const userId = url.searchParams.get('userId') ?? '';
+        if (!userId) {
+            json(res, 400, { error: 'userId is required' });
+            return;
+        }
+        json(res, 200, await listPlaylists(client, userId));
+        return;
+    }
+
+    if (method === 'POST' && path === '/internal/playlists') {
+        const body = await readBody(req);
+        const userId = stringValue(body.userId);
+        const name = stringValue(body.name);
+        if (!userId) {
+            json(res, 400, { error: 'userId is required' });
+            return;
+        }
+        if (stringValue(body.action) === 'create') {
+            json(res, 200, await createPlaylist(client, userId, name));
+            return;
+        }
+        if (stringValue(body.action) === 'rename') {
+            json(res, 200, await renamePlaylist(client, userId, name, stringValue(body.newName)));
+            return;
+        }
+        if (stringValue(body.action) === 'delete') {
+            json(res, 200, await deletePlaylist(client, userId, name));
+            return;
+        }
+        json(res, 400, { ok: false, status: 400, error: 'Unknown playlist action' });
+        return;
+    }
+
+    if (method === 'GET' && path === '/internal/playlists/tracks') {
+        const userId = url.searchParams.get('userId') ?? '';
+        const name = url.searchParams.get('name') ?? '';
+        if (!userId) {
+            json(res, 400, { error: 'userId is required' });
+            return;
+        }
+        json(res, 200, await getPlaylistTracks(client, userId, name));
+        return;
+    }
+
+    if (method === 'POST' && path === '/internal/playlists/tracks') {
+        const body = await readBody(req);
+        const userId = stringValue(body.userId);
+        const name = stringValue(body.name);
+        if (!userId) {
+            json(res, 400, { ok: false, status: 400, error: 'userId is required' });
+            return;
+        }
+        const action = stringValue(body.action);
+        if (action === 'add') {
+            json(res, 200, await addPlaylistTracks(client, userId, name, stringValue(body.query)));
+            return;
+        }
+        if (action === 'remove') {
+            json(res, 200, await removePlaylistTrack(client, userId, name, stringValue(body.key)));
+            return;
+        }
+        if (action === 'removeAt') {
+            json(
+                res,
+                200,
+                await removePlaylistTrackAt(client, userId, name, Number(body.index ?? 0))
+            );
+            return;
+        }
+        if (action === 'clear') {
+            json(res, 200, await clearPlaylist(client, userId, name));
+            return;
+        }
+        json(res, 400, { ok: false, status: 400, error: 'Unknown playlist track action' });
+        return;
+    }
+
+    if (method === 'POST' && path === '/internal/playlists/load') {
+        const body = await readBody(req);
+        const userId = stringValue(body.userId);
+        const guildId = stringValue(body.guildId);
+        const name = stringValue(body.name);
+        if (!userId || !guildId) {
+            json(res, 400, {
+                ok: false,
+                status: 400,
+                error: 'userId and guildId are required',
+            });
+            return;
+        }
+        json(res, 200, await loadPlaylist(client, guildId, userId, name));
         return;
     }
 
