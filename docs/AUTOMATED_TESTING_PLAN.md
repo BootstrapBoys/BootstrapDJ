@@ -309,9 +309,13 @@ Total: **7–12 focused days**, then weekly soak maintenance.
 - `tooling/chaos/failover.sh` is implemented with `CHAOS_ALLOW`,
   `ISOLATED_TEST_NODES`, production, soak-active, and PM2 process guards. It was
   not run during the active soak.
-- Full 24-hour workload soak started 2026-11-08T20:40:53Z on BotTest, using the
-  bot itself as the voice member for bridge-driven commands. Artifact:
-  `/root/BotTest/artifacts/soak/2026-11-08T20-40-53-391Z`; result pending.
+- 24-hour workload soak **PASS**: 1,435 samples, RSS +2.7%, heap -0.8%,
+  event-loop p99 21.6 ms, max 49.8 ms, max queue 2, zero uptime resets. Artifact:
+  `/root/BotTest/artifacts/soak/2026-11-08T20-40-53-391Z`.
+- Isolated failover drill **PASS** on `Lavalink-Test-2443`/`2444` after seeding a
+  live player; BotTest was restored to the shared nodes and the temporary nodes
+  were stopped. The first automated attempt timed out because it had no active
+  player; it restored the original env without changing production.
 
 ## Definition of Done
 
