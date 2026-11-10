@@ -110,21 +110,27 @@ if (targetGuild) {
     })()`);
     if (changed) {
         await sleep(1200);
-        await waitFor(`document.querySelector('#guild') && document.querySelector('#guild').value === ${JSON.stringify(targetGuild)}`);
+        await waitFor(
+            `document.querySelector('#guild') && document.querySelector('#guild').value === ${JSON.stringify(targetGuild)}`
+        );
     }
 }
 
-const support = await evaluate('({ decoder: typeof AudioDecoder, chunk: typeof EncodedAudioChunk })');
-await waitFor("(() => { const b = document.querySelector('#listen-btn'); return b && getComputedStyle(b).display !== 'none'; })()");
+const support = await evaluate(
+    '({ decoder: typeof AudioDecoder, chunk: typeof EncodedAudioChunk })'
+);
+await waitFor(
+    "(() => { const b = document.querySelector('#listen-btn'); return b && getComputedStyle(b).display !== 'none'; })()"
+);
 await click('#listen-btn');
 
 await waitFor("window.__bdjAudio && window.__bdjAudio.debug().status === 'on'", 15000);
-await waitFor("window.__bdjAudio && window.__bdjAudio.debug().frames > 25", 15000);
+await waitFor('window.__bdjAudio && window.__bdjAudio.debug().frames > 25', 15000);
 await sleep(1000);
 const playing = await evaluate('window.__bdjAudio.debug()');
 const volumeExpression =
     "fetch('/api/state?guildId=' + encodeURIComponent(document.querySelector('#guild').value))" +
-    ".then(r => r.json()).then(d => d.player.volume)";
+    '.then(r => r.json()).then(d => d.player.volume)';
 const volumeBefore = await evaluate(volumeExpression);
 
 await click('#listen-btn');

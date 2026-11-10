@@ -15,8 +15,9 @@ import { initialState } from '../dist/dashboard/state.js';
 
 const GUILD = '123456789012345678';
 const PORT = Number(process.env.PORT || 8799);
-const FIXTURE = process.env.TAP_FIXTURE
-    || fileURLToPath(new URL('../tests/fixtures/tap-sample.bin', import.meta.url));
+const FIXTURE =
+    process.env.TAP_FIXTURE ||
+    fileURLToPath(new URL('../tests/fixtures/tap-sample.bin', import.meta.url));
 
 const ACCESS = {
     member: true,
@@ -66,7 +67,10 @@ const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1');
 
     if (url.pathname === '/') {
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+        res.writeHead(200, {
+            'content-type': 'text/html; charset=utf-8',
+            'cache-control': 'no-store',
+        });
         res.end(renderDashboard(false));
         return;
     }

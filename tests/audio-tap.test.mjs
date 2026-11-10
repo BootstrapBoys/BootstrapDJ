@@ -267,4 +267,3 @@ test('audio route returns 503 when the tap is not configured', async () => {
         assert.equal(state.status, 503);
     });
 });
-
