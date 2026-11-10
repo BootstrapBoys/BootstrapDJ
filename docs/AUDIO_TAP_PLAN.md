@@ -71,10 +71,19 @@ The dashboard settings modal shows **Allow all members to listen** and
   owner bypass, and token mode.
 - Run `npm run build`, `npm run lint`, `npm test`, and `npm run format`.
 
+## Compatibility and async timeout
+
+The accepted pair is **hook `4.2.2-tap.2` + plugin `0.3.1`**. From `0.3.1`,
+the plugin owns the MVC async timeout through its `TapWebMvcConfig`; the hook
+does not need the `configureAsyncSupport` change. Hook `4.2.2-tap.3` (commit
+`00c5571`) was a temporary stopgap for the 30-second `StreamingResponseBody`
+ceiling and is **not** the long-term pair. This keeps upstream PR #1239
+frames-only and lets the hook fork be retired once that PR lands.
+
 ## Rollout
 
-1. Deploy plugin `0.3.0` with the Lavalink-native route and verify the
-   production node accepts raw-password auth.
+1. Deploy plugin `0.3.1` with hook `4.2.2-tap.2` and verify the production node
+   accepts raw-password auth and holds a tap stream past 35 seconds.
 2. Deploy this bot change; do not deploy it against plugin `0.2.0` because
    `/v4/audiotap/...` will return `404`.
 3. Verify in a signed-in browser: allowed role hears audio, denied role gets
