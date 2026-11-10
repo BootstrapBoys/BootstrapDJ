@@ -314,8 +314,21 @@ button.primary {
 }
 .gear:hover { color: var(--text); background: var(--panel-2); border-color: var(--line-strong); }
 .gear svg { width: 22px; height: 22px; display: block; fill: currentColor; }
-.install-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
-.install-btn svg { width: 18px; height: 18px; }
+.footer-install {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+}
+.footer-install:hover { color: var(--accent); border-color: var(--accent); }
+.footer-install svg { width: 13px; height: 13px; fill: currentColor; }
 .modal {
     position: fixed;
     inset: 0;
@@ -669,7 +682,6 @@ ${PWA_HEAD}
     <button id="personal-btn" class="gear" title="My stats" aria-label="Open my stats" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></button>
     <button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button>
     <button id="playlists-btn" class="gear" title="Playlists" aria-label="Open playlists"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12v2H4zm0 5h12v2H4zm0 5h12v2H4zm15-8v7.2a2.8 2.8 0 1 1-2-2.6V7l4-1v2z"/></svg></button>
-    <button id="install-btn" class="gear install-btn" type="button" title="Install BootstrapDJ" aria-label="Install BootstrapDJ" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9h3l-4 4-4-4h3z"/><path d="M5 19h14v2H5z"/></svg><span>Install</span></button>
     <button id="settings-btn" class="gear" title="Settings" aria-label="Open settings" style="display:none">⚙</button>
     <button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
   </div>
@@ -730,7 +742,7 @@ ${VOLUME_CONTROL}
   <span>© 2026 BootstrapBoys</span><span class="sep">·</span>
   <a href="https://zebz213.github.io/bootstrapdj-legal/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a><span class="sep">·</span>
   <a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a><span class="sep">·</span>
-  <a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">Legal</a>
+  <a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">Legal</a><button id="install-btn" class="footer-install" type="button" title="Install BootstrapDJ" aria-label="Install BootstrapDJ" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9h3l-4 4-4-4h3z"/><path d="M5 19h14v2H5z"/></svg>Install app</button>
 </footer>
 <script>${BROWSER_SCRIPT}</script>
 </body>

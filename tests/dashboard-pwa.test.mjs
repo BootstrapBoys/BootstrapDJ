@@ -46,5 +46,9 @@ test('both dashboard pages advertise the PWA shell', () => {
     }
     const dashboard = renderDashboard(true);
     assert.match(dashboard, /id="install-btn"/);
+    assert.ok(
+        dashboard.indexOf('id="install-btn"') > dashboard.indexOf('<footer>'),
+        'install button belongs in the footer'
+    );
     assert.match(dashboard, /navigator\.serviceWorker\.register\('\/sw\.js'\)/);
 });
