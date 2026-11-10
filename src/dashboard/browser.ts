@@ -631,6 +631,7 @@ export const BROWSER_SCRIPT = String.raw`
         const data = state.data;
         renderPlayer(data);
         renderFilters(data.filters);
+        refreshAudioForFilterChange(data.filters);
         renderSettings(data.settings);
         setListenUi();
     }
@@ -829,6 +830,43 @@ export const BROWSER_SCRIPT = String.raw`
         sources: new Set(),
         reconnectTimer: 0,
     };
+
+    let filterSignature = '';
+    let filterRefreshTimer = 0;
+
+    function snapshotFilters(filters) {
+        return (filters || [])
+            .map(filter => filter.id + ':' + (filter.active ? '1' : '0') + ':' + (filter.current ?? ''))
+            .join('|');
+    }
+
+    /**
+     * Lavalink applies the filter immediately, but the browser may still have
+     * several seconds of unfiltered frames scheduled ahead of the audio clock.
+     * Reconnect the tap so the listener starts at the live, filtered frame
+     * instead of waiting for that backlog to drain.
+     */
+    function refreshAudioForFilterChange(filters) {
+        const nextSignature = snapshotFilters(filters);
+        const changed = filterSignature !== '' && nextSignature !== filterSignature;
+        filterSignature = nextSignature;
+        if (!changed || audio.status !== 'on') return;
+        window.clearTimeout(filterRefreshTimer);
+        filterRefreshTimer = window.setTimeout(() => {
+            void restartAudioForFilter();
+        }, 120);
+    }
+
+    async function restartAudioForFilter() {
+        if (audio.status !== 'on') return;
+        audio.status = 'starting';
+        setListenUi();
+        try {
+            await connectAudioTap();
+        } catch {
+            scheduleReconnect(audio.generation);
+        }
+    }
 
     function audioSupported() {
         return typeof window.AudioDecoder === 'function'
@@ -1048,6 +1086,10 @@ export const BROWSER_SCRIPT = String.raw`
         stopScheduledSources();
         audio.generation += 1;
         const generation = audio.generation;
+        if (audio.controller) {
+            audio.controller.abort();
+            audio.controller = null;
+        }
         audio.decoder = new AudioDecoder({ output: audioDataHandler, error: audioDecoderError });
         audio.decoder.configure(TAP_DECODER_CONFIG);
         audio.lastTimestamp = -1;
@@ -1167,6 +1209,11 @@ export const BROWSER_SCRIPT = String.raw`
             copyErrors: audio.copyErrors,
             lastError: audio.lastError,
             decoderState: audio.decoder ? audio.decoder.state : null,
+            leadMs:
+                audio.context && audio.nextTime
+                    ? Math.max(0, (audio.nextTime - audio.context.currentTime) * 1000)
+                    : 0,
+            filterSignature,
         }),
         toggle: toggleAudio,
         stop: stopAudio,
