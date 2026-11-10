@@ -159,6 +159,11 @@ button.primary {
 }
 .ctrl:hover { border-color: var(--accent); }
 .ctrl.on { border-color: var(--accent); color: var(--accent); }
+.listen-btn { margin-left: auto; gap: 6px; }
+.listen-btn span { font-size: 12px; font-weight: 600; }
+.listen-btn.muted { color: var(--muted); border-style: dashed; }
+.listen-btn .mute-line { display: none; stroke: currentColor; stroke-width: 2; fill: none; }
+.listen-btn.muted .mute-line { display: block; }
 .ctrl svg, .volume svg { width: 18px; height: 18px; display: block; fill: currentColor; flex: none; }
 .volume svg { color: var(--text); }
 .ctrl .play-icon { display: none; }
@@ -651,7 +656,7 @@ export function renderDashboard(oauth: boolean): string {
 </header>
 <main>
 <section class="panel">
-  <div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span></div>
+  <div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span><button class="ctrl listen-btn" id="listen-btn" type="button" title="Play this browser's audio from the bot" aria-label="Listen to the bot audio" aria-pressed="false" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/><path class="mute-line" d="M4 4l16 16"/></svg><span id="listen-label">Listen</span></button></div>
   <div id="now-title" class="now">Nothing playing</div>
   <div id="now-meta" class="now-meta"></div>
   <div id="now-time" class="now-time">0:00 / 0:00</div>

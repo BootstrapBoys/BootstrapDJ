@@ -624,6 +624,7 @@ export const BROWSER_SCRIPT = String.raw`
         renderPlayer(data);
         renderFilters(data.filters);
         renderSettings(data.settings);
+        setListenUi();
     }
 
     // ---- state loading ---------------------------------------------------
@@ -641,6 +642,7 @@ export const BROWSER_SCRIPT = String.raw`
         find('#player-controls').style.display = state.access.controls ? '' : 'none';
         find('#filters-panel').style.display = state.access.settings ? '' : 'none';
         find('#stats-clear').style.display = state.access.owner ? '' : 'none';
+        setListenUi();
     }
 
     async function loadState() {
@@ -689,6 +691,7 @@ export const BROWSER_SCRIPT = String.raw`
         picker.value = state.guildId;
         picker.onchange = () => {
             state.guildId = picker.value;
+            stopAudio();
             applyAccess();
             void loadState();
         };
@@ -760,6 +763,375 @@ export const BROWSER_SCRIPT = String.raw`
     window.addEventListener('pointerup', () => {
         if (volumeDragging) holdVolume(VOLUME_HOLD_MS);
     });
+
+    // ---- audio tap (WebCodecs) ------------------------------------------
+
+    const TAP_RECONNECT_MS = 1000;
+    const TAP_FRAME_MS = 20;
+    const TAP_DECODER_CONFIG = { codec: 'opus', sampleRate: 48000, numberOfChannels: 2 };
+
+    const audio = {
+        status: 'off',
+        muted: false,
+        context: null,
+        gain: null,
+        analyser: null,
+        decoder: null,
+        controller: null,
+        generation: 0,
+        nextTime: 0,
+        lastTimestamp: -1,
+        frames: 0,
+        decoded: 0,
+        outputs: 0,
+        copyErrors: 0,
+        lastError: '',
+        drops: 0,
+        sources: new Set(),
+        reconnectTimer: 0,
+    };
+
+    function audioSupported() {
+        return typeof window.AudioDecoder === 'function'
+            && typeof window.EncodedAudioChunk === 'function';
+    }
+
+    function setListenUi() {
+        const button = find('#listen-btn');
+        const label = find('#listen-label');
+        if (!button || !label) return;
+        const available = Boolean(state.data && state.data.audio && state.data.audio.available);
+        const active = audio.status === 'on' || audio.status === 'starting';
+        button.style.display = available ? '' : 'none';
+        button.classList.toggle('on', active && !audio.muted);
+        button.classList.toggle('muted', active && audio.muted);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        if (audio.status === 'starting') {
+            label.textContent = 'Connecting';
+            button.title = 'Connecting to the audio tap';
+        } else if (audio.status === 'on' && audio.muted) {
+            label.textContent = 'Unmute';
+            button.title = 'Unmute this browser only';
+        } else if (audio.status === 'on') {
+            label.textContent = 'Mute';
+            button.title = 'Mute this browser only';
+        } else {
+            label.textContent = 'Listen';
+            button.title = 'Play this browser audio from the bot';
+        }
+    }
+
+    function audioRms() {
+        if (!audio.analyser) return 0;
+        const samples = new Float32Array(audio.analyser.fftSize);
+        audio.analyser.getFloatTimeDomainData(samples);
+        let sum = 0;
+        for (const sample of samples) sum += sample * sample;
+        return Math.sqrt(sum / samples.length);
+    }
+
+    function stopScheduledSources() {
+        for (const source of audio.sources) {
+            try {
+                source.stop();
+            } catch {
+                // already stopped
+            }
+            source.disconnect();
+        }
+        audio.sources.clear();
+    }
+
+    function resetDecoder() {
+        stopScheduledSources();
+        if (audio.decoder) {
+            try {
+                // reset() returns the decoder to "unconfigured"; a track change
+                // must reconfigure it before the next packet is fed.
+                audio.decoder.reset();
+                audio.decoder.configure(TAP_DECODER_CONFIG);
+            } catch {
+                // a closed decoder is replaced on reconnect
+            }
+        }
+        audio.lastTimestamp = -1;
+        if (audio.context) audio.nextTime = audio.context.currentTime + 0.15;
+    }
+
+    function closeDecoder() {
+        if (!audio.decoder) return;
+        try {
+            audio.decoder.close();
+        } catch {
+            // already closed
+        }
+        audio.decoder = null;
+    }
+
+    function audioDataHandler(data) {
+        audio.outputs += 1;
+        try {
+            if (!audio.context || !audio.gain || audio.status === 'off') return;
+            const frames = data.numberOfFrames;
+            const channels = Math.min(2, data.numberOfChannels);
+            const buffer = audio.context.createBuffer(2, frames, data.sampleRate);
+            for (let channel = 0; channel < channels; channel += 1) {
+                data.copyTo(buffer.getChannelData(channel), {
+                    planeIndex: channel,
+                    format: 'f32-planar',
+                });
+            }
+            const source = audio.context.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audio.gain);
+            const now = audio.context.currentTime;
+            if (audio.nextTime < now - 0.5) audio.nextTime = now + 0.1;
+            const startAt = Math.max(now + 0.02, audio.nextTime);
+            source.start(startAt);
+            audio.nextTime = startAt + buffer.duration;
+            audio.sources.add(source);
+            source.onended = () => {
+                audio.sources.delete(source);
+                source.disconnect();
+            };
+            audio.decoded += 1;
+        } catch (error) {
+            audio.copyErrors += 1;
+            audio.lastError = (error && error.message ? error.message : String(error))
+                + ' frames=' + data.numberOfFrames
+                + ' channels=' + data.numberOfChannels
+                + ' sampleRate=' + data.sampleRate
+                + ' format=' + data.format;
+        } finally {
+            data.close();
+        }
+    }
+    function audioDecoderError(error) {
+        audio.lastError = error && error.message ? error.message : String(error);
+        notify('Audio decode failed: ' + (error && error.message ? error.message : 'unknown error'), true);
+        stopAudio();
+    }
+
+    function readTapPosition(bytes) {
+        const view = new DataView(bytes.buffer, bytes.byteOffset, 11);
+        return Number(view.getBigInt64(3));
+    }
+
+    function decodeTapPacket(payload, position) {
+        if (!audio.decoder) return;
+        const timestamp = Math.max(position * 1000, audio.lastTimestamp + TAP_FRAME_MS * 1000);
+        audio.lastTimestamp = timestamp;
+        try {
+            audio.decoder.decode(new EncodedAudioChunk({
+                type: 'key',
+                timestamp,
+                data: payload.slice(),
+            }));
+        } catch {
+            // A decoder reset lands before the next trackStart frame.
+        }
+    }
+
+    function handleTapControl(event) {
+        if (!event) return;
+        if (event.event === 'trackStart') {
+            resetDecoder();
+            return;
+        }
+        if (event.event === 'ping' && typeof event.droppedFrames === 'number') {
+            audio.drops = event.droppedFrames;
+            return;
+        }
+        if (event.event === 'playerDestroyed') {
+            stopAudio();
+        }
+    }
+
+    async function pumpTap(body, generation) {
+        const reader = body.getReader();
+        let buffer = new Uint8Array(0);
+        for (;;) {
+            const result = await reader.read();
+            if (generation !== audio.generation) {
+                await reader.cancel().catch(() => {});
+                return;
+            }
+            if (result.done) break;
+            const chunk = result.value;
+            const merged = new Uint8Array(buffer.length + chunk.length);
+            merged.set(buffer, 0);
+            merged.set(chunk, buffer.length);
+            buffer = merged;
+
+            for (;;) {
+                if (buffer.length < 3) break;
+                const type = buffer[0];
+                const length = (buffer[1] << 8) | buffer[2];
+                if (type === 1) {
+                    if (buffer.length < 11 + length) break;
+                    const position = readTapPosition(buffer);
+                    const payload = buffer.subarray(11, 11 + length);
+                    audio.frames += 1;
+                    decodeTapPacket(payload, position);
+                    buffer = buffer.subarray(11 + length);
+                } else if (type === 2) {
+                    if (buffer.length < 3 + length) break;
+                    const json = new TextDecoder().decode(buffer.subarray(3, 3 + length));
+                    buffer = buffer.subarray(3 + length);
+                    try {
+                        handleTapControl(JSON.parse(json));
+                    } catch {
+                        // ignore malformed control frames
+                    }
+                } else {
+                    throw new Error('unknown audio tap frame');
+                }
+            }
+        }
+        throw new Error('audio tap stream ended');
+    }
+
+    function scheduleReconnect(generation) {
+        window.clearTimeout(audio.reconnectTimer);
+        audio.reconnectTimer = window.setTimeout(() => {
+            if (generation !== audio.generation || audio.status === 'off') return;
+            audio.status = 'starting';
+            setListenUi();
+            void connectAudioTap().catch(() => scheduleReconnect(audio.generation));
+        }, TAP_RECONNECT_MS);
+    }
+
+    async function connectAudioTap() {
+        if (!state.guildId || !state.data || !state.data.audio || !state.data.audio.available) {
+            throw new Error('The audio tap is not available for this guild');
+        }
+        closeDecoder();
+        stopScheduledSources();
+        audio.generation += 1;
+        const generation = audio.generation;
+        audio.decoder = new AudioDecoder({ output: audioDataHandler, error: audioDecoderError });
+        audio.decoder.configure(TAP_DECODER_CONFIG);
+        audio.lastTimestamp = -1;
+        audio.nextTime = audio.context.currentTime + 0.15;
+        audio.controller = new AbortController();
+
+        const headers = {};
+        const token = storedToken();
+        if (token) headers['x-dashboard-token'] = token;
+        const response = await fetch('/api/audio?guildId=' + encodeURIComponent(state.guildId), {
+            method: 'GET',
+            headers,
+            credentials: 'same-origin',
+            signal: audio.controller.signal,
+        });
+        if (generation !== audio.generation) return;
+        if (response.status === 404) {
+            stopAudio();
+            notify('The bot has no active player in this server.', true);
+            return;
+        }
+        if (response.status === 401 || response.status === 403) {
+            stopAudio();
+            notify('This dashboard session cannot listen to audio.', true);
+            return;
+        }
+        if (!response.ok) {
+            response.body?.cancel?.();
+            throw new Error('Audio tap HTTP ' + response.status);
+        }
+        if (!response.body) throw new Error('Audio tap returned no body');
+        audio.status = 'on';
+        if (audio.gain) audio.gain.gain.value = audio.muted ? 0 : 1;
+        setListenUi();
+        void pumpTap(response.body, generation).catch(() => {
+            if (generation !== audio.generation || audio.status === 'off') return;
+            audio.status = 'starting';
+            setListenUi();
+            scheduleReconnect(generation);
+        });
+    }
+
+    async function startAudio() {
+        if (!audioSupported()) {
+            notify('Audio playback needs Chrome or Edge (WebCodecs is unavailable).', true);
+            return;
+        }
+        if (!state.data || !state.data.audio || !state.data.audio.available) {
+            notify('The audio tap is not configured on this dashboard.', true);
+            return;
+        }
+        audio.status = 'starting';
+        audio.muted = false;
+        setListenUi();
+        try {
+            if (!audio.context) {
+                audio.context = new AudioContext({ sampleRate: 48000 });
+                audio.gain = audio.context.createGain();
+                audio.analyser = audio.context.createAnalyser();
+                audio.analyser.fftSize = 2048;
+                audio.gain.connect(audio.analyser);
+                audio.analyser.connect(audio.context.destination);
+            }
+            await audio.context.resume();
+            await connectAudioTap();
+        } catch (error) {
+            audio.status = 'off';
+            setListenUi();
+            notify(error && error.message ? error.message : 'Could not start dashboard audio', true);
+        }
+    }
+
+    function stopAudio() {
+        audio.generation += 1;
+        window.clearTimeout(audio.reconnectTimer);
+        if (audio.controller) {
+            audio.controller.abort();
+            audio.controller = null;
+        }
+        closeDecoder();
+        stopScheduledSources();
+        if (audio.gain) audio.gain.gain.value = 1;
+        audio.status = 'off';
+        audio.muted = false;
+        setListenUi();
+    }
+
+    function toggleAudio() {
+        if (audio.status === 'off') {
+            void startAudio();
+            return;
+        }
+        if (audio.status === 'starting') {
+            stopAudio();
+            return;
+        }
+        audio.muted = !audio.muted;
+        if (audio.gain) audio.gain.gain.value = audio.muted ? 0 : 1;
+        setListenUi();
+    }
+
+    const listenButton = find('#listen-btn');
+    if (listenButton) listenButton.addEventListener('click', toggleAudio);
+
+    window.__bdjAudio = {
+        debug: () => ({
+            status: audio.status,
+            muted: audio.muted,
+            frames: audio.frames,
+            decoded: audio.decoded,
+            drops: audio.drops,
+            gain: audio.gain ? audio.gain.gain.value : null,
+            rms: audioRms(),
+            sampleRate: audio.context ? audio.context.sampleRate : null,
+            context: audio.context ? audio.context.state : null,
+            outputs: audio.outputs,
+            copyErrors: audio.copyErrors,
+            lastError: audio.lastError,
+            decoderState: audio.decoder ? audio.decoder.state : null,
+        }),
+        toggle: toggleAudio,
+        stop: stopAudio,
+    };
 
     // ---- playlists --------------------------------------------------------
 

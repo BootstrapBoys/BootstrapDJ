@@ -22,6 +22,7 @@ import {
     viewer,
 } from './auth.js';
 import { GuildAccessCache } from './accessCache.js';
+import { audioTapTarget, relayAudioTap } from './audioTap.js';
 import type { DashboardHost } from './host.js';
 import { renderDashboard, renderLoginPage } from './page.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
@@ -346,9 +347,31 @@ export async function route(
             return;
         }
         const data = initialState(guildId, remote.player);
-        data.permissions = access;
-        data.settings = access.settings ? await host.settings(guildId) : {};
-        sendJson(res, 200, data);
+        sendJson(res, 200, {
+            ...data,
+            permissions: access,
+            settings: access.settings ? await host.settings(guildId) : {},
+            audio: { available: audioTapTarget() !== null },
+        });
+        return;
+    }
+
+    if (method === 'GET' && path === '/api/audio') {
+        const guildId = url.searchParams.get('guildId') ?? '';
+        if (!/^\d{17,20}$/.test(guildId)) {
+            sendJson(res, 400, { error: 'A valid guildId is required' });
+            return;
+        }
+        if (!(await guildAllowed(host, req, guildId))) {
+            guildDenied(res);
+            return;
+        }
+        const target = audioTapTarget();
+        if (!target) {
+            sendJson(res, 503, { error: 'Audio tap is not configured' });
+            return;
+        }
+        relayAudioTap(res, guildId, target);
         return;
     }
 
