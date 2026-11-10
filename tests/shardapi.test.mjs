@@ -34,7 +34,10 @@ function guild(id, ownerId, members = []) {
 function client(guilds, roles = []) {
     return {
         guilds: { cache: new Map(guilds.map(entry => [entry.id, entry])) },
-        db: { getRoles: async () => roles },
+        db: {
+            getRoles: async () => roles,
+            getGuildSettings: async () => ({}),
+        },
         queue: new Map(),
     };
 }

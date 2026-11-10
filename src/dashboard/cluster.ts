@@ -51,6 +51,7 @@ export async function readAccess(
                             admin: false,
                             controls: false,
                             settings: false,
+                            listen: false,
                         },
                     };
                 }

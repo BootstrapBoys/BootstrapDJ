@@ -22,7 +22,7 @@ export const BROWSER_SCRIPT = String.raw`
         csrf: '',
         guilds: [],
         data: null,
-        access: { member: false, owner: false, admin: false, controls: false, settings: false },
+        access: { member: false, owner: false, admin: false, controls: false, settings: false, listen: false },
         queueSignature: null,
     };
 
@@ -160,7 +160,7 @@ export const BROWSER_SCRIPT = String.raw`
         },
         {
             title: 'Browser mode',
-            keys: ['dashboardvoicepriority'],
+            keys: ['dashboardvoicepriority', 'audiotapallowall', 'audiotaproles'],
         },
         { title: 'Autoplay', keys: ['autoplaysource', 'autoplayseeds'] },
         { title: 'Responses', keys: ['ephemeral', 'announce', 'announcechannel', 'deleteafter'] },
@@ -213,6 +213,8 @@ export const BROWSER_SCRIPT = String.raw`
         locked: 'Session locked',
         allowthreads: 'Commands in threads',
         dashboardvoicepriority: 'Discord takes priority',
+        audiotapallowall: 'Allow all members to listen',
+        audiotaproles: 'Listening role IDs',
         timeoutlisteners: 'Listener timeout (s)',
         timeoutpause: 'Pause timeout (s)',
         timeoutplaying: 'Idle playback timeout (s)',
@@ -257,6 +259,10 @@ export const BROWSER_SCRIPT = String.raw`
         allowthreads: 'Permit commands inside threads.',
         dashboardvoicepriority:
             'When Dashboard browser playback is active, a Discord user’s play command clears that queue and moves the bot to their voice channel. Disable to keep browser playback in place.',
+        audiotapallowall:
+            'Allow every member of this server to listen to dashboard audio. When disabled, only the listed roles, owner, and administrators may listen.',
+        audiotaproles:
+            'Comma-separated Discord role IDs allowed to listen when “Allow all members” is disabled. Invalid entries are ignored.',
         commandchannel: 'Only accept commands in this text channel ID. Blank accepts every channel.',
         voicechannel: 'Require callers to sit in this voice channel ID. Blank removes the requirement.',
         disabledcommands: 'Comma-separated command names disabled in this server.',
@@ -272,6 +278,7 @@ export const BROWSER_SCRIPT = String.raw`
         'volumeautomatic',
         'locked',
         'allowthreads',
+        'audiotapallowall',
         'dashboardvoicepriority',
     ]);
 
@@ -281,6 +288,7 @@ export const BROWSER_SCRIPT = String.raw`
         'announcechannel',
         'commandchannel',
         'voicechannel',
+        'audiotaproles',
     ]);
 
     const NUMERIC_KEYS = new Set([
@@ -878,8 +886,14 @@ export const BROWSER_SCRIPT = String.raw`
         const label = find('#listen-label');
         if (!button || !label) return;
         const available = Boolean(state.data && state.data.audio && state.data.audio.available);
+        const canListen = Boolean(state.data && state.data.audio && state.data.audio.canListen);
+        if ((!available || !canListen) && audio.status !== 'off') {
+            stopAudio();
+            return;
+        }
         const active = audio.status === 'on' || audio.status === 'starting';
         button.style.display = available ? '' : 'none';
+        button.disabled = !canListen;
         button.classList.toggle('on', active && !audio.muted);
         button.classList.toggle('muted', active && audio.muted);
         button.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -892,6 +906,9 @@ export const BROWSER_SCRIPT = String.raw`
         } else if (audio.status === 'on') {
             label.textContent = 'Mute';
             button.title = 'Mute this browser only';
+        } else if (!canListen) {
+            label.textContent = 'Listen';
+            button.title = 'Your roles do not allow listening';
         } else {
             label.textContent = 'Listen';
             button.title = 'Play this browser audio from the bot';
@@ -1079,7 +1096,13 @@ export const BROWSER_SCRIPT = String.raw`
     }
 
     async function connectAudioTap() {
-        if (!state.guildId || !state.data || !state.data.audio || !state.data.audio.available) {
+        if (
+            !state.guildId ||
+            !state.data ||
+            !state.data.audio ||
+            !state.data.audio.available ||
+            !state.data.audio.canListen
+        ) {
             throw new Error('The audio tap is not available for this guild');
         }
         closeDecoder();
@@ -1099,7 +1122,6 @@ export const BROWSER_SCRIPT = String.raw`
         const headers = {};
         const token = storedToken();
         if (token) headers['x-dashboard-token'] = token;
-        headers['X-BootstrapDJ-Tap'] = '1';
         const response = await fetch('/api/audio?guildId=' + encodeURIComponent(state.guildId), {
             method: 'GET',
             headers,
@@ -1115,6 +1137,18 @@ export const BROWSER_SCRIPT = String.raw`
         if (response.status === 401 || response.status === 403) {
             stopAudio();
             notify('This dashboard session cannot listen to audio.', true);
+            return;
+        }
+        if (response.status === 501 || response.status === 503) {
+            response.body?.cancel?.();
+            stopAudio();
+            notify('Audio is not available on this node.', true);
+            return;
+        }
+        if (response.status === 429) {
+            response.body?.cancel?.();
+            stopAudio();
+            notify('Audio is rate-limited; try again shortly.', true);
             return;
         }
         if (!response.ok) {
@@ -1138,8 +1172,13 @@ export const BROWSER_SCRIPT = String.raw`
             notify('Audio playback needs Chrome or Edge (WebCodecs is unavailable).', true);
             return;
         }
-        if (!state.data || !state.data.audio || !state.data.audio.available) {
-            notify('The audio tap is not configured on this dashboard.', true);
+        if (
+            !state.data ||
+            !state.data.audio ||
+            !state.data.audio.available ||
+            !state.data.audio.canListen
+        ) {
+            notify('The audio tap is not available on this dashboard.', true);
             return;
         }
         audio.status = 'starting';

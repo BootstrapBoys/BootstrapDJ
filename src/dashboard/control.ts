@@ -13,6 +13,7 @@ import {
 } from './cluster.js';
 import { collectMetrics } from './metrics.js';
 import { addDashboardSong } from './playback.js';
+import { audioTapTargetFor } from './audioTap.js';
 import {
     addPlaylistTracks,
     clearPlaylist,
@@ -123,6 +124,15 @@ async function handleControl(
     if (method === 'GET' && path === '/internal/player') {
         const guildId = url.searchParams.get('guildId') ?? '';
         json(res, 200, await remotePlayer(client, guildId));
+        return;
+    }
+
+    if (method === 'GET' && path === '/internal/audio-target') {
+        const guildId = url.searchParams.get('guildId') ?? '';
+        const target = audioTapTargetFor(client, guildId);
+        json(res, 200, {
+            target: target ? { url: target.url.toString(), password: target.password } : null,
+        });
         return;
     }
 

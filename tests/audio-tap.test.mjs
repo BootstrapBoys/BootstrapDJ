@@ -35,27 +35,41 @@ function get(port, path, headers = {}) {
     });
 }
 
-test('tap targets are accepted only on loopback http(s)', () => {
-    const target = resolveAudioTapTarget('http://127.0.0.1:2444', 'secret');
+test('tap targets accept configured Lavalink endpoints and reject invalid ones', () => {
+    const target = resolveAudioTapTarget({
+        url: '127.0.0.1:443',
+        auth: 'lavalink-secret',
+        secure: false,
+    });
     assert.ok(target);
-    assert.equal(target.url.port, '2444');
+    assert.equal(target.url.port, '443');
+    assert.equal(target.password, 'lavalink-secret');
+    assert.equal(
+        resolveAudioTapTarget({
+            url: 'https://lavalink.example.com:443',
+            auth: 'secret',
+            secure: true,
+        })?.url.protocol,
+        'https:'
+    );
 
-    assert.equal(resolveAudioTapTarget('http://example.com:2444', 'secret'), null);
-    assert.equal(resolveAudioTapTarget('http://192.168.1.235:2444', 'secret'), null);
-    assert.equal(resolveAudioTapTarget('ftp://127.0.0.1:2444', 'secret'), null);
-    assert.equal(resolveAudioTapTarget('http://127.0.0.1:2444', ''), null);
-    assert.equal(resolveAudioTapTarget('', 'secret'), null);
-    assert.equal(resolveAudioTapTarget('not a url', 'secret'), null);
+    assert.equal(resolveAudioTapTarget({ url: 'ftp://127.0.0.1:443', auth: 'secret' }), null);
+    assert.equal(resolveAudioTapTarget({ url: '127.0.0.1:443', auth: '' }), null);
+    assert.equal(resolveAudioTapTarget({ url: '', auth: 'secret' }), null);
+    assert.equal(
+        resolveAudioTapTarget({ url: 'http://user:secret@127.0.0.1:443', auth: 'secret' }),
+        null
+    );
 });
 
-test('relay streams tap bytes with the tap token and preserves 200', async () => {
+test('relay streams tap bytes with raw Lavalink auth and preserves 200', async () => {
     let receivedAuth = '';
-    let receivedTapHeader = '';
+    let receivedTapHeader;
     let receivedPath = '';
 
     const tap = http.createServer((request, response) => {
         receivedAuth = request.headers.authorization ?? '';
-        receivedTapHeader = request.headers['x-bootstrapdj-tap'] ?? '';
+        receivedTapHeader = request.headers['x-bootstrapdj-tap'];
         receivedPath = request.url ?? '';
         response.writeHead(200, { 'content-type': 'application/octet-stream' });
         response.write(Buffer.from([0x02, 0x00, 0x02, 0x7b, 0x7d]));
@@ -66,7 +80,7 @@ test('relay streams tap bytes with the tap token and preserves 200', async () =>
     const proxy = http.createServer((request, response) => {
         relayAudioTap(response, '123456789012345678', {
             url: new URL(`http://127.0.0.1:${tapPort}`),
-            token: 'tap-secret',
+            password: 'lavalink-secret',
         });
     });
     const proxyPort = await listen(proxy);
@@ -76,16 +90,16 @@ test('relay streams tap bytes with the tap token and preserves 200', async () =>
 
         assert.equal(result.status, 200);
         assert.deepEqual([...result.body], [0x02, 0x00, 0x02, 0x7b, 0x7d, 0x01]);
-        assert.equal(receivedAuth, 'tap-secret');
-        assert.equal(receivedTapHeader, '1');
-        assert.equal(receivedPath, '/tap/123456789012345678');
+        assert.equal(receivedAuth, 'lavalink-secret');
+        assert.equal(receivedTapHeader, undefined);
+        assert.equal(receivedPath, '/v4/audiotap/123456789012345678');
     } finally {
         await close(proxy);
         await close(tap);
     }
 });
 
-test('relay preserves the tap status for an unknown guild', async () => {
+test('relay maps an unsupported tap route to 501', async () => {
     const tap = http.createServer((request, response) => {
         response.writeHead(404, { 'content-type': 'text/plain' });
         response.end('no player');
@@ -95,7 +109,7 @@ test('relay preserves the tap status for an unknown guild', async () => {
     const proxy = http.createServer((request, response) => {
         relayAudioTap(response, '123456789012345678', {
             url: new URL(`http://127.0.0.1:${tapPort}`),
-            token: 'tap-secret',
+            password: 'lavalink-secret',
         });
     });
     const proxyPort = await listen(proxy);
@@ -103,7 +117,7 @@ test('relay preserves the tap status for an unknown guild', async () => {
     try {
         const result = await get(proxyPort, '/api/audio?guildId=123456789012345678');
 
-        assert.equal(result.status, 404);
+        assert.equal(result.status, 501);
         assert.equal(result.body.toString('utf8'), 'no player');
     } finally {
         await close(proxy);
@@ -111,35 +125,94 @@ test('relay preserves the tap status for an unknown guild', async () => {
     }
 });
 
-test('relay returns 502 when the tap is unreachable', async () => {
+test('relay returns 503 when the tap is unreachable', async () => {
     const proxy = http.createServer((request, response) => {
         relayAudioTap(response, '123456789012345678', {
             // Port 1 is not a valid listener; the request fails fast.
             url: new URL('http://127.0.0.1:1'),
-            token: 'tap-secret',
+            password: 'lavalink-secret',
         });
     });
     const proxyPort = await listen(proxy);
 
     try {
         const result = await get(proxyPort, '/api/audio?guildId=123456789012345678');
-        assert.equal(result.status, 502);
+        assert.equal(result.status, 503);
     } finally {
         await close(proxy);
     }
 });
 
-const GUILD = '123456789012345678';
+test('relay preserves auth and rate-limit statuses', async () => {
+    for (const status of [401, 403, 429]) {
+        const tap = http.createServer((request, response) => {
+            response.writeHead(status, { 'content-type': 'text/plain' });
+            response.end(String(status));
+        });
+        const tapPort = await listen(tap);
+        const proxy = http.createServer((request, response) => {
+            relayAudioTap(response, '123456789012345678', {
+                url: new URL(`http://127.0.0.1:${tapPort}`),
+                password: 'lavalink-secret',
+            });
+        });
+        const proxyPort = await listen(proxy);
+        try {
+            const result = await get(proxyPort, '/api/audio?guildId=123456789012345678');
+            assert.equal(result.status, status);
+        } finally {
+            await close(proxy);
+            await close(tap);
+        }
+    }
+});
 
-function makeDashboardClient() {
+test('relay maps unsupported methods and routes to 501', async () => {
+    for (const status of [405, 501]) {
+        const tap = http.createServer((request, response) => {
+            response.writeHead(status, { 'content-type': 'text/plain' });
+            response.end(String(status));
+        });
+        const tapPort = await listen(tap);
+        const proxy = http.createServer((request, response) => {
+            relayAudioTap(response, '123456789012345678', {
+                url: new URL(`http://127.0.0.1:${tapPort}`),
+                password: 'lavalink-secret',
+            });
+        });
+        const proxyPort = await listen(proxy);
+        try {
+            const result = await get(proxyPort, '/api/audio?guildId=123456789012345678');
+            assert.equal(result.status, 501);
+        } finally {
+            await close(proxy);
+            await close(tap);
+        }
+    }
+});
+
+const GUILD = '123456789012345678';
+const TEST_NODE = {
+    name: 'test',
+    url: '127.0.0.1:443',
+    auth: 'lavalink-secret',
+    secure: false,
+};
+
+function makeDashboardClient({ node = TEST_NODE } = {}) {
+    const dashboardConfig = {
+        ...config,
+        lavalink: node ? [{ ...node }] : [],
+    };
     return {
-        config,
+        config: dashboardConfig,
         guilds: { cache: new Map([[GUILD, { id: GUILD, name: 'Guild' }]]) },
         queue: new Map([
             [
                 GUILD,
                 {
                     guildId: GUILD,
+                    node: node ? { name: node.name } : undefined,
                     current: { info: { title: 'Track', author: 'Artist', length: 1000 } },
                     paused: false,
                     queue: [],
@@ -203,18 +276,16 @@ function makeResponse() {
     };
 }
 
-async function withTapConfig(url, token, run) {
-    const savedUrl = config.dashboardTapUrl;
-    const savedToken = config.dashboardTapToken;
-    const savedOAuth = {
+async function callRoute(path, client = makeDashboardClient()) {
+    const response = makeResponse();
+    const saved = {
+        token: config.dashboardToken,
         clientId: config.dashboardOAuthClientId,
         clientSecret: config.dashboardOAuthClientSecret,
         redirectUri: config.dashboardOAuthRedirectUri,
         sessionSecret: config.dashboardSessionSecret,
+        envClientId: process.env.DASHBOARD_OAUTH_CLIENT_ID,
     };
-    const savedEnv = process.env.DASHBOARD_OAUTH_CLIENT_ID;
-    config.dashboardTapUrl = url;
-    config.dashboardTapToken = token;
     config.dashboardToken = 'test-token';
     config.dashboardOAuthClientId = '';
     config.dashboardOAuthClientSecret = '';
@@ -222,51 +293,55 @@ async function withTapConfig(url, token, run) {
     config.dashboardSessionSecret = '';
     delete process.env.DASHBOARD_OAUTH_CLIENT_ID;
     try {
-        await run();
+        await route(createLocalDashboardHost(client), makeGet(path), response);
     } finally {
-        config.dashboardTapUrl = savedUrl;
-        config.dashboardTapToken = savedToken;
-        config.dashboardToken = 'test-token';
-        Object.assign(config, {
-            dashboardOAuthClientId: savedOAuth.clientId,
-            dashboardOAuthClientSecret: savedOAuth.clientSecret,
-            dashboardOAuthRedirectUri: savedOAuth.redirectUri,
-            dashboardSessionSecret: savedOAuth.sessionSecret,
-        });
-        if (savedEnv === undefined) delete process.env.DASHBOARD_OAUTH_CLIENT_ID;
-        else process.env.DASHBOARD_OAUTH_CLIENT_ID = savedEnv;
+        config.dashboardToken = saved.token;
+        config.dashboardOAuthClientId = saved.clientId;
+        config.dashboardOAuthClientSecret = saved.clientSecret;
+        config.dashboardOAuthRedirectUri = saved.redirectUri;
+        config.dashboardSessionSecret = saved.sessionSecret;
+        if (saved.envClientId === undefined) delete process.env.DASHBOARD_OAUTH_CLIENT_ID;
+        else process.env.DASHBOARD_OAUTH_CLIENT_ID = saved.envClientId;
     }
-}
-
-async function callRoute(path) {
-    const response = makeResponse();
-    await route(createLocalDashboardHost(makeDashboardClient()), makeGet(path), response);
     return response.state;
 }
 
-test('state advertises audio only when both tap settings exist', async () => {
-    await withTapConfig('http://127.0.0.1:2444', 'tap-secret', async () => {
-        const state = await callRoute(`/api/state?guildId=${GUILD}`);
-        assert.equal(state.status, 200);
-        assert.equal(JSON.parse(state.body).audio.available, true);
-    });
-
-    await withTapConfig('', '', async () => {
-        const state = await callRoute(`/api/state?guildId=${GUILD}`);
-        assert.equal(state.status, 200);
-        assert.equal(JSON.parse(state.body).audio.available, false);
-    });
-
-    await withTapConfig('http://example.com:2444', 'tap-secret', async () => {
-        const state = await callRoute(`/api/state?guildId=${GUILD}`);
-        assert.equal(state.status, 200);
-        assert.equal(JSON.parse(state.body).audio.available, false);
-    });
+test('state advertises audio and permission for a configured node', async () => {
+    const state = await callRoute(`/api/state?guildId=${GUILD}`);
+    assert.equal(state.status, 200);
+    const payload = JSON.parse(state.body);
+    assert.equal(payload.audio.available, true);
+    assert.equal(payload.audio.canListen, true);
 });
 
-test('audio route returns 503 when the tap is not configured', async () => {
-    await withTapConfig('', '', async () => {
-        const state = await callRoute(`/api/audio?guildId=${GUILD}`);
-        assert.equal(state.status, 503);
+test('state disables audio when the active node is not configured', async () => {
+    const state = await callRoute(
+        `/api/state?guildId=${GUILD}`,
+        makeDashboardClient({ node: null })
+    );
+    assert.equal(state.status, 200);
+    assert.equal(JSON.parse(state.body).audio.available, false);
+});
+
+test('state reports canListen false and audio route returns 403 for denied roles', async () => {
+    const deniedGuild = '323456789012345678';
+    const denied = makeDashboardClient();
+    denied.dashboardLocalAccess = async () => ({
+        found: true,
+        access: { ...FULL_ACCESS, listen: false },
     });
+    const state = await callRoute(`/api/state?guildId=${deniedGuild}`, denied);
+    assert.equal(state.status, 200);
+    assert.equal(JSON.parse(state.body).audio.canListen, false);
+
+    const audio = await callRoute(`/api/audio?guildId=${deniedGuild}`, denied);
+    assert.equal(audio.status, 403);
+});
+
+test('audio route returns 503 when the active node has no target', async () => {
+    const state = await callRoute(
+        `/api/audio?guildId=${GUILD}`,
+        makeDashboardClient({ node: null })
+    );
+    assert.equal(state.status, 503);
 });

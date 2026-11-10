@@ -12,6 +12,7 @@ export type GuildAccess = {
     admin: boolean;
     controls: boolean;
     settings: boolean;
+    listen: boolean;
 };
 
 export const NO_ACCESS: GuildAccess = {
@@ -20,6 +21,7 @@ export const NO_ACCESS: GuildAccess = {
     admin: false,
     controls: false,
     settings: false,
+    listen: false,
 };
 
 export const FULL_ACCESS: GuildAccess = {
@@ -28,6 +30,7 @@ export const FULL_ACCESS: GuildAccess = {
     admin: true,
     controls: true,
     settings: true,
+    listen: true,
 };
 
 export interface AccessResult {
@@ -110,8 +113,23 @@ export async function guildAccessFor(
     const admin = owner || mayManageGuild(member);
     const djRoles = await client.db.getRoles(guildId).catch(() => []);
     const controls = admin || djRoles.some(role => member.roles.cache.has(role.roleId));
+    const settings: Record<string, string> = await client.db
+        .getGuildSettings(guildId)
+        .catch(() => ({}));
+    const audioTapAllowAll = settings.audiotapallowall !== 'false';
+    const audioTapRoles = String(settings.audiotaproles ?? '')
+        .split(/[\s,]+/)
+        .filter(roleId => /^\d{17,20}$/.test(roleId));
+    const listen =
+        owner ||
+        admin ||
+        audioTapAllowAll ||
+        audioTapRoles.some(roleId => member.roles.cache.has(roleId));
 
-    return { found: true, access: { member: true, owner, admin, controls, settings: admin } };
+    return {
+        found: true,
+        access: { member: true, owner, admin, controls, settings: admin, listen },
+    };
 }
 
 export async function dashboardGuilds(

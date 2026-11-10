@@ -22,7 +22,7 @@ import {
     viewer,
 } from './auth.js';
 import { GuildAccessCache } from './accessCache.js';
-import { audioTapTarget, relayAudioTap } from './audioTap.js';
+import { relayAudioTap } from './audioTap.js';
 import type { DashboardHost } from './host.js';
 import { renderDashboard, renderLoginPage } from './page.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
@@ -364,11 +364,12 @@ export async function route(
             return;
         }
         const data = initialState(guildId, remote.player);
+        const audioTarget = await host.audioTap(guildId).catch(() => null);
         sendJson(res, 200, {
             ...data,
             permissions: access,
             settings: access.settings ? await host.settings(guildId) : {},
-            audio: { available: audioTapTarget() !== null },
+            audio: { available: audioTarget !== null, canListen: access.listen },
         });
         return;
     }
@@ -386,9 +387,13 @@ export async function route(
             guildDenied(res);
             return;
         }
-        const target = audioTapTarget();
+        if (!access.listen) {
+            sendJson(res, 403, { error: 'Your roles do not allow listening' });
+            return;
+        }
+        const target = await host.audioTap(guildId).catch(() => null);
         if (!target) {
-            sendJson(res, 503, { error: 'Audio tap is not configured' });
+            sendJson(res, 503, { error: 'Audio tap unavailable on this node' });
             return;
         }
 

@@ -19,6 +19,7 @@ const ACCESS = {
     admin: true,
     controls: true,
     settings: true,
+    listen: true,
 };
 
 test('guild access cache copies values and expires on its TTL', () => {

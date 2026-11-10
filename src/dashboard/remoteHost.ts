@@ -16,6 +16,7 @@ import type {
 } from './host.js';
 import { SettingValidationError } from './state.js';
 import { type DashboardHost, DashboardRemoteError, type DashboardUserIdentity } from './host.js';
+import type { AudioTapTarget } from './audioTap.js';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -97,6 +98,19 @@ export class RemoteDashboardHost implements DashboardHost {
         guildId: string
     ): Promise<{ found: boolean; player: PlayerSnapshot | null }> {
         return await this.request('GET', `/internal/player?guildId=${encodeURIComponent(guildId)}`);
+    }
+
+    public async audioTap(guildId: string): Promise<AudioTapTarget | null> {
+        const result = await this.request<{ target: { url: string; password: string } | null }>(
+            'GET',
+            `/internal/audio-target?guildId=${encodeURIComponent(guildId)}`
+        );
+        if (!result.target) return null;
+        try {
+            return { url: new URL(result.target.url), password: result.target.password };
+        } catch {
+            return null;
+        }
     }
 
     public async playerAction(

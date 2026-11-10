@@ -4,7 +4,7 @@
 #   GUILD_ID=<id> DASHBOARD_TOKEN=<token> tooling/audio-tap-smoke.sh
 #   GUILD_ID=<id> DASHBOARD_COOKIE='bdj_session=...' tooling/audio-tap-smoke.sh
 #
-# Never pass the tap token here; the dashboard holds it server-side.
+# Never pass the Lavalink password here; the dashboard holds it server-side.
 set -euo pipefail
 
 BASE="${DASHBOARD_BASE:-http://127.0.0.1:8795}"
@@ -31,7 +31,7 @@ if curl -fsS --max-time 10 "${CURL_AUTH[@]}" \
     if grep -q '"available":true' "$work/state.json"; then
         ok "state reports audio.available"
     else
-        bad "state does not report audio.available (is DASHBOARD_TAP_URL/TOKEN set?)"
+        bad "state does not report audio.available (is the active Lavalink node running the 0.3 tap plugin?)"
     fi
 else
     bad "GET /api/state failed (auth or dashboard down)"

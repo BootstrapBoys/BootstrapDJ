@@ -139,8 +139,6 @@ const config = {
     dashboardMode: text('DASHBOARD_MODE', 'embedded'),
     dashboardControlPort: integer('DASHBOARD_CONTROL_PORT', 8796),
     dashboardControlSecret: text('DASHBOARD_CONTROL_SECRET'),
-    dashboardTapUrl: text('DASHBOARD_TAP_URL'),
-    dashboardTapToken: text('DASHBOARD_TAP_TOKEN'),
     dashboardVoiceChannelId: text('DASHBOARD_VOICE_CHANNEL_ID'),
     earlControlUrl: text('EARL_CONTROL_URL', 'http://127.0.0.1:8791'),
     earlBridgeSecret: text('EARL_BRIDGE_SECRET'),

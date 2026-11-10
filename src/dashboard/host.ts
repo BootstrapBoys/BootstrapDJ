@@ -5,6 +5,7 @@ import type {
     FilterResult,
     PlayerSnapshot,
 } from './shardApi.js';
+import type { AudioTapTarget } from './audioTap.js';
 
 export type DashboardUserIdentity = {
     name: string;
@@ -65,6 +66,7 @@ export interface DashboardHost {
     guildIds(): Promise<string[]>;
     access(userId: string | null, guildId: string): Promise<AccessResult>;
     player(guildId: string): Promise<{ found: boolean; player: PlayerSnapshot | null }>;
+    audioTap(guildId: string): Promise<AudioTapTarget | null>;
     playerAction(guildId: string, action: string, value: number): Promise<ActionError>;
     play(guildId: string, userId: string, query: string): Promise<QueueAddResult>;
     filter(guildId: string, id: string, enabled: boolean, value?: number): Promise<FilterResult>;
