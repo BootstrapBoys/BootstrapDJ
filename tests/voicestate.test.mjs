@@ -5,10 +5,12 @@ import { test } from 'node:test';
 import { ChannelType, Collection } from 'discord.js';
 
 import VoiceStateUpdate from '../dist/events/client/VoiceStateUpdate.js';
+import { clearDashboardListeners, setDashboardListenerCount } from '../dist/dashboard/listeners.js';
 
 function makeHarness({ humans = 0, stay = null, timeout = '0.03', dashboardChannel = '' } = {}) {
     let destroys = 0;
     let resumes = 0;
+    let cleared = 0;
     const members = new Collection();
     for (let index = 0; index < humans; index++) {
         members.set(`human-${index}`, { user: { bot: false } });
@@ -29,6 +31,10 @@ function makeHarness({ humans = 0, stay = null, timeout = '0.03', dashboardChann
         current: null,
         queue: [],
         autoplay: false,
+        clearQueue: () => {
+            cleared += 1;
+            player.queue = [];
+        },
         destroy: () => {
             destroys += 1;
         },
@@ -40,6 +46,7 @@ function makeHarness({ humans = 0, stay = null, timeout = '0.03', dashboardChann
         user: { id: 'bot' },
         shuttingDown: false,
         config: { dashboardVoiceChannelId: dashboardChannel },
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
         queue: new Map([['guild', player]]),
         guilds: { cache: new Map([['guild', guild]]) },
         db: {
@@ -55,7 +62,15 @@ function makeHarness({ humans = 0, stay = null, timeout = '0.03', dashboardChann
         channelId: null,
         member: { user: { bot: false } },
     };
-    return { event, state, player, me, channel, counts: () => ({ destroys, resumes }) };
+    return {
+        event,
+        state,
+        player,
+        me,
+        channel,
+        counts: () => ({ destroys, resumes }),
+        cleared: () => cleared,
+    };
 }
 
 test('leaving an empty channel schedules one teardown and replaces duplicate timers', async () => {
@@ -122,14 +137,49 @@ test('a listener joining a paused 24/7 session resumes it', async () => {
 });
 
 test('the dashboard channel leaves immediately when it has no audio', async () => {
+    clearDashboardListeners();
     const harness = makeHarness({ dashboardChannel: 'vc' });
     await harness.event.run({}, harness.state);
     assert.deepEqual(harness.counts(), { destroys: 1, resumes: 0 });
+    assert.equal(harness.cleared(), 1);
 });
 
-test('the dashboard channel stays while a track is still active', async () => {
+test('the dashboard channel stays while a track is still active and a dashboard listener is connected', async () => {
+    clearDashboardListeners();
+    setDashboardListenerCount('guild', 1);
     const harness = makeHarness({ dashboardChannel: 'vc' });
     harness.player.current = {};
+    try {
+        await harness.event.run({}, harness.state);
+        await delay(55);
+        assert.deepEqual(harness.counts(), { destroys: 0, resumes: 0 });
+    } finally {
+        clearDashboardListeners();
+    }
+});
+
+test('the dashboard channel clears the queue and leaves after the listener timeout', async () => {
+    clearDashboardListeners();
+    const harness = makeHarness({ dashboardChannel: 'vc', timeout: '0.03' });
+    harness.player.current = {};
+    harness.player.queue.push({});
+    try {
+        await harness.event.run({}, harness.state);
+        await delay(55);
+        assert.deepEqual(harness.counts(), { destroys: 1, resumes: 0 });
+        assert.equal(harness.cleared(), 1);
+    } finally {
+        clearDashboardListeners();
+    }
+});
+
+test('a Discord listener keeps the dashboard channel alive without a dashboard stream', async () => {
+    clearDashboardListeners();
+    const harness = makeHarness({ dashboardChannel: 'vc', humans: 1, timeout: '0.03' });
+    harness.player.current = {};
+    harness.player.queue.push({});
     await harness.event.run({}, harness.state);
+    await delay(55);
     assert.deepEqual(harness.counts(), { destroys: 0, resumes: 0 });
+    clearDashboardListeners();
 });

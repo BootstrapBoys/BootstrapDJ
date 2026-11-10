@@ -14,6 +14,8 @@ import {
 import { collectMetrics } from './metrics.js';
 import { addDashboardSong } from './playback.js';
 import { audioTapTargetFor } from './audioTap.js';
+import { applyDashboardListenerCount, scheduleDashboardCleanupFromSettings } from './cleanup.js';
+import { clearDashboardListeners } from './listeners.js';
 import {
     addPlaylistTracks,
     clearPlaylist,
@@ -133,6 +135,30 @@ async function handleControl(
         json(res, 200, {
             target: target ? { url: target.url.toString(), password: target.password } : null,
         });
+        return;
+    }
+
+    if (method === 'POST' && path === '/internal/dashboard-audio') {
+        const body = await readBody(req);
+        const guildId = stringValue(body.guildId);
+        const count = Number(body.count);
+        if (!guildId) {
+            json(res, 400, { ok: false, status: 400, error: 'guildId is required' });
+            return;
+        }
+        json(res, 200, {
+            ok: true,
+            count: applyDashboardListenerCount(client, guildId, count),
+        });
+        return;
+    }
+
+    if (method === 'POST' && path === '/internal/dashboard-audio/reset') {
+        clearDashboardListeners();
+        for (const guildId of client.queue.keys()) {
+            void scheduleDashboardCleanupFromSettings(client, guildId);
+        }
+        json(res, 200, { ok: true });
         return;
     }
 

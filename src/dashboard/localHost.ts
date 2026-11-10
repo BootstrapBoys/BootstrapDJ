@@ -9,6 +9,8 @@ import {
 } from './cluster.js';
 import { collectMetrics } from './metrics.js';
 import { audioTapTargetFor } from './audioTap.js';
+import { applyDashboardListenerCount } from './cleanup.js';
+import { clearDashboardListeners } from './listeners.js';
 import {
     addPlaylistTracks,
     clearPlaylist,
@@ -49,6 +51,12 @@ export function createLocalDashboardHost(client: BootstrapClient): DashboardHost
         access: (userId, guildId) => readAccess(client, userId, guildId),
         player: guildId => remotePlayer(client, guildId),
         audioTap: async guildId => audioTapTargetFor(client, guildId),
+        dashboardAudio: async (guildId, count) => {
+            applyDashboardListenerCount(client, guildId, count);
+        },
+        resetDashboardAudio: async () => {
+            clearDashboardListeners();
+        },
         playerAction: (guildId, action, value) =>
             remotePlayerAction(client, guildId, action, value),
         play: (guildId, userId, query) => addDashboardSong(client, guildId, userId, query),

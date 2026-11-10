@@ -18,4 +18,13 @@ if (!config.dashboardControlSecret) {
 }
 
 const host = new RemoteDashboardHost(config.dashboardControlPort, config.dashboardControlSecret);
+// A sidecar restart closes every browser stream. Clear the bot's stale counts
+// so the shared dashboard-idle cleanup can run if no one reconnects.
+void host.resetDashboardAudio().catch(error => {
+    host.logger.warn(
+        `[dashboard] could not reset audio listener counts: ${
+            error instanceof Error ? error.message : String(error)
+        }`
+    );
+});
 startDashboard(host);

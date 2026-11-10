@@ -1,6 +1,7 @@
 import { ChannelType, PermissionFlagsBits, VoiceState } from 'discord.js';
 
 import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import { scheduleDashboardCleanupFromSettings } from '../../dashboard/cleanup.js';
 
 export default class VoiceStateUpdate extends Event {
     private readonly emptyTimers = new Map<string, NodeJS.Timeout>();
@@ -110,10 +111,11 @@ export default class VoiceStateUpdate extends Event {
 
         if (!botChannel) return;
         if (this.isDashboardChannel(botChannel.id)) {
-            this.cancel(guildId);
-            if (!player.current && !player.queue?.length && !player.autoplay) {
-                player.destroy();
-            }
+            // The dashboard channel has no ordinary empty-channel timer. It
+            // stays while a Discord member or a browser audio stream is
+            // listening; otherwise the shared cleanup path clears the queue
+            // and disconnects after `timeoutlisteners`.
+            await scheduleDashboardCleanupFromSettings(this.client, guildId);
             return;
         }
         if (botChannel.members.some(member => !member.user.bot)) {

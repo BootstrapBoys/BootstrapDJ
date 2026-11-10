@@ -4,6 +4,7 @@ import { LoadType } from 'shoukaku';
 import type { BootstrapClient, Song } from '../core/index.js';
 import { trackKey } from '../core/player/TrackIdentity.js';
 import { getPlayLimits, queueHasRoom } from '../lib/PlayLimits.js';
+import { scheduleDashboardCleanupFromSettings } from './cleanup.js';
 import { ensureDashboardPlayer } from './playback.js';
 import type {
     PlaylistAddResult,
@@ -286,6 +287,7 @@ export async function loadPlaylist(
 
     player.seedPlaylist(queued);
     await player.isPlaying();
+    void scheduleDashboardCleanupFromSettings(client, guildId);
     return { ok: true, queued: queued.length, skipped, shuffled: shuffle && queued.length > 1 };
 }
 

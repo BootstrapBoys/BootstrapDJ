@@ -68,6 +68,8 @@ export interface DashboardHost {
     access(userId: string | null, guildId: string): Promise<AccessResult>;
     player(guildId: string): Promise<{ found: boolean; player: PlayerSnapshot | null }>;
     audioTap(guildId: string): Promise<AudioTapTarget | null>;
+    dashboardAudio(guildId: string, count: number): Promise<void>;
+    resetDashboardAudio(): Promise<void>;
     playerAction(guildId: string, action: string, value: number): Promise<ActionError>;
     play(guildId: string, userId: string, query: string): Promise<QueueAddResult>;
     filter(guildId: string, id: string, enabled: boolean, value?: number): Promise<FilterResult>;

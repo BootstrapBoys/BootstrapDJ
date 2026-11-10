@@ -43,6 +43,7 @@ const accessCache = new GuildAccessCache(ACCESS_TTL_MS, ACCESS_CACHE_MAX);
 
 /** Long-lived audio streams are capped per dashboard user. */
 const audioStreams = new Map<string, number>();
+const audioGuildStreams = new Map<string, number>();
 
 function acquireAudioSlot(userKey: string): boolean {
     const count = audioStreams.get(userKey) ?? 0;
@@ -55,6 +56,29 @@ function releaseAudioSlot(userKey: string): void {
     const count = audioStreams.get(userKey) ?? 0;
     if (count <= 1) audioStreams.delete(userKey);
     else audioStreams.set(userKey, count - 1);
+}
+
+function acquireGuildAudio(guildId: string): number {
+    const count = (audioGuildStreams.get(guildId) ?? 0) + 1;
+    audioGuildStreams.set(guildId, count);
+    return count;
+}
+
+function releaseGuildAudio(guildId: string): number {
+    const count = Math.max(0, (audioGuildStreams.get(guildId) ?? 0) - 1);
+    if (count === 0) audioGuildStreams.delete(guildId);
+    else audioGuildStreams.set(guildId, count);
+    return count;
+}
+
+function publishDashboardAudio(host: DashboardHost, guildId: string, count: number): void {
+    void host.dashboardAudio(guildId, count).catch(error => {
+        host.logger.warn(
+            `[dashboard] could not report audio listeners for ${guildId}: ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        );
+    });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -402,7 +426,11 @@ export async function route(
             sendJson(res, 429, { error: 'Only one audio stream per dashboard user is allowed' });
             return;
         }
-        res.once('close', () => releaseAudioSlot(userKey));
+        publishDashboardAudio(host, guildId, acquireGuildAudio(guildId));
+        res.once('close', () => {
+            releaseAudioSlot(userKey);
+            publishDashboardAudio(host, guildId, releaseGuildAudio(guildId));
+        });
         relayAudioTap(res, guildId, target);
         return;
     }

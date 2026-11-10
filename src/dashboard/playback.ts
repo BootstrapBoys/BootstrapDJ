@@ -9,6 +9,7 @@ import { LoadType, type Track } from 'shoukaku';
 import config from '../config.js';
 import type { BootstrapClient, Dispatcher, Song } from '../core/index.js';
 import { checkTrack, getPlayLimits } from '../lib/PlayLimits.js';
+import { scheduleDashboardCleanupFromSettings } from './cleanup.js';
 import type { QueueAddResult } from './host.js';
 
 const DEFAULT_TEXT_FALLBACK = 'No text channel is available for playback replies.';
@@ -158,6 +159,7 @@ export async function addDashboardSong(
 
     if (result.loadType === LoadType.PLAYLIST) player.seedPlaylist(accepted);
     await player.isPlaying();
+    void scheduleDashboardCleanupFromSettings(client, guildId);
     const first = accepted[0].info;
     return {
         ok: true,

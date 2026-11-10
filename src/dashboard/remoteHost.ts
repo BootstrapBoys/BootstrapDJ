@@ -113,6 +113,14 @@ export class RemoteDashboardHost implements DashboardHost {
         }
     }
 
+    public async dashboardAudio(guildId: string, count: number): Promise<void> {
+        await this.request<void>('POST', '/internal/dashboard-audio', { guildId, count });
+    }
+
+    public async resetDashboardAudio(): Promise<void> {
+        await this.request<void>('POST', '/internal/dashboard-audio/reset');
+    }
+
     public async playerAction(
         guildId: string,
         action: string,
