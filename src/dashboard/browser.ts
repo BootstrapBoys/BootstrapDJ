@@ -884,6 +884,7 @@ export const BROWSER_SCRIPT = String.raw`
     function setListenUi() {
         const button = find('#listen-btn');
         const label = find('#listen-label');
+        const disconnectButton = find('#disconnect-btn');
         if (!button || !label) return;
         const available = Boolean(state.data && state.data.audio && state.data.audio.available);
         const canListen = Boolean(state.data && state.data.audio && state.data.audio.canListen);
@@ -897,6 +898,9 @@ export const BROWSER_SCRIPT = String.raw`
         button.classList.toggle('on', active && !audio.muted);
         button.classList.toggle('muted', active && audio.muted);
         button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        if (disconnectButton) {
+            disconnectButton.style.display = audio.status === 'off' ? 'none' : '';
+        }
         if (audio.status === 'starting') {
             label.textContent = 'Connecting';
             button.title = 'Connecting to the audio tap';
@@ -1233,6 +1237,8 @@ export const BROWSER_SCRIPT = String.raw`
 
     const listenButton = find('#listen-btn');
     if (listenButton) listenButton.addEventListener('click', toggleAudio);
+    const disconnectButton = find('#disconnect-btn');
+    if (disconnectButton) disconnectButton.addEventListener('click', stopAudio);
 
     window.__bdjAudio = {
         debug: () => ({
