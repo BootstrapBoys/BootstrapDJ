@@ -12,6 +12,7 @@ import {
     remotePlayerAction,
 } from './cluster.js';
 import { collectMetrics } from './metrics.js';
+import { addDashboardSong } from './playback.js';
 import {
     addPlaylistTracks,
     clearPlaylist,
@@ -135,6 +136,18 @@ async function handleControl(
             Number(body.value ?? 0)
         );
         json(res, 200, result);
+        return;
+    }
+
+    if (method === 'POST' && path === '/internal/play') {
+        const body = await readBody(req);
+        const guildId = stringValue(body.guildId);
+        const userId = stringValue(body.userId);
+        if (!guildId || !userId) {
+            json(res, 400, { ok: false, status: 400, error: 'guildId and userId are required' });
+            return;
+        }
+        json(res, 200, await addDashboardSong(client, guildId, userId, stringValue(body.query)));
         return;
     }
 

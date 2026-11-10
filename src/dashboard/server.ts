@@ -555,6 +555,26 @@ export async function route(
         return;
     }
 
+    if (method === 'POST' && path === '/api/play') {
+        const body = await readBody(req);
+        const guildId = bodyText(body.guildId);
+        const access = await resolveAccess(host, req, guildId, true);
+        if (!access.member) {
+            guildDenied(res);
+            return;
+        }
+        if (!access.controls) {
+            sendJson(res, 403, {
+                ok: false,
+                error: 'Playback controls are required to add a song.',
+            });
+            return;
+        }
+        const result = await host.play(guildId, dashboardUserId(req), bodyText(body.query));
+        sendJson(res, result.ok ? 200 : (result.status ?? 400), result);
+        return;
+    }
+
     if (method === 'POST' && path === '/api/player') {
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);

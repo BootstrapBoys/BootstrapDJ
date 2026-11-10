@@ -83,6 +83,10 @@ export default class QueueEnd extends Event {
         }
         if (dispatcher.autoplay || dispatcher.queue.length) return;
 
+        // Browser-only sessions stay connected so the dashboard can keep
+        // queueing music without a Discord member present.
+        if (dispatcher.dashboardMode) return;
+
         const stay = await this.client.db.get_247(guild.id).catch(() => null);
         if (stay) return;
 

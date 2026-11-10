@@ -30,6 +30,7 @@ export const DEFAULTS: Record<string, string> = {
     loudnesstarget: '-16',
     locked: 'false',
     allowthreads: 'true',
+    dashboardvoicepriority: 'true',
     timeoutlisteners: '5',
     timeoutpause: '0',
     timeoutplaying: '0',

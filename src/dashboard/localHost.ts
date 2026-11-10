@@ -21,6 +21,7 @@ import {
     renamePlaylist,
 } from './playlists.js';
 import { effectiveSettings, saveSettings } from './state.js';
+import { addDashboardSong } from './playback.js';
 import type { DashboardHost, DashboardUserIdentity } from './host.js';
 
 /** Embedded dashboard backend: calls the live bot in the same process. */
@@ -48,6 +49,7 @@ export function createLocalDashboardHost(client: BootstrapClient): DashboardHost
         player: guildId => remotePlayer(client, guildId),
         playerAction: (guildId, action, value) =>
             remotePlayerAction(client, guildId, action, value),
+        play: (guildId, userId, query) => addDashboardSong(client, guildId, userId, query),
         filter: (guildId, id, enabled, value) => remoteFilter(client, guildId, id, enabled, value),
         settings: guildId => effectiveSettings(client, guildId),
         saveSettings: (guildId, values) => saveSettings(client, guildId, values),

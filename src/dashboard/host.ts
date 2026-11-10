@@ -41,6 +41,12 @@ export type PlaylistLoadResult = PlaylistMutationResult & {
     skipped?: number;
 };
 
+export type QueueAddResult = PlaylistMutationResult & {
+    added?: number;
+    skipped?: number;
+    title?: string;
+};
+
 /**
  * Everything the dashboard routes need from the bot.
  *
@@ -60,6 +66,7 @@ export interface DashboardHost {
     access(userId: string | null, guildId: string): Promise<AccessResult>;
     player(guildId: string): Promise<{ found: boolean; player: PlayerSnapshot | null }>;
     playerAction(guildId: string, action: string, value: number): Promise<ActionError>;
+    play(guildId: string, userId: string, query: string): Promise<QueueAddResult>;
     filter(guildId: string, id: string, enabled: boolean, value?: number): Promise<FilterResult>;
     settings(guildId: string): Promise<Record<string, string>>;
     saveSettings(guildId: string, values: Record<string, string>): Promise<void>;

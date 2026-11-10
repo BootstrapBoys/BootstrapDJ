@@ -4,6 +4,7 @@ import { LoadType } from 'shoukaku';
 import type { BootstrapClient, Song } from '../core/index.js';
 import { trackKey } from '../core/player/TrackIdentity.js';
 import { getPlayLimits, queueHasRoom } from '../lib/PlayLimits.js';
+import { ensureDashboardPlayer } from './playback.js';
 import type {
     PlaylistAddResult,
     PlaylistLoadResult,
@@ -240,10 +241,11 @@ export async function loadPlaylist(
     if (!rows.length) {
         return { ok: false, status: 404, error: 'That playlist is empty or does not exist.' };
     }
-    const player = client.queue.get(guildId);
-    if (!player || player.isStale) {
-        return { ok: false, status: 409, error: 'The bot is not connected to a voice channel.' };
+    const ensured = await ensureDashboardPlayer(client, guildId);
+    if (!ensured.ok) {
+        return { ok: false, status: ensured.status, error: ensured.error };
     }
+    const player = ensured.player;
     const requester = await client.users.fetch(userId).catch(() => client.user);
     if (!requester) {
         return { ok: false, status: 500, error: 'Could not resolve the playlist owner.' };

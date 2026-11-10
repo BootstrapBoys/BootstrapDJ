@@ -158,6 +158,10 @@ export const BROWSER_SCRIPT = String.raw`
                 'loudnesstarget',
             ],
         },
+        {
+            title: 'Browser mode',
+            keys: ['dashboardvoicepriority'],
+        },
         { title: 'Autoplay', keys: ['autoplaysource', 'autoplayseeds'] },
         { title: 'Responses', keys: ['ephemeral', 'announce', 'announcechannel', 'deleteafter'] },
         {
@@ -208,6 +212,7 @@ export const BROWSER_SCRIPT = String.raw`
         maxplaylistlength: 'Max playlist length (s)',
         locked: 'Session locked',
         allowthreads: 'Commands in threads',
+        dashboardvoicepriority: 'Discord takes priority',
         timeoutlisteners: 'Listener timeout (s)',
         timeoutpause: 'Pause timeout (s)',
         timeoutplaying: 'Idle playback timeout (s)',
@@ -250,6 +255,8 @@ export const BROWSER_SCRIPT = String.raw`
         timeoutconfirmation: 'Ask “Still listening?” after this many seconds. 0 disables.',
         locked: 'Only server managers may change settings or run commands while locked.',
         allowthreads: 'Permit commands inside threads.',
+        dashboardvoicepriority:
+            'When Dashboard browser playback is active, a Discord user’s play command clears that queue and moves the bot to their voice channel. Disable to keep browser playback in place.',
         commandchannel: 'Only accept commands in this text channel ID. Blank accepts every channel.',
         voicechannel: 'Require callers to sit in this voice channel ID. Blank removes the requirement.',
         disabledcommands: 'Comma-separated command names disabled in this server.',
@@ -265,6 +272,7 @@ export const BROWSER_SCRIPT = String.raw`
         'volumeautomatic',
         'locked',
         'allowthreads',
+        'dashboardvoicepriority',
     ]);
 
     const WIDE_KEYS = new Set([
@@ -640,6 +648,7 @@ export const BROWSER_SCRIPT = String.raw`
         };
         find('#settings-btn').style.display = state.access.settings ? '' : 'none';
         find('#player-controls').style.display = state.access.controls ? '' : 'none';
+        find('#queue-add').style.display = state.access.controls ? '' : 'none';
         find('#filters-panel').style.display = state.access.settings ? '' : 'none';
         find('#stats-clear').style.display = state.access.owner ? '' : 'none';
         setListenUi();
@@ -711,6 +720,36 @@ export const BROWSER_SCRIPT = String.raw`
             await loadState();
         } catch (error) {
             notify(error.message, true);
+        }
+    }
+
+    async function addSong() {
+        if (!state.access.controls) {
+            notify('Read-only dashboard access', true);
+            return;
+        }
+        const input = find('#queue-query');
+        const button = find('#queue-add-btn');
+        const query = input.value.trim();
+        if (!query) return;
+        button.disabled = true;
+        try {
+            const result = await postJson('/api/play', { guildId: state.guildId, query });
+            const count = result.added || 1;
+            notify(
+                'Added ' +
+                    count +
+                    ' track' +
+                    (count === 1 ? '' : 's') +
+                    (result.title ? ': ' + result.title : '') +
+                    (result.skipped ? ' (' + result.skipped + ' skipped)' : '')
+            );
+            input.value = '';
+            await loadState();
+        } catch (error) {
+            notify(error.message, true);
+        } finally {
+            button.disabled = false;
         }
     }
 
@@ -1726,6 +1765,13 @@ export const BROWSER_SCRIPT = String.raw`
     };
 
     // ---- interaction wiring ---------------------------------------------
+
+    find('#queue-add-btn').onclick = () => void addSong();
+    find('#queue-query').addEventListener('keydown', event => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        void addSong();
+    });
 
     document.querySelectorAll('[data-player]').forEach(button => {
         button.onclick = () => playerAction(button.dataset.player);

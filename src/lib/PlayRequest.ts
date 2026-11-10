@@ -23,6 +23,11 @@ export async function runPlayRequest(
     const author = ctx.author;
     if (!guild || !author) return;
 
+    const guildSettings: Record<string, string> = await client.db
+        .getGuildSettings(guild.id)
+        .catch(() => ({}));
+    const dashboardPriority = (guildSettings.dashboardvoicepriority ?? 'true') !== 'false';
+
     let player = client.queue.get(guild.id);
     const vc = ctx.voiceChannel;
     if (!client.queue.hasNode) {
@@ -38,12 +43,8 @@ export async function runPlayRequest(
         });
         return;
     }
-    if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
 
     const limits = await getPlayLimits(client, guild.id);
-    const guildSettings: Record<string, string> = await client.db
-        .getGuildSettings(guild.id)
-        .catch(() => ({}));
     const searchEngine = await resolveSearchEngine(client, ctx, guildSettings);
     const res = await client.queue.search(query, searchEngine);
     const embed = client.embed();
@@ -60,31 +61,65 @@ export async function runPlayRequest(
         return;
     }
 
+    if (res.loadType === LoadType.ERROR) {
+        const exception = res.data as {
+            message?: string;
+            severity?: string;
+            cause?: string;
+        };
+        const detail = exception?.cause || exception?.message || 'unknown';
+        client.logger.error(`Lavalink load error for ${query}: ${detail}`);
+        await ctx.sendMessage({
+            embeds: [
+                embed
+                    .setColor(client.color.red)
+                    .setDescription('There was an error while searching.'),
+            ],
+        });
+        return;
+    }
+    if (res.loadType === LoadType.EMPTY) {
+        await ctx.sendMessage({
+            embeds: [
+                embed.setColor(client.color.red).setDescription('There were no results found.'),
+            ],
+        });
+        return;
+    }
+    if (res.loadType === LoadType.SEARCH && !res.data[0]) {
+        await ctx.sendMessage({
+            embeds: [
+                embed.setColor(client.color.red).setDescription('There were no results found.'),
+            ],
+        });
+        return;
+    }
+    if (
+        res.loadType === LoadType.PLAYLIST &&
+        res.data.tracks.length > client.config.maxPlaylistSize
+    ) {
+        await ctx.sendMessage({
+            embeds: [
+                embed
+                    .setColor(client.color.red)
+                    .setDescription(
+                        `The playlist is too long. The maximum length is ${client.config.maxPlaylistSize} songs.`
+                    ),
+            ],
+        });
+        return;
+    }
+
+    // Only take over a browser-only session after the request resolves to
+    // something playable. An invalid search must not wipe the browser queue.
+    if (player?.dashboardMode && dashboardPriority && vc && player.voiceId !== vc.id) {
+        await player.destroyAndWait();
+        player = undefined;
+    }
+    if (!player || player.isStale) player = await client.queue.create(guild, vc, ctx.channel);
+    if (player.dashboardMode) player.dashboardMode = false;
+
     switch (res.loadType) {
-        case LoadType.ERROR: {
-            const exception = res.data as {
-                message?: string;
-                severity?: string;
-                cause?: string;
-            };
-            const detail = exception?.cause || exception?.message || 'unknown';
-            client.logger.error(`Lavalink load error for ${query}: ${detail}`);
-            await ctx.sendMessage({
-                embeds: [
-                    embed
-                        .setColor(client.color.red)
-                        .setDescription('There was an error while searching.'),
-                ],
-            });
-            return;
-        }
-        case LoadType.EMPTY:
-            await ctx.sendMessage({
-                embeds: [
-                    embed.setColor(client.color.red).setDescription('There were no results found.'),
-                ],
-            });
-            return;
         case LoadType.TRACK: {
             const track = player.buildTrack(res.data, author);
             const rejected = checkTrack(player, track, author.id, limits);
@@ -109,18 +144,6 @@ export async function runPlayRequest(
             return;
         }
         case LoadType.PLAYLIST: {
-            if (res.data.tracks.length > client.config.maxPlaylistSize) {
-                await ctx.sendMessage({
-                    embeds: [
-                        embed
-                            .setColor(client.color.red)
-                            .setDescription(
-                                `The playlist is too long. The maximum length is ${client.config.maxPlaylistSize} songs.`
-                            ),
-                    ],
-                });
-                return;
-            }
             const accepted: Song[] = [];
             let playlistDuration = 0;
             for (const track of res.data.tracks.slice(0, limits.maxPlaylistTracks || undefined)) {

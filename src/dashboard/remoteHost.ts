@@ -12,6 +12,7 @@ import type {
     PlaylistMutationResult,
     PlaylistSummary,
     PlaylistTrack,
+    QueueAddResult,
 } from './host.js';
 import { SettingValidationError } from './state.js';
 import { type DashboardHost, DashboardRemoteError, type DashboardUserIdentity } from './host.js';
@@ -107,6 +108,14 @@ export class RemoteDashboardHost implements DashboardHost {
             guildId,
             action,
             value,
+        });
+    }
+
+    public async play(guildId: string, userId: string, query: string): Promise<QueueAddResult> {
+        return await this.request<QueueAddResult>('POST', '/internal/play', {
+            guildId,
+            userId,
+            query,
         });
     }
 

@@ -16,6 +16,7 @@ const BOOLEAN_SETTINGS = new Set([
     'volumeautomatic',
     'locked',
     'allowthreads',
+    'dashboardvoicepriority',
 ]);
 
 /** Integer settings and their accepted range (undefined = any >= 0). */

@@ -242,9 +242,12 @@ export async function restoreSession(
 
     // Restoring into an empty channel would play to nobody: the bot's own join
     // does not trigger the "everyone left" sweep. Wait a short window for
-    // someone to arrive before discarding the queue. 24/7 skips the wait.
+    // someone to arrive before discarding the queue. 24/7 and the configured
+    // browser-only channel skip the wait.
     const stay = await client.db.get_247(guildId);
-    if (!stay && !hasListeners(voiceChannel.members.values())) {
+    const dashboardChannel = (client.config.dashboardVoiceChannelId ?? '').trim();
+    const browserOnly = Boolean(dashboardChannel && voiceChannel.id === dashboardChannel);
+    if (!stay && !browserOnly && !hasListeners(voiceChannel.members.values())) {
         const window = client.config.sessionEmptyWait;
         if (window > 0) {
             client.logger.info(
@@ -277,6 +280,7 @@ export async function restoreSession(
     let succeeded = false;
     try {
         dispatcher = await client.queue.create(guild, voiceChannel, textChannel);
+        dispatcher.dashboardMode = browserOnly;
         dispatcher.restoring = true;
         dispatcher.loop =
             session.loop === 'repeat' || session.loop === 'queue' ? session.loop : 'off';

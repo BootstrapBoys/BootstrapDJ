@@ -179,6 +179,11 @@ button.primary {
 }
 .volume input { width: 220px; accent-color: var(--accent); }
 
+/* Queue add */
+.queue-add { display: flex; gap: 8px; align-items: center; margin: 0 0 16px; }
+.queue-add input { flex: 1; min-width: 0; }
+.queue-add button { flex: none; }
+
 /* Queue */
 .queue-block { border-top: 1px solid var(--line-soft); padding-top: 12px; }
 .queue-head { display: flex; justify-content: space-between; align-items: baseline; }
@@ -664,6 +669,10 @@ export function renderDashboard(oauth: boolean): string {
   <div class="controls" id="player-controls" style="display:none">
 ${PLAYER_ICONS}
 ${VOLUME_CONTROL}
+  </div>
+  <div class="queue-add" id="queue-add" style="display:none">
+    <input id="queue-query" type="text" autocomplete="off" placeholder="Song name or URL" aria-label="Add a song to the queue">
+    <button id="queue-add-btn" class="primary" type="button">Add song</button>
   </div>
   <div class="queue-block"><div class="queue-head"><h3>Queue</h3><span id="queue-count" class="small"></span></div><div id="queue-list" class="queue-list"><div class="small">Nothing queued.</div></div></div>
 </section>

@@ -1,5 +1,6 @@
 import { ChannelType, PermissionFlagsBits, VoiceState } from 'discord.js';
 
+import config from '../../config.js';
 import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
 
 export default class VoiceStateUpdate extends Event {
@@ -14,6 +15,12 @@ export default class VoiceStateUpdate extends Event {
         if (!timer) return;
         clearTimeout(timer);
         this.emptyTimers.delete(guildId);
+    }
+
+    /** Browser-only playback deliberately stays connected without a human. */
+    private isDashboardChannel(channelId: string | null | undefined): boolean {
+        const configured = config.dashboardVoiceChannelId.trim();
+        return Boolean(configured && channelId === configured);
     }
 
     /**
@@ -38,6 +45,7 @@ export default class VoiceStateUpdate extends Event {
             ) {
                 return;
             }
+            if (this.isDashboardChannel(channel.id)) return;
             if (channel.members.some(member => !member.user.bot)) return;
             player.destroy();
         }, delayMs);
@@ -102,6 +110,10 @@ export default class VoiceStateUpdate extends Event {
         }
 
         if (!botChannel) return;
+        if (this.isDashboardChannel(botChannel.id)) {
+            this.cancel(guildId);
+            return;
+        }
         if (botChannel.members.some(member => !member.user.bot)) {
             this.cancel(guildId);
             return;

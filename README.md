@@ -121,23 +121,23 @@ Optional:
 The complete reference is [`.env.example`](.env.example). The most important
 groups are:
 
-| Group     | Variables                                                                                                                                | Notes                                                                                                     |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Discord   | `BOT_TOKEN`, `TOKEN`, `CLIENT_ID`, `GUILD_ID`, `PRODUCTION`                                                                              | `BOT_TOKEN` wins over the legacy `TOKEN` alias. `GUILD_ID` enables single-guild mode.                     |
-| Commands  | `PREFIX`, `OWNER_IDS`                                                                                                                    | `PREFIX` accepts comma-separated prefixes. `OWNER_IDS` is a JSON array.                                   |
-| Presence  | `BOT_STATUS`, `BOT_ACTIVITY`, `BOT_ACTIVITY_TYPE`, `BOT_STATUS_MODE`                                                                     | `BOT_STATUS_MODE` is `static`, `track`, or `count`.                                                       |
-| Search    | `SEARCH_ENGINE`, `PREFIX_SEARCH_ENGINE`                                                                                                  | Slash commands use the guild `searchtype` or `SEARCH_ENGINE`; prefix commands use `PREFIX_SEARCH_ENGINE`. |
-| Limits    | `MAX_QUEUE_SIZE`, `MAX_PLAYLIST_SIZE`                                                                                                    | Per-guild limits can also be set with `/settings`.                                                        |
-| Autoplay  | `AUTOPLAY_CHART`, `AUTOPLAY_SEEDS`, `AUTOPLAY_SEED`                                                                                      | Chart, curated seeds, then a final fallback seed.                                                         |
-| Lavalink  | `LAVALINK_URL`, `LAVALINK_AUTH`, `LAVALINK_SECURE`, `LAVALINK_NAME`, `LAVALINK_FALLBACKS`, `AUTO_NODE`, `NODE_FALLBACK`                  | `LAVALINK_FALLBACKS` is a JSON array of standby nodes; a second local Lavalink is the reliable failover.  |
-| Sessions  | `SESSION_RESTORE_AGE`, `SESSION_EMPTY_WAIT`                                                                                              | Restore a saved queue for up to six hours by default.                                                     |
-| Messages  | `COMMAND_DELETE_AFTER`, `SETUP_CLEANUP_INTERVAL`                                                                                         | Set either to `0` to disable that timer.                                                                  |
-| Storage   | `DATABASE_URL`, `STATS_RETENTION_DAYS`, `STATS_INACTIVE_DAYS`, `STATS_PRUNE_INTERVAL_HOURS`                                              | SQLite defaults to `prisma/bootstrapdj.db`; WAL mode is enabled at startup.                               |
-| Dashboard | `DASHBOARD_PORT`, `DASHBOARD_HOST`, `DASHBOARD_PUBLIC_URL`, `DASHBOARD_OAUTH_*`, `DASHBOARD_SESSION_SECRET`, `DASHBOARD_ALLOW_ANONYMOUS` | `DASHBOARD_PORT=0` disables the dashboard; anonymous mode is loopback-only.                               |
-| Voice     | `EARL_CONTROL_URL`, `EARL_BRIDGE_SECRET`, `VOICE_BRIDGE_PORT`, `EARL_LIVE_BADGE_URL`                                                     | Optional Earl the Ear listener bridge; keep the control API on localhost.                                 |
-| Logging   | `LOG_CHANNEL_ID`                                                                                                                         | Channel for bot logs; blank disables logging.                                                             |
-| Multi-bot | `BOTS_FILE`, `BOT_NAME`, `BOT_ID`, `BOT_PRIORITY`                                                                                        | Optional local child-process setup; see below.                                                            |
-| Sharding  | `SHARD_COUNT`                                                                                                                            | Optional Discord shard count; `0` uses Discord's automatic count. Only shard 0 owns shared services.      |
+| Group     | Variables                                                                                                                                                                                                          | Notes                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Discord   | `BOT_TOKEN`, `TOKEN`, `CLIENT_ID`, `GUILD_ID`, `PRODUCTION`                                                                                                                                                        | `BOT_TOKEN` wins over the legacy `TOKEN` alias. `GUILD_ID` enables single-guild mode.                     |
+| Commands  | `PREFIX`, `OWNER_IDS`                                                                                                                                                                                              | `PREFIX` accepts comma-separated prefixes. `OWNER_IDS` is a JSON array.                                   |
+| Presence  | `BOT_STATUS`, `BOT_ACTIVITY`, `BOT_ACTIVITY_TYPE`, `BOT_STATUS_MODE`                                                                                                                                               | `BOT_STATUS_MODE` is `static`, `track`, or `count`.                                                       |
+| Search    | `SEARCH_ENGINE`, `PREFIX_SEARCH_ENGINE`                                                                                                                                                                            | Slash commands use the guild `searchtype` or `SEARCH_ENGINE`; prefix commands use `PREFIX_SEARCH_ENGINE`. |
+| Limits    | `MAX_QUEUE_SIZE`, `MAX_PLAYLIST_SIZE`                                                                                                                                                                              | Per-guild limits can also be set with `/settings`.                                                        |
+| Autoplay  | `AUTOPLAY_CHART`, `AUTOPLAY_SEEDS`, `AUTOPLAY_SEED`                                                                                                                                                                | Chart, curated seeds, then a final fallback seed.                                                         |
+| Lavalink  | `LAVALINK_URL`, `LAVALINK_AUTH`, `LAVALINK_SECURE`, `LAVALINK_NAME`, `LAVALINK_FALLBACKS`, `AUTO_NODE`, `NODE_FALLBACK`                                                                                            | `LAVALINK_FALLBACKS` is a JSON array of standby nodes; a second local Lavalink is the reliable failover.  |
+| Sessions  | `SESSION_RESTORE_AGE`, `SESSION_EMPTY_WAIT`                                                                                                                                                                        | Restore a saved queue for up to six hours by default.                                                     |
+| Messages  | `COMMAND_DELETE_AFTER`, `SETUP_CLEANUP_INTERVAL`                                                                                                                                                                   | Set either to `0` to disable that timer.                                                                  |
+| Storage   | `DATABASE_URL`, `STATS_RETENTION_DAYS`, `STATS_INACTIVE_DAYS`, `STATS_PRUNE_INTERVAL_HOURS`                                                                                                                        | SQLite defaults to `prisma/bootstrapdj.db`; WAL mode is enabled at startup.                               |
+| Dashboard | `DASHBOARD_PORT`, `DASHBOARD_HOST`, `DASHBOARD_PUBLIC_URL`, `DASHBOARD_OAUTH_*`, `DASHBOARD_SESSION_SECRET`, `DASHBOARD_ALLOW_ANONYMOUS`, `DASHBOARD_TAP_URL`, `DASHBOARD_TAP_TOKEN`, `DASHBOARD_VOICE_CHANNEL_ID` | `DASHBOARD_PORT=0` disables the dashboard; anonymous mode is loopback-only.                               |
+| Voice     | `EARL_CONTROL_URL`, `EARL_BRIDGE_SECRET`, `VOICE_BRIDGE_PORT`, `EARL_LIVE_BADGE_URL`                                                                                                                               | Optional Earl the Ear listener bridge; keep the control API on localhost.                                 |
+| Logging   | `LOG_CHANNEL_ID`                                                                                                                                                                                                   | Channel for bot logs; blank disables logging.                                                             |
+| Multi-bot | `BOTS_FILE`, `BOT_NAME`, `BOT_ID`, `BOT_PRIORITY`                                                                                                                                                                  | Optional local child-process setup; see below.                                                            |
+| Sharding  | `SHARD_COUNT`                                                                                                                                                                                                      | Optional Discord shard count; `0` uses Discord's automatic count. Only shard 0 owns shared services.      |
 
 ### Slash replies and ephemeral mode
 
@@ -237,9 +237,33 @@ read-only for ordinary members; configured DJ roles unlock playback controls,
 while **Manage Server** / **Administrator** unlock settings and filters.
 Clear-statistics is restricted to each guild’s owner. The playlist button lets
 the signed-in member create, rename, delete, edit, add tracks to, and load their
-own playlists into the active queue. Song titles in both statistics views link to
-the stored source, or to a YouTube search when no URI was recorded. Add the exact
-redirect URI to the Discord Developer Portal before starting the bot.
+own playlists into the active queue. The main player panel also has an **Add
+song** field that searches Lavalink or accepts a URL. Song titles in both
+statistics views link to the stored source, or to a YouTube search when no URI
+was recorded. Add the exact redirect URI to the Discord Developer Portal before
+starting the bot.
+
+### Browser-only playback
+
+Set `DASHBOARD_VOICE_CHANNEL_ID` to a voice channel id in the server where the
+dashboard will start playback:
+
+```dotenv
+DASHBOARD_VOICE_CHANNEL_ID="123456789012345678"
+```
+
+When a dashboard request starts playback and the bot has no player, it joins this
+channel even if no Discord member is connected. The channel is treated as a
+persistent browser listening channel, so the normal empty-channel timeout does
+not disconnect it. Leave the value blank to keep requiring an existing voice
+connection.
+
+By default, a Discord user takes priority over an active browser session. If a
+caller runs `/play` or `/playnext` from another voice channel, the bot clears the
+browser queue and moves to that caller’s channel before adding their request.
+Disable that per guild with `/settings dashboardvoicepriority false` (or the
+**Discord takes priority** toggle in the dashboard settings). Invalid searches do
+not clear the browser queue.
 
 See [docs/DASHBOARD_OAUTH.md](docs/DASHBOARD_OAUTH.md) for the full OAuth setup,
 reverse-proxy notes, and local token-mode fallback.

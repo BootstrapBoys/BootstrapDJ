@@ -143,6 +143,8 @@ export default class Dispatcher {
     public leaveOnEnd = false;
     /** 24/7: pause at track end when nobody is listening. */
     public pauseWhenEmpty = false;
+    /** Created by the dashboard's browser-only voice path, not a Discord caller. */
+    public dashboardMode = false;
     public paused247 = false;
     public history: Song[] = [];
     /** Mutes the periodic persist while a restore is filling the state. */
