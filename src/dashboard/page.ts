@@ -314,6 +314,8 @@ button.primary {
 }
 .gear:hover { color: var(--text); background: var(--panel-2); border-color: var(--line-strong); }
 .gear svg { width: 22px; height: 22px; display: block; fill: currentColor; }
+.install-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.install-btn svg { width: 18px; height: 18px; }
 .modal {
     position: fixed;
     inset: 0;
@@ -636,6 +638,8 @@ a.primary:hover { background: #4752c4; }
 
 const LEGAL_LINKS = String.raw`<a href="https://zebz213.github.io/bootstrapdj-legal/terms.html" target="_blank" rel="noopener noreferrer">Terms</a><span>·</span><a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a><span>·</span><a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">Legal</a>`;
 
+const PWA_HEAD = String.raw`<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#111318"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="BootstrapDJ"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/icon-180.png">`;
+
 const PLAYER_ICONS = String.raw`<button class="ctrl" data-player="previous" title="Previous" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zM18 6v12l-9-6z"/></svg></button>
 <button class="ctrl" id="toggle-btn" data-player="toggle" title="Pause or resume" aria-label="Pause or resume"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="play-icon" d="M8 5v14l11-7z"/><path class="pause-icon" d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
 <button class="ctrl" data-player="next" title="Skip" aria-label="Skip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 6v12l9-6z"/></svg></button>
@@ -652,6 +656,7 @@ export function renderDashboard(oauth: boolean): string {
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+${PWA_HEAD}
 <title>BootstrapDJ dashboard</title>
 <style>${STYLES}</style>
 </head>
@@ -664,6 +669,7 @@ export function renderDashboard(oauth: boolean): string {
     <button id="personal-btn" class="gear" title="My stats" aria-label="Open my stats" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></button>
     <button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button>
     <button id="playlists-btn" class="gear" title="Playlists" aria-label="Open playlists"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12v2H4zm0 5h12v2H4zm0 5h12v2H4zm15-8v7.2a2.8 2.8 0 1 1-2-2.6V7l4-1v2z"/></svg></button>
+    <button id="install-btn" class="gear install-btn" type="button" title="Install BootstrapDJ" aria-label="Install BootstrapDJ" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9h3l-4 4-4-4h3z"/><path d="M5 19h14v2H5z"/></svg><span>Install</span></button>
     <button id="settings-btn" class="gear" title="Settings" aria-label="Open settings" style="display:none">⚙</button>
     <button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
   </div>
@@ -737,6 +743,7 @@ export function renderLoginPage(): string {
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+${PWA_HEAD}
 <title>BootstrapDJ — Login</title>
 <style>${LOGIN_STYLES}</style>
 </head>

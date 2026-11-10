@@ -1869,6 +1869,35 @@ export const BROWSER_SCRIPT = String.raw`
         }
     };
 
+    // ---- PWA install / service worker ------------------------------------
+    let installPrompt = null;
+    const installButton = find('#install-btn');
+    window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        installPrompt = event;
+        if (installButton) installButton.style.display = '';
+    });
+    window.addEventListener('appinstalled', () => {
+        installPrompt = null;
+        if (installButton) installButton.style.display = 'none';
+        notify('BootstrapDJ installed');
+    });
+    if (installButton) {
+        installButton.addEventListener('click', async () => {
+            if (!installPrompt) return;
+            const prompt = installPrompt;
+            installPrompt = null;
+            installButton.style.display = 'none';
+            prompt.prompt();
+            await prompt.userChoice.catch(() => null);
+        });
+    }
+    if ('serviceWorker' in navigator && window.isSecureContext) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            // The dashboard still works if the browser refuses the worker.
+        });
+    }
+
     // ---- interaction wiring ---------------------------------------------
 
     find('#queue-add-btn').onclick = () => void addSong();

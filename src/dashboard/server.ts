@@ -25,6 +25,7 @@ import { GuildAccessCache } from './accessCache.js';
 import { relayAudioTap } from './audioTap.js';
 import type { DashboardHost } from './host.js';
 import { renderDashboard, renderLoginPage } from './page.js';
+import { PWA_ICONS, PWA_MANIFEST, PWA_SERVICE_WORKER } from './pwa.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
 import { initialState, SettingValidationError } from './state.js';
 
@@ -115,7 +116,7 @@ function securityHeaders(res: http.ServerResponse): void {
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader(
         'Content-Security-Policy',
-        "default-src 'self'; img-src 'self' https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        "default-src 'self'; img-src 'self' https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
     );
 }
 
@@ -309,6 +310,35 @@ export async function route(
     }
     if (method === 'GET' && path === '/auth/callback' && oauthEnabled()) {
         await completeOAuth(host, req, res, url);
+        return;
+    }
+
+    // PWA assets are public so a signed-out login page is still installable.
+    if (method === 'GET' && path === '/manifest.webmanifest') {
+        res.writeHead(200, {
+            'content-type': 'application/manifest+json; charset=utf-8',
+            'cache-control': 'public, max-age=3600',
+        });
+        res.end(PWA_MANIFEST);
+        return;
+    }
+    if (method === 'GET' && path === '/sw.js') {
+        res.writeHead(200, {
+            'content-type': 'application/javascript; charset=utf-8',
+            'cache-control': 'no-cache',
+            'service-worker-allowed': '/',
+        });
+        res.end(PWA_SERVICE_WORKER);
+        return;
+    }
+    const pwaIcon = PWA_ICONS[path];
+    if (method === 'GET' && pwaIcon) {
+        res.writeHead(200, {
+            'content-type': 'image/png',
+            'content-length': Buffer.byteLength(pwaIcon, 'base64'),
+            'cache-control': 'public, max-age=86400',
+        });
+        res.end(Buffer.from(pwaIcon, 'base64'));
         return;
     }
 
