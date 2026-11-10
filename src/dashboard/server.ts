@@ -35,10 +35,27 @@ const MUTATIONS_PER_MINUTE = 180;
 const READS_PER_MINUTE = 300;
 const ACCESS_TTL_MS = 60_000;
 const ACCESS_CACHE_MAX = 1000;
+const MAX_AUDIO_STREAMS_PER_USER = 1;
 const AUTH_PATHS = new Set(['/auth/discord', '/auth/callback', '/auth/logout']);
 
 /** Per-viewer guild authorization, refreshed on a short TTL. */
 const accessCache = new GuildAccessCache(ACCESS_TTL_MS, ACCESS_CACHE_MAX);
+
+/** Long-lived audio streams are capped per dashboard user. */
+const audioStreams = new Map<string, number>();
+
+function acquireAudioSlot(userKey: string): boolean {
+    const count = audioStreams.get(userKey) ?? 0;
+    if (count >= MAX_AUDIO_STREAMS_PER_USER) return false;
+    audioStreams.set(userKey, count + 1);
+    return true;
+}
+
+function releaseAudioSlot(userKey: string): void {
+    const count = audioStreams.get(userKey) ?? 0;
+    if (count <= 1) audioStreams.delete(userKey);
+    else audioStreams.set(userKey, count - 1);
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -362,7 +379,10 @@ export async function route(
             sendJson(res, 400, { error: 'A valid guildId is required' });
             return;
         }
-        if (!(await guildAllowed(host, req, guildId))) {
+        // Live audio is long-lived; do not let a 60s access cache outlive a
+        // membership removal.
+        const access = await resolveAccess(host, req, guildId, true);
+        if (!access.member) {
             guildDenied(res);
             return;
         }
@@ -371,6 +391,13 @@ export async function route(
             sendJson(res, 503, { error: 'Audio tap is not configured' });
             return;
         }
+
+        const userKey = readSession(req)?.id ?? 'local';
+        if (!acquireAudioSlot(userKey)) {
+            sendJson(res, 429, { error: 'Only one audio stream per dashboard user is allowed' });
+            return;
+        }
+        res.once('close', () => releaseAudioSlot(userKey));
         relayAudioTap(res, guildId, target);
         return;
     }

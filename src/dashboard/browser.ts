@@ -1099,6 +1099,7 @@ export const BROWSER_SCRIPT = String.raw`
         const headers = {};
         const token = storedToken();
         if (token) headers['x-dashboard-token'] = token;
+        headers['X-BootstrapDJ-Tap'] = '1';
         const response = await fetch('/api/audio?guildId=' + encodeURIComponent(state.guildId), {
             method: 'GET',
             headers,
