@@ -20,3 +20,7 @@ test('disconnect is only shown while the browser tap is active', () => {
     assert.match(html, /disconnectButton\.style\.display = audio\.status === 'off' \? 'none' : ''/);
     assert.match(html, /disconnectButton\.addEventListener\('click', stopAudio\)/);
 });
+
+test('the disconnect icon is stroked instead of relying on fill', () => {
+    assert.match(html, /\.disconnect-btn svg \{[^}]*fill: none;[^}]*stroke: currentColor;/s);
+});

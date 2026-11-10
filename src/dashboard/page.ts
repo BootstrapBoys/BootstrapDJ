@@ -166,6 +166,12 @@ button.primary {
 .listen-btn.muted .mute-line { display: block; }
 .disconnect-btn { gap: 6px; color: var(--muted); }
 .disconnect-btn span { font-size: 12px; font-weight: 600; }
+.ctrl.disconnect-btn svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
 .disconnect-btn:hover { color: var(--bad); border-color: var(--bad); }
 .ctrl svg, .volume svg { width: 18px; height: 18px; display: block; fill: currentColor; flex: none; }
 .volume svg { color: var(--text); }
