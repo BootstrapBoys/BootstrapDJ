@@ -175,7 +175,7 @@ lavalink:
         # Audio buffering and encoder tuning. Higher quality/CPU values are fine
         # for a small private node; lower them if the host is CPU-constrained.
         bufferDurationMs: 400 # JDA-NAS buffer; <=0 disables NAS
-        frameBufferDurationMs: 5000 # audio kept buffered
+        frameBufferDurationMs: 1000 # How many milliseconds of audio to keep buffered; lower values make filter changes audible sooner
         opusEncodingQuality: 10 # 0–10; 10 is best and most CPU-expensive
         resamplingQuality: HIGH # LOW | MEDIUM | HIGH
         trackStuckThresholdMs: 10000 # no audio progress for this long = stuck

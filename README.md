@@ -265,6 +265,14 @@ Disable that per guild with `/settings dashboardvoicepriority false` (or the
 **Discord takes priority** toggle in the dashboard settings). Invalid searches do
 not clear the browser queue.
 
+### Filter response latency
+
+Lavalink buffers audio before Discord output. A high `frameBufferDurationMs`
+keeps playback resilient to GC pauses, but filter changes cannot be heard until
+the already-buffered audio drains. The example configuration uses **1000 ms**;
+the former 5000 ms setting produced roughly six seconds of filter delay. Adjust
+this in the Lavalink `application.yml` and restart Lavalink, not the bot.
+
 See [docs/DASHBOARD_OAUTH.md](docs/DASHBOARD_OAUTH.md) for the full OAuth setup,
 reverse-proxy notes, and local token-mode fallback.
 
