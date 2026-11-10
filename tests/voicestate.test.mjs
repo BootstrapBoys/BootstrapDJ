@@ -6,7 +6,7 @@ import { ChannelType, Collection } from 'discord.js';
 
 import VoiceStateUpdate from '../dist/events/client/VoiceStateUpdate.js';
 
-function makeHarness({ humans = 0, stay = null, timeout = '0.03' } = {}) {
+function makeHarness({ humans = 0, stay = null, timeout = '0.03', dashboardChannel = '' } = {}) {
     let destroys = 0;
     let resumes = 0;
     const members = new Collection();
@@ -26,6 +26,9 @@ function makeHarness({ humans = 0, stay = null, timeout = '0.03' } = {}) {
     };
     const player = {
         pauseWhenEmpty: false,
+        current: null,
+        queue: [],
+        autoplay: false,
         destroy: () => {
             destroys += 1;
         },
@@ -36,6 +39,7 @@ function makeHarness({ humans = 0, stay = null, timeout = '0.03' } = {}) {
     const client = {
         user: { id: 'bot' },
         shuttingDown: false,
+        config: { dashboardVoiceChannelId: dashboardChannel },
         queue: new Map([['guild', player]]),
         guilds: { cache: new Map([['guild', guild]]) },
         db: {
@@ -115,4 +119,17 @@ test('a listener joining a paused 24/7 session resumes it', async () => {
     );
     assert.deepEqual(harness.counts(), { destroys: 0, resumes: 1 });
     assert.equal(harness.player.pauseWhenEmpty, false);
+});
+
+test('the dashboard channel leaves immediately when it has no audio', async () => {
+    const harness = makeHarness({ dashboardChannel: 'vc' });
+    await harness.event.run({}, harness.state);
+    assert.deepEqual(harness.counts(), { destroys: 1, resumes: 0 });
+});
+
+test('the dashboard channel stays while a track is still active', async () => {
+    const harness = makeHarness({ dashboardChannel: 'vc' });
+    harness.player.current = {};
+    await harness.event.run({}, harness.state);
+    assert.deepEqual(harness.counts(), { destroys: 0, resumes: 0 });
 });

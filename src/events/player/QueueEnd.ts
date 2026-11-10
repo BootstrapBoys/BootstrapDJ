@@ -83,9 +83,15 @@ export default class QueueEnd extends Event {
         }
         if (dispatcher.autoplay || dispatcher.queue.length) return;
 
-        // Browser-only sessions stay connected so the dashboard can keep
-        // queueing music without a Discord member present.
-        if (dispatcher.dashboardMode) return;
+        // The dashboard voice channel is a listening surface, not a 24/7
+        // channel. Once the queue is empty, leave immediately instead of
+        // waiting for the normal confirmation/idle timeout.
+        const dashboardChannel = (this.client.config.dashboardVoiceChannelId ?? '').trim();
+        const dashboardVoiceId = guild.members?.me?.voice.channelId ?? dispatcher.voiceId;
+        if (dashboardChannel && dashboardVoiceId === dashboardChannel) {
+            dispatcher.destroy();
+            return;
+        }
 
         const stay = await this.client.db.get_247(guild.id).catch(() => null);
         if (stay) return;

@@ -253,10 +253,11 @@ DASHBOARD_VOICE_CHANNEL_ID="123456789012345678"
 ```
 
 When a dashboard request starts playback and the bot has no player, it joins this
-channel even if no Discord member is connected. The channel is treated as a
-persistent browser listening channel, so the normal empty-channel timeout does
-not disconnect it. Leave the value blank to keep requiring an existing voice
-connection.
+channel even if no Discord member is connected. While tracks are playing, the
+channel is treated as a browser listening channel, so the normal empty-channel
+timeout does not disconnect it. Once the queue is empty, the bot leaves
+immediately without the normal confirmation or idle delay. Leave the value blank
+to keep requiring an existing voice connection.
 
 By default, a Discord user takes priority over an active browser session. If a
 caller runs `/play` or `/playnext` from another voice channel, the bot clears the
