@@ -70,6 +70,7 @@ export function createLocalDashboardHost(client: BootstrapClient): DashboardHost
         removePlaylistTrackAt: (userId, name, index) =>
             removePlaylistTrackAt(client, userId, name, index),
         clearPlaylist: (userId, name) => clearPlaylist(client, userId, name),
-        loadPlaylist: (guildId, userId, name) => loadPlaylist(client, guildId, userId, name),
+        loadPlaylist: (guildId, userId, name, shuffle) =>
+            loadPlaylist(client, guildId, userId, name, shuffle),
     };
 }

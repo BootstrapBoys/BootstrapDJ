@@ -570,6 +570,7 @@ export async function route(
         const body = await readBody(req);
         const guildId = bodyText(body.guildId);
         const name = bodyText(body.name);
+        const shuffle = body.shuffle === true || body.shuffle === 'true';
         const access = await resolveAccess(host, req, guildId, true);
         if (!access.member) {
             guildDenied(res);
@@ -582,7 +583,7 @@ export async function route(
             });
             return;
         }
-        const result = await host.loadPlaylist(guildId, dashboardUserId(req), name);
+        const result = await host.loadPlaylist(guildId, dashboardUserId(req), name, shuffle);
         sendJson(res, result.ok ? 200 : (result.status ?? 400), result);
         return;
     }

@@ -288,12 +288,14 @@ export class RemoteDashboardHost implements DashboardHost {
     public async loadPlaylist(
         guildId: string,
         userId: string,
-        name: string
+        name: string,
+        shuffle: boolean = false
     ): Promise<PlaylistLoadResult> {
         return await this.request<PlaylistLoadResult>('POST', '/internal/playlists/load', {
             guildId,
             userId,
             name,
+            shuffle,
         });
     }
 }

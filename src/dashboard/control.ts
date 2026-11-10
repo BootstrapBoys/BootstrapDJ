@@ -322,6 +322,7 @@ async function handleControl(
         const userId = stringValue(body.userId);
         const guildId = stringValue(body.guildId);
         const name = stringValue(body.name);
+        const shuffle = body.shuffle === true || body.shuffle === 'true';
         if (!userId || !guildId) {
             json(res, 400, {
                 ok: false,
@@ -330,7 +331,7 @@ async function handleControl(
             });
             return;
         }
-        json(res, 200, await loadPlaylist(client, guildId, userId, name));
+        json(res, 200, await loadPlaylist(client, guildId, userId, name, shuffle));
         return;
     }
 

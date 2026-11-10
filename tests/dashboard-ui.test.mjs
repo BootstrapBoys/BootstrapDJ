@@ -22,5 +22,11 @@ test('disconnect is only shown while the browser tap is active', () => {
 });
 
 test('the disconnect icon is stroked instead of relying on fill', () => {
-    assert.match(html, /\.disconnect-btn svg \{[^}]*fill: none;[^}]*stroke: currentColor;/s);
+    assert.match(html, /\.ctrl\.disconnect-btn svg \{[^}]*fill: none;[^}]*stroke: currentColor;/s);
+});
+
+test('playlist detail exposes a shuffle-and-load control', () => {
+    assert.match(html, /'Shuffle & load'/);
+    assert.match(html, /shuffleLoad\.onclick = \(\) => queuePlaylist\(true\)/);
+    assert.match(html, /shuffle,/);
 });

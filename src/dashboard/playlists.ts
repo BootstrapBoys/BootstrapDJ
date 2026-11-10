@@ -233,7 +233,8 @@ export async function loadPlaylist(
     client: BootstrapClient,
     guildId: string,
     userId: string,
-    rawName: string
+    rawName: string,
+    shuffle: boolean = false
 ): Promise<PlaylistLoadResult> {
     const name = normalizeName(rawName);
     if (!name) return { ok: false, status: 400, error: 'Playlist name is required.' };
@@ -252,7 +253,7 @@ export async function loadPlaylist(
     }
 
     const limits = await getPlayLimits(client, guildId);
-    const queued: Song[] = [];
+    const candidates: Track[] = [];
     let skipped = 0;
     for (const row of rows) {
         const entries = storedTracks(row);
@@ -261,17 +262,42 @@ export async function loadPlaylist(
             continue;
         }
         for (const entry of entries) {
-            if (!isTrack(entry) || !queueHasRoom(player, limits)) {
+            if (!isTrack(entry)) {
                 skipped += 1;
                 continue;
             }
-            const song = player.buildTrack(entry, requester);
-            player.enqueue(song, false, false);
-            queued.push(song);
+            candidates.push(entry);
         }
+    }
+
+    // Shuffle only this request's in-memory candidates. The saved Song.position
+    // order is never rewritten, so a normal load still restores the authored order.
+    const ordered = shuffle ? shufflePlaylistEntries(candidates) : candidates;
+    const queued: Song[] = [];
+    for (const entry of ordered) {
+        if (!queueHasRoom(player, limits)) {
+            skipped += 1;
+            continue;
+        }
+        const song = player.buildTrack(entry, requester);
+        player.enqueue(song, false, false);
+        queued.push(song);
     }
 
     player.seedPlaylist(queued);
     await player.isPlaying();
-    return { ok: true, queued: queued.length, skipped };
+    return { ok: true, queued: queued.length, skipped, shuffled: shuffle && queued.length > 1 };
+}
+
+/** Fisher-Yates over a copy; exported so tests can prove the shuffle path. */
+export function shufflePlaylistEntries<T>(
+    items: readonly T[],
+    random: () => number = Math.random
+): T[] {
+    const copy = [...items];
+    for (let index = copy.length - 1; index > 0; index -= 1) {
+        const swap = Math.floor(random() * (index + 1));
+        [copy[index], copy[swap]] = [copy[swap], copy[index]];
+    }
+    return copy;
 }

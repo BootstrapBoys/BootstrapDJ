@@ -40,6 +40,7 @@ export type PlaylistAddResult = PlaylistMutationResult & {
 export type PlaylistLoadResult = PlaylistMutationResult & {
     queued?: number;
     skipped?: number;
+    shuffled?: boolean;
 };
 
 export type QueueAddResult = PlaylistMutationResult & {
@@ -90,7 +91,12 @@ export interface DashboardHost {
         index: number
     ): Promise<PlaylistMutationResult>;
     clearPlaylist(userId: string, name: string): Promise<PlaylistMutationResult>;
-    loadPlaylist(guildId: string, userId: string, name: string): Promise<PlaylistLoadResult>;
+    loadPlaylist(
+        guildId: string,
+        userId: string,
+        name: string,
+        shuffle?: boolean
+    ): Promise<PlaylistLoadResult>;
 }
 
 /** Error returned by the dashboard sidecar's loopback control client. */

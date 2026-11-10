@@ -1372,23 +1372,20 @@ export const BROWSER_SCRIPT = String.raw`
         };
         head.appendChild(remove);
 
-        const load = playlistActionButton('Load to queue', 'primary');
-        load.disabled = !state.access.controls;
-        load.title = state.access.controls
-            ? 'Append this playlist to the current queue'
-            : 'Playback controls are required';
-        load.onclick = async () => {
+        const queuePlaylist = async (shuffle) => {
             try {
                 const result = await postJson('/api/playlists/load', {
                     guildId: state.guildId,
                     name,
+                    shuffle,
                 });
                 notify(
                     'Queued ' +
                         (result.queued || 0) +
                         ' track' +
                         ((result.queued || 0) === 1 ? '' : 's') +
-                        ((result.skipped || 0) ? ' (' + result.skipped + ' skipped)' : '')
+                        ((result.skipped || 0) ? ' (' + result.skipped + ' skipped)' : '') +
+                        (result.shuffled ? ' in shuffled order' : '')
                 );
                 closePlaylists();
                 await loadState();
@@ -1396,7 +1393,22 @@ export const BROWSER_SCRIPT = String.raw`
                 notify(error.message, true);
             }
         };
+
+        const load = playlistActionButton('Load to queue', 'primary');
+        load.disabled = !state.access.controls;
+        load.title = state.access.controls
+            ? 'Append this playlist to the current queue'
+            : 'Playback controls are required';
+        load.onclick = () => queuePlaylist(false);
         head.appendChild(load);
+
+        const shuffleLoad = playlistActionButton('Shuffle & load');
+        shuffleLoad.disabled = !state.access.controls;
+        shuffleLoad.title = state.access.controls
+            ? 'Append this playlist in random order without changing its saved order'
+            : 'Playback controls are required';
+        shuffleLoad.onclick = () => queuePlaylist(true);
+        head.appendChild(shuffleLoad);
         detail.appendChild(head);
 
         if (!tracks.length) {
