@@ -768,6 +768,7 @@ export const BROWSER_SCRIPT = String.raw`
 
     const TAP_RECONNECT_MS = 1000;
     const TAP_FRAME_MS = 20;
+    const TAP_DECODER_CONFIG = { codec: 'opus', sampleRate: 48000, numberOfChannels: 2 };
 
     const audio = {
         status: 'off',
@@ -782,6 +783,9 @@ export const BROWSER_SCRIPT = String.raw`
         lastTimestamp: -1,
         frames: 0,
         decoded: 0,
+        outputs: 0,
+        copyErrors: 0,
+        lastError: '',
         drops: 0,
         sources: new Set(),
         reconnectTimer: 0,
@@ -842,7 +846,10 @@ export const BROWSER_SCRIPT = String.raw`
         stopScheduledSources();
         if (audio.decoder) {
             try {
+                // reset() returns the decoder to "unconfigured"; a track change
+                // must reconfigure it before the next packet is fed.
                 audio.decoder.reset();
+                audio.decoder.configure(TAP_DECODER_CONFIG);
             } catch {
                 // a closed decoder is replaced on reconnect
             }
@@ -862,6 +869,7 @@ export const BROWSER_SCRIPT = String.raw`
     }
 
     function audioDataHandler(data) {
+        audio.outputs += 1;
         try {
             if (!audio.context || !audio.gain || audio.status === 'off') return;
             const frames = data.numberOfFrames;
@@ -887,14 +895,19 @@ export const BROWSER_SCRIPT = String.raw`
                 source.disconnect();
             };
             audio.decoded += 1;
-        } catch {
-            // A malformed frame must not kill the stream.
+        } catch (error) {
+            audio.copyErrors += 1;
+            audio.lastError = (error && error.message ? error.message : String(error))
+                + ' frames=' + data.numberOfFrames
+                + ' channels=' + data.numberOfChannels
+                + ' sampleRate=' + data.sampleRate
+                + ' format=' + data.format;
         } finally {
             data.close();
         }
     }
-
     function audioDecoderError(error) {
+        audio.lastError = error && error.message ? error.message : String(error);
         notify('Audio decode failed: ' + (error && error.message ? error.message : 'unknown error'), true);
         stopAudio();
     }
@@ -997,7 +1010,7 @@ export const BROWSER_SCRIPT = String.raw`
         audio.generation += 1;
         const generation = audio.generation;
         audio.decoder = new AudioDecoder({ output: audioDataHandler, error: audioDecoderError });
-        audio.decoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 2 });
+        audio.decoder.configure(TAP_DECODER_CONFIG);
         audio.lastTimestamp = -1;
         audio.nextTime = audio.context.currentTime + 0.15;
         audio.controller = new AbortController();
@@ -1110,6 +1123,11 @@ export const BROWSER_SCRIPT = String.raw`
             gain: audio.gain ? audio.gain.gain.value : null,
             rms: audioRms(),
             sampleRate: audio.context ? audio.context.sampleRate : null,
+            context: audio.context ? audio.context.state : null,
+            outputs: audio.outputs,
+            copyErrors: audio.copyErrors,
+            lastError: audio.lastError,
+            decoderState: audio.decoder ? audio.decoder.state : null,
         }),
         toggle: toggleAudio,
         stop: stopAudio,
