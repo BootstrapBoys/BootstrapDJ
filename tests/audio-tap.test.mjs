@@ -50,10 +50,12 @@ test('tap targets are accepted only on loopback http(s)', () => {
 
 test('relay streams tap bytes with the tap token and preserves 200', async () => {
     let receivedAuth = '';
+    let receivedTapHeader = '';
     let receivedPath = '';
 
     const tap = http.createServer((request, response) => {
         receivedAuth = request.headers.authorization ?? '';
+        receivedTapHeader = request.headers['x-bootstrapdj-tap'] ?? '';
         receivedPath = request.url ?? '';
         response.writeHead(200, { 'content-type': 'application/octet-stream' });
         response.write(Buffer.from([0x02, 0x00, 0x02, 0x7b, 0x7d]));
@@ -75,6 +77,7 @@ test('relay streams tap bytes with the tap token and preserves 200', async () =>
         assert.equal(result.status, 200);
         assert.deepEqual([...result.body], [0x02, 0x00, 0x02, 0x7b, 0x7d, 0x01]);
         assert.equal(receivedAuth, 'tap-secret');
+        assert.equal(receivedTapHeader, '1');
         assert.equal(receivedPath, '/tap/123456789012345678');
     } finally {
         await close(proxy);

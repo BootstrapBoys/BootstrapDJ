@@ -57,6 +57,7 @@ export function relayAudioTap(
             path: basePath + '/tap/' + encodeURIComponent(guildId),
             headers: {
                 authorization: target.token,
+                'x-bootstrapdj-tap': '1',
                 accept: 'application/octet-stream',
             },
         },
