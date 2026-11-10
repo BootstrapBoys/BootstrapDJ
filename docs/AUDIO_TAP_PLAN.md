@@ -109,10 +109,11 @@ the previous commit and rebuild.
 | Browser client | tsc, lint, build green; extracted inline script passes `node --check`; page contains `listen-btn`, `AudioDecoder`, `__bdjAudio` |
 | Headless Chrome | Chrome 145: 77 → 117 packets, decoded equals received, RMS 0.06, mute gain 0 / RMS 0, unmute RMS 0.07, server volume 100 unchanged |
 | Live staging | BotTest on staging node: 81 → 122 decoded, RMS 0.06 / 0.10, mute 0, server volume 25 unchanged; direct tap 201 frames at 50.1 fps, 0 drops |
-| Production | Fork jar installed, tap on `127.0.0.1:2444`, DJBoot recovered in 20 s; dashboard sidecar on the feature build, OAuth 401 expected; backups `*.pre-audio-tap-2026-11-10` |
+| Production | Fork jar installed, tap on `127.0.0.1:2444`, DJBoot recovered in 20 s; dashboard sidecar on `main` `5e2c61b`, accepted by the user; backups `*.pre-audio-tap-2026-11-10` |
 
-Production `/root/Bot` is on `feature/dashboard-audio-tap` (`87600f3`); `main` is unchanged and
-should be merged only after the user exercises the feature.
+Production `/root/Bot` is deployed from `main`; the merge commit is `5e2c61b`. The user
+accepted the feature on 2026-11-10 (streams in sync, mute local), and the staging node and
+directory were removed.
 
 ## Security invariants
 
