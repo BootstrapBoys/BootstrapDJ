@@ -30,6 +30,22 @@ SOAK_HOURS=24 \
 node tooling/soak/run.mjs
 ```
 
+For a multi-guild soak, set `SOAK_TARGETS` to a JSON array instead of the single
+`SOAK_GUILD_ID`/`SOAK_VOICE_CHANNEL_ID` pair. The workload rotates one command
+per target per step; the metrics sampler still records every player in the bot:
+
+```bash
+SOAK_TARGETS='[{"guildId":"111","voiceChannelId":"222","textChannelId":"333"},{"guildId":"444","voiceChannelId":"555"}]' \
+SOAK_USER_ID=<test-user-id> \
+SOAK_BRIDGE_SECRET='<from BotTest .env>' \
+SOAK_HOURS=0.5 \
+node tooling/soak/run.mjs
+```
+
+`textChannelId` is optional per target for metrics-only probes, but the bridge
+returns `400 No text channel is configured for replies` for queue commands
+without it.
+
 The test user must be in the voice channel and have DJ access. `run.mjs` loads
 `.env` from the current directory, so run it from `/root/BotTest`.
 

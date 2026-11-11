@@ -15,6 +15,47 @@ test('workloadConfig requires the test guild, voice channel and user', () => {
     assert.equal(config.bridgeUrl, 'http://127.0.0.1:8792/voice/command');
 });
 
+test('workloadConfig accepts multiple guild targets', () => {
+    const config = workloadConfig({
+        SOAK_TARGETS: JSON.stringify([
+            { guildId: 'g1', voiceChannelId: 'v1', textChannelId: 't1' },
+            { guildId: 'g2', voiceChannelId: 'v2' },
+        ]),
+        SOAK_USER_ID: 'u',
+        SOAK_BRIDGE_SECRET: 's',
+    });
+    assert.equal(config.targets.length, 2);
+    assert.equal(config.guildId, 'g1');
+    assert.equal(config.targets[1].guildId, 'g2');
+});
+
+test('workloadStep rotates across guild targets', async () => {
+    const originalFetch = globalThis.fetch;
+    const guilds = [];
+    globalThis.fetch = async (url, options) => {
+        guilds.push(JSON.parse(options.body).guildId);
+        return new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+        });
+    };
+    try {
+        const config = workloadConfig({
+            SOAK_TARGETS: JSON.stringify([
+                { guildId: 'g1', voiceChannelId: 'v1' },
+                { guildId: 'g2', voiceChannelId: 'v2' },
+            ]),
+            SOAK_USER_ID: 'u',
+            SOAK_BRIDGE_SECRET: 's',
+        });
+        await workloadStep(config, 0);
+        await workloadStep(config, 1);
+        assert.deepEqual(guilds, ['g1', 'g2']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('workloadStep sends an authenticated bridge command', async () => {
     const originalFetch = globalThis.fetch;
     let captured;
