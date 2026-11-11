@@ -278,6 +278,7 @@ model RecentTrack {
   playedAt    DateTime @default(now())
 
   @@index([guildId, playedAt])
+  @@index([guildId, id])
 }
 
 model Setup {
