@@ -38,8 +38,6 @@ export class DestroyCoordinator {
         // A delayed timer or collector may still hold the old dispatcher after
         // a rebuild installed a replacement; never tear down the live player.
         if (!this.host.isCurrent()) {
-            this.host.timers.clearPersist();
-            this.host.timers.clearStats();
             this.host.timers.clearPause();
             this.host.timers.clearIdle();
             this.host.stopNowPlayingCollector();
@@ -48,8 +46,6 @@ export class DestroyCoordinator {
             return;
         }
         if (this.host.isShuttingDown()) {
-            this.host.timers.clearPersist();
-            this.host.timers.clearStats();
             this.host.clearQueueEmptyPrompt();
             return;
         }

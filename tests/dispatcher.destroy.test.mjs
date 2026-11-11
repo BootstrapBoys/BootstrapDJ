@@ -8,12 +8,8 @@ import { makeSong } from './helpers.mjs';
 
 function makeTimers() {
     const timers = new PlaybackTimers();
-    timers.persist = setInterval(() => {}, 60_000);
-    timers.stats = setInterval(() => {}, 60_000);
     timers.pause = setTimeout(() => {}, 60_000);
     timers.idle = setTimeout(() => {}, 60_000);
-    timers.persist.unref();
-    timers.stats.unref();
     timers.pause.unref();
     timers.idle.unref();
     return timers;
@@ -103,8 +99,6 @@ test('destroy clears timers, presentation and session before leaving', async () 
     h.coordinator.destroy();
     await new Promise(resolve => setImmediate(resolve));
 
-    assert.equal(h.timers.persist, null);
-    assert.equal(h.timers.stats, null);
     assert.equal(h.timers.pause, null);
     assert.equal(h.timers.idle, null);
     assert.deepEqual(
@@ -134,8 +128,6 @@ test('a stale dispatcher cleans its own resources but never leaves voice', async
 
     h.coordinator.destroy();
 
-    assert.equal(h.timers.persist, null);
-    assert.equal(h.timers.stats, null);
     assert.equal(h.timers.pause, null);
     assert.equal(h.timers.idle, null);
     assert.deepEqual([h.calls.collector, h.calls.messages, h.calls.prompt], [1, 1, 1]);
@@ -146,13 +138,11 @@ test('a stale dispatcher cleans its own resources but never leaves voice', async
     assert.equal(h.calls.destroyed, 0);
 });
 
-test('shutdown clears intervals and the prompt but does not leave', () => {
+test('shutdown clears the prompt but leaves pause and idle timers alone', () => {
     const h = harness({ shuttingDown: true });
 
     h.coordinator.destroy();
 
-    assert.equal(h.timers.persist, null);
-    assert.equal(h.timers.stats, null);
     assert.notEqual(h.timers.pause, null);
     assert.notEqual(h.timers.idle, null);
     assert.equal(h.calls.prompt, 1);
