@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyFail, replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
@@ -7,8 +8,10 @@ export default defineMusicCommand({
     aliases: ['sk'],
     run: async ({ client, ctx, player }) => {
         if (!player) return;
-        if (!player.queue.length)
-            return await replyFail(client, ctx, 'There are no songs in the queue.');
+        const current = player.current;
+        if (!player.queue.length && !current) {
+            return await replyFail(client, ctx, tr(ctx, 'commands:core.noQueue'));
+        }
 
         player.skip();
         if (!ctx.isInteraction) {
@@ -16,8 +19,14 @@ export default defineMusicCommand({
             return;
         }
 
-        const current = player.current;
-        if (!current) return await replyFail(client, ctx, 'Nothing playing right now');
-        return await replyOk(client, ctx, `Skipped [${current.info.title}](${current.info.uri})`);
+        if (!current) return await replyFail(client, ctx, tr(ctx, 'commands:core.nothingPlaying'));
+        return await replyOk(
+            client,
+            ctx,
+            tr(ctx, 'commands:core.skipped', {
+                title: current.info.title,
+                uri: current.info.uri ?? '',
+            })
+        );
     },
 });
