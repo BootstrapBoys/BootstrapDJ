@@ -1,11 +1,11 @@
 # Pre-release audit report
 
-**Candidate:** `dev` code at `1f4e28a9`<br>
+**Candidate:** `dev` code at `464cb151`<br>
 **Audit date:** 2026-11-11<br>
-**Production baseline:** deployed `/root/Bot` at `e5c82580`; `origin/main` contains that code plus
+**Production baseline:** deployed `/root/Bot` at `464cb151`; `origin/main` contains that code plus
 this documentation update<br>
-**Production status:** `DJBoot` (`e5c82580`), `dashboard`, `Lavalink`, and `Lavalink-Backup`
-online; deployed 2026-11-11 17:13 UTC<br>
+**Production status:** `DJBoot` (`464cb151`), `dashboard`, `Lavalink`, and `Lavalink-Backup`
+online; deployed 2026-11-11 17:31 UTC<br>
 **Scope:** `main..dev`, 36 code commits, 38 files (performance, dashboard SSE/cache, audio-stream
 test control, soak tooling, schema index, optional cleanup, documentation)<br>
 **Overall result:** **pass** — deployed to production and verified on 2026-11-11.
@@ -139,3 +139,6 @@ and passed verification.
   61 rows were preserved.
 - `DJBoot`, `dashboard`, `Lavalink`, and `Lavalink-Backup` are online. The dashboard control API
   returns 200; the public listener remains on `8795`; no Lavalink or firewall change was made.
+- Deployed `464cb151` at **2026-11-11 17:31 UTC**: recognized prefix command messages are deleted
+  after handling; DB backup `/root/BotDBBackups/20261111T173116Z`; code-only rebuild, no schema
+  change, `DJBoot` ready.
