@@ -160,7 +160,7 @@ export const BROWSER_SCRIPT = String.raw`
         },
         {
             title: 'Browser mode',
-            keys: ['dashboardvoicepriority', 'audiotapallowall', 'audiotaproles'],
+            keys: ['dashboardvoicechannel', 'dashboardvoicepriority', 'audiotapallowall', 'audiotaproles'],
         },
         { title: 'Autoplay', keys: ['autoplaysource', 'autoplayseeds'] },
         { title: 'Responses', keys: ['ephemeral', 'announce', 'announcechannel', 'deleteafter'] },
@@ -212,6 +212,7 @@ export const BROWSER_SCRIPT = String.raw`
         maxplaylistlength: 'Max playlist length (s)',
         locked: 'Session locked',
         allowthreads: 'Commands in threads',
+        dashboardvoicechannel: 'Dashboard voice channel ID',
         dashboardvoicepriority: 'Discord takes priority',
         audiotapallowall: 'Allow all members to listen',
         audiotaproles: 'Listening role IDs',
@@ -257,6 +258,8 @@ export const BROWSER_SCRIPT = String.raw`
         timeoutconfirmation: 'Ask “Still listening?” after this many seconds. 0 disables.',
         locked: 'Only server managers may change settings or run commands while locked.',
         allowthreads: 'Permit commands inside threads.',
+        dashboardvoicechannel:
+            'Voice channel ID the bot joins for browser-only playback. Blank uses the host DASHBOARD_VOICE_CHANNEL_ID fallback.',
         dashboardvoicepriority:
             'When Dashboard browser playback is active, a Discord user’s play command clears that queue and moves the bot to their voice channel. Disable to keep browser playback in place.',
         audiotapallowall:
@@ -288,6 +291,7 @@ export const BROWSER_SCRIPT = String.raw`
         'announcechannel',
         'commandchannel',
         'voicechannel',
+        'dashboardvoicechannel',
         'audiotaproles',
     ]);
 

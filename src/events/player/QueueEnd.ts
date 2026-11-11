@@ -4,6 +4,7 @@ import type { Player } from 'shoukaku';
 import type { Song } from '../../core/Dispatcher.js';
 import type { BootstrapClient, Dispatcher } from '../../core/index.js';
 import { Event } from '../../core/index.js';
+import { dashboardVoiceChannelIdFor } from '../../lib/DashboardVoice.js';
 import { formatDuration } from '../../lib/NodeStatus.js';
 
 export default class QueueEnd extends Event {
@@ -86,7 +87,7 @@ export default class QueueEnd extends Event {
         // The dashboard voice channel is a listening surface, not a 24/7
         // channel. Once the queue is empty, leave immediately instead of
         // waiting for the normal confirmation/idle timeout.
-        const dashboardChannel = (this.client.config.dashboardVoiceChannelId ?? '').trim();
+        const dashboardChannel = dashboardVoiceChannelIdFor(this.client, dispatcher);
         const dashboardVoiceId = guild.members?.me?.voice.channelId ?? dispatcher.voiceId;
         if (dashboardChannel && dashboardVoiceId === dashboardChannel) {
             dispatcher.destroy();

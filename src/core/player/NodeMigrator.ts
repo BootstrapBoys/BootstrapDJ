@@ -20,6 +20,7 @@ export interface ResumableState {
     leaveOnEnd: boolean;
     pauseWhenEmpty: boolean;
     dashboardMode: boolean;
+    dashboardVoiceChannelId: string | null;
     paused247: boolean;
     skipRecentRecording: boolean;
     pendingDefaultShuffle: boolean;
@@ -66,6 +67,7 @@ export class NodeMigrator {
             leaveOnEnd: dispatcher.leaveOnEnd ?? false,
             pauseWhenEmpty: dispatcher.pauseWhenEmpty ?? false,
             dashboardMode: dispatcher.dashboardMode ?? false,
+            dashboardVoiceChannelId: dispatcher.dashboardVoiceChannelId ?? null,
             paused247: dispatcher.paused247 ?? false,
             skipRecentRecording: dispatcher.skipRecentRecording ?? false,
             pendingDefaultShuffle: dispatcher.pendingDefaultShuffle ?? false,
@@ -134,6 +136,7 @@ export class NodeMigrator {
             rebuilt.leaveOnEnd = state.leaveOnEnd;
             rebuilt.pauseWhenEmpty = state.pauseWhenEmpty;
             rebuilt.dashboardMode = state.dashboardMode;
+            rebuilt.dashboardVoiceChannelId = state.dashboardVoiceChannelId;
             rebuilt.paused247 = state.paused247;
             rebuilt.skipRecentRecording = state.skipRecentRecording;
             rebuilt.pendingDefaultShuffle = state.pendingDefaultShuffle;

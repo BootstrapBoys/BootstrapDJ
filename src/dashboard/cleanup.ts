@@ -1,6 +1,7 @@
 import { ChannelType } from 'discord.js';
 
 import type { BootstrapClient, Dispatcher } from '../core/index.js';
+import { dashboardVoiceChannelIdFor } from '../lib/DashboardVoice.js';
 import { getDashboardListenerCount, setDashboardListenerCount } from './listeners.js';
 
 const timers = new Map<string, NodeJS.Timeout>();
@@ -11,8 +12,12 @@ type DashboardVoiceChannel = {
     members: Map<string, { user: { bot: boolean } }>;
 };
 
-function dashboardChannel(client: BootstrapClient, guildId: string): DashboardVoiceChannel | null {
-    const configured = (client.config.dashboardVoiceChannelId ?? '').trim();
+function dashboardChannel(
+    client: BootstrapClient,
+    guildId: string,
+    player: Dispatcher | null | undefined = client.queue.get(guildId)
+): DashboardVoiceChannel | null {
+    const configured = dashboardVoiceChannelIdFor(client, player);
     if (!configured) return null;
     const guild = client.guilds.cache.get(guildId);
     const channelId = guild?.members.me?.voice.channelId;
@@ -33,7 +38,7 @@ function hasDiscordListener(channel: DashboardVoiceChannel): boolean {
 
 function clearAndLeave(client: BootstrapClient, guildId: string, player: Dispatcher): void {
     if (client.queue.get(guildId) !== player) return;
-    const channel = dashboardChannel(client, guildId);
+    const channel = dashboardChannel(client, guildId, player);
     if (!channel || hasDiscordListener(channel) || getDashboardListenerCount(guildId) > 0) return;
 
     client.logger.info(
@@ -107,7 +112,7 @@ export function scheduleDashboardCleanup(
     cancelDashboardCleanup(guildId);
     const player = client.queue.get(guildId);
     if (!player) return;
-    const channel = dashboardChannel(client, guildId);
+    const channel = dashboardChannel(client, guildId, player);
     if (!channel) return;
     schedule(client, guildId, player, channel, delayMs);
 }

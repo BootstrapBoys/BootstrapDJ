@@ -5,9 +5,9 @@ import { ChannelType } from 'discord.js';
 
 import { ensureDashboardPlayer } from '../dist/dashboard/playback.js';
 
-function makeHarness({ existing = null } = {}) {
+function makeHarness({ existing = null, settings = {}, envChannel = '' } = {}) {
     let created = 0;
-    const player = { dashboardMode: false, isStale: false };
+    const player = { dashboardMode: false, dashboardVoiceChannelId: null, isStale: false };
     const voice = {
         id: 'vc',
         type: ChannelType.GuildVoice,
@@ -42,6 +42,10 @@ function makeHarness({ existing = null } = {}) {
     const client = {
         guilds: { cache: new Map([['g1', guild]]) },
         queue,
+        config: { dashboardVoiceChannelId: envChannel },
+        db: {
+            getGuildSettings: async () => settings,
+        },
     };
     return { client, player, created: () => created };
 }
@@ -62,9 +66,27 @@ test('dashboard playback refuses a missing channel configuration', async () => {
     assert.deepEqual(result, {
         ok: false,
         status: 409,
-        error: 'The bot is not connected. Set DASHBOARD_VOICE_CHANNEL_ID to enable browser-only playback.',
+        error: 'The bot is not connected. Set the dashboard voice channel setting or DASHBOARD_VOICE_CHANNEL_ID to enable browser-only playback.',
     });
     assert.equal(harness.created(), 0);
+});
+
+test('dashboard playback uses the per-guild voice channel setting', async () => {
+    const harness = makeHarness({ settings: { dashboardvoicechannel: 'vc' } });
+    const result = await ensureDashboardPlayer(harness.client, 'g1');
+
+    assert.equal(result.ok, true);
+    assert.equal(harness.created(), 1);
+    assert.equal(harness.player.dashboardVoiceChannelId, 'vc');
+});
+
+test('dashboard playback falls back to the host voice channel', async () => {
+    const harness = makeHarness({ envChannel: 'vc' });
+    const result = await ensureDashboardPlayer(harness.client, 'g1');
+
+    assert.equal(result.ok, true);
+    assert.equal(harness.created(), 1);
+    assert.equal(harness.player.dashboardVoiceChannelId, 'vc');
 });
 
 test('dashboard playback reuses a healthy player without rejoining', async () => {

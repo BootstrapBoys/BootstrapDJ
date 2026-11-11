@@ -6,8 +6,8 @@ import {
 } from 'discord.js';
 import { LoadType, type Track } from 'shoukaku';
 
-import config from '../config.js';
 import type { BootstrapClient, Dispatcher, Song } from '../core/index.js';
+import { resolveDashboardVoiceChannelId } from '../lib/DashboardVoice.js';
 import { checkTrack, getPlayLimits } from '../lib/PlayLimits.js';
 import { scheduleDashboardCleanupFromSettings } from './cleanup.js';
 import type { QueueAddResult } from './host.js';
@@ -38,17 +38,19 @@ function textChannelFor(guild: Guild): GuildTextBasedChannel | null {
 export async function ensureDashboardPlayer(
     client: BootstrapClient,
     guildId: string,
-    configuredChannelId: string = config.dashboardVoiceChannelId
+    configuredChannelId?: string
 ): Promise<EnsureResult> {
     const existing = client.queue.get(guildId);
     if (existing && !existing.isStale) return { ok: true, player: existing };
 
-    const channelId = (configuredChannelId ?? '').trim();
+    const channelId = (
+        configuredChannelId ?? (await resolveDashboardVoiceChannelId(client, guildId))
+    ).trim();
     if (!channelId) {
         return {
             ok: false,
             status: 409,
-            error: 'The bot is not connected. Set DASHBOARD_VOICE_CHANNEL_ID to enable browser-only playback.',
+            error: 'The bot is not connected. Set the dashboard voice channel setting or DASHBOARD_VOICE_CHANNEL_ID to enable browser-only playback.',
         };
     }
 
@@ -65,7 +67,7 @@ export async function ensureDashboardPlayer(
         return {
             ok: false,
             status: 409,
-            error: 'DASHBOARD_VOICE_CHANNEL_ID must point to a voice channel in this server.',
+            error: 'The configured dashboard voice channel must point to a voice channel in this server.',
         };
     }
 
@@ -89,6 +91,7 @@ export async function ensureDashboardPlayer(
     try {
         const player = await client.queue.create(guild, channel, text);
         player.dashboardMode = true;
+        player.dashboardVoiceChannelId = channelId;
         return { ok: true, player };
     } catch (error) {
         return {

@@ -1,6 +1,7 @@
 import { ChannelType, PermissionFlagsBits, VoiceState } from 'discord.js';
 
 import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import { dashboardVoiceChannelIdFor } from '../../lib/DashboardVoice.js';
 import { scheduleDashboardCleanupFromSettings } from '../../dashboard/cleanup.js';
 
 export default class VoiceStateUpdate extends Event {
@@ -18,8 +19,8 @@ export default class VoiceStateUpdate extends Event {
     }
 
     /** Browser playback may stay connected while it still has audio. */
-    private isDashboardChannel(channelId: string | null | undefined): boolean {
-        const configured = (this.client.config?.dashboardVoiceChannelId ?? '').trim();
+    private isDashboardChannel(player: Dispatcher, channelId: string | null | undefined): boolean {
+        const configured = dashboardVoiceChannelIdFor(this.client, player);
         return Boolean(configured && channelId === configured);
     }
 
@@ -45,7 +46,7 @@ export default class VoiceStateUpdate extends Event {
             ) {
                 return;
             }
-            if (this.isDashboardChannel(channel.id)) return;
+            if (this.isDashboardChannel(player, channel.id)) return;
             if (channel.members.some(member => !member.user.bot)) return;
             player.destroy();
         }, delayMs);
@@ -110,7 +111,7 @@ export default class VoiceStateUpdate extends Event {
         }
 
         if (!botChannel) return;
-        if (this.isDashboardChannel(botChannel.id)) {
+        if (this.isDashboardChannel(player, botChannel.id)) {
             // The dashboard channel has no ordinary empty-channel timer. It
             // stays while a Discord member or a browser audio stream is
             // listening; otherwise the shared cleanup path clears the queue

@@ -145,6 +145,7 @@ export default class Dispatcher {
     public pauseWhenEmpty = false;
     /** Created by the dashboard's browser-only voice path, not a Discord caller. */
     public dashboardMode = false;
+    public dashboardVoiceChannelId: string | null = null;
     public paused247 = false;
     public history: Song[] = [];
     /** Mutes the periodic persist while a restore is filling the state. */

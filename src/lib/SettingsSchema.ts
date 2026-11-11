@@ -32,6 +32,7 @@ export const DEFAULTS: Record<string, string> = {
     allowthreads: 'true',
     audiotapallowall: 'true',
     audiotaproles: '',
+    dashboardvoicechannel: '',
     dashboardvoicepriority: 'true',
     timeoutlisteners: '5',
     timeoutpause: '0',

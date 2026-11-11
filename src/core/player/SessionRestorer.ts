@@ -4,6 +4,7 @@ import { LoadType } from 'shoukaku';
 import Dispatcher, { fromSaved, type SavedTrack, Song } from '../Dispatcher.js';
 import type { BootstrapClient } from '../index.js';
 import type { Session } from '../../generated/prisma/client.js';
+import { resolveDashboardVoiceChannelId } from '../../lib/DashboardVoice.js';
 
 /** True when at least one human is connected; bots do not count as listeners. */
 export function hasListeners(
@@ -245,7 +246,7 @@ export async function restoreSession(
     // someone to arrive before discarding the queue. 24/7 and the configured
     // browser-only channel skip the wait.
     const stay = await client.db.get_247(guildId);
-    const dashboardChannel = (client.config.dashboardVoiceChannelId ?? '').trim();
+    const dashboardChannel = await resolveDashboardVoiceChannelId(client, guildId);
     const browserOnly = Boolean(dashboardChannel && voiceChannel.id === dashboardChannel);
     if (!stay && !browserOnly && !hasListeners(voiceChannel.members.values())) {
         const window = client.config.sessionEmptyWait;
@@ -281,6 +282,7 @@ export async function restoreSession(
     try {
         dispatcher = await client.queue.create(guild, voiceChannel, textChannel);
         dispatcher.dashboardMode = browserOnly;
+        dispatcher.dashboardVoiceChannelId = browserOnly ? dashboardChannel : null;
         dispatcher.restoring = true;
         dispatcher.loop =
             session.loop === 'repeat' || session.loop === 'queue' ? session.loop : 'off';
