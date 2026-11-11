@@ -264,6 +264,21 @@ warm runs measured:
 This is a local microbenchmark, not a production query profile. The index is a schema change and
 therefore requires `prisma db push` and a production DB backup before it is deployed.
 
+### Bun spike result (2026-11-11)
+
+- Bun **1.4.4** was installed at `/root/.bun/bin/bun` (the pre-existing 1.0.2 was too old).
+- A separate `/root/BotBunTest` clone of `dev` was created; `bun install` and `bun run build`
+  succeeded, including Prisma client generation.
+- Under Bun, the bot connected to the Discord Gateway (`BootstrapDJ-DEV#7138 is ready`) and both
+  Lavalink nodes became ready.
+- **Runtime blocker:** Prisma's `@prisma/adapter-better-sqlite3` fails with
+  `'better-sqlite3' is not yet supported in Bun`. Setup, session restore, 24/7 and lease queries
+  all fail. The same test run also lacked dashboard auth in the copied BotTest env, but the database
+  adapter is the hard blocker for the music bot.
+- Decision: do not migrate to Bun. Node 24 remains the supported production runtime. A future Bun
+  path would require replacing the SQLite adapter/provider, which is a larger change than a runtime
+  swap and is not justified by the current evidence.
+
 ### Verification status
 
 - `npm run build`, `npm run lint`, and `npm test` pass on `dev`; tracked files pass the Prettier
@@ -279,8 +294,26 @@ therefore requires `prisma db push` and a production DB backup before it is depl
 - The sidecar/language decision remains deferred until telemetry shows the sidecar is a bottleneck.
   No active-node cache was added: the resolver is an in-memory connected-node sort, and caching it
   would introduce a stale-node failure mode without a measured hot path.
-- The P2 SSE transport option is not implemented; the low-risk polling option was selected. A
-  multi-viewer request-count test remains pending.
+- The P2 SSE transport option is not implemented; the low-risk polling option was selected. The
+  multi-viewer polling count is now measured (below); SSE fan-out and hidden-tab behavior remain
+  unmeasured.
+
+### 10-client polling test (2026-11-11)
+
+The test used an isolated `ViewerTest` process from the `BotBunTest` clone of `dev` on the bot
+host, with token-mode dashboard access and `timeoutlisteners=0` on the test guild so the player
+stayed alive. It was embedded dashboard mode, not the production sidecar topology.
+
+- 10 concurrent clients, 2-second interval, 30 seconds
+- Each client used a distinct loopback `X-Forwarded-For` address so the dashboard's 300-read/minute
+  per-IP limiter did not turn the test into a rate-limit test
+- **150/150 successful requests, 0 failures**
+- p95 **9 ms**, max **11 ms**
+- Server `dashboardPlayerRequests` counter: **4 → 154**, exactly **+150**
+
+This validates the polling path and the counter. It does not validate OAuth permissions, audio
+Listen concurrency (token mode uses one fallback identity), hidden-tab suspension, or sidecar
+upstream fan-out.
 
 ## 6. Execution order and gates
 
