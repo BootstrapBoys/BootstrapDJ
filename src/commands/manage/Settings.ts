@@ -1,6 +1,12 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import {
+    isSupportedLanguage,
+    languageName,
+    resolveLanguage,
+    SUPPORTED_LANGUAGES,
+} from '../../lib/i18n.js';
 import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../../lib/SettingsSchema.js';
 
 type Field = { key: string; value: string; reset: boolean };
@@ -229,6 +235,16 @@ export default class Settings extends Command {
                 ctx,
                 '`ephemeral` must be `true` (private) or `false` (public).'
             );
+        }
+        if (key === 'language') {
+            if (!isSupportedLanguage(field.value)) {
+                return await this.fail(
+                    client,
+                    ctx,
+                    `Choose one of: ${SUPPORTED_LANGUAGES.map(language => languageName(language)).join(', ')}.`
+                );
+            }
+            field.value = resolveLanguage(field.value);
         }
 
         await client.db.setGuildSetting(guild.id, key, field.value);
