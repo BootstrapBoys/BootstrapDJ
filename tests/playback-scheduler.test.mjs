@@ -23,13 +23,12 @@ test('the scheduler persists only when an active player is due', () => {
     const scheduler = new PlaybackScheduler();
     const player = makePlayer();
     scheduler.register(player);
-    const start = Date.now();
 
-    scheduler.tick(start + 9_999);
+    scheduler.tick(Date.now());
     assert.equal(player.persists, 0);
-    scheduler.tick(start + 10_000);
+    scheduler.tick(Date.now() + 10_001);
     assert.equal(player.persists, 1);
-    scheduler.tick(start + 10_001);
+    scheduler.tick(Date.now() + 10_002);
     assert.equal(player.persists, 1);
 
     scheduler.unregister(player.guildId, player);

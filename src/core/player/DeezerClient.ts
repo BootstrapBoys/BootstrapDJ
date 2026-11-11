@@ -15,6 +15,10 @@ export type DeezerChartTrack = {
 };
 
 const relatedArtistCache = new Map<string, string[]>();
+const trackIdCache = new Map<string, { id: string | null; at: number }>();
+const TRACK_ID_TTL_MS = 30 * 60_000;
+const TRACK_ID_NEGATIVE_TTL_MS = 60_000;
+const TRACK_ID_CACHE_LIMIT = 500;
 let chartCache: { at: number; tracks: DeezerChartTrack[] } | null = null;
 const AUTOPLAY_CHART_URL = 'https://api.deezer.com/chart/0/tracks?limit=50';
 const AUTOPLAY_CHART_TTL_MS = 30 * 60_000;
@@ -39,6 +43,30 @@ export class DeezerClient {
         if (song.info.sourceName === 'deezer' && /^\d+$/.test(song.info.identifier)) {
             return song.info.identifier;
         }
+
+        const cacheKey = song.info.isrc
+            ? `isrc:${song.info.isrc}`
+            : song.info.author || song.info.title
+              ? `query:${song.info.author ?? ''}|${song.info.title ?? ''}`.toLowerCase()
+              : '';
+        const cached = cacheKey ? trackIdCache.get(cacheKey) : undefined;
+        if (cached) {
+            const ttl = cached.id === null ? TRACK_ID_NEGATIVE_TTL_MS : TRACK_ID_TTL_MS;
+            if (Date.now() - cached.at < ttl) return cached.id;
+        }
+
+        const id = await this.resolveTrackId(song);
+        if (cacheKey) {
+            if (trackIdCache.size >= TRACK_ID_CACHE_LIMIT) {
+                const oldest = trackIdCache.keys().next().value;
+                if (oldest) trackIdCache.delete(oldest);
+            }
+            trackIdCache.set(cacheKey, { id, at: Date.now() });
+        }
+        return id;
+    }
+
+    private async resolveTrackId(song: Song): Promise<string | null> {
         if (song.info.isrc) {
             const byIsrc = await this.fetchJson<DeezerTrackRef>(
                 `${DEEZER_API}/track/isrc:${song.info.isrc}`
