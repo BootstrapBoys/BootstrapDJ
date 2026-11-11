@@ -386,6 +386,23 @@ signed session for a non-member; `/api/guilds` returned an empty list and `/api/
 `403`. The real OAuth account was the configured owner `zebz213`; its sidecar log showed SSE
 attachments for both the production guild and the test guild. The active BotTest soak remains open.
 
+### Ten-stream audio load test (2026-11-11)
+
+The temporary per-user limit was set to **10** only in the isolated test checkout. The bot was
+seeded with one player in each of three test guilds; ten dashboard tabs were then opened as
+4 + 4 + 2 across `Zebz Testing Server`, `BootstrapTester's server`, and
+`BootstrapTester's server2`.
+
+- Lavalink logged **10 active tap listeners** (4 + 4 + 2) with no listener-limit `429`s.
+- The dashboard had **10 established audio streams** (plus the control/SSE connection).
+- 30-second sample: host load average **1.08 on 4 cores**; Lavalink **0.5% CPU / ~455 MB RSS**;
+  dashboard **0.4% / ~114 MB**; cloudflared **0.4% / ~47 MB**; total memory used **1.67 GB**.
+- Dashboard control reads moved from **172 to 192** in 30 seconds; no stream/tap errors appeared.
+
+This validates the temporary per-user cap and the audio fan-out path. It is not the 10-player
+engine soak: only three players were active, and the dashboard was in anonymous loopback mode, so
+all tabs shared one fallback identity. Production remains at the default limit of **1**.
+
 Neither feature changes the audio tap or Discord playback.
 
 ## 6. Execution order and gates
