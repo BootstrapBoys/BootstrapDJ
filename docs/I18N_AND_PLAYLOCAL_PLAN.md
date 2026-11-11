@@ -1,6 +1,7 @@
 # i18n and /playlocal implementation plan
 
-**Status:** proposed<br>
+**Status:** implemented on `dev` (foundation, `/playlocal`, core command copy,
+metadata, validator; long-tail embeds remain follow-up)<br>
 **Baseline:** `main` / `dev` at `13c3a335`<br>
 **Related review:** `docs/UPSTREAM_4.2-4.7_REVIEW.md`
 

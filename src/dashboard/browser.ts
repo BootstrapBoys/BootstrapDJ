@@ -22,6 +22,7 @@ export const BROWSER_SCRIPT = String.raw`
         csrf: '',
         guilds: [],
         data: null,
+        language: 'en-US',
         access: { member: false, owner: false, admin: false, controls: false, settings: false, listen: false },
         queueSignature: null,
     };
@@ -144,6 +145,29 @@ export const BROWSER_SCRIPT = String.raw`
         { value: 'en-US', label: 'English (United States)' },
         { value: 'en-GB', label: 'English (United Kingdom)' },
     ];
+
+    const DASHBOARD_COPY = {
+        'en-US': {
+            settingsTitle: 'Settings',
+            settingsCancel: 'Cancel',
+            settingsSave: 'Save settings',
+            languageLabel: 'Language',
+            languageDescription:
+                'Language used by the bot for this server. English (United States) is the fallback.',
+        },
+        'en-GB': {
+            settingsTitle: 'Settings',
+            settingsCancel: 'Cancel',
+            settingsSave: 'Save settings',
+            languageLabel: 'Language',
+            languageDescription:
+                'Language used by the bot for this server. English (United States) is the fallback language.',
+        },
+    };
+
+    function copy(key, fallback) {
+        return (DASHBOARD_COPY[state.language] || DASHBOARD_COPY['en-US'])[key] || fallback;
+    }
 
     const GROUPS = [
         { title: 'Language', keys: ['language'] },
@@ -332,13 +356,21 @@ export const BROWSER_SCRIPT = String.raw`
     function buildSettingField(key, value) {
         const box = element('label', 'setting' + (WIDE_KEYS.has(key) ? ' wide' : ''));
         const heading = element('span', 'setting-label small');
-        heading.appendChild(element('span', '', LABELS[key] || key));
-        if (DESCRIPTIONS[key]) {
+        const label =
+            key === 'language'
+                ? copy('languageLabel', LABELS[key] || key)
+                : LABELS[key] || key;
+        const description =
+            key === 'language'
+                ? copy('languageDescription', DESCRIPTIONS[key] || '')
+                : DESCRIPTIONS[key];
+        heading.appendChild(element('span', '', label));
+        if (description) {
             const help = element('span', 'help', '?');
             help.tabIndex = 0;
             help.setAttribute('role', 'note');
-            help.setAttribute('aria-label', DESCRIPTIONS[key]);
-            help.dataset.tip = DESCRIPTIONS[key];
+            help.setAttribute('aria-label', description);
+            help.dataset.tip = description;
             heading.appendChild(help);
         }
         box.appendChild(heading);
@@ -656,6 +688,7 @@ export const BROWSER_SCRIPT = String.raw`
 
     function render() {
         const data = state.data;
+        state.language = data.settings?.language || 'en-US';
         renderPlayer(data);
         renderFilters(data.filters);
         refreshAudioForFilterChange(data.filters);
@@ -1582,6 +1615,9 @@ export const BROWSER_SCRIPT = String.raw`
     const settingsModal = find('#settings-modal');
 
     function openSettings() {
+        find('#settings-title').textContent = copy('settingsTitle', 'Settings');
+        find('#settings-cancel').textContent = copy('settingsCancel', 'Cancel');
+        find('#save').textContent = copy('settingsSave', 'Save settings');
         settingsModal.classList.add('open');
     }
 
