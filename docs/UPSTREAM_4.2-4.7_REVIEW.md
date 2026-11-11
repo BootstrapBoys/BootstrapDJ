@@ -53,8 +53,14 @@ Discord attachment, checks `audio/*` or `video/*`, and asks Lavalink for
 `source: "local"` using the attachment URL. The command creates or reuses a
 player and adds the first returned track.
 
-Our `Queue.search()` currently accepts a query and engine prefix only; local
-source support needs a deliberate path and a Lavalink compatibility spike.
+Our production node does **not** expose a `local` source manager; its `http`
+source resolves the attachment URL and was verified with the test bot. The
+implementation therefore uses the supported HTTP path, not a host filesystem
+path.
+
+Our `Queue.search()` already treats an absolute HTTP URL as a literal URL, so
+`/playlocal` can reuse the normal play path without adding a separate Lavalink
+source. The command validates the attachment before calling `runPlayRequest`.
 
 ### 3. Playlist and queue fixes
 

@@ -92,15 +92,12 @@ proven before implementation.
 
 - Test the existing production/BotTest node with `source: "local"` and a Discord
   attachment URL through Shoukaku, not only `loadTracks` metadata.
-- Confirm whether the node accepts the CDN URL directly. If it does not, choose
-  one of:
-  - an HTTP source path for the attachment URL; or
-  - a short-lived downloaded file in a controlled directory visible to the
-    Lavalink host, with size caps and TTL cleanup.
-- Record supported containers/codecs, attachment size limits, URL expiry
-  behavior and node-side path/permission requirements.
-- **Gate:** audio must actually play on the test node. Metadata load alone is not
-  acceptance.
+- **Result:** this node has no `local` source manager. Its supported `http`
+  source resolves the attachment-style URL, so the implementation uses the
+  supported HTTP source instead of `local`.
+- No short-lived downloaded-file path is needed for the implemented node.
+- **Gate:** audio must actually play on the test node. **PASS** — the test bot
+  played a loopback WAV and logged `start` → `finished`.
 
 ### Phase 1 — command and guards (S/M)
 
