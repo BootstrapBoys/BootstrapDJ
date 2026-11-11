@@ -1,6 +1,6 @@
 # BootstrapDJ performance optimization plan
 
-**Status:** proposed; no runtime changes yet<br>
+**Status:** implemented on `dev`; pending active soak and CI verification<br>
 **Baseline commit:** `dfd7ccb`<br>
 **Scope:** bot process, dashboard sidecar, persistence, autoplay, and runtime experiments
 
@@ -230,7 +230,53 @@ the dashboard contract and is not worth it unless the sidecar is a measured bott
 rewrite is explicitly out of scope: Discord voice/DAVE, Opus and Lavalink integration carry the risk,
 while the audio work is already outside the bot process.
 
-## 5. Execution order and gates
+## 5. Implementation status on `dev`
+
+The following work is committed on `dev`; `main` and production remain unchanged.
+
+| Workstream | Implementation | Verification |
+|---|---|---|
+| Counters | Process counters for session writes/bytes/skips/errors, stats batches/rows/flush time, autoplay cache/coalescing/search, dashboard requests | `/internal/metrics` exposes them; dashboard metrics test |
+| Persistence | Signature + 2 s position threshold, in-flight coalescing, queued follow-up write | `tests/session-persistence.test.mjs` |
+| Scheduler | One unref'd process timer; per-guild deadlines; paused/empty/missing players skipped; destroy/register race covered | `tests/playback-scheduler.test.mjs` |
+| Listener stats | In-memory cross-guild accumulation, one transaction per minute, flush on graceful shutdown | `tests/listener-stats-batcher.test.mjs` |
+| Dashboard polling | 2 s visible poll, no hidden-tab polls, in-flight guard | dashboard UI test |
+| Autoplay | In-flight mix coalescing, 60 s negative cache, bounded Deezer track-id cache | `tests/autoplay-mix.test.mjs` |
+| Database | `RecentTrack(guildId, id)` index for the retention query | SQLite microbenchmark below |
+
+### Measured query result
+
+The retention query is:
+
+```sql
+SELECT id FROM RecentTrack WHERE guildId = ? ORDER BY id DESC LIMIT 1 OFFSET 100
+```
+
+With the existing `(guildId, playedAt)` index, SQLite used a covering index but still built a temp
+B-tree for `ORDER BY id`. Adding `(guildId, id)` removed the sort. On 4,000 seeded rows, 5,000
+warm runs measured:
+
+| Index | Mean query time | Plan |
+|---|---:|---|
+| `(guildId, playedAt)` | 0.0845 ms | covering index + temp B-tree for order |
+| `(guildId, id)` | 0.0073 ms | covering index, no sort |
+
+This is a local microbenchmark, not a production query profile. The index is a schema change and
+therefore requires `prisma db push` and a production DB backup before it is deployed.
+
+### Verification status
+
+- `npm run build`, `npm run lint`, `npm run format`, and `npm test` pass on `dev` at the last
+  local gate; the full test count is **412**.
+- The required active BotTest soak (10+ players, at least 30 minutes) has **not** been run in this
+  pass, so the write-count, event-loop and command-latency acceptance numbers remain open. Do not
+  treat the microbenchmark as a soak result.
+- No Bun runtime is installed on the build host, so the P3 Bun spike is a documented deferral, not
+  a completed comparison. No runtime or language change is being made.
+- The P2 SSE transport option is not implemented; the low-risk polling option was selected. A
+  multi-viewer request-count test remains pending.
+
+## 6. Execution order and gates
 
 | Phase | Work | Gate |
 |---|---|---|
@@ -254,17 +300,18 @@ npm test
 
 `npm run format` is a repository-wide check; the untracked handoff markdown is not part of the commit.
 
-## 6. Production rollout
+## 7. Production rollout
 
 - Use BotTest for every behavior change; do not restart production for benchmarks.
 - Deploy one workstream at a time; record the commit and before/after metrics.
 - Bot-side changes require `DJBoot` restart; dashboard-only changes require only the `dashboard`
   sidecar restart.
-- No schema migration is expected. If one appears, back up the production DB first and follow the
-  migration checklist.
+- The recent-track index is the only schema change in this pass. Back up the production DB, run
+  `npx prisma db push`, and verify the index exists before restarting. No other migration is expected.
+  If one appears, back up the production DB first and follow the migration checklist.
 - Roll back by restoring the previous deployed SHA and restarting the affected process.
 
-## 7. Definition of done
+## 8. Definition of done
 
 - Baseline and final active-soak reports exist.
 - All prior tests plus new regression tests pass; CI is green.

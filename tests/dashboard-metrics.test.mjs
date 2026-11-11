@@ -20,6 +20,7 @@ test('collectMetrics reports memory, event loop and player counts', () => {
             ],
         ]),
         ws: { ping: 42 },
+        listenerStats: { pendingCount: () => 7 },
     };
 
     const metrics = collectMetrics(client);
@@ -33,5 +34,7 @@ test('collectMetrics reports memory, event loop and player counts', () => {
     assert.equal(metrics.players[0].autoplay, true);
     assert.equal(typeof metrics.memory.rss, 'number');
     assert.equal(typeof metrics.eventLoop.p99, 'number');
+    assert.equal(metrics.statsPending, 7);
+    assert.equal(typeof metrics.performance.sessionWrites, 'number');
     assert.ok(metrics.memory.heapUsed > 0);
 });
