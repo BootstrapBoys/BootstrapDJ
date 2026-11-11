@@ -32,6 +32,7 @@ import { PlayerEventHub } from './events.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
 import { initialState, SettingValidationError } from './state.js';
 import { maxAudioStreamsPerUser } from './limits.js';
+import { startAccessLease } from './accessLease.js';
 
 const MAX_BODY_BYTES = 64_000;
 const RATE_WINDOW_MS = 60_000;
@@ -410,12 +411,14 @@ export async function route(
             sendJson(res, 429, { error: 'Too many dashboard event streams' });
             return;
         }
+        const session = readSession(req);
         playerEvents.attach(
             host,
             guildId,
-            readSession(req)?.id ?? 'local',
+            session?.id ?? 'local',
             res,
-            readSession(req)?.exp ?? 0
+            session?.exp ?? 0,
+            async () => (await resolveAccess(host, req, guildId, true)).member
         );
         return;
     }
@@ -488,7 +491,14 @@ export async function route(
             return;
         }
         publishDashboardAudio(host, guildId, acquireGuildAudio(guildId));
+        const accessLease = startAccessLease(
+            async () => (await resolveAccess(host, req, guildId, true)).member,
+            () => {
+                if (!res.writableEnded) res.destroy();
+            }
+        );
         res.once('close', () => {
+            clearInterval(accessLease);
             releaseAudioSlot(userKey);
             publishDashboardAudio(host, guildId, releaseGuildAudio(guildId));
         });

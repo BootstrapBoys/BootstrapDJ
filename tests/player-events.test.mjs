@@ -125,3 +125,27 @@ test('expired session streams close themselves', async () => {
     assert.equal(client.writableEnded, true);
     client.close();
 });
+
+test('membership loss closes all SSE streams for that user', async () => {
+    const host = hostWithCounter();
+    const cache = new PlayerStateCache({ refreshMs: 50, staleMaxMs: 1_000 });
+    const hub = new PlayerEventHub(cache, {
+        updateMs: 50,
+        heartbeatMs: 10,
+        revalidateMs: 5,
+    });
+    const first = fakeResponse();
+    const second = fakeResponse();
+    let allowed = true;
+    const revalidate = async () => allowed;
+    hub.attach(host, 'guild', 'revoked-user', first, 0, revalidate);
+    hub.attach(host, 'guild', 'revoked-user', second, 0, revalidate);
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+    allowed = false;
+    await new Promise(resolve => setTimeout(resolve, 40));
+
+    assert.equal(first.writableEnded, true);
+    assert.equal(second.writableEnded, true);
+    for (const client of [first, second]) client.close();
+});

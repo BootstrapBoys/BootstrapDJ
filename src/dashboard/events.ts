@@ -8,12 +8,14 @@ type EventClient = {
     userId: string;
     expiresAt: number;
     res: ServerResponse;
+    revalidate?: () => Promise<boolean>;
 };
 
 export interface PlayerEventHubOptions {
     updateMs?: number;
     heartbeatMs?: number;
     maxClientsPerGuild?: number;
+    revalidateMs?: number;
 }
 
 /**
@@ -29,9 +31,11 @@ export class PlayerEventHub {
     private readonly timers = new Map<string, NodeJS.Timeout>();
     private readonly heartbeats = new Map<string, NodeJS.Timeout>();
     private readonly last = new Map<string, string>();
+    private readonly accessChecks = new Map<string, number>();
     private readonly updateMs: number;
     private readonly heartbeatMs: number;
     private readonly maxClientsPerGuild: number;
+    private readonly revalidateMs: number;
     private nextId = 1;
 
     public constructor(
@@ -41,6 +45,7 @@ export class PlayerEventHub {
         this.updateMs = options.updateMs ?? 2_000;
         this.heartbeatMs = options.heartbeatMs ?? 15_000;
         this.maxClientsPerGuild = options.maxClientsPerGuild ?? 100;
+        this.revalidateMs = options.revalidateMs ?? 60_000;
     }
 
     public canAttach(guildId: string): boolean {
@@ -68,14 +73,15 @@ export class PlayerEventHub {
         guildId: string,
         userId: string,
         res: ServerResponse,
-        expiresAt = 0
+        expiresAt = 0,
+        revalidate?: () => Promise<boolean>
     ): void {
         let clients = this.clients.get(guildId);
         if (!clients) {
             clients = new Set();
             this.clients.set(guildId, clients);
         }
-        const client: EventClient = { id: this.nextId++, userId, expiresAt, res };
+        const client: EventClient = { id: this.nextId++, userId, expiresAt, res, revalidate };
         clients.add(client);
 
         res.writeHead(200, {
@@ -111,6 +117,7 @@ export class PlayerEventHub {
         if (!this.heartbeats.has(guildId)) {
             const heartbeat = setInterval(() => {
                 this.broadcast(guildId, ': ping\n\n');
+                void this.revalidate(guildId);
             }, this.heartbeatMs);
             heartbeat.unref();
             this.heartbeats.set(guildId, heartbeat);
@@ -126,6 +133,38 @@ export class PlayerEventHub {
         this.heartbeats.delete(guildId);
         this.clients.delete(guildId);
         this.last.delete(guildId);
+        for (const key of this.accessChecks.keys()) {
+            if (key.startsWith(`${guildId}:`)) this.accessChecks.delete(key);
+        }
+    }
+
+    private async revalidate(guildId: string): Promise<void> {
+        const clients = this.clients.get(guildId);
+        if (!clients) return;
+        const now = Date.now();
+        const seen = new Set<string>();
+        for (const client of Array.from(clients)) {
+            if (!client.revalidate || seen.has(client.userId)) continue;
+            seen.add(client.userId);
+            const key = `${guildId}:${client.userId}`;
+            if (now - (this.accessChecks.get(key) ?? 0) < this.revalidateMs) continue;
+            this.accessChecks.set(key, now);
+            try {
+                if (await client.revalidate()) continue;
+            } catch {
+                // A transient access-check failure must not cut off a valid viewer.
+                continue;
+            }
+            for (const target of Array.from(clients)) {
+                if (target.userId !== client.userId) continue;
+                clients.delete(target);
+                if (!target.res.writableEnded) target.res.end();
+            }
+            if (!clients.size) {
+                this.stopTimers(guildId);
+                return;
+            }
+        }
     }
 
     private async refresh(host: DashboardHost, guildId: string): Promise<void> {
