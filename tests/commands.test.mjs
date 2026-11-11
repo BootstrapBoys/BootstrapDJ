@@ -54,6 +54,7 @@ test('commands that do remote work before replying defer; fast ones do not', asy
     const slow = [
         'music/Play',
         'music/PlayNext',
+        'music/PlayLocal',
         'music/Autoplay',
         'music/Lyrics',
         'music/PlayLeave',
@@ -113,6 +114,7 @@ test('the new feature commands are registered and keep ephemeral defaults', asyn
         'music/Move',
         'music/PlayRecent',
         'music/PlaySelect',
+        'music/PlayLocal',
         'filters/Rate',
         'music/Replay',
         'music/Lyrics',
