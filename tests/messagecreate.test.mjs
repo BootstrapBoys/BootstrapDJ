@@ -8,6 +8,7 @@ import MessageCreate from '../dist/events/client/MessageCreate.js';
 function makeHarness({ content, setupTextId = 'setup-channel' }) {
     let setupEmitted = 0;
     let commandRuns = 0;
+    let messageDeletes = 0;
     let lastCtx = null;
     const replies = [];
     const member = {
@@ -91,7 +92,9 @@ function makeHarness({ content, setupTextId = 'setup-channel' }) {
             replies.push(payload);
             return { delete: async () => {} };
         },
-        delete: async () => {},
+        delete: async () => {
+            messageDeletes += 1;
+        },
     };
     for (const [key, value] of Object.entries(fields)) {
         Object.defineProperty(message, key, { value, writable: true, configurable: true });
@@ -103,6 +106,7 @@ function makeHarness({ content, setupTextId = 'setup-channel' }) {
         message,
         replies,
         counts: () => ({ setupEmitted, commandRuns }),
+        deletes: () => messageDeletes,
         ctx: () => lastCtx,
     };
 }
@@ -111,18 +115,21 @@ test('a known prefix command in the setup channel reaches the command handler', 
     const harness = makeHarness({ content: '!skip' });
     await harness.event.run(harness.message);
     assert.deepEqual(harness.counts(), { setupEmitted: 0, commandRuns: 1 });
+    assert.equal(harness.deletes(), 1);
 });
 
 test('an ordinary setup message stays a setup request', async () => {
     const harness = makeHarness({ content: 'some song' });
     await harness.event.run(harness.message);
     assert.deepEqual(harness.counts(), { setupEmitted: 1, commandRuns: 0 });
+    assert.equal(harness.deletes(), 0);
 });
 
 test('an unknown prefixed message stays a setup request', async () => {
     const harness = makeHarness({ content: '!not-a-command' });
     await harness.event.run(harness.message);
     assert.deepEqual(harness.counts(), { setupEmitted: 1, commandRuns: 0 });
+    assert.equal(harness.deletes(), 0);
 });
 
 test('deleteafter=0 reaches the context as an explicit disable', async () => {
@@ -145,4 +152,5 @@ test('a command crash replies generically and keeps the raw error in the log', a
     assert.deepEqual(harness.replies, [{ content: COMMAND_FAILURE_MESSAGE }]);
     assert.doesNotMatch(JSON.stringify(harness.replies), /database password/);
     assert.equal(logged.length, 1);
+    assert.equal(harness.deletes(), 1);
 });

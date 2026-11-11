@@ -80,6 +80,11 @@ export default class MessageCreate extends Event {
         };
     }
 
+    /** Slash invocations leave no user message; mirror that for prefix commands. */
+    private async cleanupInvocation(message: Message<true>): Promise<void> {
+        await message.delete().catch(() => {});
+    }
+
     /**
      * The request channel treats unknown text as a song query. A real command
      * (including a mapping or custom alias) must still reach the normal path.
@@ -206,9 +211,19 @@ export default class MessageCreate extends Event {
             isPrefix: true,
         });
         if (!gate.ok) {
-            if (gate.silent || !gate.response) return;
-            if (gate.dm) return await message.author.send(gate.response).catch(() => {});
-            return await reply(gate.response);
+            if (gate.silent) {
+                await this.cleanupInvocation(message);
+                return;
+            }
+            if (!gate.response) return;
+            if (gate.dm) {
+                await message.author.send(gate.response).catch(() => {});
+                await this.cleanupInvocation(message);
+                return;
+            }
+            await reply(gate.response);
+            await this.cleanupInvocation(message);
+            return;
         }
 
         const ctx = new Context(message, args);
@@ -228,6 +243,8 @@ export default class MessageCreate extends Event {
         } catch (error) {
             this.client.logger.error(error);
             await reply({ content: COMMAND_FAILURE_MESSAGE });
+        } finally {
+            await this.cleanupInvocation(message);
         }
     }
 }
