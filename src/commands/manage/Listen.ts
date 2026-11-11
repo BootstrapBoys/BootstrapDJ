@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, TextChannel } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { updateSetup } from '../../lib/SetupSystem.js';
 import { hasDjAccess } from '../../lib/VoiceAccess.js';
 
@@ -44,6 +45,14 @@ export default class Listen extends Command {
                 },
             ],
         });
+    }
+
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.listen.${key}`, variables);
     }
 
     private action(ctx: Context, args: string[]): string {
@@ -119,26 +128,16 @@ export default class Listen extends Command {
         const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return;
         if (!(await hasDjAccess(client, guild.id, member))) {
-            return await this.reply(
-                client,
-                ctx,
-                'You need the DJ role to enable voice commands.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'djEnable'), true);
         }
         const voice = ctx.voiceChannel;
-        if (!voice) return await this.reply(client, ctx, 'Join a voice channel first.', true);
+        if (!voice) return await this.reply(client, ctx, this.copy(ctx, 'joinVoice'), true);
 
         const setup = await client.db.getSetup(guild.id);
         const textId =
             setup?.textId ?? (ctx.channel instanceof TextChannel ? ctx.channel.id : null);
         if (!textId) {
-            return await this.reply(
-                client,
-                ctx,
-                'I need a text channel for replies — run `/setup` first.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'textChannel'), true);
         }
 
         const started = await this.call('/listen/start', {
@@ -150,7 +149,9 @@ export default class Listen extends Command {
             return await this.reply(
                 client,
                 ctx,
-                `Earl could not start listening: ${started.error ?? 'unknown error'}`,
+                this.copy(ctx, 'startFailed', {
+                    error: started.error ?? this.copy(ctx, 'unknownError'),
+                }),
                 true
             );
         }
@@ -164,11 +165,7 @@ export default class Listen extends Command {
         await updateSetup(client, guild).catch(() => {});
         const optedOut = await client.db.listVoiceOptOuts(guild.id);
         await this.pushOptOuts(optedOut.map(entry => entry.userId));
-        return await this.reply(
-            client,
-            ctx,
-            `Listening for commands in **${voice.name}**. Say “Hey Bootstrap …”.`
-        );
+        return await this.reply(client, ctx, this.copy(ctx, 'enabled', { channel: voice.name }));
     }
 
     private async disable(client: BootstrapClient, ctx: Context, userId: string): Promise<unknown> {
@@ -177,12 +174,7 @@ export default class Listen extends Command {
         const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return;
         if (!(await hasDjAccess(client, guild.id, member))) {
-            return await this.reply(
-                client,
-                ctx,
-                'You need the DJ role to disable voice commands.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'djDisable'), true);
         }
 
         const stopped = await this.call('/listen/stop');
@@ -190,14 +182,16 @@ export default class Listen extends Command {
             return await this.reply(
                 client,
                 ctx,
-                `Earl did not stop: ${stopped.error ?? 'listener unreachable'}. Listening is still on.`,
+                this.copy(ctx, 'stopFailed', {
+                    error: stopped.error ?? this.copy(ctx, 'unreachable'),
+                }),
                 true
             );
         }
         await client.db.setVoiceListen(guild.id, { enabled: false, updatedBy: userId });
         await this.pushOptOuts([]);
         await updateSetup(client, guild).catch(() => {});
-        return await this.reply(client, ctx, 'Voice listening is off. Earl is sleeping one off.');
+        return await this.reply(client, ctx, this.copy(ctx, 'disabled'));
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
@@ -221,15 +215,24 @@ export default class Listen extends Command {
         if (action === 'status') {
             const optOuts = await client.db.listVoiceOptOuts(guild.id);
             const lines = [
-                `**Listening:** ${state?.enabled ? 'on' : 'off'}`,
-                state?.voiceChannelId ? `**Voice channel:** <#${state.voiceChannelId}>` : null,
-                state?.textChannelId ? `**Replies in:** <#${state.textChannelId}>` : null,
-                `**Listener:** ${listener.active === true ? 'connected' : 'not connected'}`,
-                `**Opted out:** ${
-                    optOuts.length > 0
-                        ? optOuts.map(entry => `<@${entry.userId}>`).join(', ')
-                        : 'nobody'
-                }`,
+                this.copy(ctx, 'statusListening', {
+                    state: this.copy(ctx, state?.enabled ? 'on' : 'off'),
+                }),
+                state?.voiceChannelId
+                    ? this.copy(ctx, 'statusVoice', { id: state.voiceChannelId })
+                    : null,
+                state?.textChannelId
+                    ? this.copy(ctx, 'statusReplies', { id: state.textChannelId })
+                    : null,
+                this.copy(ctx, 'statusListener', {
+                    state: this.copy(ctx, listener.active === true ? 'connected' : 'notConnected'),
+                }),
+                this.copy(ctx, 'statusOptOut', {
+                    users:
+                        optOuts.length > 0
+                            ? optOuts.map(entry => `<@${entry.userId}>`).join(', ')
+                            : this.copy(ctx, 'nobody'),
+                }),
             ].filter((line): line is string => Boolean(line));
             return await this.reply(client, ctx, lines.join('\n'));
         }
@@ -242,12 +245,10 @@ export default class Listen extends Command {
             return await this.reply(
                 client,
                 ctx,
-                action === 'optout'
-                    ? 'You are opted out — Earl will not listen to you or reply while listening is active.'
-                    : 'You are opted in again.'
+                this.copy(ctx, action === 'optout' ? 'optedOut' : 'optedIn')
             );
         }
 
-        return await this.reply(client, ctx, 'Usage: `/listen enable|disable|status|optout|optin`');
+        return await this.reply(client, ctx, this.copy(ctx, 'usage'));
     }
 }

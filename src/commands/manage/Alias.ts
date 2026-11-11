@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, GuildMember, PermissionFlagsBits } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type AliasScope = 'server' | 'user';
 
@@ -65,6 +66,14 @@ export default class Alias extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.alias.${key}`, variables);
+    }
+
     private field(ctx: Context, field: (typeof FIELDS)[number]): string {
         if (ctx.isInteraction && ctx.interaction) {
             return (ctx.interaction.options.getString(field) ?? '').trim();
@@ -97,12 +106,7 @@ export default class Alias extends Command {
         const action = (this.field(ctx, 'action') || 'list').toLowerCase();
         const scope: AliasScope = this.field(ctx, 'scope') === 'user' ? 'user' : 'server';
         if (scope === 'server' && !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return await this.reply(
-                client,
-                ctx,
-                'You need Manage Server for server aliases.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'manageServer'), true);
         }
         const userId = scope === 'user' ? author.id : '';
 
@@ -110,7 +114,7 @@ export default class Alias extends Command {
             case 'list': {
                 const aliases = await client.db.listCommandAliases(guild.id, author.id);
                 if (aliases.length === 0) {
-                    return await this.reply(client, ctx, 'No custom aliases are set.');
+                    return await this.reply(client, ctx, this.copy(ctx, 'noAliases'));
                 }
                 const lines = aliases.map(
                     entry => `\`${entry.alias}\` → \`${entry.command}\` (${entry.scope})`
@@ -120,7 +124,7 @@ export default class Alias extends Command {
                         client
                             .embed()
                             .setColor(client.color.main)
-                            .setTitle('Custom aliases')
+                            .setTitle(this.copy(ctx, 'listTitle'))
                             .setDescription(lines.join('\n').slice(0, 4096)),
                     ],
                 });
@@ -130,7 +134,10 @@ export default class Alias extends Command {
                 return await this.reply(
                     client,
                     ctx,
-                    `Cleared ${removed} ${scope} alias${removed === 1 ? '' : 'es'}.`
+                    this.copy(ctx, removed === 1 ? 'cleared' : 'clearedPlural', {
+                        count: removed,
+                        scope,
+                    })
                 );
             }
             default:
@@ -139,12 +146,7 @@ export default class Alias extends Command {
 
         const alias = this.field(ctx, 'alias').toLowerCase();
         if (!/^[a-z0-9_-]{1,32}$/.test(alias)) {
-            return await this.reply(
-                client,
-                ctx,
-                'Alias names must be 1–32 letters, numbers, `_` or `-`.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'invalid'), true);
         }
 
         if (action === 'remove') {
@@ -155,9 +157,7 @@ export default class Alias extends Command {
                         .embed()
                         .setColor(removed ? client.color.green : client.color.red)
                         .setDescription(
-                            removed
-                                ? `Removed alias \`${alias}\`.`
-                                : `No alias \`${alias}\` exists.`
+                            this.copy(ctx, removed ? 'removed' : 'notFound', { alias })
                         ),
                 ],
             });
@@ -167,15 +167,15 @@ export default class Alias extends Command {
             .toLowerCase()
             .replace(/^[^\w]+/, '');
         if (!client.commands.has(target)) {
-            return await this.reply(client, ctx, `Unknown command: **${target || 'none'}**.`, true);
-        }
-        if (client.commands.has(alias) || client.aliases.has(alias)) {
             return await this.reply(
                 client,
                 ctx,
-                `\`${alias}\` is already a command or alias.`,
+                this.copy(ctx, 'unknownCommand', { target: target || 'none' }),
                 true
             );
+        }
+        if (client.commands.has(alias) || client.aliases.has(alias)) {
+            return await this.reply(client, ctx, this.copy(ctx, 'alreadyExists', { alias }), true);
         }
 
         await client.db.setCommandAlias(guild.id, scope, userId, alias, target);
@@ -184,7 +184,7 @@ export default class Alias extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(`Alias \`${alias}\` → \`${target}\` (${scope}) created.`),
+                    .setDescription(this.copy(ctx, 'created', { alias, target, scope })),
             ],
         });
     }

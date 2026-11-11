@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Support extends Command {
     constructor(client: BootstrapClient) {
@@ -30,15 +31,15 @@ export default class Support extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('BootstrapDJ support')
+                    .setTitle(tr(ctx, 'longtail:tools.supportTitle'))
                     .setDescription(
                         [
-                            'Use `/help <command>` for usage details and `/faq` for common questions.',
+                            tr(ctx, 'longtail:tools.supportHelp'),
                             '',
-                            'For bugs or feature requests, open an issue on the BootstrapDJ repository:',
+                            tr(ctx, 'longtail:tools.supportIssues'),
                             'https://github.com/BootstrapBoys/BootstrapDJ/issues',
                             '',
-                            'No support tier or paid priority queue exists.',
+                            tr(ctx, 'longtail:tools.supportNoTier'),
                         ].join('\n')
                     ),
             ],

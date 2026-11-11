@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import type { Player } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { parseTime } from '../../lib/QueueTools.js';
 
 interface PendingEndTime {
@@ -88,7 +89,7 @@ export default class EndTime extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:music.nothingPlaying')),
                 ],
             });
         }
@@ -99,7 +100,7 @@ export default class EndTime extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Give a time like `30s` or `02:30`.'),
+                        .setDescription(tr(ctx, 'longtail:music.invalidEndTime')),
                 ],
             });
         }
@@ -116,7 +117,7 @@ export default class EndTime extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setDescription('Skipped to the end point.'),
+                        .setDescription(tr(ctx, 'longtail:music.endTimeSkipped')),
                 ],
             });
         }
@@ -128,7 +129,11 @@ export default class EndTime extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Will stop at ${client.utils.formatTime(target)}.`),
+                    .setDescription(
+                        tr(ctx, 'longtail:music.endTimeWillStop', {
+                            time: client.utils.formatTime(target),
+                        })
+                    ),
             ],
         });
     }

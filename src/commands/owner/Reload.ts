@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Reload extends Command {
     constructor(client: BootstrapClient) {
@@ -31,9 +32,7 @@ export default class Reload extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(
-                        `Reloaded **${count}** commands. Slash metadata changes still need a restart.`
-                    ),
+                    .setDescription(tr(ctx, 'longtail:owner.reloaded', { count })),
             ],
         });
     }

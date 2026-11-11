@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 type LyricsProviderResult = {
@@ -176,7 +177,7 @@ export default class Lyrics extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('No Lavalink node is available right now.'),
+                            .setDescription(tr(ctx, 'longtail:music.lyricsNoNode')),
                     ],
                 });
             }
@@ -189,7 +190,7 @@ export default class Lyrics extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription(`No results found for **${query}**.`),
+                            .setDescription(tr(ctx, 'longtail:music.lyricsNoResults', { query })),
                     ],
                 });
             }
@@ -201,7 +202,7 @@ export default class Lyrics extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('Nothing is playing right now.'),
+                            .setDescription(tr(ctx, 'longtail:music.nothingPlaying')),
                     ],
                 });
             }
@@ -215,7 +216,10 @@ export default class Lyrics extends Command {
                         .embed()
                         .setColor(client.color.red)
                         .setDescription(
-                            `No lyrics found for **${track.info.title}** by ${track.info.author}.`
+                            tr(ctx, 'longtail:music.lyricsNoLyricsFor', {
+                                title: track.info.title,
+                                author: track.info.author,
+                            })
                         ),
                 ],
             });
@@ -225,7 +229,10 @@ export default class Lyrics extends Command {
         if (!pages.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('No lyrics found.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.lyricsNoLyrics')),
                 ],
             });
         }
@@ -234,10 +241,14 @@ export default class Lyrics extends Command {
             client
                 .embed()
                 .setColor(client.color.main)
-                .setTitle(`Lyrics: ${track.info.title}`)
+                .setTitle(tr(ctx, 'longtail:music.lyricsTitle', { title: track.info.title }))
                 .setDescription(text)
                 .setFooter({
-                    text: `${result.source} • Page ${index + 1}/${pages.length}`,
+                    text: tr(ctx, 'longtail:music.lyricsFooter', {
+                        source: result.source,
+                        page: index + 1,
+                        total: pages.length,
+                    }),
                 })
         );
         await client.utils.paginate(ctx, embeds);

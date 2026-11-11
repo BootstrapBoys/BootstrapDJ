@@ -3,6 +3,7 @@ import type { Song } from '../core/Dispatcher.js';
 import type { BootstrapClient } from '../core/index.js';
 
 import { formatDuration } from './NodeStatus.js';
+import { DEFAULT_LANGUAGE, translate } from './i18n.js';
 
 export type PlayLimits = {
     maxTrackLength: number;
@@ -55,29 +56,36 @@ export function checkTrack(
     track: Song,
     requesterId: string,
     limits: PlayLimits,
-    pending: readonly Song[] = []
+    pending: readonly Song[] = [],
+    language: string = DEFAULT_LANGUAGE
 ): string | null {
+    const copy = (key: string, variables: Record<string, string | number> = {}): string =>
+        translate(`longtail:limits.${key}`, language, variables);
     const lengthSeconds = track.info.isStream ? 0 : Math.round(track.info.length / 1000);
     if (limits.maxTrackLength > 0 && lengthSeconds > limits.maxTrackLength) {
-        return `That track is longer than this server's ${formatDuration(limits.maxTrackLength * 1000)} limit.`;
+        return copy('maxLength', {
+            limit: formatDuration(limits.maxTrackLength * 1000),
+        });
     }
     if (limits.minTrackLength > 0 && lengthSeconds > 0 && lengthSeconds < limits.minTrackLength) {
-        return `That track is shorter than this server's ${formatDuration(limits.minTrackLength * 1000)} minimum.`;
+        return copy('minLength', {
+            limit: formatDuration(limits.minTrackLength * 1000),
+        });
     }
     // `/playnext <playlist>` builds its batch before inserting it, so the
     // queue alone would let every track pass the queue/user caps.
     const queued = player.queue.length + (player.current ? 1 : 0) + pending.length;
     if (limits.maxQueue > 0 && queued >= limits.maxQueue) {
-        return `The queue is full (${limits.maxQueue} tracks).`;
+        return copy('queueFull', { count: limits.maxQueue });
     }
     const requested = [...player.queue, ...pending].filter(
         item => item.info.requester?.id === requesterId
     );
     if (limits.maxUserQueue > 0 && requested.length >= limits.maxUserQueue) {
-        return `You already have ${limits.maxUserQueue} tracks queued.`;
+        return copy('userQueue', { count: limits.maxUserQueue });
     }
     if (limits.maxUserTracks > 0 && requested.length >= limits.maxUserTracks) {
-        return `You already have ${limits.maxUserTracks} tracks queued.`;
+        return copy('userTracks', { count: limits.maxUserTracks });
     }
     if (limits.maxUserTracksLength > 0) {
         const total = requested.reduce(
@@ -88,7 +96,9 @@ export function checkTrack(
             total + (track.info.isStream ? 0 : track.info.length) >
             limits.maxUserTracksLength * 1000
         ) {
-            return `You already have ${formatDuration(limits.maxUserTracksLength * 1000)} of music queued.`;
+            return copy('userLength', {
+                length: formatDuration(limits.maxUserTracksLength * 1000),
+            });
         }
     }
     return null;

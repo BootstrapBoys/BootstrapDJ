@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 
 import { fromSaved, SavedTrack } from '../../core/Dispatcher.js';
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { checkTrack, getPlayLimits } from '../../lib/PlayLimits.js';
 import { trackIdentity } from '../../lib/QueueTools.js';
 
@@ -75,16 +76,14 @@ export default class PlayRecent extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(
-                            'No playback history yet, or only the current track is available.'
-                        ),
+                        .setDescription(tr(ctx, 'longtail:music.playrecent.noHistory')),
                 ],
             });
         }
         const limits = await getPlayLimits(client, guild.id);
         const accepted: typeof recent = [];
         for (const track of recent) {
-            if (checkTrack(player, track, author.id, limits)) break;
+            if (checkTrack(player, track, author.id, limits, [], ctx.locale)) break;
             player.enqueue(track, true, false);
             accepted.push(track);
         }
@@ -94,7 +93,7 @@ export default class PlayRecent extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('None of those tracks fit the current limits.'),
+                        .setDescription(tr(ctx, 'longtail:music.playrecent.noneFit')),
                 ],
             });
         }
@@ -106,7 +105,11 @@ export default class PlayRecent extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Queued ${accepted.length} recent track${accepted.length === 1 ? '' : 's'}.`
+                        accepted.length === 1
+                            ? tr(ctx, 'longtail:music.playrecent.queuedOne')
+                            : tr(ctx, 'longtail:music.playrecent.queued', {
+                                  count: accepted.length,
+                              })
                     ),
             ],
         });

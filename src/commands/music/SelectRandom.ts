@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class SelectRandom extends Command {
     constructor(client: BootstrapClient) {
@@ -31,7 +32,10 @@ export default class SelectRandom extends Command {
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.selectRandom.empty')),
                 ],
             });
         }
@@ -44,7 +48,11 @@ export default class SelectRandom extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`**${track.info.title}** will play next.`),
+                    .setDescription(
+                        tr(ctx, 'longtail:music.selectRandom.next', {
+                            title: track.info.title,
+                        })
+                    ),
             ],
         });
     }

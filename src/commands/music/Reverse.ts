@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Reverse extends Command {
     constructor(client: BootstrapClient) {
@@ -34,7 +35,7 @@ export default class Reverse extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('There is no queue to reverse.'),
+                        .setDescription(tr(ctx, 'longtail:music.reverse.empty')),
                 ],
             });
         }
@@ -46,7 +47,13 @@ export default class Reverse extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Reversed ${player.queue.length} queued track${player.queue.length === 1 ? '' : 's'}.`
+                        tr(
+                            ctx,
+                            player.queue.length === 1
+                                ? 'longtail:music.reverse.reversedOne'
+                                : 'longtail:music.reverse.reversedMany',
+                            { count: player.queue.length }
+                        )
                     ),
             ],
         });

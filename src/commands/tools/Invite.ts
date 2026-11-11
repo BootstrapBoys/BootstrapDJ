@@ -1,6 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 /** Channel management, messages, embeds, history, voice, and slash commands. */
 const INVITE_PERMISSIONS = 4298501200;
@@ -43,14 +44,12 @@ export default class Invite extends Command {
         const clientId = client.user?.id ?? client.config.clientId;
         if (!clientId) {
             client.logger.error('[invite] no application id available to build an invite link');
-            return await ctx.sendMessage(
-                'Sorry, my invite link is not available at this time. Please tell the bot developer to check their console.'
-            );
+            return await ctx.sendMessage(tr(ctx, 'longtail:tools.inviteUnavailable'));
         }
 
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-            linkButton('Invite', inviteUrl(clientId)),
-            linkButton('Issues', ISSUES_URL)
+            linkButton(tr(ctx, 'longtail:tools.inviteButton'), inviteUrl(clientId)),
+            linkButton(tr(ctx, 'longtail:tools.issuesButton'), ISSUES_URL)
         );
 
         return await ctx.sendMessage({
@@ -58,9 +57,7 @@ export default class Invite extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(
-                        'You can invite me by clicking the button below. For bugs or feature requests, open an issue on GitHub.'
-                    ),
+                    .setDescription(tr(ctx, 'longtail:tools.inviteDescription')),
             ],
             components: [row],
         });

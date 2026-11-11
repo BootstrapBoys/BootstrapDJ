@@ -2,27 +2,42 @@ import { version } from 'discord.js';
 import os from 'node:os';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
-function hostFacts(client: BootstrapClient): Array<[string, string]> {
+function hostFacts(client: BootstrapClient, ctx: Context): Array<[string, string]> {
     const total = os.totalmem();
     const used = Math.max(0, total - os.freemem());
     const percent = Math.round((used / total) * 100);
     return [
-        ['Operating System', `${os.type()} ${os.release()}`],
-        ['Uptime', client.utils.formatTime(os.uptime())],
-        ['Hostname', os.hostname()],
-        ['CPU Architecture', `${os.arch()} (${os.cpus().length} cores)`],
+        [tr(ctx, 'longtail:tools.infoOs'), `${os.type()} ${os.release()}`],
+        [tr(ctx, 'longtail:tools.infoUptime'), client.utils.formatTime(os.uptime())],
+        [tr(ctx, 'longtail:tools.infoHostname'), os.hostname()],
         [
-            'Memory Usage',
-            `${client.utils.formatBytes(used)} / ${client.utils.formatBytes(total)} (${percent}%)`,
+            tr(ctx, 'longtail:tools.infoCpuArchitecture'),
+            tr(ctx, 'longtail:tools.infoCpuValue', {
+                arch: os.arch(),
+                cores: os.cpus().length,
+            }),
         ],
-        ['Node Version', process.version],
-        ['Discord Version', version],
         [
-            'Connected to',
-            `${client.guilds.cache.size} guilds, ${client.channels.cache.size} channels, and ${client.users.cache.size} users`,
+            tr(ctx, 'longtail:tools.infoMemory'),
+            tr(ctx, 'longtail:tools.infoMemoryValue', {
+                used: client.utils.formatBytes(used),
+                total: client.utils.formatBytes(total),
+                percent,
+            }),
         ],
-        ['Total Commands', String(client.commands.size)],
+        [tr(ctx, 'longtail:tools.infoNodeVersion'), process.version],
+        [tr(ctx, 'longtail:tools.infoDiscordVersion'), version],
+        [
+            tr(ctx, 'longtail:tools.infoConnectedTo'),
+            tr(ctx, 'longtail:tools.infoConnectedValue', {
+                guilds: client.guilds.cache.size,
+                channels: client.channels.cache.size,
+                users: client.users.cache.size,
+            }),
+        ],
+        [tr(ctx, 'longtail:tools.infoTotalCommands'), String(client.commands.size)],
     ];
 }
 
@@ -51,15 +66,15 @@ export default class Info extends Command {
     }
 
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const body = hostFacts(client)
-            .map(([label, value]) => `- **${label}**: ${value}`)
+        const body = hostFacts(client, ctx)
+            .map(([label, value]) => tr(ctx, 'longtail:tools.infoLine', { label, value }))
             .join('\n');
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Bot Information:\n${body}`),
+                    .setDescription(`${tr(ctx, 'longtail:tools.infoTitle')}\n${body}`),
             ],
         });
     }

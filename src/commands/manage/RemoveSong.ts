@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 function keyOf(track: Track): string {
@@ -51,6 +52,14 @@ export default class RemoveSong extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.removeSong.${key}`, variables);
+    }
+
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
         return ctx.sendMessage({
             embeds: [client.embed().setColor(client.color.red).setDescription(text)],
@@ -72,19 +81,18 @@ export default class RemoveSong extends Command {
                 : args.slice(1).join(' ')
         )?.trim();
 
-        if (!playlist || !query)
-            return await this.fail(client, ctx, 'Provide a playlist and a song.');
+        if (!playlist || !query) return await this.fail(client, ctx, this.copy(ctx, 'missing'));
 
         const data = await client.db.getPLaylist(author.id, playlist);
-        if (!data) return await this.fail(client, ctx, "That playlist doesn't exist.");
+        if (!data) return await this.fail(client, ctx, this.copy(ctx, 'notExist'));
         if (!client.queue.hasNode) {
-            return await this.fail(client, ctx, 'No Lavalink node is available right now.');
+            return await this.fail(client, ctx, this.copy(ctx, 'noNode'));
         }
 
         const track = client.utils.firstTrack(
             await client.queue.search(query, await resolveSearchEngine(client, ctx))
         );
-        if (!track) return await this.fail(client, ctx, `No results found for **${query}**.`);
+        if (!track) return await this.fail(client, ctx, this.copy(ctx, 'noResults', { query }));
 
         const label = `[${track.info.title}](${track.info.uri})`;
         const removed = await client.db.removeSong(author.id, data.name, keyOf(track));
@@ -94,9 +102,10 @@ export default class RemoveSong extends Command {
                     .embed()
                     .setColor(removed ? client.color.green : client.color.red)
                     .setDescription(
-                        removed
-                            ? `Removed ${label} from **${data.name}**.`
-                            : `${label} is not in **${data.name}**.`
+                        this.copy(ctx, removed ? 'removed' : 'notInPlaylist', {
+                            label,
+                            name: data.name,
+                        })
                     ),
             ],
         });

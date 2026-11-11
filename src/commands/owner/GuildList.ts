@@ -1,6 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const PAGE_SIZE = 10;
 
@@ -36,7 +37,12 @@ export default class GuildList extends Command {
                 .embed()
                 .setColor(client.color.main)
                 .setDescription(chunk.join('\n'))
-                .setFooter({ text: `Page ${index + 1} of ${all.length}` })
+                .setFooter({
+                    text: tr(ctx, 'longtail:owner.guildListPage', {
+                        page: index + 1,
+                        pages: all.length,
+                    }),
+                })
         );
         return await client.utils.paginate(ctx, pages);
     }

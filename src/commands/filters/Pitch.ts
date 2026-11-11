@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineFilterCommand, numericFilter } from '../../lib/filterCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default defineFilterCommand({
     name: 'pitch',
@@ -23,9 +24,9 @@ export default defineFilterCommand({
         key: 'pitch',
         min: 1,
         max: 5,
-        invalid: 'Please provide a valid number',
-        outOfRange: 'Please provide a number between 1 and 5',
+        invalid: ctx => tr(ctx, 'longtail:filters.invalidNumber'),
+        outOfRange: ctx => tr(ctx, 'longtail:filters.pitchRange'),
         apply: (player, pitch) => player.player.setTimescale({ pitch, rate: 1, speed: 1 }),
-        success: pitch => `Pitch has been set to ${pitch}`,
+        success: (pitch, ctx) => tr(ctx, 'longtail:filters.pitchSet', { pitch }),
     }),
 });

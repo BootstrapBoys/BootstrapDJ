@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class RemoveKeyword extends Command {
     constructor(client: BootstrapClient) {
@@ -40,7 +41,10 @@ export default class RemoveKeyword extends Command {
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.removeKeyword.empty')),
                 ],
             });
         }
@@ -48,7 +52,10 @@ export default class RemoveKeyword extends Command {
         if (!keyword) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('Provide a keyword.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.removeKeyword.missing')),
                 ],
             });
         }
@@ -66,8 +73,14 @@ export default class RemoveKeyword extends Command {
                     .setColor(client.color.main)
                     .setDescription(
                         removed
-                            ? `Removed ${removed} track${removed === 1 ? '' : 's'} matching **${keyword}**.`
-                            : `No queued tracks matched **${keyword}**.`
+                            ? tr(
+                                  ctx,
+                                  removed === 1
+                                      ? 'longtail:music.removeKeyword.removedOne'
+                                      : 'longtail:music.removeKeyword.removedMany',
+                                  { count: removed, keyword }
+                              )
+                            : tr(ctx, 'longtail:music.removeKeyword.none', { keyword })
                     ),
             ],
         });

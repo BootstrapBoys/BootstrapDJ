@@ -1,6 +1,7 @@
 import os from 'node:os';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Stats extends Command {
     constructor(client: BootstrapClient) {
@@ -34,34 +35,52 @@ export default class Stats extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('BootstrapDJ statistics')
+                    .setTitle(tr(ctx, 'longtail:tools.statsTitle'))
                     .addFields(
-                        { name: 'Guilds', value: String(client.guilds.cache.size), inline: true },
-                        { name: 'Users', value: String(client.users.cache.size), inline: true },
                         {
-                            name: 'Channels',
+                            name: tr(ctx, 'longtail:tools.statsGuilds'),
+                            value: String(client.guilds.cache.size),
+                            inline: true,
+                        },
+                        {
+                            name: tr(ctx, 'longtail:tools.statsUsers'),
+                            value: String(client.users.cache.size),
+                            inline: true,
+                        },
+                        {
+                            name: tr(ctx, 'longtail:tools.statsChannels'),
                             value: String(client.channels.cache.size),
                             inline: true,
                         },
-                        { name: 'Commands', value: String(client.commands.size), inline: true },
-                        { name: 'Active players', value: String(client.queue.size), inline: true },
                         {
-                            name: 'Uptime',
+                            name: tr(ctx, 'longtail:tools.statsCommands'),
+                            value: String(client.commands.size),
+                            inline: true,
+                        },
+                        {
+                            name: tr(ctx, 'longtail:tools.statsActivePlayers'),
+                            value: String(client.queue.size),
+                            inline: true,
+                        },
+                        {
+                            name: tr(ctx, 'longtail:tools.statsUptime'),
                             value: client.utils.formatTime(process.uptime()),
                             inline: true,
                         },
                         {
-                            name: 'Gateway ping',
-                            value: `${Math.round(client.ws.ping)} ms`,
+                            name: tr(ctx, 'longtail:tools.statsGatewayPing'),
+                            value: tr(ctx, 'longtail:tools.statsPingValue', {
+                                ping: Math.round(client.ws.ping),
+                            }),
                             inline: true,
                         },
                         {
-                            name: 'Heap',
+                            name: tr(ctx, 'longtail:tools.statsHeap'),
                             value: client.utils.formatBytes(memory.heapUsed),
                             inline: true,
                         },
                         {
-                            name: 'System memory',
+                            name: tr(ctx, 'longtail:tools.statsSystemMemory'),
                             value: `${client.utils.formatBytes(used)} / ${client.utils.formatBytes(os.totalmem())}`,
                             inline: true,
                         }

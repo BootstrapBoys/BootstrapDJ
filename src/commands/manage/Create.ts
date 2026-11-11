@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const NAME_LIMIT = 50;
 
@@ -35,6 +36,14 @@ export default class Create extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.create.${key}`, variables);
+    }
+
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
         return ctx.sendMessage({ embeds: [{ description: text, color: client.color.red }] });
     }
@@ -45,13 +54,13 @@ export default class Create extends Command {
         const name = args.join(' ').trim();
 
         if (name.length > NAME_LIMIT) {
-            return await this.fail(client, ctx, 'Playlist names can only be 50 characters long');
+            return await this.fail(client, ctx, this.copy(ctx, 'tooLong'));
         }
         if (await client.db.getPLaylist(author.id, name)) {
             return await ctx.sendMessage({
                 embeds: [
                     {
-                        description: 'A playlist with that name already exists',
+                        description: this.copy(ctx, 'exists'),
                         color: client.color.main,
                     },
                 ],
@@ -61,7 +70,10 @@ export default class Create extends Command {
         await client.db.createPlaylist(author.id, name);
         return await ctx.sendMessage({
             embeds: [
-                { description: `Playlist **${name}** has been created`, color: client.color.main },
+                {
+                    description: this.copy(ctx, 'created', { name }),
+                    color: client.color.main,
+                },
             ],
         });
     }

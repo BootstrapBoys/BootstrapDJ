@@ -1,6 +1,7 @@
 import type { ColorResolvable } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 /**
  * Toggles the guild's stay-connected flag. Enabling it also materialises a
@@ -31,6 +32,14 @@ export default class StayConnected extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.stay247.${key}`, variables);
+    }
+
     private reply(
         client: BootstrapClient,
         ctx: Context,
@@ -46,22 +55,12 @@ export default class StayConnected extends Command {
         const voiceChannel = ctx.voiceChannel;
         if (!guild || !textChannel) return;
         if (!voiceChannel) {
-            return await this.reply(
-                client,
-                ctx,
-                'You must be connected to a voice channel to use 24/7 mode.',
-                client.color.red
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'noVoice'), client.color.red);
         }
 
         if (await client.db.get_247(guild.id)) {
             await client.db.delete_247(guild.id);
-            return await this.reply(
-                client,
-                ctx,
-                '**247 mode has been disabled**',
-                client.color.red
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'disabled'), client.color.red);
         }
 
         await client.db.set_247(guild.id, textChannel.id, voiceChannel.id);
@@ -73,6 +72,6 @@ export default class StayConnected extends Command {
                 client.shoukaku.options.nodeResolver(client.shoukaku.nodes)
             );
         }
-        return await this.reply(client, ctx, '**247 mode has been enabled**', client.color.main);
+        return await this.reply(client, ctx, this.copy(ctx, 'enabled'), client.color.main);
     }
 }

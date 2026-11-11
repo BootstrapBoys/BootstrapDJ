@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const MAX_PREFIX = 3;
 
@@ -24,6 +25,14 @@ export default class SelfPrefix extends Command {
             slashCommand: false,
             options: [],
         });
+    }
+
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.selfPrefix.${key}`, variables);
     }
 
     private reply(
@@ -55,8 +64,8 @@ export default class SelfPrefix extends Command {
                     client,
                     ctx,
                     current
-                        ? `Your personal prefix is \`${current}\`.`
-                        : 'You have no personal prefix.'
+                        ? this.copy(ctx, 'current', { prefix: current })
+                        : this.copy(ctx, 'none')
                 );
             }
             case 'reset': {
@@ -64,7 +73,7 @@ export default class SelfPrefix extends Command {
                 return await this.reply(
                     client,
                     ctx,
-                    removed ? 'Personal prefix reset.' : 'You had no personal prefix.'
+                    this.copy(ctx, removed ? 'reset' : 'nothingToReset')
                 );
             }
             default:
@@ -72,18 +81,13 @@ export default class SelfPrefix extends Command {
         }
 
         if (action !== 'set') {
-            return await this.reply(
-                client,
-                ctx,
-                'Use `selfprefix set <prefix>` or `selfprefix reset`.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'usage'), true);
         }
         const prefix = (args[1] ?? '').trim();
         if (!prefix || prefix.length > MAX_PREFIX) {
-            return await this.reply(client, ctx, 'Prefixes must be 1–3 characters.', true);
+            return await this.reply(client, ctx, this.copy(ctx, 'invalid'), true);
         }
         await client.db.setUserPrefix(guild.id, author.id, prefix);
-        return await this.reply(client, ctx, `Your personal prefix is now \`${prefix}\`.`);
+        return await this.reply(client, ctx, this.copy(ctx, 'set', { prefix }));
     }
 }

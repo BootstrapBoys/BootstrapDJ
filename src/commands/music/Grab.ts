@@ -15,7 +15,9 @@ export default defineMusicCommand({
         const song = player.current;
         if (!song) return await replyFail(client, ctx, tr(ctx, 'commands:core.nothingPlaying'));
 
-        const duration = song.info.isStream ? 'LIVE' : client.utils.formatTime(song.info.length);
+        const duration = song.info.isStream
+            ? tr(ctx, 'longtail:music.live')
+            : client.utils.formatTime(song.info.length);
         const card = client
             .embed()
             .setTitle(`**${song.info.title}**`)

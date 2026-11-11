@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Shards extends Command {
     constructor(client: BootstrapClient) {
@@ -25,19 +26,26 @@ export default class Shards extends Command {
         const ids = shard?.ids ?? [0];
         const values = ids.map(id => {
             const guilds = ids.length === 1 ? client.guilds.cache.size : null;
-            return `Shard ${id}: ${guilds ?? 'unknown'} guilds`;
+            return tr(ctx, 'longtail:tools.shardLine', {
+                id,
+                guilds: guilds ?? tr(ctx, 'longtail:tools.shardUnknownGuilds'),
+            });
         });
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Shard status')
+                    .setTitle(tr(ctx, 'longtail:tools.shardsTitle'))
                     .setDescription(
                         [
-                            `Shard count: **${shard?.count ?? 1}**`,
-                            `Current shard: **${client.shard?.ids.join(', ') ?? '0'}**`,
-                            `Gateway ping: **${Math.round(client.ws.ping)} ms**`,
+                            tr(ctx, 'longtail:tools.shardCount', { count: shard?.count ?? 1 }),
+                            tr(ctx, 'longtail:tools.shardCurrent', {
+                                ids: client.shard?.ids.join(', ') ?? '0',
+                            }),
+                            tr(ctx, 'longtail:tools.shardPing', {
+                                ping: Math.round(client.ws.ping),
+                            }),
                             '',
                             ...values,
                         ].join('\n')

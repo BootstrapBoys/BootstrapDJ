@@ -1,6 +1,7 @@
 import { Message, PermissionFlagsBits, TextChannel } from 'discord.js';
 
 import { BootstrapClient, Event } from '../../core/index.js';
+import { translate } from '../../lib/i18n.js';
 import { resolvePlayer } from '../../lib/PlayerResolver.js';
 import { oops, setupStart } from '../../lib/SetupSystem.js';
 
@@ -29,43 +30,42 @@ export default class SetupSystem extends Event {
         const botUser = this.client.user;
         if (!member || !me || !botUser) return;
 
+        const settings = await this.client.db
+            .getGuildSettings(message.guildId)
+            .catch(() => ({}) as Record<string, string>);
+        const language = settings.language ?? this.client.config.defaultLanguage;
+        const copy = (key: string, variables: Record<string, string | number> = {}): string =>
+            translate(`longtail:events.setup.${key}`, language, variables);
+
         const voice = member.voice.channel;
         if (!voice) {
-            return await this.reject(
-                channel,
-                message,
-                'You are not connected to a voice channel to queue songs.'
-            );
+            return await this.reject(channel, message, copy('noVoice'));
         }
         const voicePermissions = voice.permissionsFor(botUser);
         if (!voicePermissions?.has([PermissionFlagsBits.Connect, PermissionFlagsBits.Speak])) {
             return await this.reject(
                 channel,
                 message,
-                `I don't have enough permission to connect/speak in <#${voice.id}>`
+                copy('noPermission', { channel: `<#${voice.id}>` })
             );
         }
         if (me.voice.channel && me.voice.channelId !== member.voice.channelId) {
             return await this.reject(
                 channel,
                 message,
-                `You are not connected to <#${me.voice.channelId}> to queue songs`
+                copy('wrongVoice', { channel: `<#${me.voice.channelId}>` })
             );
         }
 
         if (!this.client.queue.hasNode) {
-            return await this.reject(
-                channel,
-                message,
-                'No Lavalink node is available right now. Please try again in a moment.'
-            );
+            return await this.reject(channel, message, copy('noNode'));
         }
         let player = await resolvePlayer(this.client, message.guildId, voice, channel);
         if (!player) {
             player = await this.client.queue.create(message.guild, voice, channel);
         }
 
-        await setupStart(this.client, message.content, player, message);
+        await setupStart(this.client, message.content, player, message, language);
         await message.delete().catch(() => {});
     }
 }

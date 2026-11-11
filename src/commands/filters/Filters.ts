@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Filters extends Command {
     constructor(client: BootstrapClient) {
@@ -34,17 +35,19 @@ export default class Filters extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:filters.nothingPlaying')),
                 ],
             });
         }
-        const filters = player.filters.length ? player.filters.join(', ') : 'none';
+        const filters = player.filters.length
+            ? player.filters.join(', ')
+            : tr(ctx, 'longtail:filters.none');
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Active filters')
+                    .setTitle(tr(ctx, 'longtail:filters.activeTitle'))
                     .setDescription(filters),
             ],
         });

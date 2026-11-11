@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineFilterCommand, numericFilter } from '../../lib/filterCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default defineFilterCommand({
     name: 'rate',
@@ -13,7 +14,7 @@ export default defineFilterCommand({
     args: true,
     // The live track is the target, so an idle player is not enough.
     requireCurrent: true,
-    missingPlayer: 'Nothing is playing right now.',
+    missingPlayer: ctx => tr(ctx, 'longtail:filters.nothingPlaying'),
     options: [
         {
             name: 'rate',
@@ -28,9 +29,9 @@ export default defineFilterCommand({
         key: 'rate',
         min: 0.5,
         max: 5,
-        invalid: 'Rate must be between 0.5 and 5.',
-        outOfRange: 'Rate must be between 0.5 and 5.',
+        invalid: ctx => tr(ctx, 'longtail:filters.rateRange'),
+        outOfRange: ctx => tr(ctx, 'longtail:filters.rateRange'),
         apply: (player, rate) => player.player.setTimescale({ rate, pitch: rate, speed: 1 }),
-        success: rate => `Playback rate set to **${rate}x**.`,
+        success: (rate, ctx) => tr(ctx, 'longtail:filters.rateSet', { rate }),
     }),
 });

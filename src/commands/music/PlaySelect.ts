@@ -2,6 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder }
 import { LoadType, Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { checkTrack, getPlayLimits } from '../../lib/PlayLimits.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
@@ -50,7 +51,7 @@ export default class PlaySelect extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Provide a playlist URL or search term.'),
+                        .setDescription(tr(ctx, 'longtail:music.playselect.provideQuery')),
                 ],
             });
         }
@@ -63,7 +64,10 @@ export default class PlaySelect extends Command {
         if (!res) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('No results found.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.playselect.noResults')),
                 ],
             });
         }
@@ -78,7 +82,10 @@ export default class PlaySelect extends Command {
         if (!tracks.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('No tracks found.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.playselect.noTracks')),
                 ],
             });
         }
@@ -86,7 +93,7 @@ export default class PlaySelect extends Command {
         const limits = await getPlayLimits(client, guild.id);
         const enqueue = async (track: Track): Promise<string | null> => {
             const song = player.buildTrack(track, author);
-            const rejected = checkTrack(player, song, author.id, limits);
+            const rejected = checkTrack(player, song, author.id, limits, [], ctx.locale);
             if (rejected) return rejected;
             player.enqueue(song);
             await player.isPlaying();
@@ -105,7 +112,12 @@ export default class PlaySelect extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setDescription(`Queued [${tracks[0].info.title}](${tracks[0].info.uri}).`),
+                        .setDescription(
+                            tr(ctx, 'longtail:music.playselect.queued', {
+                                title: tracks[0].info.title,
+                                uri: tracks[0].info.uri ?? '',
+                            })
+                        ),
                 ],
             });
         }
@@ -116,14 +128,23 @@ export default class PlaySelect extends Command {
             const start = index * PAGE_SIZE;
             const pageTracks = tracks.slice(start, start + PAGE_SIZE);
             const lines = pageTracks
-                .map(
-                    (track, offset) =>
-                        `**${start + offset + 1}.** [${track.info.title}](${track.info.uri}) — ${track.info.author}`
+                .map((track, offset) =>
+                    tr(ctx, 'longtail:music.playselect.line', {
+                        index: start + offset + 1,
+                        title: track.info.title,
+                        uri: track.info.uri ?? '',
+                        author: track.info.author,
+                    })
                 )
                 .join('\n');
             const menu = new StringSelectMenuBuilder()
                 .setCustomId('playselect:pick')
-                .setPlaceholder(`Choose a track — page ${index + 1} of ${pages}`)
+                .setPlaceholder(
+                    tr(ctx, 'longtail:music.playselect.placeholder', {
+                        page: index + 1,
+                        pages,
+                    })
+                )
                 .addOptions(
                     pageTracks.map((track, offset) => ({
                         label: track.info.title.slice(0, 100),
@@ -133,12 +154,12 @@ export default class PlaySelect extends Command {
                 );
             const previous = new ButtonBuilder()
                 .setCustomId('playselect:previous')
-                .setLabel('Previous')
+                .setLabel(tr(ctx, 'longtail:music.playselect.previous'))
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(index === 0);
             const next = new ButtonBuilder()
                 .setCustomId('playselect:next')
-                .setLabel('Next')
+                .setLabel(tr(ctx, 'longtail:music.playselect.next'))
                 .setStyle(ButtonStyle.Primary)
                 .setDisabled(index >= pages - 1);
             return {
@@ -146,7 +167,11 @@ export default class PlaySelect extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setTitle(`Select a track (${tracks.length} results)`)
+                        .setTitle(
+                            tr(ctx, 'longtail:music.playselect.title', {
+                                count: tracks.length,
+                            })
+                        )
                         .setDescription(lines),
                 ],
                 components: [
@@ -175,7 +200,7 @@ export default class PlaySelect extends Command {
             const track = tracks[selected];
             if (!track) {
                 await interaction.reply({
-                    content: 'That track is no longer available.',
+                    content: tr(ctx, 'longtail:music.playselect.gone'),
                     ephemeral: true,
                 });
                 return;
@@ -192,7 +217,12 @@ export default class PlaySelect extends Command {
                         client
                             .embed()
                             .setColor(client.color.main)
-                            .setDescription(`Queued [${track.info.title}](${track.info.uri}).`),
+                            .setDescription(
+                                tr(ctx, 'longtail:music.playselect.queued', {
+                                    title: track.info.title,
+                                    uri: track.info.uri ?? '',
+                                })
+                            ),
                     ],
                     components: [],
                 })

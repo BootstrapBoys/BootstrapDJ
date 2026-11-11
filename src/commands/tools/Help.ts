@@ -1,13 +1,14 @@
 import { ApplicationCommandOptionType, EmbedBuilder } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
-function quoted(values: readonly string[]): string {
-    return values.length ? values.map(value => `\`${value}\``).join(', ') : 'None';
+function quoted(values: readonly string[], none: string): string {
+    return values.length ? values.map(value => `\`${value}\``).join(', ') : none;
 }
 
-function yesNo(value: boolean): string {
-    return value ? 'Yes' : 'No';
+function yesNo(value: boolean, yes: string, no: string): string {
+    return value ? yes : no;
 }
 
 export default class Help extends Command {
@@ -49,17 +50,18 @@ export default class Help extends Command {
         return grouped;
     }
 
-    private overview(client: BootstrapClient, prefix: string): EmbedBuilder {
+    private overview(client: BootstrapClient, ctx: Context, prefix: string): EmbedBuilder {
         const embed = client
             .embed()
             .setColor(client.color.main)
-            .setTitle('Help Menu')
+            .setTitle(tr(ctx, 'longtail:tools.helpTitle'))
             .setDescription(
-                `Hey there! I'm ${
-                    client.user?.username ?? 'BootstrapDJ'
-                }, a music bot made with [BootstrapDJ](https://github.com/BootstrapBoys/BootstrapDJ) and Discord. You can use \`${prefix}help <command>\` to get more info on a command.`
+                tr(ctx, 'longtail:tools.helpIntro', {
+                    bot: client.user?.username ?? 'BootstrapDJ',
+                    prefix,
+                })
             )
-            .setFooter({ text: `Use ${prefix}help <command> for more info on a command` });
+            .setFooter({ text: tr(ctx, 'longtail:tools.helpFooter', { prefix }) });
 
         for (const [category, names] of this.groups(client)) {
             embed.addFields({ name: category, value: names.join(', '), inline: false });
@@ -67,33 +69,58 @@ export default class Help extends Command {
         return embed;
     }
 
-    private details(client: BootstrapClient, command: Command, prefix: string): EmbedBuilder {
+    private details(
+        client: BootstrapClient,
+        ctx: Context,
+        command: Command,
+        prefix: string
+    ): EmbedBuilder {
+        const none = tr(ctx, 'longtail:tools.helpNone');
+        const yes = tr(ctx, 'longtail:tools.helpYes');
+        const no = tr(ctx, 'longtail:tools.helpNo');
+        const flag = (value: boolean): string => yesNo(value, yes, no);
         const rows: Array<[string, string]> = [
-            ['Description', command.description.content],
-            ['Usage', `${prefix}${command.description.usage}`],
+            [tr(ctx, 'longtail:tools.helpLabelDescription'), command.description.content],
+            [tr(ctx, 'longtail:tools.helpLabelUsage'), `${prefix}${command.description.usage}`],
             [
-                'Examples',
+                tr(ctx, 'longtail:tools.helpLabelExamples'),
                 command.description.examples.map(example => `${prefix}${example}`).join(', '),
             ],
-            ['Aliases', command.aliases.map(alias => `\`${alias}\``).join(', ')],
-            ['Category', String(command.category)],
-            ['Cooldown', `${command.cooldown} seconds`],
-            ['Permissions', quoted(command.permissions.user)],
-            ['Bot Permissions', quoted(command.permissions.client)],
-            ['Developer Only', yesNo(command.permissions.dev)],
-            ['Slash Command', yesNo(command.slashCommand)],
-            ['Args', yesNo(command.args)],
-            ['Player', yesNo(command.player.active)],
-            ['DJ', yesNo(command.player.dj)],
-            ['DJ Permissions', command.player.djPerm ?? 'None'],
-            ['Voice', yesNo(command.player.voice)],
+            [
+                tr(ctx, 'longtail:tools.helpLabelAliases'),
+                command.aliases.map(alias => `\`${alias}\``).join(', '),
+            ],
+            [tr(ctx, 'longtail:tools.helpLabelCategory'), String(command.category)],
+            [
+                tr(ctx, 'longtail:tools.helpLabelCooldown'),
+                tr(ctx, 'longtail:tools.helpCooldownValue', { seconds: command.cooldown }),
+            ],
+            [
+                tr(ctx, 'longtail:tools.helpLabelPermissions'),
+                quoted(command.permissions.user, none),
+            ],
+            [
+                tr(ctx, 'longtail:tools.helpLabelBotPermissions'),
+                quoted(command.permissions.client, none),
+            ],
+            [tr(ctx, 'longtail:tools.helpLabelDeveloperOnly'), flag(command.permissions.dev)],
+            [tr(ctx, 'longtail:tools.helpLabelSlashCommand'), flag(command.slashCommand)],
+            [tr(ctx, 'longtail:tools.helpLabelArgs'), flag(command.args)],
+            [tr(ctx, 'longtail:tools.helpLabelPlayer'), flag(command.player.active)],
+            [tr(ctx, 'longtail:tools.helpLabelDj'), flag(command.player.dj)],
+            [tr(ctx, 'longtail:tools.helpLabelDjPermissions'), command.player.djPerm ?? none],
+            [tr(ctx, 'longtail:tools.helpLabelVoice'), flag(command.player.voice)],
         ];
 
         return client
             .embed()
             .setColor(client.color.main)
-            .setTitle(`Help Menu - ${command.name}`)
-            .setDescription(rows.map(([label, value]) => `**${label}:** ${value}`).join('\n'));
+            .setTitle(tr(ctx, 'longtail:tools.helpDetailsTitle', { command: command.name }))
+            .setDescription(
+                rows
+                    .map(([label, value]) => tr(ctx, 'longtail:tools.helpField', { label, value }))
+                    .join('\n')
+            );
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
@@ -105,7 +132,7 @@ export default class Help extends Command {
         const query = args[0];
 
         if (!query) {
-            return await ctx.sendMessage({ embeds: [this.overview(client, prefix)] });
+            return await ctx.sendMessage({ embeds: [this.overview(client, ctx, prefix)] });
         }
 
         const command = client.commands.get(query.toLowerCase());
@@ -115,11 +142,11 @@ export default class Help extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`Command \`${query}\` not found`),
+                        .setDescription(tr(ctx, 'longtail:tools.helpNotFound', { query })),
                 ],
             });
         }
 
-        return await ctx.sendMessage({ embeds: [this.details(client, command, prefix)] });
+        return await ctx.sendMessage({ embeds: [this.details(client, ctx, command, prefix)] });
     }
 }

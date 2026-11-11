@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { SortDirection, SortField, sortQueue } from '../../lib/QueueTools.js';
 
 export default class Sort extends Command {
@@ -60,7 +61,7 @@ export default class Sort extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('There is no queue to sort.'),
+                        .setDescription(tr(ctx, 'longtail:music.sortNoQueue')),
                 ],
             });
         }
@@ -75,7 +76,7 @@ export default class Sort extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Sort by `title`, `author`, `duration`, or `requester`.'),
+                        .setDescription(tr(ctx, 'longtail:music.sortInvalidField')),
                 ],
             });
         }
@@ -85,7 +86,7 @@ export default class Sort extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Order must be `asc` or `desc`.'),
+                        .setDescription(tr(ctx, 'longtail:music.sortInvalidOrder')),
                 ],
             });
         }
@@ -97,7 +98,11 @@ export default class Sort extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Sorted ${player.queue.length} queued tracks by **${field}** (${direction}).`
+                        tr(ctx, 'longtail:music.sortDone', {
+                            count: player.queue.length,
+                            field,
+                            direction,
+                        })
                     ),
             ],
         });

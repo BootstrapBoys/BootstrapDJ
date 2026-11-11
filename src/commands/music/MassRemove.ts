@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { removeRange } from '../../lib/QueueTools.js';
 
 export default class MassRemove extends Command {
@@ -49,7 +50,10 @@ export default class MassRemove extends Command {
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.queueEmpty')),
                 ],
             });
         }
@@ -67,7 +71,11 @@ export default class MassRemove extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`Use a valid range within 1–${player.queue.length}.`),
+                        .setDescription(
+                            tr(ctx, 'longtail:music.massRemoveInvalidRange', {
+                                max: player.queue.length,
+                            })
+                        ),
                 ],
             });
         }
@@ -79,7 +87,13 @@ export default class MassRemove extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Removed ${removed.length} track${removed.length === 1 ? '' : 's'}.`
+                        tr(
+                            ctx,
+                            removed.length === 1
+                                ? 'longtail:music.massRemoveRemovedOne'
+                                : 'longtail:music.massRemoveRemovedMany',
+                            { count: removed.length }
+                        )
                     ),
             ],
         });

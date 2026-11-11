@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type RadioStation = {
     name?: string;
@@ -55,7 +56,7 @@ export default class Radio extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Provide a station name or genre.'),
+                        .setDescription(tr(ctx, 'longtail:music.radio.provideQuery')),
                 ],
             });
         }
@@ -83,7 +84,7 @@ export default class Radio extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`No working radio station found for **${query}**.`),
+                        .setDescription(tr(ctx, 'longtail:music.radio.notFound', { query })),
                 ],
             });
         }
@@ -97,7 +98,7 @@ export default class Radio extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('The station stream could not be loaded.'),
+                        .setDescription(tr(ctx, 'longtail:music.radio.loadFailed')),
                 ],
             });
         }
@@ -110,7 +111,12 @@ export default class Radio extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Playing **${station.name ?? query}**${station.country ? ` (${station.country})` : ''} — ${station.codec ?? 'stream'}${station.bitrate ? ` ${station.bitrate}kbps` : ''}.`
+                        tr(ctx, 'longtail:music.radio.playing', {
+                            name: station.name ?? query,
+                            country: station.country ? ` (${station.country})` : '',
+                            codec: station.codec ?? tr(ctx, 'longtail:music.radio.codecFallback'),
+                            bitrate: station.bitrate ? ` ${station.bitrate}kbps` : '',
+                        })
                     ),
             ],
         });

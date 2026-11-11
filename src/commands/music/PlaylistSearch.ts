@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class PlaylistSearch extends Command {
@@ -44,7 +45,7 @@ export default class PlaylistSearch extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Provide a playlist query or URL.'),
+                        .setDescription(tr(ctx, 'longtail:music.playlistsearch.provideQuery')),
                 ],
             });
         }
@@ -52,7 +53,10 @@ export default class PlaylistSearch extends Command {
         if (!res) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('No results found.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.playlistsearch.noResults')),
                 ],
             });
         }
@@ -70,24 +74,32 @@ export default class PlaylistSearch extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('No playlist tracks found.'),
+                        .setDescription(tr(ctx, 'longtail:music.playlistsearch.noTracks')),
                 ],
             });
         }
-        const lines = tracks
-            .slice(0, 15)
-            .map(
-                (track, index) =>
-                    `**${index + 1}.** [${track.info.title}](${track.info.uri}) — ${track.info.author}`
-            );
+        const lines = tracks.slice(0, 15).map((track, index) =>
+            tr(ctx, 'longtail:music.playlistsearch.line', {
+                index: index + 1,
+                title: track.info.title,
+                uri: track.info.uri ?? '',
+                author: track.info.author,
+            })
+        );
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle(`Playlist results: ${query}`)
+                    .setTitle(tr(ctx, 'longtail:music.playlistsearch.title', { query }))
                     .setDescription(
-                        `${lines.join('\n')}${tracks.length > 15 ? `\n…and ${tracks.length - 15} more` : ''}`
+                        `${lines.join('\n')}${
+                            tracks.length > 15
+                                ? `\n${tr(ctx, 'longtail:music.playlistsearch.more', {
+                                      count: tracks.length - 15,
+                                  })}`
+                                : ''
+                        }`
                     ),
             ],
         });

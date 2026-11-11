@@ -8,6 +8,7 @@ import {
 import { inspect } from 'node:util';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const OUTPUT_LIMIT = 2000;
 const COLLECTOR_MS = 60_000;
@@ -56,7 +57,7 @@ export default class Eval extends Command {
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setStyle(ButtonStyle.Danger)
-                .setLabel('Delete')
+                .setLabel(tr(ctx, 'longtail:owner.evalDelete'))
                 .setCustomId('eval-delete')
         );
         const message = await ctx.sendMessage({
@@ -83,13 +84,13 @@ export default class Eval extends Command {
         client.logger.info(`[eval] user=${author.id} args=${args.length} length=${code.length}`);
         if (!code) {
             return await ctx.sendMessage({
-                content: 'Usage: `!eval <javascript>` — the code argument arrived empty.',
+                content: tr(ctx, 'longtail:owner.evalUsage'),
             });
         }
 
         try {
             let output: unknown = eval(code);
-            if (output === client.config) output = 'Nice try';
+            if (output === client.config) output = tr(ctx, 'longtail:owner.evalNiceTry');
             const rendered = typeof output === 'string' ? output : inspect(output);
             await this.deliver(client, ctx, rendered, author.id);
         } catch (error) {

@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Shutdown extends Command {
     constructor(client: BootstrapClient) {
@@ -30,7 +31,7 @@ export default class Shutdown extends Command {
                 client
                     .embed()
                     .setColor(client.color.red)
-                    .setDescription('Shutting down the bot process.'),
+                    .setDescription(tr(ctx, 'longtail:owner.shuttingDown')),
             ],
         });
         setTimeout(() => process.kill(process.pid, 'SIGTERM'), 1000);

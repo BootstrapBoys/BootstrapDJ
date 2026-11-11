@@ -1,6 +1,7 @@
 import { APIRole, ApplicationCommandOptionType, Role } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type RoleLike = Role | APIRole | null;
 type Selection = { sub: string; role: RoleLike };
@@ -81,6 +82,14 @@ export default class Dj extends Command {
         return { sub: args[0] ?? '', role: mentioned ?? typed };
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.dj.${key}`, variables);
+    }
+
     private reply(
         client: BootstrapClient,
         ctx: Context,
@@ -105,24 +114,29 @@ export default class Dj extends Command {
 
         switch (sub) {
             case 'add': {
-                if (!role) return await this.reply(client, ctx, 'Please provide a role to add');
+                if (!role) return await this.reply(client, ctx, this.copy(ctx, 'roleRequiredAdd'));
                 const roles = await client.db.getRoles(guild.id);
                 if (roles.some(entry => entry.roleId === role.id)) {
                     return await this.reply(
                         client,
                         ctx,
-                        `The dj role <@&${role.id}> is already added`
+                        this.copy(ctx, 'alreadyAdded', { id: role.id })
                     );
                 }
                 await client.db.addRole(guild.id, role.id);
                 await client.db.setDj(guild.id, true);
-                return await this.reply(client, ctx, `The dj role <@&${role.id}> has been added`);
+                return await this.reply(client, ctx, this.copy(ctx, 'added', { id: role.id }));
             }
             case 'remove': {
-                if (!role) return await this.reply(client, ctx, 'Please provide a role to remove');
+                if (!role)
+                    return await this.reply(client, ctx, this.copy(ctx, 'roleRequiredRemove'));
                 const roles = await client.db.getRoles(guild.id);
                 if (!roles.some(entry => entry.roleId === role.id)) {
-                    return await this.reply(client, ctx, `The dj role <@&${role.id}> is not added`);
+                    return await this.reply(
+                        client,
+                        ctx,
+                        this.copy(ctx, 'notAdded', { id: role.id })
+                    );
                 }
                 await client.db.removeRole(guild.id, role.id);
                 const remaining = await client.db.getRoles(guild.id);
@@ -132,31 +146,31 @@ export default class Dj extends Command {
                     return await this.reply(
                         client,
                         ctx,
-                        `The dj role <@&${role.id}> has been removed. DJ mode is now disabled because no DJ roles remain.`
+                        this.copy(ctx, 'removedDisabled', { id: role.id })
                     );
                 }
-                return await this.reply(client, ctx, `The dj role <@&${role.id}> has been removed`);
+                return await this.reply(client, ctx, this.copy(ctx, 'removed', { id: role.id }));
             }
             case 'clear':
-                if (!record) return await this.reply(client, ctx, 'There are no dj roles to clear');
+                if (!record) return await this.reply(client, ctx, this.copy(ctx, 'noRolesToClear'));
                 await client.db.clearRoles(guild.id);
                 if (record.mode) await client.db.setDj(guild.id, false);
                 return await this.reply(
                     client,
                     ctx,
-                    record.mode
-                        ? 'All dj roles have been removed and DJ mode is now disabled'
-                        : 'All dj roles have been removed'
+                    this.copy(ctx, record.mode ? 'clearedDisabled' : 'cleared')
                 );
             case 'toggle': {
                 if (!record)
-                    return await this.reply(client, ctx, 'There are no dj roles to toggle');
+                    return await this.reply(client, ctx, this.copy(ctx, 'noRolesToToggle'));
                 const enabled = !record.mode;
                 await client.db.setDj(guild.id, enabled);
                 return await this.reply(
                     client,
                     ctx,
-                    `The dj mode has been toggled to ${enabled ? 'enabled' : 'disabled'}`
+                    this.copy(ctx, 'toggled', {
+                        state: this.copy(ctx, enabled ? 'stateEnabled' : 'stateDisabled'),
+                    })
                 );
             }
             default:
@@ -165,10 +179,10 @@ export default class Dj extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('Please provide a valid subcommand')
+                            .setDescription(this.copy(ctx, 'invalidSub'))
                             .addFields({
-                                name: 'Subcommands',
-                                value: '`add`, `remove`, `clear`, `toggle`',
+                                name: this.copy(ctx, 'subcommandsField'),
+                                value: this.copy(ctx, 'subcommandsValue'),
                             }),
                     ],
                 });

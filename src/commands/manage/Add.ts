@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType, Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 /** The rows an import may add: whole playlists expand, searches take one hit. */
@@ -59,6 +60,14 @@ export default class Add extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.add.${key}`, variables);
+    }
+
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
         return ctx.sendMessage({ embeds: [{ description: text, color: client.color.red }] });
     }
@@ -68,15 +77,15 @@ export default class Add extends Command {
         if (!author) return;
         const name = (args[0] ?? '').trim();
         const query = args.slice(1).join(' ').trim();
-        if (!name) return await this.fail(client, ctx, 'Please provide a playlist');
-        if (!query) return await this.fail(client, ctx, 'Please provide a song');
+        if (!name) return await this.fail(client, ctx, this.copy(ctx, 'playlistRequired'));
+        if (!query) return await this.fail(client, ctx, this.copy(ctx, 'songRequired'));
 
         const playlist = await client.db.getPLaylist(author.id, name);
-        if (!playlist) return await this.fail(client, ctx, "That playlist doesn't exist");
+        if (!playlist) return await this.fail(client, ctx, this.copy(ctx, 'notExist'));
 
         const result = await client.queue.search(query, await resolveSearchEngine(client, ctx));
         const tracks = result ? tracksFor(result.loadType, result.data) : [];
-        if (tracks.length === 0) return await this.fail(client, ctx, 'No songs found');
+        if (tracks.length === 0) return await this.fail(client, ctx, this.copy(ctx, 'noSongs'));
 
         let added = 0;
         let duplicates = 0;
@@ -84,11 +93,14 @@ export default class Add extends Command {
             if (await client.db.addSong(author.id, name, track)) added += 1;
             else duplicates += 1;
         }
-        const suffix = duplicates > 0 ? ` (${duplicates} already in the playlist)` : '';
         return await ctx.sendMessage({
             embeds: [
                 {
-                    description: `Added ${added} to ${playlist.name}${suffix}`,
+                    description: this.copy(ctx, duplicates > 0 ? 'addedDuplicates' : 'added', {
+                        count: added,
+                        name: playlist.name,
+                        duplicates,
+                    }),
                     color: client.color.green,
                 },
             ],

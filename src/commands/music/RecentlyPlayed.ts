@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class RecentlyPlayed extends Command {
     constructor(client: BootstrapClient) {
@@ -35,20 +36,24 @@ export default class RecentlyPlayed extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setDescription('No playback history yet.'),
+                        .setDescription(tr(ctx, 'longtail:music.recentlyplayed.empty')),
                 ],
             });
         }
-        const lines = history.map(
-            (track, index) =>
-                `**${index + 1}.** [${track.info.title}](${track.info.uri}) — ${track.info.author}`
+        const lines = history.map((track, index) =>
+            tr(ctx, 'longtail:music.recentlyplayed.line', {
+                index: index + 1,
+                title: track.info.title,
+                uri: track.info.uri ?? '',
+                author: track.info.author,
+            })
         );
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Recently played')
+                    .setTitle(tr(ctx, 'longtail:music.recentlyplayed.title'))
                     .setDescription(lines.join('\n').slice(0, 4096)),
             ],
         });

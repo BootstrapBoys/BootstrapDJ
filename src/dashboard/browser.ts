@@ -582,10 +582,43 @@ export const BROWSER_SCRIPT = String.raw`
             '#settings-title': 'settings.title',
             '#settings-cancel': 'settings.cancel',
             '#save': 'settings.save',
+            '#stats-title': 'stats.title',
+            '#personal-title': 'stats.personalTitle',
+            '#playlists-title': 'playlists.title',
+            '#stats-clear': 'stats.clear',
+            '#playlist-create': 'playlists.create',
+            '#playlist-list > .small': 'playlists.loading',
+            '#playlist-detail > .small': 'playlists.select',
         };
         for (const selector of Object.keys(textSelectors)) {
             const node = find(selector);
             if (node) node.textContent = copy(textSelectors[selector], node.textContent);
+        }
+        const attributeSelectors = {
+            '#personal-btn': { title: 'stats.personalTitle', 'aria-label': 'stats.personalOpen' },
+            '#stats-btn': { title: 'stats.title', 'aria-label': 'stats.open' },
+            '#playlists-btn': { title: 'playlists.title', 'aria-label': 'playlists.open' },
+            '#stats-clear': { title: 'stats.clearTitle' },
+            '#stats-close': { 'aria-label': 'stats.close' },
+            '#personal-close': { 'aria-label': 'stats.personalClose' },
+            '#playlists-close': { 'aria-label': 'playlists.close' },
+            '#playlist-name': {
+                placeholder: 'playlists.namePlaceholder',
+                'aria-label': 'playlists.nameAria',
+            },
+        };
+        for (const selector of Object.keys(attributeSelectors)) {
+            const node = find(selector);
+            if (!node) continue;
+            for (const [attribute, key] of Object.entries(attributeSelectors[selector])) {
+                node.setAttribute(attribute, copy(key, node.getAttribute(attribute) || ''));
+            }
+        }
+        const range = find('#stats-range');
+        if (range) {
+            for (const option of range.querySelectorAll('option')) {
+                option.textContent = copy('stats.range' + option.value, option.textContent);
+            }
         }
         const queueInput = find('#queue-query');
         if (queueInput) queueInput.placeholder = copy('queue.addPlaceholder', queueInput.placeholder);
@@ -1410,7 +1443,7 @@ export const BROWSER_SCRIPT = String.raw`
         const container = find('#playlist-list');
         container.textContent = '';
         if (!playlists.length) {
-            container.appendChild(element('div', 'playlist-empty', 'No playlists yet.'));
+            container.appendChild(element('div', 'playlist-empty', copy('playlists.empty', 'No playlists yet.')));
             return;
         }
         for (const item of playlists) {
@@ -1420,7 +1453,9 @@ export const BROWSER_SCRIPT = String.raw`
                 element(
                     'span',
                     'small',
-                    item.trackCount + ' track' + (item.trackCount === 1 ? '' : 's')
+                    item.trackCount === 1
+                        ? copy('playlists.trackOne', '{{count}} track', { count: item.trackCount })
+                        : copy('playlists.trackMany', '{{count}} tracks', { count: item.trackCount })
                 )
             );
             row.onclick = () => {
@@ -1443,7 +1478,9 @@ export const BROWSER_SCRIPT = String.raw`
             if (!playlistSelected) {
                 const detail = find('#playlist-detail');
                 detail.textContent = '';
-                detail.appendChild(element('div', 'small', 'Select a playlist to edit or load it.'));
+                detail.appendChild(
+                    element('div', 'small', copy('playlists.select', 'Select a playlist to edit or load it.'))
+                );
                 return;
             }
             await loadPlaylistTracks(playlistSelected);
@@ -1455,7 +1492,7 @@ export const BROWSER_SCRIPT = String.raw`
     async function loadPlaylistTracks(name) {
         const detail = find('#playlist-detail');
         detail.textContent = '';
-        detail.appendChild(element('div', 'small', 'Loading tracks…'));
+        detail.appendChild(element('div', 'small', copy('playlists.loadingTracks', 'Loading tracks…')));
         try {
             const data = await request('/api/playlists/tracks?name=' + encodeURIComponent(name));
             renderPlaylistDetail(name, data.tracks || []);
@@ -1476,9 +1513,9 @@ export const BROWSER_SCRIPT = String.raw`
         const head = element('div', 'playlist-detail-head');
         head.appendChild(element('h3', '', name));
 
-        const rename = playlistActionButton('Rename');
+        const rename = playlistActionButton(copy('playlists.rename', 'Rename'));
         rename.onclick = async () => {
-            const next = window.prompt('Rename playlist', name);
+            const next = window.prompt(copy('playlists.renamePrompt', 'Rename playlist'), name);
             if (!next || next.trim() === name) return;
             try {
                 await postJson('/api/playlists', {
@@ -1487,7 +1524,7 @@ export const BROWSER_SCRIPT = String.raw`
                     newName: next.trim(),
                 });
                 playlistSelected = next.trim();
-                notify('Playlist renamed');
+                notify(copy('playlists.renamed', 'Playlist renamed'));
                 await loadPlaylists();
             } catch (error) {
                 notify(error.message, true);
@@ -1495,13 +1532,22 @@ export const BROWSER_SCRIPT = String.raw`
         };
         head.appendChild(rename);
 
-        const remove = playlistActionButton('Delete');
+        const remove = playlistActionButton(copy('playlists.delete', 'Delete'));
         remove.onclick = async () => {
-            if (!window.confirm('Delete the playlist "' + name + '"? This cannot be undone.')) return;
+            if (
+                !window.confirm(
+                    copy(
+                        'playlists.deleteConfirm',
+                        'Delete the playlist "{{name}}"? This cannot be undone.',
+                        { name }
+                    )
+                )
+            )
+                return;
             try {
                 await postJson('/api/playlists', { action: 'delete', name });
                 playlistSelected = '';
-                notify('Playlist deleted');
+                notify(copy('playlists.deleted', 'Playlist deleted'));
                 await loadPlaylists();
             } catch (error) {
                 notify(error.message, true);
@@ -1516,13 +1562,18 @@ export const BROWSER_SCRIPT = String.raw`
                     name,
                     shuffle,
                 });
+                const queued = result.queued || 0;
+                const skipped = result.skipped || 0;
                 notify(
-                    'Queued ' +
-                        (result.queued || 0) +
-                        ' track' +
-                        ((result.queued || 0) === 1 ? '' : 's') +
-                        ((result.skipped || 0) ? ' (' + result.skipped + ' skipped)' : '') +
-                        (result.shuffled ? ' in shuffled order' : '')
+                    (queued === 1
+                        ? copy('playlists.queuedOne', 'Queued {{count}} track', { count: queued })
+                        : copy('playlists.queuedMany', 'Queued {{count}} tracks', { count: queued })) +
+                        (skipped
+                            ? copy('playlists.skipped', ' ({{count}} skipped)', { count: skipped })
+                            : '') +
+                        (result.shuffled
+                            ? copy('playlists.shuffledOrder', ' in shuffled order')
+                            : '')
                 );
                 closePlaylists();
                 await loadState();
@@ -1531,25 +1582,30 @@ export const BROWSER_SCRIPT = String.raw`
             }
         };
 
-        const load = playlistActionButton('Load to queue', 'primary');
+        const load = playlistActionButton(copy('playlists.load', 'Load to queue'), 'primary');
         load.disabled = !state.access.controls;
         load.title = state.access.controls
-            ? 'Append this playlist to the current queue'
-            : 'Playback controls are required';
+            ? copy('playlists.loadTitle', 'Append this playlist to the current queue')
+            : copy('playlists.controlsRequired', 'Playback controls are required');
         load.onclick = () => queuePlaylist(false);
         head.appendChild(load);
 
-        const shuffleLoad = playlistActionButton('Shuffle & load');
+        const shuffleLoad = playlistActionButton(copy('playlists.shuffleLoad', 'Shuffle & load'));
         shuffleLoad.disabled = !state.access.controls;
         shuffleLoad.title = state.access.controls
-            ? 'Append this playlist in random order without changing its saved order'
-            : 'Playback controls are required';
+            ? copy(
+                  'playlists.shuffleTitle',
+                  'Append this playlist in random order without changing its saved order'
+              )
+            : copy('playlists.controlsRequired', 'Playback controls are required');
         shuffleLoad.onclick = () => queuePlaylist(true);
         head.appendChild(shuffleLoad);
         detail.appendChild(head);
 
         if (!tracks.length) {
-            detail.appendChild(element('div', 'playlist-empty', 'This playlist is empty.'));
+            detail.appendChild(
+                element('div', 'playlist-empty', copy('playlists.emptyDetail', 'This playlist is empty.'))
+            );
         } else {
             tracks.forEach((track, index) => {
                 const row = element('div', 'playlist-track');
@@ -1561,15 +1617,19 @@ export const BROWSER_SCRIPT = String.raw`
                 const meta = element(
                     'div',
                     'track-meta',
-                    (track.author || 'Unknown artist') +
+                    (track.author || copy('playlists.unknownArtist', 'Unknown artist')) +
                         ' · ' +
                         formatDuration(track.duration) +
                         (track.source ? ' · ' + track.source : '')
                 );
                 main.appendChild(meta);
                 row.appendChild(main);
-                const removeTrack = element('button', 'track-remove', 'Remove');
-                removeTrack.title = 'Remove this track';
+                const removeTrack = element(
+                    'button',
+                    'track-remove',
+                    copy('playlists.remove', 'Remove')
+                );
+                removeTrack.title = copy('playlists.removeTitle', 'Remove this track');
                 removeTrack.onclick = async () => {
                     try {
                         await postJson('/api/playlists/tracks', {
@@ -1577,7 +1637,7 @@ export const BROWSER_SCRIPT = String.raw`
                             name,
                             index: index + 1,
                         });
-                        notify('Track removed');
+                        notify(copy('playlists.trackRemoved', 'Track removed'));
                         await loadPlaylistTracks(name);
                         await loadPlaylists();
                     } catch (error) {
@@ -1592,9 +1652,9 @@ export const BROWSER_SCRIPT = String.raw`
         const add = element('div', 'playlist-add');
         const query = element('input');
         query.id = 'playlist-add-query';
-        query.placeholder = 'Song name, URL, or playlist URL';
-        query.setAttribute('aria-label', 'Add a track to the playlist');
-        const addButton = playlistActionButton('Add track', 'primary');
+        query.placeholder = copy('playlists.addPlaceholder', 'Song name, URL, or playlist URL');
+        query.setAttribute('aria-label', copy('playlists.addAria', 'Add a track to the playlist'));
+        const addButton = playlistActionButton(copy('playlists.addTrack', 'Add track'), 'primary');
         addButton.onclick = async () => {
             const value = query.value.trim();
             if (!value) return;
@@ -1604,12 +1664,15 @@ export const BROWSER_SCRIPT = String.raw`
                     name,
                     query: value,
                 });
+                const added = result.added || 0;
+                const skipped = result.skipped || 0;
                 notify(
-                    'Added ' +
-                        (result.added || 0) +
-                        ' track' +
-                        ((result.added || 0) === 1 ? '' : 's') +
-                        ((result.skipped || 0) ? ' (' + result.skipped + ' skipped)' : '')
+                    (added === 1
+                        ? copy('playlists.addedOne', 'Added {{count}} track', { count: added })
+                        : copy('playlists.addedMany', 'Added {{count}} tracks', { count: added })) +
+                        (skipped
+                            ? copy('playlists.skipped', ' ({{count}} skipped)', { count: skipped })
+                            : '')
                 );
                 query.value = '';
                 await loadPlaylistTracks(name);
@@ -1622,12 +1685,17 @@ export const BROWSER_SCRIPT = String.raw`
         add.appendChild(addButton);
         detail.appendChild(add);
 
-        const clear = playlistActionButton('Clear playlist');
+        const clear = playlistActionButton(copy('playlists.clear', 'Clear playlist'));
         clear.onclick = async () => {
-            if (!window.confirm('Remove every track from "' + name + '"?')) return;
+            if (
+                !window.confirm(
+                    copy('playlists.clearConfirm', 'Remove every track from "{{name}}"?', { name })
+                )
+            )
+                return;
             try {
                 await postJson('/api/playlists/tracks', { action: 'clear', name });
-                notify('Playlist cleared');
+                notify(copy('playlists.cleared', 'Playlist cleared'));
                 await loadPlaylistTracks(name);
                 await loadPlaylists();
             } catch (error) {
@@ -1718,7 +1786,7 @@ export const BROWSER_SCRIPT = String.raw`
             await postJson('/api/playlists', { action: 'create', name });
             input.value = '';
             playlistSelected = name;
-            notify('Playlist created');
+            notify(copy('playlists.created', 'Playlist created'));
             await loadPlaylists();
         } catch (error) {
             notify(error.message, true);
@@ -1774,7 +1842,7 @@ export const BROWSER_SCRIPT = String.raw`
             ? rows
                   .map((row, index) => '<div class="stat-row"><span class="stat-index">' + (index + 1) + '</span>' + row + '</div>')
                   .join('')
-            : '<div class="small">No data yet.</div>';
+            : '<div class="small">' + copy('stats.noData', 'No data yet.') + '</div>';
         return '<div class="stat-list">' + body + '</div>';
     }
 
@@ -1820,27 +1888,36 @@ export const BROWSER_SCRIPT = String.raw`
                     escapeHtml(item.source) +
                     ' · ' +
                     formatClock(item.seconds * 1000) +
-                    ' each</span></span><span class="stat-sub">' +
-                    item.plays +
-                    ' play' +
-                    (item.plays === 1 ? '' : 's') +
+                    ' ' +
+                    copy('stats.each', 'each') +
+                    '</span></span><span class="stat-sub">' +
+                    (item.plays === 1
+                        ? copy('stats.playOne', '{{count}} play', { count: item.plays })
+                        : copy('stats.playMany', '{{count}} plays', { count: item.plays })) +
                     '</span></div>'
                 );
             })
             .join('');
         find('#personal-content').innerHTML =
             '<div class="stat-cards">' +
-            statCard('Hours listened', formatHours(data.listenedSeconds || 0)) +
-            statCard('Songs played', data.totalPlays || 0) +
-            statCard('Unique songs', data.uniqueTracks || 0) +
-            '</div><div class="stats-block"><h3>Songs you requested</h3>' +
-            (rows ? '<div class="stat-list">' + rows + '</div>' : '<div class="small">No requested songs yet.</div>') +
+            statCard(copy('stats.hoursListened', 'Hours listened'), formatHours(data.listenedSeconds || 0)) +
+            statCard(copy('stats.songsPlayed', 'Songs played'), data.totalPlays || 0) +
+            statCard(copy('stats.uniqueSongs', 'Unique songs'), data.uniqueTracks || 0) +
+            '</div><div class="stats-block"><h3>' +
+            copy('stats.requestedSongs', 'Songs you requested') +
+            '</h3>' +
+            (rows
+                ? '<div class="stat-list">' + rows + '</div>'
+                : '<div class="small">' +
+                  copy('stats.noRequestedSongs', 'No requested songs yet.') +
+                  '</div>') +
             '</div>';
     }
 
     async function loadPersonal() {
         const content = find('#personal-content');
-        content.innerHTML = '<div class="small">Loading your statistics…</div>';
+        content.innerHTML =
+            '<div class="small">' + copy('stats.loadingPersonal', 'Loading your statistics…') + '</div>';
         try {
             const data = await request('/api/me/stats?guildId=' + encodeURIComponent(state.guildId));
             renderPersonal(data);
@@ -1884,8 +1961,8 @@ export const BROWSER_SCRIPT = String.raw`
             '<span class="stat-main">' +
             escapeHtml(command.command) +
             '<br><span class="stat-sub">' +
-            command.count +
-            ' uses</span></span>'
+            copy('stats.uses', '{{count}} uses', { count: command.count }) +
+            '</span></span>'
         );
     }
 
@@ -1910,47 +1987,69 @@ export const BROWSER_SCRIPT = String.raw`
                       );
                   })
                   .join('')
-            : '<span>No tracks yet.</span>';
+            : '<span>' + copy('stats.noTracks', 'No tracks yet.') + '</span>';
 
         find('#stats-content').innerHTML =
             '<div class="stat-cards">' +
-            statCard('Listening time', formatDuration(data.totals.seconds)) +
-            statCard('Sessions', data.totals.sessions) +
-            statCard('Game sessions', data.totals.gameSessions) +
-            statCard('Sources', data.sources.length) +
+            statCard(copy('stats.listeningTime', 'Listening time'), formatDuration(data.totals.seconds)) +
+            statCard(copy('stats.sessions', 'Sessions'), data.totals.sessions) +
+            statCard(copy('stats.gameSessions', 'Game sessions'), data.totals.gameSessions) +
+            statCard(copy('stats.sources', 'Sources'), data.sources.length) +
             '</div>' +
-            '<div class="stats-grid"><div class="stats-block"><h3>Listening time by day</h3>' +
+            '<div class="stats-grid"><div class="stats-block"><h3>' +
+            copy('stats.byDay', 'Listening time by day') +
+            '</h3>' +
             barChart(
                 data.days.map(entry => entry.seconds),
                 data.days.map(entry => entry.day.slice(5)),
                 true
             ) +
-            '</div><div class="stats-block"><h3>Track types</h3><div class="pie ' +
+            '</div><div class="stats-block"><h3>' +
+            copy('stats.trackTypes', 'Track types') +
+            '</h3><div class="pie ' +
             (gradient ? '' : 'empty') +
             '" style="' +
             (gradient ? 'background:' + gradient : '') +
             '"></div><div class="legend">' +
             legend +
             '</div></div></div>' +
-            '<div class="stats-grid two"><div class="stats-block"><h3>Listening time by hour</h3>' +
+            '<div class="stats-grid two"><div class="stats-block"><h3>' +
+            copy('stats.byHour', 'Listening time by hour') +
+            '</h3>' +
             barChart(
                 data.hours.map(entry => entry.seconds),
                 data.hours.map(entry => pad(entry.hour) + ':00'),
                 true
             ) +
-            '</div><div class="stats-block"><h3>Listening time by weekday</h3>' +
+            '</div><div class="stats-block"><h3>' +
+            copy('stats.byWeekday', 'Listening time by weekday') +
+            '</h3>' +
             barChart(
                 data.weekdays.map(entry => entry.seconds),
-                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                [
+                    copy('stats.weekdaySun', 'Sun'),
+                    copy('stats.weekdayMon', 'Mon'),
+                    copy('stats.weekdayTue', 'Tue'),
+                    copy('stats.weekdayWed', 'Wed'),
+                    copy('stats.weekdayThu', 'Thu'),
+                    copy('stats.weekdayFri', 'Fri'),
+                    copy('stats.weekdaySat', 'Sat'),
+                ],
                 true
             ) +
             '</div></div>' +
-            '<div class="stats-grid two"><div class="stats-block"><h3>Most time played</h3>' +
+            '<div class="stats-grid two"><div class="stats-block"><h3>' +
+            copy('stats.mostPlayed', 'Most time played') +
+            '</h3>' +
             rankedList(data.topTracks.map(trackRow)) +
-            '</div><div class="stats-block"><h3>Most time listened</h3>' +
+            '</div><div class="stats-block"><h3>' +
+            copy('stats.mostListened', 'Most time listened') +
+            '</h3>' +
             rankedList(data.topListeners.map(listenerRow)) +
             '</div></div>' +
-            '<div class="stats-block"><h3>Top commands</h3>' +
+            '<div class="stats-block"><h3>' +
+            copy('stats.topCommands', 'Top commands') +
+            '</h3>' +
             rankedList(data.topCommands.map(commandRow)) +
             '</div>';
     }
@@ -1958,7 +2057,7 @@ export const BROWSER_SCRIPT = String.raw`
     async function loadStats() {
         if (!state.guildId) return;
         const content = find('#stats-content');
-        content.innerHTML = '<div class="small">Loading statistics…</div>';
+        content.innerHTML = '<div class="small">' + copy('stats.loading', 'Loading statistics…') + '</div>';
         try {
             const days = find('#stats-range').value;
             const data = await request('/api/stats?guildId=' + encodeURIComponent(state.guildId) + '&days=' + days);
@@ -1970,10 +2069,18 @@ export const BROWSER_SCRIPT = String.raw`
 
     find('#stats-clear').onclick = async () => {
         if (!state.guildId) return;
-        if (!window.confirm('Clear all statistics and game scores for this server? This cannot be undone.')) return;
+        if (
+            !window.confirm(
+                copy(
+                    'stats.clearConfirm',
+                    'Clear all statistics and game scores for this server? This cannot be undone.'
+                )
+            )
+        )
+            return;
         try {
             await postJson('/api/stats/clear', { guildId: state.guildId });
-            notify('Statistics cleared');
+            notify(copy('stats.cleared', 'Statistics cleared'));
             await loadStats();
         } catch (error) {
             notify(error.message, true);

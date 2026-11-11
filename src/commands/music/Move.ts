@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Move extends Command {
     constructor(client: BootstrapClient) {
@@ -56,7 +57,7 @@ export default class Move extends Command {
                 embeds: [
                     embed
                         .setColor(client.color.red)
-                        .setDescription('There are no queued tracks to move.'),
+                        .setDescription(tr(ctx, 'longtail:music.move.noQueue')),
                 ],
             });
         }
@@ -68,7 +69,7 @@ export default class Move extends Command {
                 embeds: [
                     embed
                         .setColor(client.color.red)
-                        .setDescription('Give two queue positions, for example `move 3 to 1`.'),
+                        .setDescription(tr(ctx, 'longtail:music.move.invalidPositions')),
                 ],
             });
         }
@@ -83,9 +84,11 @@ export default class Move extends Command {
         ) {
             return await ctx.sendMessage({
                 embeds: [
-                    embed
-                        .setColor(client.color.red)
-                        .setDescription(`Positions must be between 1 and ${player.queue.length}.`),
+                    embed.setColor(client.color.red).setDescription(
+                        tr(ctx, 'longtail:music.move.outOfRange', {
+                            max: player.queue.length,
+                        })
+                    ),
                 ],
             });
         }
@@ -95,7 +98,7 @@ export default class Move extends Command {
                 embeds: [
                     embed
                         .setColor(client.color.main)
-                        .setDescription('That track is already there.'),
+                        .setDescription(tr(ctx, 'longtail:music.move.alreadyThere')),
                 ],
             });
         }
@@ -105,9 +108,12 @@ export default class Move extends Command {
         await player.persist();
         return await ctx.sendMessage({
             embeds: [
-                embed
-                    .setColor(client.color.main)
-                    .setDescription(`Moved **${track.info.title}** to position ${to}.`),
+                embed.setColor(client.color.main).setDescription(
+                    tr(ctx, 'longtail:music.move.moved', {
+                        title: track.info.title,
+                        position: to,
+                    })
+                ),
             ],
         });
     }

@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Swap extends Command {
     constructor(client: BootstrapClient) {
@@ -51,7 +52,7 @@ export default class Swap extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('At least two queued tracks are required.'),
+                        .setDescription(tr(ctx, 'longtail:music.swapTooFew')),
                 ],
             });
         }
@@ -70,7 +71,9 @@ export default class Swap extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`Positions must be between 1 and ${player.queue.length}.`),
+                        .setDescription(
+                            tr(ctx, 'longtail:music.swapRange', { max: player.queue.length })
+                        ),
                 ],
             });
         }
@@ -83,7 +86,7 @@ export default class Swap extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Swapped positions ${first} and ${second}.`),
+                    .setDescription(tr(ctx, 'longtail:music.swapDone', { first, second })),
             ],
         });
     }

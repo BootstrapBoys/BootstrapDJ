@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Leaderboard extends Command {
     constructor(client: BootstrapClient) {
@@ -29,9 +30,14 @@ export default class Leaderboard extends Command {
         if (!guild) return;
         const player = client.queue.get(guild.id);
         const gameScores = await client.db.getGameLeaderboard(guild.id);
-        const gameLines = gameScores.map(
-            (score, index) =>
-                `**${index + 1}.** <@${score.userId}> — ${score.wins} win${score.wins === 1 ? '' : 's'} / ${score.plays} played`
+        const gameLines = gameScores.map((score, index) =>
+            tr(
+                ctx,
+                `longtail:tools.${
+                    score.wins === 1 ? 'leaderboardGameLineOne' : 'leaderboardGameLineMany'
+                }`,
+                { rank: index + 1, user: score.userId, wins: score.wins, plays: score.plays }
+            )
         );
         if (!player) {
             if (!gameLines.length) {
@@ -40,7 +46,7 @@ export default class Leaderboard extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('No session or game results to rank.'),
+                            .setDescription(tr(ctx, 'longtail:tools.leaderboardNoResults')),
                     ],
                 });
             }
@@ -49,7 +55,7 @@ export default class Leaderboard extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setTitle('Game leaderboard')
+                        .setTitle(tr(ctx, 'longtail:tools.leaderboardGameTitle'))
                         .setDescription(gameLines.join('\n')),
                 ],
             });
@@ -70,25 +76,34 @@ export default class Leaderboard extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setDescription('No requests have been recorded this session.'),
+                        .setDescription(tr(ctx, 'longtail:tools.leaderboardNoRequests')),
                 ],
             });
         }
         const lines = [...counts.entries()]
             .sort(([, a], [, b]) => b - a)
             .slice(0, 10)
-            .map(
-                ([id, count], index) =>
-                    `**${index + 1}.** <@${id}> — ${count} request${count === 1 ? '' : 's'}`
+            .map(([id, count], index) =>
+                tr(
+                    ctx,
+                    `longtail:tools.${
+                        count === 1 ? 'leaderboardSessionLineOne' : 'leaderboardSessionLineMany'
+                    }`,
+                    { rank: index + 1, user: id, count }
+                )
             );
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Session leaderboards')
+                    .setTitle(tr(ctx, 'longtail:tools.leaderboardSessionTitle'))
                     .setDescription(
-                        `${lines.join('\n')}${gameLines.length ? `\n\n**Games**\n${gameLines.join('\n')}` : ''}`
+                        `${lines.join('\n')}${
+                            gameLines.length
+                                ? `\n\n${tr(ctx, 'longtail:tools.leaderboardGamesHeading')}\n${gameLines.join('\n')}`
+                                : ''
+                        }`
                     ),
             ],
         });

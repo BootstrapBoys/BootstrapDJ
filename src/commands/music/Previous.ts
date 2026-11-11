@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Previous extends Command {
     constructor(client: BootstrapClient) {
@@ -34,7 +35,7 @@ export default class Previous extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('There is no previous track.'),
+                        .setDescription(tr(ctx, 'longtail:music.previous.none')),
                 ],
             });
         }
@@ -45,7 +46,7 @@ export default class Previous extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Going back to **${title}**.`),
+                    .setDescription(tr(ctx, 'longtail:music.previous.goingBack', { title })),
             ],
         });
     }

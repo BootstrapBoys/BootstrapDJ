@@ -17,12 +17,29 @@ import type { Song } from '../core/Dispatcher.js';
 import { BootstrapClient, Dispatcher } from '../core/index.js';
 import { getButtons } from './Buttons.js';
 import { checkTrack, getPlayLimits } from './PlayLimits.js';
+import { translate } from './i18n.js';
 
 const LIVE_BADGE_PATH = '/root/EarlTheEar/assets/live.png';
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 const MOCK_PURGE_PASSES = 10;
 
 type SetupInteraction = ButtonInteraction<'cached'> | StringSelectMenuInteraction<'cached'>;
+
+function copy(
+    language: string,
+    key: string,
+    variables: Record<string, string | number> = {}
+): string {
+    return translate(`longtail:events.setup.${key}`, language, variables);
+}
+
+/** Resolve the guild language once for a setup render or request. */
+async function guildLanguage(client: BootstrapClient, guildId: string): Promise<string> {
+    const settings = await client.db
+        .getGuildSettings(guildId)
+        .catch(() => ({}) as Record<string, string>);
+    return settings.language ?? client.config.defaultLanguage;
+}
 
 interface MockPayload {
     embeds: EmbedBuilder[];
@@ -64,25 +81,37 @@ function sourceIcon(client: BootstrapClient, sourceName: string): string | undef
 function nowPlayingEmbed(
     client: BootstrapClient,
     track: Song,
-    variant: 'mock' | 'request'
+    variant: 'mock' | 'request',
+    language: string
 ): EmbedBuilder {
     const requestedBy = track.info.requester;
-    const author = variant === 'request' ? ` by ${track.info.author}` : '';
+    const variables = {
+        title: track.info.title,
+        uri: String(track.info.uri),
+        duration: client.utils.formatTime(track.info.length),
+        requester: String(requestedBy),
+        author: track.info.author,
+    };
     const artwork =
         track.info.artworkUrl ?? (variant === 'request' ? client.config.links.img : null);
     return client
         .embed()
-        .setAuthor({ name: 'Now Playing', iconURL: sourceIcon(client, track.info.sourceName) })
+        .setAuthor({
+            name: copy(language, 'nowPlayingAuthor'),
+            iconURL: sourceIcon(client, track.info.sourceName),
+        })
         .setColor(client.color.main)
         .setDescription(
-            `[${track.info.title}](${track.info.uri})${author} - \`[${client.utils.formatTime(
-                track.info.length
-            )}]\` - Requested by ${requestedBy}`
+            copy(
+                language,
+                variant === 'request' ? 'nowPlayingRequest' : 'nowPlayingMock',
+                variables
+            )
         )
         .setImage(artwork);
 }
 
-function idleEmbed(client: BootstrapClient): EmbedBuilder {
+function idleEmbed(client: BootstrapClient, language: string): EmbedBuilder {
     return client
         .embed()
         .setColor(client.color.main)
@@ -90,7 +119,7 @@ function idleEmbed(client: BootstrapClient): EmbedBuilder {
             name: client.user?.username ?? 'BootstrapDJ',
             iconURL: client.user?.displayAvatarURL({ extension: 'png' }),
         })
-        .setDescription('Nothing playing right now')
+        .setDescription(copy(language, 'nothingPlaying'))
         .setImage(client.config.links.img);
 }
 
@@ -137,14 +166,15 @@ function mockRender(
 async function refreshMock(
     client: BootstrapClient,
     message: Message,
-    player: Dispatcher
+    player: Dispatcher,
+    language: string
 ): Promise<void> {
     const guildId = message.guildId;
     if (!guildId) return;
     const listening = await listeningActive(client, guildId);
     const embed = player.current
-        ? nowPlayingEmbed(client, player.current, 'mock')
-        : idleEmbed(client);
+        ? nowPlayingEmbed(client, player.current, 'mock', language)
+        : idleEmbed(client, language);
     await message
         .edit(mockRender(client, embed, listening, Boolean(player.current)))
         .catch(error => client.logger.error(`[setup] mock edit failed: ${error}`));
@@ -156,9 +186,10 @@ async function enqueueSingle(
     message: Message<true>,
     channel: BaseGuildTextChannel,
     track: Song,
-    limits: Awaited<ReturnType<typeof getPlayLimits>>
+    limits: Awaited<ReturnType<typeof getPlayLimits>>,
+    language: string
 ): Promise<boolean> {
-    const rejection = checkTrack(player, track, message.author.id, limits);
+    const rejection = checkTrack(player, track, message.author.id, limits, [], language);
     if (rejection) {
         await sendTransient(client, channel, rejection, client.color.red);
         return false;
@@ -168,7 +199,10 @@ async function enqueueSingle(
     await sendTransient(
         client,
         channel,
-        `Added [${track.info.title}](${track.info.uri}) to the queue.`,
+        copy(language, 'addedToQueue', {
+            title: track.info.title,
+            uri: String(track.info.uri),
+        }),
         client.color.main
     );
     return true;
@@ -178,7 +212,8 @@ async function setupStart(
     client: BootstrapClient,
     query: string,
     player: Dispatcher,
-    message: Message<true>
+    message: Message<true>,
+    language?: string
 ): Promise<void> {
     const data = await client.db.getSetup(message.guild.id);
     if (!data) return;
@@ -186,6 +221,7 @@ async function setupStart(
     if (!(channel instanceof BaseGuildTextChannel)) return;
     const mock = await fetchMock(channel, data.messageId);
     if (!mock) return;
+    const lang = language ?? (await guildLanguage(client, message.guild.id));
 
     try {
         const limits = await getPlayLimits(client, player.guildId);
@@ -194,7 +230,7 @@ async function setupStart(
             return await sendTransient(
                 client,
                 channel,
-                'There was an error while searching. Please try again.',
+                copy(lang, 'searchError'),
                 client.color.red
             );
         }
@@ -203,28 +239,24 @@ async function setupStart(
             return await sendTransient(
                 client,
                 channel,
-                'There was an error while searching.',
+                copy(lang, 'searchFailed'),
                 client.color.red
             );
         }
         if (result.loadType === LoadType.EMPTY) {
-            return await sendTransient(
-                client,
-                channel,
-                'There were no results found.',
-                client.color.red
-            );
+            return await sendTransient(client, channel, copy(lang, 'noResults'), client.color.red);
         }
 
         if (result.loadType === LoadType.TRACK || result.loadType === LoadType.SEARCH) {
             const raw = result.loadType === LoadType.TRACK ? result.data : result.data[0];
             if (!raw) return;
             const track = player.buildTrack(raw, message.author);
-            if (!(await enqueueSingle(client, player, message, channel, track, limits))) return;
+            if (!(await enqueueSingle(client, player, message, channel, track, limits, lang)))
+                return;
             const shown = player.current;
             if (shown) {
                 await mock
-                    .edit({ embeds: [nowPlayingEmbed(client, shown, 'request')] })
+                    .edit({ embeds: [nowPlayingEmbed(client, shown, 'request', lang)] })
                     .catch(() => {});
             }
             return;
@@ -235,7 +267,7 @@ async function setupStart(
             return await sendTransient(
                 client,
                 channel,
-                `The playlist is too long. The maximum length is ${client.config.maxPlaylistSize} songs.`,
+                copy(lang, 'playlistTooLong', { max: client.config.maxPlaylistSize }),
                 client.color.red
             );
         }
@@ -244,19 +276,25 @@ async function setupStart(
         const wanted = result.data.tracks.slice(0, limits.maxPlaylistTracks || undefined);
         for (const raw of wanted) {
             const track = player.buildTrack(raw, message.author);
-            if (checkTrack(player, track, message.author.id, limits)) continue;
+            if (checkTrack(player, track, message.author.id, limits, [], lang)) continue;
             player.enqueue(track, true, false);
             accepted += 1;
         }
         void player.persist();
         await player.isPlaying();
         const skipped = wanted.length - accepted;
+        const addedKey =
+            accepted === 1
+                ? skipped > 0
+                    ? 'addedOneSkipped'
+                    : 'addedOne'
+                : skipped > 0
+                  ? 'addedManySkipped'
+                  : 'addedMany';
         await sendTransient(
             client,
             channel,
-            `Added ${accepted} track${accepted === 1 ? '' : 's'} to the queue${
-                skipped > 0 ? ` (${skipped} skipped)` : ''
-            }.`,
+            copy(lang, addedKey, { count: accepted, skipped }),
             client.color.main
         );
 
@@ -265,17 +303,12 @@ async function setupStart(
         const shown = player.current;
         if (shown) {
             await mock
-                .edit({ embeds: [nowPlayingEmbed(client, shown, 'request')] })
+                .edit({ embeds: [nowPlayingEmbed(client, shown, 'request', lang)] })
                 .catch(() => {});
         }
     } catch (error) {
         client.logger.error(error);
-        await sendTransient(
-            client,
-            channel,
-            'Something went wrong while adding that request. Please try again.',
-            client.color.red
-        );
+        await sendTransient(client, channel, copy(lang, 'requestFailed'), client.color.red);
     }
 }
 
@@ -284,18 +317,19 @@ async function trackStart(
     channel: BaseGuildTextChannel,
     player: Dispatcher,
     track: Song,
-    client: BootstrapClient
+    client: BootstrapClient,
+    language: string
 ): Promise<void> {
     if (!player.current) return;
     const mock = await fetchMock(channel, msgId);
     if (mock) {
-        await refreshMock(client, mock, player);
+        await refreshMock(client, mock, player, language);
         return;
     }
 
     const message = await channel
         .send({
-            embeds: [nowPlayingEmbed(client, track, 'mock')],
+            embeds: [nowPlayingEmbed(client, track, 'mock', language)],
             components: mockComponents(Boolean(player.current)),
         })
         .catch(() => null);
@@ -315,12 +349,15 @@ async function updateSetup(client: BootstrapClient, guild: Guild): Promise<void>
     if (!mock) return;
 
     const player = client.queue.get(guild.id);
+    const language = await guildLanguage(client, guild.id);
     if (player?.current) {
-        await refreshMock(client, mock, player);
+        await refreshMock(client, mock, player, language);
         return;
     }
     const listening = await listeningActive(client, guild.id);
-    await mock.edit(mockRender(client, idleEmbed(client), listening, false)).catch(() => {});
+    await mock
+        .edit(mockRender(client, idleEmbed(client, language), listening, false))
+        .catch(() => {});
 }
 
 async function buttonReply(
@@ -372,7 +409,10 @@ export async function resetSetupChannel(
 
     try {
         const listening = await listeningActive(client, guild.id);
-        const message = await channel.send(mockRender(client, idleEmbed(client), listening, false));
+        const language = await guildLanguage(client, guild.id);
+        const message = await channel.send(
+            mockRender(client, idleEmbed(client, language), listening, false)
+        );
         await client.db.setSetup(guild.id, channel.id, message.id);
     } catch (error) {
         client.logger.error(`[setup] could not post a fresh mock in ${channel.id}: ${error}`);

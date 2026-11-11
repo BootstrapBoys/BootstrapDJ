@@ -39,6 +39,7 @@ function makeHarness({ stale = true, hasNode = true } = {}) {
         },
         guilds: { cache: new Map([[guild.id, guild]]) },
         color: { red: 0xff0000, main: 0x2f3136 },
+        config: { defaultLanguage: 'en-US' },
         embed: () => ({
             setColor() {
                 return this;
@@ -134,7 +135,10 @@ test('a setup request rebuilds a stale player before searching', async () => {
     const voice = { id: 'voice', permissionsFor: () => ({ has: () => true }) };
     harness.client.user = { id: 'bot' };
     harness.client.logger = { info: () => {}, warn: () => {}, error: () => {} };
-    harness.client.db = { getSetup: async () => null };
+    harness.client.db = {
+        getSetup: async () => null,
+        getGuildSettings: async () => ({}),
+    };
     const message = {
         inGuild: () => true,
         guildId: 'guild',

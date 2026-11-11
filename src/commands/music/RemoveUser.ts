@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { requesterFilter } from '../../lib/QueueTools.js';
 
 export default class RemoveUser extends Command {
@@ -41,7 +42,10 @@ export default class RemoveUser extends Command {
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.removeUser.empty')),
                 ],
             });
         }
@@ -54,7 +58,7 @@ export default class RemoveUser extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Could not resolve that user.'),
+                        .setDescription(tr(ctx, 'longtail:music.removeUser.unresolved')),
                 ],
             });
         }
@@ -69,8 +73,14 @@ export default class RemoveUser extends Command {
                     .setColor(client.color.main)
                     .setDescription(
                         removed
-                            ? `Removed ${removed} track${removed === 1 ? '' : 's'} requested by **${target.username}**.`
-                            : `No queued tracks were requested by **${target.username}**.`
+                            ? tr(
+                                  ctx,
+                                  removed === 1
+                                      ? 'longtail:music.removeUser.removedOne'
+                                      : 'longtail:music.removeUser.removedMany',
+                                  { count: removed, user: target.username }
+                              )
+                            : tr(ctx, 'longtail:music.removeUser.none', { user: target.username })
                     ),
             ],
         });

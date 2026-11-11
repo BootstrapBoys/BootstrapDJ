@@ -31,7 +31,10 @@ export default defineMusicCommand({
         const embed = client
             .embed()
             .setColor(client.color.main)
-            .setAuthor({ name: 'Now Playing', iconURL: ctx.guild?.iconURL({}) ?? undefined })
+            .setAuthor({
+                name: tr(ctx, 'longtail:music.nowplaying.author'),
+                iconURL: ctx.guild?.iconURL({}) ?? undefined,
+            })
             .setThumbnail(track.info.artworkUrl ?? null)
             .setDescription(
                 tr(ctx, 'commands:core.nowPlayingLine', {

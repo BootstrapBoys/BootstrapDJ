@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, GuildMember, PermissionFlagsBits } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type AutoplaySource = 'chart' | 'curated' | 'legacy';
 type SettingRow = Awaited<ReturnType<BootstrapClient['db']['getAutoplaySetting']>>;
@@ -74,6 +75,14 @@ export default class AutoplayConfig extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.autoplay.${key}`, variables);
+    }
+
     private fail(client: BootstrapClient, ctx: Context, text: string): Promise<unknown> {
         return ctx.sendMessage({
             embeds: [client.embed().setColor(client.color.red).setDescription(text)],
@@ -128,29 +137,42 @@ export default class AutoplayConfig extends Command {
         const seeds = storedSeeds.length > 0 ? storedSeeds : envSeeds;
 
         const labels: Record<AutoplaySource, { name: string; order: string }> = {
-            chart: { name: 'Deezer global chart', order: 'chart → curated → legacy' },
-            curated: { name: 'Curated search seeds', order: 'curated → legacy' },
-            legacy: { name: 'Legacy AUTOPLAY_SEED', order: 'legacy only' },
+            chart: {
+                name: this.copy(ctx, 'labelChart'),
+                order: this.copy(ctx, 'orderChart'),
+            },
+            curated: {
+                name: this.copy(ctx, 'labelCurated'),
+                order: this.copy(ctx, 'orderCurated'),
+            },
+            legacy: {
+                name: this.copy(ctx, 'labelLegacy'),
+                order: this.copy(ctx, 'orderLegacy'),
+            },
         };
         const label = labels[source] ?? labels.legacy;
-        const chartState = source === 'chart' ? 'active' : 'not used by this source';
-        const seedHint = source === 'curated' ? ' (search text, not playlist URLs)' : '';
         const lines = [
-            `**Source:** \`${source}\` — ${label.name}`,
-            `**Scope:** ${setting ? 'this server (override)' : 'environment default'}`,
-            `**Cold-start order:** ${label.order}`,
-            `**Chart:** Deezer global chart, explicit tracks filtered — ${chartState}`,
-            '**What chart is:** a fixed Deezer global chart, not your playlists or search seeds.',
-            `**Curated seeds:** ${seeds.length > 0 ? seeds.join(', ') : 'none'}${seedHint}`,
-            `**Legacy value:** \`${client.config.autoplaySeed || 'none'}\``,
-            'Use `/autoplayconfig source:` or `seeds:` to change this server, or `reset:true` to clear the override.',
+            this.copy(ctx, 'sourceLine', { source, label: label.name }),
+            this.copy(ctx, setting ? 'scopeOverride' : 'scopeDefault'),
+            this.copy(ctx, 'orderLine', { order: label.order }),
+            this.copy(ctx, 'chartLine', {
+                state: this.copy(ctx, source === 'chart' ? 'chartActive' : 'chartInactive'),
+            }),
+            this.copy(ctx, 'whatChart'),
+            this.copy(ctx, source === 'curated' ? 'curatedSeedsHint' : 'curatedSeeds', {
+                seeds: seeds.length > 0 ? seeds.join(', ') : this.copy(ctx, 'none'),
+            }),
+            this.copy(ctx, 'legacyLine', {
+                value: client.config.autoplaySeed || this.copy(ctx, 'none'),
+            }),
+            this.copy(ctx, 'usage'),
         ];
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Autoplay cold-start configuration')
+                    .setTitle(this.copy(ctx, 'title'))
                     .setDescription(lines.join('\n')),
             ],
         });
@@ -160,11 +182,7 @@ export default class AutoplayConfig extends Command {
         const guild = ctx.guild;
         if (!guild) return;
         if (!(await this.canConfigure(client, ctx, guild.id))) {
-            return await this.fail(
-                client,
-                ctx,
-                'You need the DJ role or Manage Server to change autoplay settings.'
-            );
+            return await this.fail(client, ctx, this.copy(ctx, 'forbidden'));
         }
 
         const setting = await client.db.getAutoplaySetting(guild.id).catch(() => null);
@@ -172,12 +190,7 @@ export default class AutoplayConfig extends Command {
 
         if (ctx.isInteraction && input.source === undefined) {
             const raw = ctx.interaction?.options.getString('source');
-            if (raw)
-                return await this.fail(
-                    client,
-                    ctx,
-                    'Source must be `chart`, `curated`, or `legacy`.'
-                );
+            if (raw) return await this.fail(client, ctx, this.copy(ctx, 'invalidSource'));
         }
 
         if (input.reset) {
@@ -188,7 +201,7 @@ export default class AutoplayConfig extends Command {
 
         const seeds = input.seeds ? splitSeeds(input.seeds) : undefined;
         if (input.seeds && !seeds?.length) {
-            return await this.fail(client, ctx, 'Provide at least one seed.');
+            return await this.fail(client, ctx, this.copy(ctx, 'seedRequired'));
         }
 
         const source =

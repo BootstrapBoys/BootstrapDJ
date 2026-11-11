@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { dedupeQueue } from '../../lib/QueueTools.js';
 
 export default class RemoveDuplicates extends Command {
@@ -32,7 +33,10 @@ export default class RemoveDuplicates extends Command {
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.removeDuplicates.empty')),
                 ],
             });
         }
@@ -47,8 +51,14 @@ export default class RemoveDuplicates extends Command {
                     .setColor(client.color.main)
                     .setDescription(
                         removed
-                            ? `Removed ${removed} duplicate track${removed === 1 ? '' : 's'}.`
-                            : 'No duplicate tracks found.'
+                            ? tr(
+                                  ctx,
+                                  removed === 1
+                                      ? 'longtail:music.removeDuplicates.removedOne'
+                                      : 'longtail:music.removeDuplicates.removedMany',
+                                  { count: removed }
+                              )
+                            : tr(ctx, 'longtail:music.removeDuplicates.none')
                     ),
             ],
         });

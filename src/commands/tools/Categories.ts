@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Categories extends Command {
     constructor(client: BootstrapClient) {
@@ -32,16 +33,19 @@ export default class Categories extends Command {
         }
         const lines = [...counts.entries()]
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(
-                ([category, count]) => `**${category}** — ${count} command${count === 1 ? '' : 's'}`
+            .map(([category, count]) =>
+                tr(ctx, `longtail:tools.${count === 1 ? 'categoryLineOne' : 'categoryLineMany'}`, {
+                    category,
+                    count,
+                })
             );
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Command categories')
-                    .setDescription(lines.join('\n') || 'No categories found.'),
+                    .setTitle(tr(ctx, 'longtail:tools.categoriesTitle'))
+                    .setDescription(lines.join('\n') || tr(ctx, 'longtail:tools.noCategories')),
             ],
         });
     }

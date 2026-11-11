@@ -1,14 +1,15 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
-const TIPS = [
-    'Use `/playnext` to jump a request to the front of the queue.',
-    '`/autoplay` keeps related music playing after the queue drains.',
-    '`/queue` is public; most other replies are ephemeral to keep the channel clean.',
-    'Use `/filters` to see which audio filters are active.',
-    '`/recentlyplayed` shows what has already played this session.',
-    '`/playrecent 5` requeues the last five tracks.',
-    'Use `/sort title asc` or `/sort duration desc` to reorder the queue.',
-    '`/removeabsent` clears requests from users who left the voice channel.',
+const TIP_KEYS = [
+    'tipPlayNext',
+    'tipAutoplay',
+    'tipQueue',
+    'tipFilters',
+    'tipRecentlyPlayed',
+    'tipPlayRecent',
+    'tipSort',
+    'tipRemoveAbsent',
 ];
 
 export default class Tip extends Command {
@@ -36,10 +37,17 @@ export default class Tip extends Command {
     }
 
     public async run(client: BootstrapClient, ctx: Context): Promise<unknown> {
-        const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+        const tip = tr(
+            ctx,
+            `longtail:tools.${TIP_KEYS[Math.floor(Math.random() * TIP_KEYS.length)]}`
+        );
         return await ctx.sendMessage({
             embeds: [
-                client.embed().setColor(client.color.main).setTitle('Tip').setDescription(tip),
+                client
+                    .embed()
+                    .setColor(client.color.main)
+                    .setTitle(tr(ctx, 'longtail:tools.tipTitle'))
+                    .setDescription(tip),
             ],
         });
     }

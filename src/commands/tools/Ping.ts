@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 function latencyBlock(milliseconds: number): string {
     return `\`\`\`ini\n[ ${milliseconds}ms ]\n\`\`\``;
@@ -29,23 +30,30 @@ export default class Ping extends Command {
         const self = client.user;
         if (!author || !self) return;
 
-        const probe = await ctx.sendDeferMessage('Pinging...');
+        const probe = await ctx.sendDeferMessage(tr(ctx, 'longtail:tools.pingDefer'));
         const roundTrip = probe.createdTimestamp - ctx.createdTimestamp;
 
         const embed = client
             .embed()
-            .setAuthor({ name: 'Pong', iconURL: self.displayAvatarURL() })
+            .setAuthor({
+                name: tr(ctx, 'longtail:tools.pingPong'),
+                iconURL: self.displayAvatarURL(),
+            })
             .setColor(client.color.main)
             .addFields(
-                { name: 'Bot Latency', value: latencyBlock(roundTrip), inline: true },
                 {
-                    name: 'API Latency',
+                    name: tr(ctx, 'longtail:tools.pingBotLatency'),
+                    value: latencyBlock(roundTrip),
+                    inline: true,
+                },
+                {
+                    name: tr(ctx, 'longtail:tools.pingApiLatency'),
                     value: latencyBlock(Math.round(client.ws.ping)),
                     inline: true,
                 }
             )
             .setFooter({
-                text: `Requested by ${author.tag}`,
+                text: tr(ctx, 'longtail:tools.pingFooter', { user: author.tag }),
                 iconURL: author.avatarURL({}) ?? undefined,
             })
             .setTimestamp();

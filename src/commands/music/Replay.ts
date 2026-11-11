@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Replay extends Command {
     constructor(client: BootstrapClient) {
@@ -39,7 +40,7 @@ export default class Replay extends Command {
                 embeds: [
                     embed
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:music.replay.nothingPlaying')),
                 ],
             });
         }
@@ -48,7 +49,7 @@ export default class Replay extends Command {
                 embeds: [
                     embed
                         .setColor(client.color.red)
-                        .setDescription('This track cannot be replayed from the start.'),
+                        .setDescription(tr(ctx, 'longtail:music.replay.notSeekable')),
                 ],
             });
         }
@@ -56,9 +57,11 @@ export default class Replay extends Command {
         player.seek(0);
         return await ctx.sendMessage({
             embeds: [
-                embed
-                    .setColor(client.color.main)
-                    .setDescription(`Replaying **${player.current.info.title}**.`),
+                embed.setColor(client.color.main).setDescription(
+                    tr(ctx, 'longtail:music.replay.replaying', {
+                        title: player.current.info.title,
+                    })
+                ),
             ],
         });
     }

@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Premium extends Command {
     constructor(client: BootstrapClient) {
@@ -30,10 +31,8 @@ export default class Premium extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setTitle('No premium tier')
-                    .setDescription(
-                        'Every BootstrapDJ feature is free. There are no paid commands, no locked settings, and no donation requirements.'
-                    ),
+                    .setTitle(tr(ctx, 'longtail:tools.premiumTitle'))
+                    .setDescription(tr(ctx, 'longtail:tools.premiumDescription')),
             ],
         });
     }

@@ -14,6 +14,7 @@ import { type Song, toSaved } from '../../core/Dispatcher.js';
 import type { BootstrapClient, Dispatcher } from '../../core/index.js';
 import { Event } from '../../core/index.js';
 import { loudnessOf, volumeForLoudness } from '../../lib/Loudness.js';
+import { translate } from '../../lib/i18n.js';
 import { trackStart } from '../../lib/SetupSystem.js';
 import { clearVoteSkip } from '../../commands/music/VoteSkip.js';
 
@@ -22,6 +23,14 @@ type DjInteraction = ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cac
 const NOW_PLAYING_TTL_MS = 12 * 60 * 60 * 1000;
 const DEFAULT_VOLUME = 100;
 const DEFAULT_LOUDNESS = -16;
+
+function copy(
+    language: string,
+    key: string,
+    variables: Record<string, string | number> = {}
+): string {
+    return translate(`longtail:events.trackStart.${key}`, language, variables);
+}
 
 function controlRow(dispatcher: Dispatcher, player: Player): ActionRowBuilder<ButtonBuilder> {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -43,7 +52,8 @@ function controlRow(dispatcher: Dispatcher, player: Player): ActionRowBuilder<Bu
     );
 }
 
-function nowPlayingEmbed(client: BootstrapClient, track: Song): EmbedBuilder {
+function nowPlayingEmbed(client: BootstrapClient, track: Song, language: string): EmbedBuilder {
+    const requester = track.info.requester.tag ?? copy(language, 'unknownRequester');
     return client
         .embed()
         .setAuthor({
@@ -55,17 +65,19 @@ function nowPlayingEmbed(client: BootstrapClient, track: Song): EmbedBuilder {
         .setColor(client.color.main)
         .setDescription(`**[${track.info.title}](${track.info.uri})**`)
         .setFooter({
-            text: `Requested by ${track.info.requester.tag ?? 'unknown'}`,
+            text: copy(language, 'requestedBy', { requester }),
             iconURL: track.info.requester.avatarURL({}) ?? undefined,
         })
         .setThumbnail(track.info.artworkUrl ?? null)
         .addFields(
             {
-                name: 'Duration',
-                value: track.info.isStream ? 'LIVE' : client.utils.formatTime(track.info.length),
+                name: copy(language, 'duration'),
+                value: track.info.isStream
+                    ? copy(language, 'live')
+                    : client.utils.formatTime(track.info.length),
                 inline: true,
             },
-            { name: 'Author', value: track.info.author, inline: true }
+            { name: copy(language, 'author'), value: track.info.author, inline: true }
         )
         .setTimestamp();
 }
@@ -135,7 +147,8 @@ async function sendAnnouncement(
     guildId: string,
     voiceId: string | null,
     track: Song,
-    settings: Record<string, string>
+    settings: Record<string, string>,
+    language: string
 ): Promise<void> {
     if (!settings.announcechannel || settings.announce === 'false') return;
     const guild = client.guilds.cache.get(guildId);
@@ -149,7 +162,11 @@ async function sendAnnouncement(
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Now playing **${track.info.title}** by **${track.info.author}** in <#${voiceId ?? ''}>.`
+                        copy(language, 'announcement', {
+                            title: track.info.title,
+                            author: track.info.author,
+                            channel: `<#${voiceId ?? ''}>`,
+                        })
                     ),
             ],
         })
@@ -177,10 +194,18 @@ export default class TrackStart extends Event {
         this.client.utils.updateStatus(this.client, guild.id);
 
         const settings = await this.client.db.getGuildSettings(guild.id);
+        const language = settings.language ?? this.client.config.defaultLanguage;
         await applyAutomaticVolume(this.client, player, track, dispatcher, settings);
-        await sendAnnouncement(this.client, guild.id, dispatcher.voiceId, track, settings);
+        await sendAnnouncement(
+            this.client,
+            guild.id,
+            dispatcher.voiceId,
+            track,
+            settings,
+            language
+        );
 
-        const embed = nowPlayingEmbed(this.client, track);
+        const embed = nowPlayingEmbed(this.client, track, language);
         const setup = await this.client.db.getSetup(guild.id);
         this.client.logger.debug(
             `[setup] trackStart guild=${guild.id} dispatcherChannel=${dispatcher.channelId} setupText=${
@@ -196,7 +221,14 @@ export default class TrackStart extends Event {
                 );
                 return;
             }
-            await trackStart(setup.messageId, setupChannel, dispatcher, track, this.client);
+            await trackStart(
+                setup.messageId,
+                setupChannel,
+                dispatcher,
+                track,
+                this.client,
+                language
+            );
             return;
         }
 
@@ -218,9 +250,9 @@ export default class TrackStart extends Event {
                 }
                 await interaction
                     .reply({
-                        content: `You are not connected to <#${
-                            me?.voice?.channelId ?? 'None'
-                        }> to use these buttons.`,
+                        content: copy(language, 'notConnected', {
+                            channel: `<#${me?.voice?.channelId ?? 'None'}>`,
+                        }),
                         ephemeral: true,
                     })
                     .catch(() => {});
@@ -238,7 +270,7 @@ export default class TrackStart extends Event {
             if (!(await checkDj(this.client, interaction))) {
                 await interaction
                     .reply({
-                        content: 'You need to have the DJ role to use this command.',
+                        content: copy(language, 'djRequired'),
                         ephemeral: true,
                     })
                     .catch(() => {});
@@ -261,36 +293,44 @@ export default class TrackStart extends Event {
                 case 'previous':
                     if (!dispatcher.previous) {
                         await interaction
-                            .reply({ content: 'There is no previous song.', ephemeral: true })
+                            .reply({
+                                content: copy(language, 'noPrevious'),
+                                ephemeral: true,
+                            })
                             .catch(() => {});
                         return;
                     }
                     dispatcher.previousTrack();
-                    setFooter(`Previous by ${interaction.user.tag}`);
+                    setFooter(copy(language, 'previousFooter', { user: interaction.user.tag }));
                     await editPanel([controlRow(dispatcher, player)]);
                     break;
                 case 'resume':
                     dispatcher.pause();
-                    setFooter(`${player.paused ? 'Paused' : 'Resumed'} by ${interaction.user.tag}`);
+                    setFooter(
+                        copy(language, 'stateFooter', {
+                            state: copy(language, player.paused ? 'paused' : 'resumed'),
+                            user: interaction.user.tag,
+                        })
+                    );
                     await editPanel([controlRow(dispatcher, player)]);
                     break;
                 case 'stop':
                     dispatcher.stop();
-                    setFooter(`Stopped by ${interaction.user.tag}`);
+                    setFooter(copy(language, 'stoppedFooter', { user: interaction.user.tag }));
                     await editPanel([]);
                     break;
                 case 'skip':
                     if (!dispatcher.queue.length) {
                         await interaction
                             .reply({
-                                content: 'There is no more song in the queue.',
+                                content: copy(language, 'noMoreSongs'),
                                 ephemeral: true,
                             })
                             .catch(() => {});
                         return;
                     }
                     dispatcher.skip();
-                    setFooter(`Skipped by ${interaction.user.tag}`);
+                    setFooter(copy(language, 'skippedFooter', { user: interaction.user.tag }));
                     await editPanel([]);
                     break;
                 case 'loop': {
@@ -299,11 +339,13 @@ export default class TrackStart extends Event {
                     dispatcher.setLoop(next);
                     const label =
                         next === 'queue'
-                            ? 'Looping Queue'
+                            ? copy(language, 'loopQueue')
                             : next === 'repeat'
-                              ? 'Looping'
-                              : 'Looping Off';
-                    setFooter(`${label} by ${interaction.user.tag}`);
+                              ? copy(language, 'loopRepeat')
+                              : copy(language, 'loopOff');
+                    setFooter(
+                        copy(language, 'loopFooter', { mode: label, user: interaction.user.tag })
+                    );
                     await editPanel([controlRow(dispatcher, player)]);
                     break;
                 }

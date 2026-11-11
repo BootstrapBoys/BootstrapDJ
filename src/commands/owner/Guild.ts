@@ -15,6 +15,7 @@ import {
 } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const PAGE_SIZE = 25;
 
@@ -40,22 +41,9 @@ function inviteChannel(guild: Guild): InvitableChannel | null {
     );
 }
 
-function formatGuildDate(date: Date): string {
-    const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-    ];
-    return `${String(date.getDate()).padStart(2, '0')}/${months[date.getMonth()]}/${date.getFullYear()}`;
+function formatGuildDate(ctx: Context, date: Date): string {
+    const month = tr(ctx, `longtail:owner.month${date.getMonth() + 1}`);
+    return `${String(date.getDate()).padStart(2, '0')}/${month}/${date.getFullYear()}`;
 }
 
 export default class GuildCommand extends Command {
@@ -95,6 +83,7 @@ export default class GuildCommand extends Command {
     }
 
     private rows(
+        ctx: Context,
         page: number,
         totalPages: number,
         guilds: Guild[]
@@ -102,18 +91,24 @@ export default class GuildCommand extends Command {
         const start = page * PAGE_SIZE;
         const menu = new StringSelectMenuBuilder()
             .setCustomId('guild-select')
-            .setPlaceholder(`Select a guild (${page + 1}/${totalPages})`)
+            .setPlaceholder(
+                tr(ctx, 'longtail:owner.guildPlaceholder', {
+                    page: page + 1,
+                    total: totalPages,
+                })
+            )
             .addOptions(
-                guilds
-                    .slice(start, start + PAGE_SIZE)
-                    .map(guild =>
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(guild.name.slice(0, 100))
-                            .setDescription(
-                                `${guild.memberCount} members · ${guild.id}`.slice(0, 100)
-                            )
-                            .setValue(guild.id)
-                    )
+                guilds.slice(start, start + PAGE_SIZE).map(guild =>
+                    new StringSelectMenuOptionBuilder()
+                        .setLabel(guild.name.slice(0, 100))
+                        .setDescription(
+                            tr(ctx, 'longtail:owner.guildOption', {
+                                members: guild.memberCount,
+                                id: guild.id,
+                            }).slice(0, 100)
+                        )
+                        .setValue(guild.id)
+                )
             );
         const menuRow = new ActionRowBuilder<
             StringSelectMenuBuilder | ButtonBuilder
@@ -123,19 +118,22 @@ export default class GuildCommand extends Command {
         const nav = new ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setCustomId('guild-page-prev')
-                .setLabel('Previous')
+                .setLabel(tr(ctx, 'longtail:owner.guildPrevious'))
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(page === 0),
             new ButtonBuilder()
                 .setCustomId('guild-page-next')
-                .setLabel('Next')
+                .setLabel(tr(ctx, 'longtail:owner.guildNext'))
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(page >= totalPages - 1)
         );
         return [menuRow, nav];
     }
 
-    private async buildEmbed(guild: Guild): Promise<ReturnType<BootstrapClient['embed']>> {
+    private async buildEmbed(
+        ctx: Context,
+        guild: Guild
+    ): Promise<ReturnType<BootstrapClient['embed']>> {
         const invite = inviteChannel(guild);
         let inviteLink: string | null = null;
         if (invite) {
@@ -144,7 +142,7 @@ export default class GuildCommand extends Command {
                     maxAge: 0,
                     maxUses: 0,
                     unique: true,
-                    reason: 'Owner guild inspection',
+                    reason: tr(ctx, 'longtail:owner.guildInviteReason'),
                 })
                 .catch(() => null);
             if (created) inviteLink = `https://discord.gg/${created.code}`;
@@ -153,30 +151,43 @@ export default class GuildCommand extends Command {
         return this.client
             .embed()
             .setColor(this.client.color.main)
-            .setTitle('Joined a Guild !!')
+            .setTitle(tr(ctx, 'longtail:owner.guildJoinedTitle'))
             .setThumbnail(
                 guild.iconURL({ size: 256 }) ?? this.client.user?.displayAvatarURL() ?? null
             )
             .addFields(
-                { name: 'Name', value: `\`${guild.name}\`` },
-                { name: 'ID', value: `\`${guild.id}\`` },
+                { name: tr(ctx, 'longtail:owner.guildName'), value: `\`${guild.name}\`` },
+                { name: tr(ctx, 'longtail:owner.guildIdLabel'), value: `\`${guild.id}\`` },
                 {
-                    name: 'Owner',
+                    name: tr(ctx, 'longtail:owner.guildOwner'),
                     value: owner
                         ? `\`${owner.user.username}\`\n\`${owner.user.id}\``
                         : `\`${guild.ownerId}\``,
                 },
-                { name: 'Member Count', value: `${guild.memberCount} Members` },
-                { name: 'Creation Date', value: formatGuildDate(guild.createdAt) },
                 {
-                    name: 'Guild Invite',
-                    value: inviteLink
-                        ? `[Here is ${guild.name} invite](${inviteLink})`
-                        : 'No invite available',
+                    name: tr(ctx, 'longtail:owner.guildMemberCount'),
+                    value: tr(ctx, 'longtail:owner.guildMembers', { count: guild.memberCount }),
                 },
                 {
-                    name: `${this.client.user?.username ?? 'BootstrapDJ'}'s Server Count`,
-                    value: `${this.client.guilds.cache.size} Servers`,
+                    name: tr(ctx, 'longtail:owner.guildCreationDate'),
+                    value: formatGuildDate(ctx, guild.createdAt),
+                },
+                {
+                    name: tr(ctx, 'longtail:owner.guildInvite'),
+                    value: inviteLink
+                        ? tr(ctx, 'longtail:owner.guildInviteLink', {
+                              guild: guild.name,
+                              link: inviteLink,
+                          })
+                        : tr(ctx, 'longtail:owner.guildNoInvite'),
+                },
+                {
+                    name: tr(ctx, 'longtail:owner.guildServerCount', {
+                        bot: this.client.user?.username ?? 'BootstrapDJ',
+                    }),
+                    value: tr(ctx, 'longtail:owner.guildServers', {
+                        count: this.client.guilds.cache.size,
+                    }),
                 }
             )
             .setTimestamp(guild.joinedAt ?? new Date());
@@ -192,7 +203,7 @@ export default class GuildCommand extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('The bot is not in any guilds.'),
+                        .setDescription(tr(ctx, 'longtail:owner.guildNone')),
                 ],
             });
         }
@@ -207,26 +218,26 @@ export default class GuildCommand extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('That guild was not found.'),
+                            .setDescription(tr(ctx, 'longtail:owner.guildNotFound')),
                     ],
                 });
             }
             // fetchOwner plus an invite creation can exceed Discord's three
             // second reply deadline; acknowledge first.
             await ctx.defer();
-            return await ctx.sendMessage({ embeds: [await this.buildEmbed(guild)] });
+            return await ctx.sendMessage({ embeds: [await this.buildEmbed(ctx, guild)] });
         }
         const totalPages = Math.ceil(guilds.length / PAGE_SIZE);
         let page = 0;
         const message = await ctx.sendMessage({
-            content: 'Select a guild to inspect.',
-            components: this.rows(page, totalPages, guilds),
+            content: tr(ctx, 'longtail:owner.guildSelectPrompt'),
+            components: this.rows(ctx, page, totalPages, guilds),
         });
         const collector = message.createMessageComponentCollector({ time: 120_000 });
         collector.on('collect', async interaction => {
             if (interaction.user.id !== author.id) {
                 await interaction.reply({
-                    content: 'This menu belongs to someone else.',
+                    content: tr(ctx, 'longtail:owner.guildNotYours'),
                     ephemeral: true,
                 });
                 return;
@@ -235,13 +246,13 @@ export default class GuildCommand extends Command {
                 const guild = client.guilds.cache.get(interaction.values[0]);
                 if (!guild) {
                     await interaction.reply({
-                        content: 'That guild is no longer available.',
+                        content: tr(ctx, 'longtail:owner.guildGone'),
                         ephemeral: true,
                     });
                     return;
                 }
                 await interaction.deferUpdate();
-                const embed = await this.buildEmbed(guild);
+                const embed = await this.buildEmbed(ctx, guild);
                 await interaction.editReply({ embeds: [embed], components: [] });
                 collector.stop('selected');
                 return;
@@ -250,7 +261,7 @@ export default class GuildCommand extends Command {
                 if (interaction.customId === 'guild-page-prev') page = Math.max(0, page - 1);
                 if (interaction.customId === 'guild-page-next')
                     page = Math.min(totalPages - 1, page + 1);
-                await interaction.update({ components: this.rows(page, totalPages, guilds) });
+                await interaction.update({ components: this.rows(ctx, page, totalPages, guilds) });
             }
         });
         collector.on('end', async () => {

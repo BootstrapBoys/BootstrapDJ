@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, Role, User } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type Mentionable = User | Role | null;
 
@@ -55,6 +56,14 @@ export default class Permissions extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.permissions.${key}`, variables);
+    }
+
     private reply(
         client: BootstrapClient,
         ctx: Context,
@@ -83,23 +92,18 @@ export default class Permissions extends Command {
         const owner = await client.db.getGuildSetting(guild.id, 'ownerid');
 
         if (action === 'claim' && owner) {
-            return await this.reply(client, ctx, 'This server already has a bot owner.', true);
+            return await this.reply(client, ctx, this.copy(ctx, 'alreadyOwned'), true);
         }
         if (action === 'transfer' && owner && owner !== author.id && guild.ownerId !== author.id) {
-            return await this.reply(
-                client,
-                ctx,
-                'Only the current bot owner or server owner can transfer ownership.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'transferForbidden'), true);
         }
 
         const target = action === 'claim' && !selected ? author : selected;
         if (!target || target instanceof Role) {
-            return await this.reply(client, ctx, 'Mention the user who should own this bot.', true);
+            return await this.reply(client, ctx, this.copy(ctx, 'mentionOwner'), true);
         }
         await client.db.setGuildSetting(guild.id, 'ownerid', target.id);
-        return await this.reply(client, ctx, `Bot ownership set to <@${target.id}>.`);
+        return await this.reply(client, ctx, this.copy(ctx, 'ownerSet', { id: target.id }));
     }
 
     public async run(client: BootstrapClient, ctx: Context, args: string[] = []): Promise<unknown> {
@@ -124,12 +128,7 @@ export default class Permissions extends Command {
 
         const validActions = ['list', 'allow', 'deny', 'reset', 'claim', 'transfer'];
         if (!validActions.includes(action)) {
-            return await this.reply(
-                client,
-                ctx,
-                'Please use `list`, `allow`, `deny`, `reset`, `claim`, or `transfer`.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'invalidAction'), true);
         }
 
         if (action === 'claim' || action === 'transfer') {
@@ -139,11 +138,13 @@ export default class Permissions extends Command {
         if (action === 'list') {
             const rules = await client.db.getPermissionRules(guild.id);
             if (rules.length === 0) {
-                return await this.reply(client, ctx, 'No permission rules are set.');
+                return await this.reply(client, ctx, this.copy(ctx, 'noRules'));
             }
             const owner = await client.db.getGuildSetting(guild.id, 'ownerid');
             const lines = [
-                `**Bot owner:** ${owner ? `<@${owner}>` : 'unclaimed'}`,
+                this.copy(ctx, 'ownerLine', {
+                    owner: owner ? `<@${owner}>` : this.copy(ctx, 'unclaimed'),
+                }),
                 ...rules
                     .slice(0, 20)
                     .map(
@@ -156,7 +157,7 @@ export default class Permissions extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setTitle('Permission rules')
+                        .setTitle(this.copy(ctx, 'listTitle'))
                         .setDescription(lines.join('\n')),
                 ],
             });
@@ -170,19 +171,24 @@ export default class Permissions extends Command {
             return await this.reply(
                 client,
                 ctx,
-                `Cleared ${removed} permission rule${removed === 1 ? '' : 's'}.`
+                this.copy(ctx, removed === 1 ? 'cleared' : 'clearedPlural', { count: removed })
             );
         }
 
         if (!commandName) {
-            return await this.reply(client, ctx, 'Name the command for an allow/deny rule.', true);
+            return await this.reply(client, ctx, this.copy(ctx, 'nameCommand'), true);
         }
         const command = client.commands.get(commandName);
         if (!command) {
-            return await this.reply(client, ctx, `Unknown command: **${commandName}**.`, true);
+            return await this.reply(
+                client,
+                ctx,
+                this.copy(ctx, 'unknownCommand', { command: commandName }),
+                true
+            );
         }
         if (!selected) {
-            return await this.reply(client, ctx, 'Mention a user or role for the rule.', true);
+            return await this.reply(client, ctx, this.copy(ctx, 'mentionTarget'), true);
         }
 
         const kind = selected instanceof Role ? 'role' : 'user';
@@ -197,7 +203,11 @@ export default class Permissions extends Command {
         return await this.reply(
             client,
             ctx,
-            `${rule.allow ? 'Allowed' : 'Denied'} **${command.name}** for ${subject}.`
+            this.copy(ctx, 'ruleSet', {
+                decision: this.copy(ctx, rule.allow ? 'allowed' : 'denied'),
+                command: command.name,
+                subject,
+            })
         );
     }
 }

@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Delete extends Command {
     public constructor(client: BootstrapClient) {
@@ -34,6 +35,14 @@ export default class Delete extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.delete.${key}`, variables);
+    }
+
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const author = ctx.author;
         if (!author) return;
@@ -43,7 +52,7 @@ export default class Delete extends Command {
         if (!(await client.db.getPLaylist(author.id, name))) {
             return await ctx.sendMessage({
                 embeds: [
-                    embed.setColor(client.color.red).setDescription("That playlist doesn't exist"),
+                    embed.setColor(client.color.red).setDescription(this.copy(ctx, 'notExist')),
                 ],
             });
         }
@@ -54,18 +63,19 @@ export default class Delete extends Command {
                 embeds: [
                     embed
                         .setColor(client.color.red)
-                        .setDescription(`Could not delete playlist **${name}**`),
+                        .setDescription(this.copy(ctx, 'failed', { name })),
                 ],
             });
         }
 
         return await ctx.sendMessage({
             embeds: [
-                embed
-                    .setColor(client.color.main)
-                    .setDescription(
-                        `Deleted playlist **${name}** and its ${songs.length} song${songs.length === 1 ? '' : 's'}`
-                    ),
+                embed.setColor(client.color.main).setDescription(
+                    this.copy(ctx, songs.length === 1 ? 'deleted' : 'deletedPlural', {
+                        name,
+                        count: songs.length,
+                    })
+                ),
             ],
         });
     }

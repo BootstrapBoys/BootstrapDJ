@@ -111,7 +111,7 @@ export async function runPlayRequest(
     switch (res.loadType) {
         case LoadType.TRACK: {
             const track = player.buildTrack(res.data, author);
-            const rejected = checkTrack(player, track, author.id, limits);
+            const rejected = checkTrack(player, track, author.id, limits, [], ctx.locale);
             if (rejected) {
                 await ctx.sendMessage({
                     embeds: [embed.setColor(client.color.red).setDescription(rejected)],
@@ -148,7 +148,7 @@ export async function runPlayRequest(
                 playlistDuration += trackLength;
                 const pl = player.buildTrack(track, author);
                 const pending = mode === 'next' ? accepted : [];
-                const rejected = checkTrack(player, pl, author.id, limits, pending);
+                const rejected = checkTrack(player, pl, author.id, limits, pending, ctx.locale);
                 if (rejected) continue;
                 accepted.push(pl);
                 if (mode === 'queue') player.enqueue(pl, false, false);
@@ -188,7 +188,7 @@ export async function runPlayRequest(
                 return;
             }
             const track = player.buildTrack(first, author);
-            const rejected = checkTrack(player, track, author.id, limits);
+            const rejected = checkTrack(player, track, author.id, limits, [], ctx.locale);
             if (rejected) {
                 await ctx.sendMessage({
                     embeds: [embed.setColor(client.color.red).setDescription(rejected)],

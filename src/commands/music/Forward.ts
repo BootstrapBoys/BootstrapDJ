@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { parseTime } from '../../lib/QueueTools.js';
 
 export default class Forward extends Command {
@@ -44,7 +45,7 @@ export default class Forward extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:music.nothingPlaying')),
                 ],
             });
         }
@@ -55,7 +56,7 @@ export default class Forward extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Give a time like `30s` or `01:30`.'),
+                        .setDescription(tr(ctx, 'longtail:music.invalidTime')),
                 ],
             });
         }
@@ -70,7 +71,11 @@ export default class Forward extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Moved forward to ${client.utils.formatTime(position)}.`),
+                    .setDescription(
+                        tr(ctx, 'longtail:music.movedForward', {
+                            time: client.utils.formatTime(position),
+                        })
+                    ),
             ],
         });
     }

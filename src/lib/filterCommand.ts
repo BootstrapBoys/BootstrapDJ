@@ -2,8 +2,12 @@ import type { CommandOptions } from '../core/Command.js';
 import type { ApplicationCommandOption, PermissionsString } from 'discord.js';
 
 import { BootstrapClient, Command, Context, Dispatcher } from '../core/index.js';
+import { tr } from './i18nContext.js';
 import { resolvePlayer } from './PlayerResolver.js';
 import { replyFail, replyOk } from './reply.js';
+
+/** User-facing copy resolved in the guild's language when the reply is sent. */
+export type FilterCopy = (ctx: Context) => string;
 
 export type FilterRunContext = {
     client: BootstrapClient;
@@ -23,11 +27,10 @@ export interface FilterDefinition {
     /** Require a loaded track, not merely a player (parameter filters act on the live track). */
     requireCurrent?: boolean;
     /** Omit for a silent no-player return; the default posts the standard error. */
-    missingPlayer?: string | null;
+    missingPlayer?: FilterCopy | null;
     run: (input: FilterRunContext) => Promise<unknown>;
 }
 
-const NO_MUSIC = 'There is no music playing in this server.';
 const CLIENT_PERMISSIONS: PermissionsString[] = ['SendMessages', 'ViewChannel', 'EmbedLinks'];
 
 /**
@@ -60,7 +63,7 @@ export function defineFilterCommand(definition: FilterDefinition): typeof Comman
 
         public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
             if (!ctx.guild) {
-                return await ctx.sendMessage({ content: 'This command only works in a server.' });
+                return await ctx.sendMessage({ content: tr(ctx, 'longtail:filters.guildOnly') });
             }
             const player = await resolvePlayer(
                 client,
@@ -70,13 +73,11 @@ export function defineFilterCommand(definition: FilterDefinition): typeof Comman
             );
             if (!player || (definition.requireCurrent && !player.current)) {
                 if (definition.missingPlayer === null) return;
+                const missing = definition.missingPlayer
+                    ? definition.missingPlayer(ctx)
+                    : tr(ctx, 'longtail:filters.noMusic');
                 return await ctx.sendMessage({
-                    embeds: [
-                        client
-                            .embed()
-                            .setColor(client.color.red)
-                            .setDescription(definition.missingPlayer ?? NO_MUSIC),
-                    ],
+                    embeds: [client.embed().setColor(client.color.red).setDescription(missing)],
                 });
             }
             return await definition.run({ client, ctx, player, args });
@@ -108,12 +109,22 @@ export function toggleFilter(
             }
         } catch (error) {
             client.logger.warn(`[filter] ${key} toggle failed: ${error}`);
-            return await replyFail(client, ctx, `Could not update the ${label} filter.`);
+            return await replyFail(
+                client,
+                ctx,
+                tr(ctx, 'longtail:filters.updateFailed', { filter: label })
+            );
         }
         return await ctx.sendMessage({
             embeds: [
                 {
-                    description: `${label} filter has been ${active ? 'disabled' : 'enabled'}`,
+                    description: tr(
+                        ctx,
+                        active
+                            ? 'longtail:filters.toggleDisabled'
+                            : 'longtail:filters.toggleEnabled',
+                        { label }
+                    ),
                     color: client.color.main,
                 },
             ],
@@ -126,30 +137,34 @@ export interface NumericFilterOptions {
     min: number;
     max: number;
     /** Copy shown when the argument is not a number at all. */
-    invalid: string;
+    invalid: FilterCopy;
     /** Copy shown when the number falls outside [min, max]. */
-    outOfRange: string;
+    outOfRange: FilterCopy;
     apply: NumericFilterEffect;
-    success: (value: number) => string;
+    success: (value: number, ctx: Context) => string;
 }
 
 /** Shared run body for filters that take one bounded numeric argument. */
 export function numericFilter(options: NumericFilterOptions): FilterDefinition['run'] {
     return async ({ client, ctx, player, args }) => {
         const value = Number(args[0]);
-        if (!Number.isFinite(value)) return await replyFail(client, ctx, options.invalid);
+        if (!Number.isFinite(value)) return await replyFail(client, ctx, options.invalid(ctx));
         if (value < options.min || value > options.max) {
-            return await replyFail(client, ctx, options.outOfRange);
+            return await replyFail(client, ctx, options.outOfRange(ctx));
         }
 
         try {
             await options.apply(player, value);
         } catch (error) {
             client.logger.warn(`[filter] ${options.key} write failed: ${error}`);
-            return await replyFail(client, ctx, `Could not update the ${options.key} filter.`);
+            return await replyFail(
+                client,
+                ctx,
+                tr(ctx, 'longtail:filters.updateFailed', { filter: options.key })
+            );
         }
         if (!player.filters.includes(options.key)) player.filters.push(options.key);
         player.filterValues[options.key] = value;
-        return await replyOk(client, ctx, options.success(value));
+        return await replyOk(client, ctx, options.success(value, ctx));
     };
 }

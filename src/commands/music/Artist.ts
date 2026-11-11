@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class Artist extends Command {
@@ -43,7 +44,7 @@ export default class Artist extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Provide an artist name.'),
+                        .setDescription(tr(ctx, 'longtail:music.artistNoName')),
                 ],
             });
         }
@@ -55,7 +56,7 @@ export default class Artist extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`No artist results for **${query}**.`),
+                        .setDescription(tr(ctx, 'longtail:music.artistNoResults', { query })),
                 ],
             });
         }
@@ -66,7 +67,14 @@ export default class Artist extends Command {
                     .setColor(client.color.main)
                     .setTitle(track.info.author)
                     .setDescription(
-                        `**Top result:** [${track.info.title}](${track.info.uri})\n**Duration:** ${track.info.isStream ? 'LIVE' : client.utils.formatTime(track.info.length)}\n**Source:** ${track.info.sourceName}`
+                        tr(ctx, 'longtail:music.artistTopResult', {
+                            title: track.info.title,
+                            uri: track.info.uri ?? '',
+                            duration: track.info.isStream
+                                ? tr(ctx, 'longtail:music.live')
+                                : client.utils.formatTime(track.info.length),
+                            source: track.info.sourceName,
+                        })
                     ),
             ],
         });

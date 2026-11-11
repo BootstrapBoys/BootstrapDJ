@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, User } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const MAX_ROWS = 50;
 
@@ -35,6 +36,14 @@ export default class List extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.list.${key}`, variables);
+    }
+
     private async target(client: BootstrapClient, ctx: Context): Promise<User | null> {
         if (ctx.isInteraction && ctx.interaction) {
             return ctx.interaction.options.getUser('user') ?? ctx.author;
@@ -57,25 +66,31 @@ export default class List extends Command {
                 embeds: [
                     embed.setDescription(
                         own
-                            ? "You don't have any playlists."
-                            : `${target.username} doesn't have any playlists.`
+                            ? this.copy(ctx, 'noneOwn')
+                            : this.copy(ctx, 'noneOther', { username: target.username })
                     ),
                 ],
             });
         }
 
-        const rows = playlists
-            .slice(0, MAX_ROWS)
-            .map(
-                item =>
-                    `**${item.name}** — ${item._count.songs} song${item._count.songs === 1 ? '' : 's'}`
-            );
+        const rows = playlists.slice(0, MAX_ROWS).map(item =>
+            this.copy(ctx, item._count.songs === 1 ? 'row' : 'rowPlural', {
+                name: item.name,
+                count: item._count.songs,
+            })
+        );
         const extra =
-            playlists.length > MAX_ROWS ? `\n…and ${playlists.length - MAX_ROWS} more` : '';
+            playlists.length > MAX_ROWS
+                ? `\n${this.copy(ctx, 'more', { count: playlists.length - MAX_ROWS })}`
+                : '';
         return await ctx.sendMessage({
             embeds: [
                 embed
-                    .setTitle(own ? 'Your playlists' : `Playlists for ${target.username}`)
+                    .setTitle(
+                        own
+                            ? this.copy(ctx, 'titleOwn')
+                            : this.copy(ctx, 'titleOther', { username: target.username })
+                    )
                     .setDescription(`${rows.join('\n')}${extra}`.slice(0, 4096)),
             ],
         });

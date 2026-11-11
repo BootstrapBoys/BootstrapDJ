@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const TARGETS: Record<string, string> = {
     overview: 'info',
@@ -62,13 +63,25 @@ export default class Utility extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setTitle('Command status')
+                        .setTitle(tr(ctx, 'longtail:tools.utilityCommandStatusTitle'))
                         .setDescription(
                             [
-                                `**Loaded commands:** ${client.commands.size}`,
-                                `**Slash commands:** ${client.application?.commands.cache.size ?? 'not synced'}`,
-                                `**Guild prefix:** \`${guildData?.prefix ?? client.config.prefix}\``,
-                                `**Disabled here:** ${disabled.length ? disabled.map(name => `\`${name}\``).join(', ') : 'none'}`,
+                                tr(ctx, 'longtail:tools.utilityLoadedCommands', {
+                                    count: client.commands.size,
+                                }),
+                                tr(ctx, 'longtail:tools.utilitySlashCommands', {
+                                    count:
+                                        client.application?.commands.cache.size ??
+                                        tr(ctx, 'longtail:tools.utilityNotSynced'),
+                                }),
+                                tr(ctx, 'longtail:tools.utilityGuildPrefix', {
+                                    prefix: guildData?.prefix ?? client.config.prefix,
+                                }),
+                                tr(ctx, 'longtail:tools.utilityDisabledHere', {
+                                    commands: disabled.length
+                                        ? disabled.map(name => `\`${name}\``).join(', ')
+                                        : tr(ctx, 'longtail:tools.utilityNone'),
+                                }),
                             ].join('\n')
                         ),
                 ],
@@ -93,7 +106,7 @@ export default class Utility extends Command {
                             .embed()
                             .setColor(client.color.red)
                             .setDescription(
-                                'The dashboard is not configured. Set `DASHBOARD_PUBLIC_URL` or `DASHBOARD_OAUTH_REDIRECT_URI`.'
+                                tr(ctx, 'longtail:tools.utilityDashboardNotConfigured')
                             ),
                     ],
                 });
@@ -103,12 +116,12 @@ export default class Utility extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setTitle('BootstrapDJ Dashboard')
+                        .setTitle(tr(ctx, 'longtail:tools.utilityDashboardTitle'))
                         .setDescription(
                             [
-                                `[Open the dashboard](${url})`,
+                                tr(ctx, 'longtail:tools.utilityOpenDashboard', { url }),
                                 '',
-                                'Sign in with Discord. Only server admins can view or change settings.',
+                                tr(ctx, 'longtail:tools.utilityDashboardSignIn'),
                             ].join('\n')
                         ),
                 ],
@@ -122,7 +135,7 @@ export default class Utility extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Unknown utility page.'),
+                        .setDescription(tr(ctx, 'longtail:tools.utilityUnknownPage')),
                 ],
             });
         }

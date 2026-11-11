@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class Top extends Command {
@@ -45,7 +46,7 @@ export default class Top extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`No results for **${query}**.`),
+                        .setDescription(tr(ctx, 'longtail:music.topNoResults', { query })),
                 ],
             });
         }
@@ -60,8 +61,8 @@ export default class Top extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle(`Top results: ${query}`)
-                    .setDescription(lines.join('\n') || 'No results.'),
+                    .setTitle(tr(ctx, 'longtail:music.topTitle', { query }))
+                    .setDescription(lines.join('\n') || tr(ctx, 'longtail:music.topEmpty')),
             ],
         });
     }

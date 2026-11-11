@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class SessionStats extends Command {
     constructor(client: BootstrapClient) {
@@ -34,7 +35,7 @@ export default class SessionStats extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('No session is active.'),
+                        .setDescription(tr(ctx, 'longtail:music.sessionStatsNoActive')),
                 ],
             });
         }
@@ -44,29 +45,47 @@ export default class SessionStats extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Session statistics')
+                    .setTitle(tr(ctx, 'longtail:music.sessionStatsTitle'))
                     .addFields(
                         {
-                            name: 'Current',
+                            name: tr(ctx, 'longtail:music.sessionStatsCurrent'),
                             value: player.current
                                 ? `[${player.current.info.title}](${player.current.info.uri})`
-                                : 'Nothing',
+                                : tr(ctx, 'longtail:music.sessionStatsNothing'),
                             inline: false,
                         },
                         {
-                            name: 'Tracks played',
+                            name: tr(ctx, 'longtail:music.sessionStatsTracksPlayed'),
                             value: String(player.history.length),
                             inline: true,
                         },
                         {
-                            name: 'Played time',
+                            name: tr(ctx, 'longtail:music.sessionStatsPlayedTime'),
                             value: client.utils.formatTime(played),
                             inline: true,
                         },
-                        { name: 'Queue', value: String(player.queue.length), inline: true },
-                        { name: 'Volume', value: `${player.volume}%`, inline: true },
-                        { name: 'Loop', value: player.loop, inline: true },
-                        { name: 'Autoplay', value: player.autoplay ? 'on' : 'off', inline: true }
+                        {
+                            name: tr(ctx, 'longtail:music.sessionStatsQueue'),
+                            value: String(player.queue.length),
+                            inline: true,
+                        },
+                        {
+                            name: tr(ctx, 'longtail:music.sessionStatsVolume'),
+                            value: `${player.volume}%`,
+                            inline: true,
+                        },
+                        {
+                            name: tr(ctx, 'longtail:music.sessionStatsLoop'),
+                            value: player.loop,
+                            inline: true,
+                        },
+                        {
+                            name: tr(ctx, 'longtail:music.sessionStatsAutoplay'),
+                            value: player.autoplay
+                                ? tr(ctx, 'longtail:music.sessionStatsOn')
+                                : tr(ctx, 'longtail:music.sessionStatsOff'),
+                            inline: true,
+                        }
                     ),
             ],
         });

@@ -1,6 +1,7 @@
 import { ChannelType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type Vote = { key: string; voters: Set<string> };
 
@@ -46,7 +47,7 @@ export default class VoteSkip extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:music.voteSkipNothingPlaying')),
                 ],
             });
         }
@@ -61,7 +62,7 @@ export default class VoteSkip extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('I am not in a voice channel.'),
+                        .setDescription(tr(ctx, 'longtail:music.voteSkipNoVoice')),
                 ],
             });
         }
@@ -73,7 +74,7 @@ export default class VoteSkip extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Vote skipping is disabled in this server.'),
+                        .setDescription(tr(ctx, 'longtail:music.voteSkipDisabled')),
                 ],
             });
         }
@@ -94,7 +95,7 @@ export default class VoteSkip extends Command {
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setDescription('Vote passed — skipping the track.'),
+                        .setDescription(tr(ctx, 'longtail:music.voteSkipPassed')),
                 ],
             });
         }
@@ -103,7 +104,12 @@ export default class VoteSkip extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Vote to skip: **${vote.voters.size}/${needed}**.`),
+                    .setDescription(
+                        tr(ctx, 'longtail:music.voteSkipProgress', {
+                            current: vote.voters.size,
+                            needed,
+                        })
+                    ),
             ],
         });
     }

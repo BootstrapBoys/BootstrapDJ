@@ -1,6 +1,7 @@
 import { ChannelType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { requesterId } from '../../lib/QueueTools.js';
 
 export default class RemoveAbsent extends Command {
@@ -34,7 +35,10 @@ export default class RemoveAbsent extends Command {
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.removeabsent.empty')),
                 ],
             });
         }
@@ -49,7 +53,7 @@ export default class RemoveAbsent extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('I am not in a voice channel.'),
+                        .setDescription(tr(ctx, 'longtail:music.removeabsent.notInVoice')),
                 ],
             });
         }
@@ -67,9 +71,11 @@ export default class RemoveAbsent extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        removed
-                            ? `Removed ${removed} track${removed === 1 ? '' : 's'} requested by absent users.`
-                            : 'No queued tracks were requested by absent users.'
+                        removed === 0
+                            ? tr(ctx, 'longtail:music.removeabsent.noneRemoved')
+                            : removed === 1
+                              ? tr(ctx, 'longtail:music.removeabsent.removedOne')
+                              : tr(ctx, 'longtail:music.removeabsent.removed', { count: removed })
                     ),
             ],
         });

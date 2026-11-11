@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Faq extends Command {
     constructor(client: BootstrapClient) {
@@ -30,23 +31,23 @@ export default class Faq extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('BootstrapDJ FAQ')
+                    .setTitle(tr(ctx, 'longtail:tools.faqTitle'))
                     .setDescription(
                         [
-                            '**How do I start playing music?**',
-                            'Join a voice channel and use `/play <song or URL>`.',
+                            tr(ctx, 'longtail:tools.faqQ1'),
+                            tr(ctx, 'longtail:tools.faqA1'),
                             '',
-                            '**How do I see the queue?**',
-                            'Use `/queue` (public) for the full queue and totals.',
+                            tr(ctx, 'longtail:tools.faqQ2'),
+                            tr(ctx, 'longtail:tools.faqA2'),
                             '',
-                            '**How do I change volume?**',
-                            'Use `/volume <0-200>`.',
+                            tr(ctx, 'longtail:tools.faqQ3'),
+                            tr(ctx, 'longtail:tools.faqA3'),
                             '',
-                            '**Why did a track stop?**',
-                            'Check `/lavalink` if playback failed; the bot fails over to its backup node when possible.',
+                            tr(ctx, 'longtail:tools.faqQ4'),
+                            tr(ctx, 'longtail:tools.faqA4'),
                             '',
-                            '**Are there premium commands?**',
-                            'No. Every BootstrapDJ command is free.',
+                            tr(ctx, 'longtail:tools.faqQ5'),
+                            tr(ctx, 'longtail:tools.faqA5'),
                         ].join('\n')
                     ),
             ],

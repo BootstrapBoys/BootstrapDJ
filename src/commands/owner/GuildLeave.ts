@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class GuildLeave extends Command {
     public constructor(client: BootstrapClient) {
@@ -27,13 +28,17 @@ export default class GuildLeave extends Command {
     public async run(client: BootstrapClient, ctx: Context, args: string[]): Promise<unknown> {
         const guildId = args[0];
         const guild = guildId ? client.guilds.cache.get(guildId) : undefined;
-        if (!guild) return await ctx.sendMessage('Guild not found');
+        if (!guild) return await ctx.sendMessage(tr(ctx, 'longtail:owner.guildLeaveNotFound'));
 
         try {
             await guild.leave();
-            return await ctx.sendMessage(`Left guild ${guild.name}`);
+            return await ctx.sendMessage(
+                tr(ctx, 'longtail:owner.guildLeft', { guild: guild.name })
+            );
         } catch {
-            return await ctx.sendMessage(`Failed to leave guild ${guild.name}`);
+            return await ctx.sendMessage(
+                tr(ctx, 'longtail:owner.guildLeaveFailed', { guild: guild.name })
+            );
         }
     }
 }

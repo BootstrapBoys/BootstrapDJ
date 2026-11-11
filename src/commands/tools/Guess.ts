@@ -1,6 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Guess extends Command {
     constructor(client: BootstrapClient) {
@@ -37,7 +38,7 @@ export default class Guess extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:tools.guessNothingPlaying')),
                 ],
             });
         }
@@ -49,7 +50,8 @@ export default class Guess extends Command {
                 .map(track => track.info.title),
             ...player.queue.slice(0, 8).map(track => track.info.title),
         ].filter((title, index, all) => all.indexOf(title) === index);
-        while (titles.length < 4) titles.push(`Unknown track ${titles.length + 1}`);
+        while (titles.length < 4)
+            titles.push(tr(ctx, 'longtail:tools.guessUnknownTrack', { count: titles.length + 1 }));
         const choices = titles.slice(0, 4).sort(() => Math.random() - 0.5);
         const correct = player.current.info.title;
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -66,8 +68,8 @@ export default class Guess extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Guess the song')
-                    .setDescription('Which track is playing? You have 30 seconds.'),
+                    .setTitle(tr(ctx, 'longtail:tools.guessTitle'))
+                    .setDescription(tr(ctx, 'longtail:tools.guessPrompt')),
             ],
             components: [row],
         });
@@ -90,8 +92,8 @@ export default class Guess extends Command {
             await interaction.reply({
                 content:
                     answer === correct
-                        ? `Correct — **${correct}**!`
-                        : `Not quite. The answer was **${correct}**.`,
+                        ? tr(ctx, 'longtail:tools.guessCorrect', { track: correct })
+                        : tr(ctx, 'longtail:tools.guessWrong', { track: correct }),
                 ephemeral: true,
             });
             if (answer === correct) collector.stop('correct');

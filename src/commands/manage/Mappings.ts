@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, GuildMember, PermissionFlagsBits } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type Scope = 'server' | 'user';
 
@@ -106,6 +107,14 @@ export default class Mappings extends Command {
         };
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.mappings.${key}`, variables);
+    }
+
     private reply(
         client: BootstrapClient,
         ctx: Context,
@@ -131,12 +140,7 @@ export default class Mappings extends Command {
         const request = this.read(ctx);
         const { action, scope, trigger, expansion } = request;
         if (scope === 'server' && !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return await this.reply(
-                client,
-                ctx,
-                'You need Manage Server for server mappings.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'manageServer'), true);
         }
         const userId = scope === 'user' ? author.id : '';
 
@@ -144,7 +148,7 @@ export default class Mappings extends Command {
             case 'list': {
                 const mappings = await client.db.listCommandMappings(guild.id, author.id);
                 if (mappings.length === 0) {
-                    return await this.reply(client, ctx, 'No custom mappings are set.');
+                    return await this.reply(client, ctx, this.copy(ctx, 'noMappings'));
                 }
                 const lines = mappings.map(
                     entry => `\`${entry.trigger}\` → \`${entry.expansion}\` (${entry.scope})`
@@ -154,7 +158,7 @@ export default class Mappings extends Command {
                         client
                             .embed()
                             .setColor(client.color.main)
-                            .setTitle('Custom mappings')
+                            .setTitle(this.copy(ctx, 'listTitle'))
                             .setDescription(lines.join('\n').slice(0, 4096)),
                     ],
                 });
@@ -164,7 +168,10 @@ export default class Mappings extends Command {
                 return await this.reply(
                     client,
                     ctx,
-                    `Cleared ${removed} ${scope} mapping${removed === 1 ? '' : 's'}.`
+                    this.copy(ctx, removed === 1 ? 'cleared' : 'clearedPlural', {
+                        count: removed,
+                        scope,
+                    })
                 );
             }
             default:
@@ -172,12 +179,7 @@ export default class Mappings extends Command {
         }
 
         if (!/^[a-z0-9_-]{1,32}$/.test(trigger)) {
-            return await this.reply(
-                client,
-                ctx,
-                'Triggers must be 1–32 letters, numbers, `_` or `-`.',
-                true
-            );
+            return await this.reply(client, ctx, this.copy(ctx, 'invalidTrigger'), true);
         }
 
         if (action === 'remove') {
@@ -188,16 +190,14 @@ export default class Mappings extends Command {
                         .embed()
                         .setColor(removed ? client.color.green : client.color.red)
                         .setDescription(
-                            removed
-                                ? `Removed mapping \`${trigger}\`.`
-                                : `No mapping \`${trigger}\` exists.`
+                            this.copy(ctx, removed ? 'removed' : 'notFound', { trigger })
                         ),
                 ],
             });
         }
 
         if (!expansion)
-            return await this.reply(client, ctx, 'Provide the command expansion.', true);
+            return await this.reply(client, ctx, this.copy(ctx, 'expansionRequired'), true);
         const target = expansion
             .split(/\s+/)[0]
             ?.replace(/^[^\w]+/, '')
@@ -206,7 +206,7 @@ export default class Mappings extends Command {
             return await this.reply(
                 client,
                 ctx,
-                `The expansion must start with a command; \`${target || 'none'}\` is unknown.`,
+                this.copy(ctx, 'unknownCommand', { target: target || 'none' }),
                 true
             );
         }
@@ -217,9 +217,7 @@ export default class Mappings extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(
-                        `Mapping \`${trigger}\` → \`${expansion}\` (${scope}) created.`
-                    ),
+                    .setDescription(this.copy(ctx, 'created', { trigger, expansion, scope })),
             ],
         });
     }

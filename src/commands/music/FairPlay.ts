@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class FairPlay extends Command {
     constructor(client: BootstrapClient) {
@@ -39,7 +40,7 @@ export default class FairPlay extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:music.nothingPlaying')),
                 ],
             });
         }
@@ -49,7 +50,7 @@ export default class FairPlay extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('There are no queued tracks to rebalance.'),
+                        .setDescription(tr(ctx, 'longtail:music.fairPlayEmptyQueue')),
                 ],
             });
         }
@@ -61,7 +62,13 @@ export default class FairPlay extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Queue rebalanced fairly across requesters (${count} track${count === 1 ? '' : 's'}).`
+                        tr(
+                            ctx,
+                            count === 1
+                                ? 'longtail:music.fairPlayRebalancedOne'
+                                : 'longtail:music.fairPlayRebalancedMany',
+                            { count }
+                        )
                     ),
             ],
         });

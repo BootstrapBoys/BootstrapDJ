@@ -703,12 +703,106 @@ const DASHBOARD_COPY_KEYS = [
     'language.description',
 ] as const;
 
+/**
+ * Copy migrated to the `longtail` catalog. Keys stay flat in the payload that
+ * the browser receives, but are read from `longtail:dashboard.*`.
+ */
+const LONGTAIL_DASHBOARD_COPY_KEYS = [
+    'stats.clear',
+    'stats.clearTitle',
+    'stats.open',
+    'stats.close',
+    'stats.personalOpen',
+    'stats.personalClose',
+    'stats.range7',
+    'stats.range30',
+    'stats.range90',
+    'stats.listeningTime',
+    'stats.sessions',
+    'stats.gameSessions',
+    'stats.sources',
+    'stats.byDay',
+    'stats.trackTypes',
+    'stats.byHour',
+    'stats.byWeekday',
+    'stats.mostPlayed',
+    'stats.mostListened',
+    'stats.topCommands',
+    'stats.noData',
+    'stats.noTracks',
+    'stats.loading',
+    'stats.clearConfirm',
+    'stats.cleared',
+    'stats.uses',
+    'stats.weekdaySun',
+    'stats.weekdayMon',
+    'stats.weekdayTue',
+    'stats.weekdayWed',
+    'stats.weekdayThu',
+    'stats.weekdayFri',
+    'stats.weekdaySat',
+    'stats.hoursListened',
+    'stats.songsPlayed',
+    'stats.uniqueSongs',
+    'stats.requestedSongs',
+    'stats.noRequestedSongs',
+    'stats.loadingPersonal',
+    'stats.each',
+    'stats.playOne',
+    'stats.playMany',
+    'playlists.empty',
+    'playlists.select',
+    'playlists.loading',
+    'playlists.loadingTracks',
+    'playlists.rename',
+    'playlists.renamePrompt',
+    'playlists.renamed',
+    'playlists.delete',
+    'playlists.deleteConfirm',
+    'playlists.deleted',
+    'playlists.queuedOne',
+    'playlists.queuedMany',
+    'playlists.skipped',
+    'playlists.shuffledOrder',
+    'playlists.load',
+    'playlists.loadTitle',
+    'playlists.shuffleLoad',
+    'playlists.shuffleTitle',
+    'playlists.controlsRequired',
+    'playlists.emptyDetail',
+    'playlists.unknownArtist',
+    'playlists.remove',
+    'playlists.removeTitle',
+    'playlists.trackRemoved',
+    'playlists.addPlaceholder',
+    'playlists.addAria',
+    'playlists.addTrack',
+    'playlists.addedOne',
+    'playlists.addedMany',
+    'playlists.clear',
+    'playlists.clearConfirm',
+    'playlists.cleared',
+    'playlists.created',
+    'playlists.trackOne',
+    'playlists.trackMany',
+    'playlists.create',
+    'playlists.namePlaceholder',
+    'playlists.nameAria',
+    'playlists.open',
+    'playlists.close',
+] as const;
+
 function dashboardCopy(): Record<string, Record<string, string>> {
     const copy: Record<string, Record<string, string>> = {};
     for (const language of SUPPORTED_LANGUAGES) {
         copy[language] = {};
         for (const key of DASHBOARD_COPY_KEYS) {
             copy[language][key] = translate(`dashboard:${key}`, language);
+        }
+        for (const key of LONGTAIL_DASHBOARD_COPY_KEYS) {
+            const value = translate(`longtail:dashboard.${key}`, language);
+            // A missing key is echoed back; leave it out so the client fallback wins.
+            if (value !== `dashboard.${key}`) copy[language][key] = value;
         }
     }
     return copy;

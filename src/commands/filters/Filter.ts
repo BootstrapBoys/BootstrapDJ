@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import type { ApplicationCommandOption } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const SIMPLE: Record<string, string> = {
     '8d': '8d',
@@ -75,7 +76,7 @@ export default class Filter extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Choose a filter effect.'),
+                        .setDescription(tr(ctx, 'longtail:filters.chooseEffect')),
                 ],
             });
         }
@@ -87,7 +88,9 @@ export default class Filter extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`Unknown filter: **${effect}**.`),
+                        .setDescription(
+                            tr(ctx, 'longtail:filters.unknownFilter', { filter: effect })
+                        ),
                 ],
             });
         }

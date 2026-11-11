@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class Requested extends Command {
     constructor(client: BootstrapClient) {
@@ -43,7 +44,7 @@ export default class Requested extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:music.requested.nothingPlaying')),
                 ],
             });
         }
@@ -62,7 +63,7 @@ export default class Requested extends Command {
                         .embed()
                         .setColor(client.color.main)
                         .setDescription(
-                            `No queued tracks were requested by **${target.username}**.`
+                            tr(ctx, 'longtail:music.requested.none', { user: target.username })
                         ),
                 ],
             });
@@ -70,13 +71,16 @@ export default class Requested extends Command {
         const lines = tracks
             .slice(0, 15)
             .map((track, index) => `**${index + 1}.** [${track.info.title}](${track.info.uri})`);
-        const suffix = tracks.length > 15 ? `\n…and ${tracks.length - 15} more` : '';
+        const suffix =
+            tracks.length > 15
+                ? `\n${tr(ctx, 'longtail:music.requested.more', { count: tracks.length - 15 })}`
+                : '';
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle(`Requests by ${target.username}`)
+                    .setTitle(tr(ctx, 'longtail:music.requested.title', { user: target.username }))
                     .setDescription(`${lines.join('\n')}${suffix}`.slice(0, 4096)),
             ],
         });

@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType, type Attachment } from 'discord.js';
 
 import { defineMusicCommand, type MusicRunContext } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { runPlayRequest } from '../../lib/PlayRequest.js';
 
 /** Discord's standard non-boosted attachment ceiling. */
@@ -47,18 +48,14 @@ export default defineMusicCommand({
     run: async ({ client, ctx }) => {
         const attachment = attachmentFrom(ctx);
         if (!attachment) {
-            return await reject(client, ctx, 'Attach an audio or video file to play.');
+            return await reject(client, ctx, tr(ctx, 'longtail:music.playlocal.attachFile'));
         }
         const contentType = attachment.contentType ?? '';
         if (!contentType.startsWith('audio/') && !contentType.startsWith('video/')) {
-            return await reject(client, ctx, 'The attachment must be an audio or video file.');
+            return await reject(client, ctx, tr(ctx, 'longtail:music.playlocal.invalidType'));
         }
         if (attachment.size > MAX_LOCAL_ATTACHMENT_BYTES) {
-            return await reject(
-                client,
-                ctx,
-                'The attachment is too large. The maximum size is 25 MB.'
-            );
+            return await reject(client, ctx, tr(ctx, 'longtail:music.playlocal.tooLarge'));
         }
         return await runPlayRequest(client, ctx, [attachment.url], 'queue');
     },

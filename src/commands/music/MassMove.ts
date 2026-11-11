@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class MassMove extends Command {
     constructor(client: BootstrapClient) {
@@ -58,7 +59,7 @@ export default class MassMove extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('At least two queued tracks are required.'),
+                        .setDescription(tr(ctx, 'longtail:music.massMoveNeedsTwo')),
                 ],
             });
         }
@@ -80,7 +81,11 @@ export default class MassMove extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`Use valid positions within 1–${player.queue.length}.`),
+                        .setDescription(
+                            tr(ctx, 'longtail:music.massMoveInvalidPositions', {
+                                max: player.queue.length,
+                            })
+                        ),
                 ],
             });
         }
@@ -94,7 +99,13 @@ export default class MassMove extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Moved ${block.length} track${block.length === 1 ? '' : 's'} to position ${destination}.`
+                        tr(
+                            ctx,
+                            block.length === 1
+                                ? 'longtail:music.massMoveMovedOne'
+                                : 'longtail:music.massMoveMovedMany',
+                            { count: block.length, position: destination }
+                        )
                     ),
             ],
         });

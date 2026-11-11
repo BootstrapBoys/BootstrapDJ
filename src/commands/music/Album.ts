@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class Album extends Command {
@@ -43,7 +44,7 @@ export default class Album extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Provide an album name.'),
+                        .setDescription(tr(ctx, 'longtail:music.albumNoName')),
                 ],
             });
         }
@@ -58,7 +59,7 @@ export default class Album extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(`No album results for **${query}**.`),
+                        .setDescription(tr(ctx, 'longtail:music.albumNoResults', { query })),
                 ],
             });
         }
@@ -70,7 +71,13 @@ export default class Album extends Command {
                     .setTitle(track.info.title)
                     .setURL(track.info.uri ?? null)
                     .setDescription(
-                        `**Artist:** ${track.info.author}\n**Duration:** ${track.info.isStream ? 'LIVE' : client.utils.formatTime(track.info.length)}\n**Source:** ${track.info.sourceName}`
+                        tr(ctx, 'longtail:music.albumTrackInfo', {
+                            artist: track.info.author,
+                            duration: track.info.isStream
+                                ? tr(ctx, 'longtail:music.live')
+                                : client.utils.formatTime(track.info.length),
+                            source: track.info.sourceName,
+                        })
                     ),
             ],
         });

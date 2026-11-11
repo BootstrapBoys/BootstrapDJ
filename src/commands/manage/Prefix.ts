@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const MAX_PIECE = 3;
 
@@ -47,6 +48,14 @@ export default class Prefix extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:manage.prefix.${key}`, variables);
+    }
+
     private reply(
         client: BootstrapClient,
         ctx: Context,
@@ -83,22 +92,17 @@ export default class Prefix extends Command {
                 return await this.reply(
                     client,
                     ctx,
-                    `The prefix for this server is \`${current}\``
+                    this.copy(ctx, 'current', { prefix: current })
                 );
             const pieces = value
                 .split(',')
                 .map(piece => piece.trim())
                 .filter(Boolean);
             if (pieces.length === 0 || pieces.some(piece => piece.length > MAX_PIECE)) {
-                return await this.reply(
-                    client,
-                    ctx,
-                    'Each prefix must be 1–3 characters; combine them with commas.',
-                    true
-                );
+                return await this.reply(client, ctx, this.copy(ctx, 'invalid'), true);
             }
             await client.db.setPrefix(guildId, value);
-            return await this.reply(client, ctx, `The prefix for this server is now \`${value}\``);
+            return await this.reply(client, ctx, this.copy(ctx, 'now', { prefix: value }));
         }
 
         if (sub === 'reset') {
@@ -106,21 +110,16 @@ export default class Prefix extends Command {
                 return await this.reply(
                     client,
                     ctx,
-                    `The prefix for this server is \`${client.config.prefix}\``
+                    this.copy(ctx, 'current', { prefix: client.config.prefix })
                 );
             await client.db.setPrefix(guildId, client.config.prefix);
             return await this.reply(
                 client,
                 ctx,
-                `The prefix for this server is now \`${client.config.prefix}\``
+                this.copy(ctx, 'now', { prefix: client.config.prefix })
             );
         }
 
-        return await this.reply(
-            client,
-            ctx,
-            'Please use `prefix set <prefix>` or `prefix reset`.',
-            true
-        );
+        return await this.reply(client, ctx, this.copy(ctx, 'usage'), true);
     }
 }

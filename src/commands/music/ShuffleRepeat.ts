@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class ShuffleRepeat extends Command {
     constructor(client: BootstrapClient) {
@@ -34,7 +35,7 @@ export default class ShuffleRepeat extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Nothing is playing right now.'),
+                        .setDescription(tr(ctx, 'longtail:music.shuffleRepeatNothingPlaying')),
                 ],
             });
         }
@@ -45,7 +46,7 @@ export default class ShuffleRepeat extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription('Shuffled the queue and enabled queue repeat.'),
+                    .setDescription(tr(ctx, 'longtail:music.shuffleRepeatDone')),
             ],
         });
     }

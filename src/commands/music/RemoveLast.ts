@@ -1,4 +1,5 @@
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 export default class RemoveLast extends Command {
     constructor(client: BootstrapClient) {
@@ -31,7 +32,10 @@ export default class RemoveLast extends Command {
         if (!player?.current || !player.queue.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('The queue is empty.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.removeLast.empty')),
                 ],
             });
         }
@@ -42,7 +46,12 @@ export default class RemoveLast extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setDescription(`Removed **${track?.info.title ?? 'track'}** from the queue.`),
+                    .setDescription(
+                        tr(ctx, 'longtail:music.removeLast.removed', {
+                            title:
+                                track?.info.title ?? tr(ctx, 'longtail:music.removeLast.unknown'),
+                        })
+                    ),
             ],
         });
     }

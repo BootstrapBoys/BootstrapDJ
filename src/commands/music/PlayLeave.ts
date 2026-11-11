@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { checkTrack, getPlayLimits } from '../../lib/PlayLimits.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
@@ -48,7 +49,7 @@ export default class PlayLeave extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Provide something to play.'),
+                        .setDescription(tr(ctx, 'longtail:music.playleave.provideQuery')),
                 ],
             });
         }
@@ -56,7 +57,10 @@ export default class PlayLeave extends Command {
         if (!res) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('No results found.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.playleave.noResults')),
                 ],
             });
         }
@@ -71,7 +75,10 @@ export default class PlayLeave extends Command {
         if (!tracks.length) {
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.red).setDescription('No tracks found.'),
+                    client
+                        .embed()
+                        .setColor(client.color.red)
+                        .setDescription(tr(ctx, 'longtail:music.playleave.noTracks')),
                 ],
             });
         }
@@ -86,7 +93,7 @@ export default class PlayLeave extends Command {
             limits.maxPlaylistTracks || client.config.maxPlaylistSize
         )) {
             const song = player.buildTrack(track, author);
-            rejection = checkTrack(player, song, author.id, limits);
+            rejection = checkTrack(player, song, author.id, limits, [], ctx.locale);
             if (rejection) break;
             player.enqueue(song, true, false);
             accepted.push(track);
@@ -97,7 +104,9 @@ export default class PlayLeave extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription(rejection ?? 'No tracks were accepted.'),
+                        .setDescription(
+                            rejection ?? tr(ctx, 'longtail:music.playleave.noAccepted')
+                        ),
                 ],
             });
         }
@@ -110,7 +119,11 @@ export default class PlayLeave extends Command {
                     .embed()
                     .setColor(client.color.main)
                     .setDescription(
-                        `Queued ${accepted.length} track${accepted.length === 1 ? '' : 's'}. I'll leave voice when the queue ends.`
+                        accepted.length === 1
+                            ? tr(ctx, 'longtail:music.playleave.queuedOne')
+                            : tr(ctx, 'longtail:music.playleave.queued', {
+                                  count: accepted.length,
+                              })
                     ),
             ],
         });

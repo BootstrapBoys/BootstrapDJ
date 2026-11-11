@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType } from 'discord.js';
 import { Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 export default class Song extends Command {
@@ -48,7 +49,7 @@ export default class Song extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('No Lavalink node is available.'),
+                            .setDescription(tr(ctx, 'longtail:music.songNoNode')),
                     ],
                 });
             }
@@ -63,7 +64,9 @@ export default class Song extends Command {
                         .embed()
                         .setColor(client.color.red)
                         .setDescription(
-                            query ? `No results for **${query}**.` : 'Nothing is playing right now.'
+                            query
+                                ? tr(ctx, 'longtail:music.songNoResults', { query })
+                                : tr(ctx, 'longtail:music.songNothingPlaying')
                         ),
                 ],
             });
@@ -77,10 +80,16 @@ export default class Song extends Command {
                     .setURL(track.info.uri ?? null)
                     .setDescription(
                         [
-                            `**Artist:** ${track.info.author}`,
-                            `**Duration:** ${track.info.isStream ? 'LIVE' : client.utils.formatTime(track.info.length)}`,
-                            `**Source:** ${track.info.sourceName}`,
-                            track.info.uri ? `**URL:** ${track.info.uri}` : '',
+                            tr(ctx, 'longtail:music.songArtist', { artist: track.info.author }),
+                            tr(ctx, 'longtail:music.songDuration', {
+                                duration: track.info.isStream
+                                    ? 'LIVE'
+                                    : client.utils.formatTime(track.info.length),
+                            }),
+                            tr(ctx, 'longtail:music.songSource', { source: track.info.sourceName }),
+                            track.info.uri
+                                ? tr(ctx, 'longtail:music.songUrl', { uri: track.info.uri })
+                                : '',
                         ]
                             .filter(Boolean)
                             .join('\n')
