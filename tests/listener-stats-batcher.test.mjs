@@ -66,3 +66,28 @@ test('repeated samples merge instead of creating duplicate rows', async () => {
         [['g1', 'u1', 120, 60]]
     );
 });
+
+test('failed listener batches are requeued for the next flush', async () => {
+    const { client, writes } = harness();
+    const original = client.db.recordListenerStatsBatch;
+    let fail = true;
+    client.db.recordListenerStatsBatch = async rows => {
+        if (fail) {
+            fail = false;
+            throw new Error('database busy');
+        }
+        writes.push(rows);
+    };
+    const batcher = new ListenerStatsBatcher();
+    batcher.add('g1', [{ userId: 'u1', seconds: 60, deafSeconds: 0 }]);
+    await batcher.flush(client);
+    assert.equal(writes.length, 0);
+    assert.equal(batcher.pendingCount(), 1, 'the failed sample remains pending');
+    await batcher.flush(client);
+    assert.equal(writes.length, 1);
+    assert.deepEqual(
+        writes[0].map(row => [row.guildId, row.userId, row.seconds]),
+        [['g1', 'u1', 60]]
+    );
+    client.db.recordListenerStatsBatch = original;
+});

@@ -19,6 +19,7 @@ const MAX_PENDING = 5_000;
 export class ListenerStatsBatcher {
     private readonly pending = new Map<string, PendingRow>();
     private timer: NodeJS.Timeout | null = null;
+    private flushInFlight: Promise<void> | null = null;
 
     public start(client: BootstrapClient): void {
         if (this.timer) return;
@@ -59,9 +60,20 @@ export class ListenerStatsBatcher {
     }
 
     public async flush(client: BootstrapClient): Promise<void> {
+        if (this.flushInFlight) return await this.flushInFlight;
         if (!this.pending.size) return;
         const rows = [...this.pending.values()];
         this.pending.clear();
-        await client.db.recordListenerStatsBatch(rows).catch(() => {});
+        const request = client.db.recordListenerStatsBatch(rows).catch(() => {
+            // A failed transaction committed nothing; keep the samples for the
+            // next minute instead of silently losing them.
+            for (const row of rows) this.add(row.guildId, [row]);
+        });
+        this.flushInFlight = request;
+        try {
+            await request;
+        } finally {
+            if (this.flushInFlight === request) this.flushInFlight = null;
+        }
     }
 }
