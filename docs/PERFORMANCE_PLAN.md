@@ -1,6 +1,6 @@
 # BootstrapDJ performance optimization plan
 
-**Status:** implemented on `dev`; pending active soak and CI verification<br>
+**Status:** implemented on `dev`; active BotTest soak pending (CI green)<br>
 **Baseline commit:** `dfd7ccb`<br>
 **Scope:** bot process, dashboard sidecar, persistence, autoplay, and runtime experiments
 
