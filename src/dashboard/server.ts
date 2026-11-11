@@ -487,7 +487,12 @@ export async function route(
 
         const userKey = readSession(req)?.id ?? 'local';
         if (!acquireAudioSlot(userKey)) {
-            sendJson(res, 429, { error: 'Only one audio stream per dashboard user is allowed' });
+            sendJson(res, 429, {
+                error:
+                    MAX_AUDIO_STREAMS_PER_USER === 1
+                        ? 'Only one audio stream per dashboard user is allowed'
+                        : `Only ${MAX_AUDIO_STREAMS_PER_USER} audio streams per dashboard user are allowed`,
+            });
             return;
         }
         publishDashboardAudio(host, guildId, acquireGuildAudio(guildId));
