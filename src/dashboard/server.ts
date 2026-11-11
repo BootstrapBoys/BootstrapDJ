@@ -31,6 +31,7 @@ import { PlayerStateCache } from './playerCache.js';
 import { PlayerEventHub } from './events.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
 import { initialState, SettingValidationError } from './state.js';
+import { maxAudioStreamsPerUser } from './limits.js';
 
 const MAX_BODY_BYTES = 64_000;
 const RATE_WINDOW_MS = 60_000;
@@ -39,7 +40,7 @@ const MUTATIONS_PER_MINUTE = 180;
 const READS_PER_MINUTE = 300;
 const ACCESS_TTL_MS = 60_000;
 const ACCESS_CACHE_MAX = 1000;
-const MAX_AUDIO_STREAMS_PER_USER = 1;
+const MAX_AUDIO_STREAMS_PER_USER = maxAudioStreamsPerUser();
 const AUTH_PATHS = new Set(['/auth/discord', '/auth/callback', '/auth/logout']);
 
 /** Per-viewer guild authorization, refreshed on a short TTL. */
