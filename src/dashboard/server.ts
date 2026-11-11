@@ -409,7 +409,13 @@ export async function route(
             sendJson(res, 429, { error: 'Too many dashboard event streams' });
             return;
         }
-        playerEvents.attach(host, guildId, readSession(req)?.id ?? 'local', res);
+        playerEvents.attach(
+            host,
+            guildId,
+            readSession(req)?.id ?? 'local',
+            res,
+            readSession(req)?.exp ?? 0
+        );
         return;
     }
 

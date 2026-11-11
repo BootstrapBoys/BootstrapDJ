@@ -6,6 +6,7 @@ import { PlayerStateCache } from './playerCache.js';
 type EventClient = {
     id: number;
     userId: string;
+    expiresAt: number;
     res: ServerResponse;
 };
 
@@ -62,13 +63,19 @@ export class PlayerEventHub {
         }
     }
 
-    public attach(host: DashboardHost, guildId: string, userId: string, res: ServerResponse): void {
+    public attach(
+        host: DashboardHost,
+        guildId: string,
+        userId: string,
+        res: ServerResponse,
+        expiresAt = 0
+    ): void {
         let clients = this.clients.get(guildId);
         if (!clients) {
             clients = new Set();
             this.clients.set(guildId, clients);
         }
-        const client: EventClient = { id: this.nextId++, userId, res };
+        const client: EventClient = { id: this.nextId++, userId, expiresAt, res };
         clients.add(client);
 
         res.writeHead(200, {
@@ -138,8 +145,12 @@ export class PlayerEventHub {
         if (!clients) return;
         for (const client of clients) {
             try {
-                if (client.res.writableEnded) {
+                if (
+                    client.res.writableEnded ||
+                    (client.expiresAt > 0 && client.expiresAt <= Date.now())
+                ) {
                     clients.delete(client);
+                    if (client.expiresAt > 0 && !client.res.writableEnded) client.res.end();
                     continue;
                 }
                 client.res.write(chunk);

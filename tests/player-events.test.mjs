@@ -113,3 +113,15 @@ test('logout closes only that user’s SSE streams', async () => {
     assert.equal(second.writableEnded, false);
     for (const client of [first, second]) client.close();
 });
+
+test('expired session streams close themselves', async () => {
+    const host = hostWithCounter();
+    const cache = new PlayerStateCache({ refreshMs: 50, staleMaxMs: 1_000 });
+    const hub = new PlayerEventHub(cache, { updateMs: 10, heartbeatMs: 10 });
+    const client = fakeResponse();
+    hub.attach(host, 'guild', 'short-session', client, Date.now() + 20);
+
+    await new Promise(resolve => setTimeout(resolve, 60));
+    assert.equal(client.writableEnded, true);
+    client.close();
+});
