@@ -1,6 +1,6 @@
 # BootstrapDJ performance optimization plan
 
-**Status:** implemented on `dev`; active BotTest soak pending (CI green)<br>
+**Status:** implemented on `dev`; 30-minute 10-player BotTest soak **PASS**; production rollout pending<br>
 **Baseline commit:** `dfd7ccb`<br>
 **Scope:** bot process, dashboard sidecar, persistence, autoplay, and runtime experiments
 
@@ -281,11 +281,11 @@ therefore requires `prisma db push` and a production DB backup before it is depl
 
 ### Verification status
 
-- `npm run build`, `npm run lint`, and `npm test` pass on `dev` with **419/419 tests** after the
-  SSE logout/expiry hardening.
-- The required active BotTest soak (10+ players, at least 30 minutes) has **not** been run in this
-  pass, so the write-count, event-loop and command-latency acceptance numbers remain open. Do not
-  treat the microbenchmark as a soak result.
+- `npm run build`, `npm run lint`, and `npm test` pass on `dev` with **423/423 tests**.
+- The required active BotTest soak (10 players, 30 minutes) **PASSED**: 120 samples, RSS growth
+  **1.13%**, heap growth **10.22%**, event-loop p99 **22.07 ms**, max **42.57 ms**, maximum queue
+  depth **47**, **0 crashes**, **0 workload failures**, and **30/30 workload commands** succeeded.
+  Artifact: `/root/BotBunTest/artifacts/soak/2026-11-11T08-20-08-276Z`.
 - Bun **1.4.4** was installed and the compatibility spike reached the database blocker described
   above. Node 24 remains the supported runtime; no Bun path is pending.
 - The sidecar/language decision remains deferred until telemetry shows the sidecar is a bottleneck.
