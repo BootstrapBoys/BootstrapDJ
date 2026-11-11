@@ -79,6 +79,24 @@ function registrationRoutes(client: BootstrapClient, userId: string): SlashRoute
     );
 }
 
+async function clearStaleGuildCommands(
+    client: BootstrapClient,
+    rest: REST,
+    userId: string
+): Promise<void> {
+    // Production registers globally. Guild-scoped commands left behind by a
+    // previous guild-mode deployment would otherwise appear twice in every
+    // Discord command picker.
+    if (client.shard && !client.isCoordinator) return;
+    for (const guildId of client.guilds.cache.keys()) {
+        const route = Routes.applicationGuildCommands(userId, guildId);
+        const existing = (await rest.get(route)) as unknown[];
+        if (!Array.isArray(existing) || !existing.length) continue;
+        await rest.put(route, { body: [] });
+        client.logger.info(`[slash] cleared ${existing.length} stale guild commands in ${guildId}`);
+    }
+}
+
 export function attachSlashPublisher(client: BootstrapClient, body: SlashBody[]): void {
     client.once(Events.ClientReady, async () => {
         const userId = client.user?.id;
@@ -103,6 +121,9 @@ export function attachSlashPublisher(client: BootstrapClient, body: SlashBody[])
         }
         try {
             const rest = new REST({ version: '10' }).setToken(client.config.token ?? '');
+            if (client.config.production === true) {
+                await clearStaleGuildCommands(client, rest, userId);
+            }
             if (client.config.production !== true && (!client.shard || client.isCoordinator)) {
                 const globalRoute = Routes.applicationCommands(userId);
                 const existing = (await rest.get(globalRoute)) as unknown[];
