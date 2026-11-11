@@ -2,9 +2,10 @@
 
 **Candidate:** `dev` at `1252b093`<br>
 **Audit date:** 2026-11-11<br>
-**Production baseline:** `main` / `/root/Bot` at `dfd7ccb`<br>
+**Production baseline:** deployed `/root/Bot` at `dfd7ccb`; `origin/main` at `b18898c7`
+(docs-only performance-plan commit ahead of production)<br>
 **Production status:** `DJBoot`, `dashboard`, `Lavalink`, and `Lavalink-Backup` online; no deploy<br>
-**Scope:** `main..dev`, 33 commits, 38 files (performance, dashboard SSE/cache, audio-stream test
+**Scope:** `main..dev`, 34 commits, 38 files (performance, dashboard SSE/cache, audio-stream test
 control, soak tooling, schema index, documentation)<br>
 **Overall result:** **pass** — source and behavioral gates pass; only the planned production
 rollout steps remain.
