@@ -12,7 +12,7 @@ export const BROWSER_SCRIPT = String.raw`
     'use strict';
 
     const TOKEN_KEY = 'bootstrapdj-dashboard-token';
-    const POLL_MS = 1000;
+    const POLL_MS = 2000;
     const VOLUME_DETENT = 5;
     const VOLUME_HOLD_MS = 1200;
     const TOAST_MS = 2500;
@@ -674,9 +674,14 @@ export const BROWSER_SCRIPT = String.raw`
         }
     }
 
+    let playerPollInFlight = false;
+
     async function pollPlayer() {
         const guildId = state.guildId;
-        if (!guildId || !state.data) return;
+        if (!guildId || !state.data || playerPollInFlight || document.visibilityState !== 'visible') {
+            return;
+        }
+        playerPollInFlight = true;
         try {
             const payload = await request('/api/player-state?guildId=' + encodeURIComponent(guildId));
             if (state.guildId !== guildId) return;
@@ -684,6 +689,8 @@ export const BROWSER_SCRIPT = String.raw`
             renderPlayer(payload);
         } catch {
             // The next tick retries; a transient 503 should not spam the UI.
+        } finally {
+            playerPollInFlight = false;
         }
     }
 
@@ -1933,6 +1940,9 @@ export const BROWSER_SCRIPT = String.raw`
     boot().catch(error => {
         find('#status').textContent = 'Error';
         notify(error.message, true);
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') void pollPlayer();
     });
     window.setInterval(pollPlayer, POLL_MS);
     window.requestAnimationFrame(animationFrame);

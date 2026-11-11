@@ -51,4 +51,7 @@ test('both dashboard pages advertise the PWA shell', () => {
         'install button belongs in the footer'
     );
     assert.match(dashboard, /navigator\.serviceWorker\.register\('\/sw\.js'\)/);
+    assert.match(dashboard, /const POLL_MS = 2000/);
+    assert.match(dashboard, /document\.visibilityState !== 'visible'/);
+    assert.match(dashboard, /document\.addEventListener\('visibilitychange'/);
 });
