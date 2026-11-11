@@ -32,8 +32,14 @@ async function main() {
     if (process.env.PRODUCTION === 'true') {
         throw new Error('refusing to soak with PRODUCTION=true');
     }
-    const guildId = process.env.SOAK_GUILD_ID;
-    if (!guildId) throw new Error('SOAK_GUILD_ID is required');
+    const workloadEnabled = process.env.SOAK_WORKLOAD !== '0';
+    const dashboardUrl = process.env.SOAK_METRICS_URL ?? 'http://127.0.0.1:8796/api/metrics';
+    const headers = process.env.SOAK_METRICS_TOKEN
+        ? { authorization: `Bearer ${process.env.SOAK_METRICS_TOKEN}` }
+        : {};
+    const config = workloadEnabled ? workloadConfig(process.env) : null;
+    const guildId = process.env.SOAK_GUILD_ID ?? config?.targets?.[0]?.guildId;
+    if (!guildId) throw new Error('SOAK_GUILD_ID or SOAK_TARGETS is required');
     if (process.env.SOAK_EXPECTED_GUILD_ID && guildId !== process.env.SOAK_EXPECTED_GUILD_ID) {
         throw new Error('SOAK_GUILD_ID does not match SOAK_EXPECTED_GUILD_ID');
     }
@@ -42,12 +48,6 @@ async function main() {
     const hours = envNumber('SOAK_HOURS', 0.1);
     const sampleMs = Math.max(5_000, envNumber('SOAK_SAMPLE_SECONDS', 30) * 1000);
     const workloadMs = Math.max(10_000, envNumber('SOAK_WORKLOAD_SECONDS', 300) * 1000);
-    const workloadEnabled = process.env.SOAK_WORKLOAD !== '0';
-    const dashboardUrl = process.env.SOAK_METRICS_URL ?? 'http://127.0.0.1:8796/api/metrics';
-    const headers = process.env.SOAK_METRICS_TOKEN
-        ? { authorization: `Bearer ${process.env.SOAK_METRICS_TOKEN}` }
-        : {};
-    const config = workloadEnabled ? workloadConfig(process.env) : null;
 
     const dir = artifactsDir();
     await mkdir(dir, { recursive: true });
