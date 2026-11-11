@@ -294,9 +294,10 @@ therefore requires `prisma db push` and a production DB backup before it is depl
 - The P2 SSE endpoint is implemented and measured below. The sidecar cache and SSE fan-out are
   active; browser transport, hidden-tab behavior, logout teardown, session expiry and backend-loss
   fallback were exercised in Chromium 145 against the isolated loopback sidecar.
-- Actual Discord OAuth login/exchange was **not** exercised: the browser test used a signed session
-  cookie with the same cookie/`EventSource` path, because no test Discord account was available.
-  This remains the one unverified browser gate; it needs one human OAuth login.
+- Real Discord OAuth login was exercised against the isolated sidecar through a temporary HTTPS
+  tunnel using the production Discord application. The signed-in account was `zebz213`
+  (`174244315302854657`, a configured owner), and the sidecar logged SSE attachments for the
+  production guild and `Zebz Testing Server`. No production process was deployed or restarted.
 
 ### 10-client polling test (2026-11-11)
 
@@ -358,9 +359,9 @@ so it validates the server hub and fan-out, not the final browser `EventSource` 
 
 ### Browser and failure acceptance (2026-11-11)
 
-The browser pass used Chromium 145 against the isolated sidecar on loopback `8796`, with a signed
-session cookie and the real dashboard page. This exercises the browser cookie and `EventSource`
-path, but not the Discord authorization-code exchange.
+The browser pass used Chromium 145 against the isolated sidecar on loopback `8796`, first with a
+signed session cookie, then with a real Discord OAuth login through a temporary HTTPS tunnel. This
+exercises both the browser cookie/`EventSource` path and the Discord authorization-code exchange.
 
 - Initial `/api/events` stream for the default guild: **OPEN**
 - Guild switch: old stream **CLOSED**, new guild stream **OPEN**
@@ -382,8 +383,8 @@ Permission matrix against the test guild:
 
 The DJ branch was exercised with a temporary `Role` row and removed afterwards. The outsider was a
 signed session for a non-member; `/api/guilds` returned an empty list and `/api/state` returned
-`403`. This is the browser/permission evidence; actual Discord OAuth remains the one open browser
-gate, and the active BotTest soak remains open.
+`403`. The real OAuth account was the configured owner `zebz213`; its sidecar log showed SSE
+attachments for both the production guild and the test guild. The active BotTest soak remains open.
 
 Neither feature changes the audio tap or Discord playback.
 
