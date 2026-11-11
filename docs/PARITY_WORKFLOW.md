@@ -12,7 +12,8 @@ reviewed and green.<br>
 - Each phase gets its own commit(s), a short result note, and the full gate:
   `npm run format`, `npm run lint`, `npm run build`, `npm test`,
   `npm run test:coverage`.
-- No production deploy and no `main` fast-forward during this workflow.
+- No production deploy and no `main` fast-forward during the phase gates. The
+  final merge/deploy is a separate explicit decision and is recorded below.
 - Never add `any`, `@ts-ignore`, or `@ts-expect-error`; strict TypeScript stays clean.
 - Preserve the existing command/queue/session/dashboard behavior unless the phase
   explicitly changes it.
@@ -98,6 +99,20 @@ reviewed and green.<br>
   no-Docker/Bun/Drizzle decision.
 - Gate: format, locale validation, lint, build, **444/444 tests**, coverage
   **76.32% lines**.
+
+### Production deployment — 2026-11-11
+
+- `dev` fast-forwarded into `main` at `4a70708d`; `main` CI green before deploy.
+- Production `/root/Bot` pulled to `4a70708d`; schema unchanged, so the boot plan
+  was `npm ci` + clean build only.
+- Database backup: `/root/BotDBBackups/20261111T185618Z` (DB, WAL and SHM).
+- `DJBoot` and `dashboard` online after restart; `Lavalink` and
+  `Lavalink-Backup` remained online and ready.
+- Dashboard control `/internal/metrics`: **200**; public `/` and `/api/state`:
+  **401** without a session.
+- Discord global command registration: **74** commands, including `language`
+  and `playlocal`.
+- No live Discord acceptance pass was run; the user explicitly waived it.
 
 ## Decision log
 
