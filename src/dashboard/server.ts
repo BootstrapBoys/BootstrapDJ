@@ -27,6 +27,7 @@ import type { DashboardHost } from './host.js';
 import { renderDashboard, renderLoginPage } from './page.js';
 import { PWA_ICONS, PWA_MANIFEST, PWA_SERVICE_WORKER } from './pwa.js';
 import { incrementCounter } from '../lib/PerformanceCounters.js';
+import { PlayerStateCache } from './playerCache.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
 import { initialState, SettingValidationError } from './state.js';
 
@@ -42,6 +43,8 @@ const AUTH_PATHS = new Set(['/auth/discord', '/auth/callback', '/auth/logout']);
 
 /** Per-viewer guild authorization, refreshed on a short TTL. */
 const accessCache = new GuildAccessCache(ACCESS_TTL_MS, ACCESS_CACHE_MAX);
+/** One player snapshot per guild, shared by all dashboard viewers. */
+const playerStateCache = new PlayerStateCache();
 
 /** Long-lived audio streams are capped per dashboard user. */
 const audioStreams = new Map<string, number>();
@@ -397,7 +400,7 @@ export async function route(
             guildDenied(res);
             return;
         }
-        const data = await host.player(guildId);
+        const data = await playerStateCache.read(host, guildId);
         if (!data.found) {
             guildDenied(res);
             return;
@@ -519,6 +522,7 @@ export async function route(
             return;
         }
         accessCache.invalidateGuild(guildId);
+        playerStateCache.invalidate(guildId);
         sendJson(res, 200, { ok: true, filters: { active: result.active } });
         return;
     }
@@ -644,6 +648,7 @@ export async function route(
             return;
         }
         const result = await host.loadPlaylist(guildId, dashboardUserId(req), name, shuffle);
+        if (result.ok) playerStateCache.invalidate(guildId);
         sendJson(res, result.ok ? 200 : (result.status ?? 400), result);
         return;
     }
@@ -664,6 +669,7 @@ export async function route(
             return;
         }
         const result = await host.play(guildId, dashboardUserId(req), bodyText(body.query));
+        if (result.ok) playerStateCache.invalidate(guildId);
         sendJson(res, result.ok ? 200 : (result.status ?? 400), result);
         return;
     }
@@ -687,6 +693,7 @@ export async function route(
             return;
         }
         accessCache.invalidateGuild(guildId);
+        playerStateCache.invalidate(guildId);
         const updated = await host.player(guildId);
         sendJson(res, 200, { ok: true, player: updated.player });
         return;
