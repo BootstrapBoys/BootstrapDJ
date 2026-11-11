@@ -675,6 +675,8 @@ export const BROWSER_SCRIPT = String.raw`
     }
 
     let playerPollInFlight = false;
+    let eventSource = null;
+    let fallbackPollTimer = 0;
 
     async function pollPlayer() {
         const guildId = state.guildId;
@@ -692,6 +694,53 @@ export const BROWSER_SCRIPT = String.raw`
         } finally {
             playerPollInFlight = false;
         }
+    }
+
+    function stopLiveUpdates() {
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+        if (fallbackPollTimer) {
+            window.clearInterval(fallbackPollTimer);
+            fallbackPollTimer = 0;
+        }
+    }
+
+    function startFallbackPolling() {
+        if (fallbackPollTimer || !state.guildId) return;
+        fallbackPollTimer = window.setInterval(pollPlayer, POLL_MS);
+    }
+
+    function startLiveUpdates() {
+        stopLiveUpdates();
+        if (!state.guildId || document.visibilityState !== 'visible') return;
+
+        const oauth = document.body.dataset.oauth === '1';
+        if (!oauth || !('EventSource' in window)) {
+            startFallbackPolling();
+            return;
+        }
+
+        const guildId = state.guildId;
+        const source = new EventSource('/api/events?guildId=' + encodeURIComponent(guildId));
+        eventSource = source;
+        source.onmessage = event => {
+            if (state.guildId !== guildId || !state.data) return;
+            try {
+                const payload = JSON.parse(event.data);
+                state.data.player = payload.player;
+                renderPlayer(payload);
+            } catch {
+                // Ignore a malformed event and wait for the next snapshot.
+            }
+        };
+        source.onerror = () => {
+            if (eventSource !== source) return;
+            source.close();
+            eventSource = null;
+            startFallbackPolling();
+        };
     }
 
     async function boot() {
@@ -717,11 +766,13 @@ export const BROWSER_SCRIPT = String.raw`
         picker.onchange = () => {
             state.guildId = picker.value;
             stopAudio();
+            stopLiveUpdates();
             applyAccess();
-            void loadState();
+            void loadState().then(() => startLiveUpdates());
         };
         applyAccess();
         await loadState();
+        startLiveUpdates();
     }
 
     // ---- actions ---------------------------------------------------------
@@ -1942,9 +1993,14 @@ export const BROWSER_SCRIPT = String.raw`
         notify(error.message, true);
     });
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') void pollPlayer();
+        if (document.visibilityState === 'visible') {
+            startLiveUpdates();
+            void pollPlayer();
+        } else {
+            stopLiveUpdates();
+        }
     });
-    window.setInterval(pollPlayer, POLL_MS);
+    window.addEventListener('beforeunload', stopLiveUpdates);
     window.requestAnimationFrame(animationFrame);
 })();
 `;

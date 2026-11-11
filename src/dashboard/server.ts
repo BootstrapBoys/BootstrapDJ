@@ -28,6 +28,7 @@ import { renderDashboard, renderLoginPage } from './page.js';
 import { PWA_ICONS, PWA_MANIFEST, PWA_SERVICE_WORKER } from './pwa.js';
 import { incrementCounter } from '../lib/PerformanceCounters.js';
 import { PlayerStateCache } from './playerCache.js';
+import { PlayerEventHub } from './events.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
 import { initialState, SettingValidationError } from './state.js';
 
@@ -45,6 +46,7 @@ const AUTH_PATHS = new Set(['/auth/discord', '/auth/callback', '/auth/logout']);
 const accessCache = new GuildAccessCache(ACCESS_TTL_MS, ACCESS_CACHE_MAX);
 /** One player snapshot per guild, shared by all dashboard viewers. */
 const playerStateCache = new PlayerStateCache();
+const playerEvents = new PlayerEventHub(playerStateCache);
 
 /** Long-lived audio streams are capped per dashboard user. */
 const audioStreams = new Map<string, number>();
@@ -391,6 +393,21 @@ export async function route(
 
     if (method === 'GET' && path === '/api/metrics') {
         sendJson(res, 200, await host.metrics());
+        return;
+    }
+
+    if (method === 'GET' && path === '/api/events') {
+        const guildId = url.searchParams.get('guildId') ?? '';
+        const access = await resolveAccess(host, req, guildId, true);
+        if (!access.member) {
+            guildDenied(res);
+            return;
+        }
+        if (!playerEvents.canAttach(guildId)) {
+            sendJson(res, 429, { error: 'Too many dashboard event streams' });
+            return;
+        }
+        playerEvents.attach(host, guildId, readSession(req)?.id ?? 'local', res);
         return;
     }
 

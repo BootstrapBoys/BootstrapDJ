@@ -54,4 +54,6 @@ test('both dashboard pages advertise the PWA shell', () => {
     assert.match(dashboard, /const POLL_MS = 2000/);
     assert.match(dashboard, /document\.visibilityState !== 'visible'/);
     assert.match(dashboard, /document\.addEventListener\('visibilitychange'/);
+    assert.match(dashboard, /new EventSource\('\/api\/events/);
+    assert.match(dashboard, /startLiveUpdates/);
 });
