@@ -81,5 +81,27 @@
         "loaded": "Загружено **{{name}}**: {{count}} треков{{skipped}}.",
         "unknownAction": "Неизвестное действие с коллекцией.",
         "provideName": "Укажи название коллекции."
+    },
+    "settings": {
+        "guildTitle": "Настройки сервера",
+        "autoplayTitle": "Настройки автовоспроизведения",
+        "sourceEnv": "по умолчанию из окружения",
+        "none": "нет",
+        "defaultSuffix": " *(по умолчанию)*",
+        "sourceLabel": "источник",
+        "seedsLabel": "сиды",
+        "legacyLabel": "устаревшее значение",
+        "autoplayRemoved": "Переопределение автовоспроизведения удалено.",
+        "sourceInvalid": "Источник должен быть `chart`, `curated` или `legacy`.",
+        "sourceSet": "Источник автовоспроизведения установлен: **{{source}}**.",
+        "provideSeed": "Укажи хотя бы один сид.",
+        "seedsSet": "Сиды автовоспроизведения установлены: **{{seeds}}**.",
+        "resetOne": "Сброшена {{count}} настройка сервера.",
+        "resetMany": "Сброшено {{count}} настроек сервера.",
+        "unknownSetting": "Неизвестная настройка. Используй одну из: {{keys}}.",
+        "valueTooLong": "Это значение слишком длинное.",
+        "ephemeralInvalid": "`ephemeral` должен быть `true` (приватно) или `false` (публично).",
+        "languageChoices": "Выбери один из вариантов: {{languages}}.",
+        "setValue": "Для **{{key}}** установлено значение `{{value}}`."
     }
 }

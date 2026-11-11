@@ -81,5 +81,27 @@
         "loaded": "**{{name}}** mit {{count}} Songs geladen{{skipped}}.",
         "unknownAction": "Unbekannte Sammlungsaktion.",
         "provideName": "Gib einen Sammlungsnamen an."
+    },
+    "settings": {
+        "guildTitle": "Servereinstellungen",
+        "autoplayTitle": "Autoplay-Einstellungen",
+        "sourceEnv": "Umgebungsstandard",
+        "none": "keine",
+        "defaultSuffix": " *(Standard)*",
+        "sourceLabel": "Quelle",
+        "seedsLabel": "Startwerte",
+        "legacyLabel": "Legacy-Wert",
+        "autoplayRemoved": "Autoplay-\u00dcberschreibung entfernt.",
+        "sourceInvalid": "Quelle muss `chart`, `curated` oder `legacy` sein.",
+        "sourceSet": "Autoplay-Quelle auf **{{source}}** gesetzt.",
+        "provideSeed": "Gib mindestens einen Startwert an.",
+        "seedsSet": "Autoplay-Startwerte auf **{{seeds}}** gesetzt.",
+        "resetOne": "{{count}} Servereinstellung zur\u00fcckgesetzt.",
+        "resetMany": "{{count}} Servereinstellungen zur\u00fcckgesetzt.",
+        "unknownSetting": "Unbekannte Einstellung. Nutze eine der folgenden: {{keys}}.",
+        "valueTooLong": "Dieser Wert ist zu lang.",
+        "ephemeralInvalid": "`ephemeral` muss `true` (privat) oder `false` (\u00f6ffentlich) sein.",
+        "languageChoices": "W\u00e4hle eine von: {{languages}}.",
+        "setValue": "**{{key}}** auf `{{value}}` gesetzt."
     }
 }

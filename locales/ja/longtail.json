@@ -81,5 +81,27 @@
         "loaded": "**{{name}}** を {{count}} 曲で読み込みました{{skipped}}。",
         "unknownAction": "不明なコレクション操作です。",
         "provideName": "コレクション名を指定してください。"
+    },
+    "settings": {
+        "guildTitle": "サーバー設定",
+        "autoplayTitle": "自動再生設定",
+        "sourceEnv": "環境のデフォルト",
+        "none": "なし",
+        "defaultSuffix": " *(デフォルト)*",
+        "sourceLabel": "ソース",
+        "seedsLabel": "シード",
+        "legacyLabel": "レガシー値",
+        "autoplayRemoved": "自動再生の上書きを削除しました。",
+        "sourceInvalid": "ソースは `chart`、`curated`、`legacy` のいずれかである必要があります。",
+        "sourceSet": "自動再生のソースを **{{source}}** に設定しました。",
+        "provideSeed": "シードを少なくとも 1 つ指定してください。",
+        "seedsSet": "自動再生のシードを **{{seeds}}** に設定しました。",
+        "resetOne": "サーバー設定を {{count}} 件リセットしました。",
+        "resetMany": "サーバー設定を {{count}} 件リセットしました。",
+        "unknownSetting": "不明な設定です。次のいずれかを使用してください: {{keys}}。",
+        "valueTooLong": "その値は長すぎます。",
+        "ephemeralInvalid": "`ephemeral` は `true`（非公開）または `false`（公開）である必要があります。",
+        "languageChoices": "次のいずれかを選択してください: {{languages}}。",
+        "setValue": "**{{key}}** を `{{value}}` に設定しました。"
     }
 }

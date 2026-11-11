@@ -81,5 +81,27 @@
         "loaded": "Carregou **{{name}}** com {{count}} faixas{{skipped}}.",
         "unknownAction": "Ação de playlist desconhecida.",
         "provideName": "Informe o nome da playlist."
+    },
+    "settings": {
+        "guildTitle": "Configurações do servidor",
+        "autoplayTitle": "Configurações de reprodução automática",
+        "sourceEnv": "padrão do ambiente",
+        "none": "nenhum",
+        "defaultSuffix": " *(padrão)*",
+        "sourceLabel": "origem",
+        "seedsLabel": "sementes",
+        "legacyLabel": "valor legado",
+        "autoplayRemoved": "Substituição da reprodução automática removida.",
+        "sourceInvalid": "A origem deve ser `chart`, `curated` ou `legacy`.",
+        "sourceSet": "Origem da reprodução automática definida como **{{source}}**.",
+        "provideSeed": "Informe pelo menos uma semente.",
+        "seedsSet": "Sementes da reprodução automática definidas como **{{seeds}}**.",
+        "resetOne": "Redefiniu {{count}} configuração do servidor.",
+        "resetMany": "Redefiniu {{count}} configurações do servidor.",
+        "unknownSetting": "Configuração desconhecida. Use uma destas: {{keys}}.",
+        "valueTooLong": "Esse valor é longo demais.",
+        "ephemeralInvalid": "`ephemeral` deve ser `true` (privado) ou `false` (público).",
+        "languageChoices": "Escolha um destes idiomas: {{languages}}.",
+        "setValue": "Definiu **{{key}}** como `{{value}}`."
     }
 }

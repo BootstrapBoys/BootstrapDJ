@@ -81,5 +81,27 @@
         "loaded": "**{{name}}**에서 {{count}}곡을 불러왔습니다{{skipped}}.",
         "unknownAction": "알 수 없는 컬렉션 작업입니다.",
         "provideName": "컬렉션 이름을 입력해 주세요."
+    },
+    "settings": {
+        "guildTitle": "서버 설정",
+        "autoplayTitle": "자동재생 설정",
+        "sourceEnv": "환경 기본값",
+        "none": "없음",
+        "defaultSuffix": " *(기본값)*",
+        "sourceLabel": "소스",
+        "seedsLabel": "시드",
+        "legacyLabel": "레거시 값",
+        "autoplayRemoved": "자동재생 재정의를 제거했습니다.",
+        "sourceInvalid": "소스는 `chart`, `curated`, `legacy` 중 하나여야 합니다.",
+        "sourceSet": "자동재생 소스를 **{{source}}**로 설정했습니다.",
+        "provideSeed": "시드를 하나 이상 입력해 주세요.",
+        "seedsSet": "자동재생 시드를 **{{seeds}}**로 설정했습니다.",
+        "resetOne": "서버 설정 {{count}}개를 초기화했습니다.",
+        "resetMany": "서버 설정 {{count}}개를 초기화했습니다.",
+        "unknownSetting": "알 수 없는 설정입니다. 다음 중 하나를 사용하세요: {{keys}}.",
+        "valueTooLong": "값이 너무 깁니다.",
+        "ephemeralInvalid": "`ephemeral` 값은 `true`(비공개) 또는 `false`(공개)여야 합니다.",
+        "languageChoices": "다음 중 하나를 선택하세요: {{languages}}.",
+        "setValue": "**{{key}}**를 `{{value}}`로 설정했습니다."
     }
 }

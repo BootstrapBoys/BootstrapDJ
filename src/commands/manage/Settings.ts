@@ -8,6 +8,7 @@ import {
     SUPPORTED_LANGUAGES,
 } from '../../lib/i18n.js';
 import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../../lib/SettingsSchema.js';
+import { tr } from '../../lib/i18nContext.js';
 
 type Field = { key: string; value: string; reset: boolean };
 
@@ -77,6 +78,14 @@ export default class Settings extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:settings.${key}`, variables);
+    }
+
     private async overview(
         client: BootstrapClient,
         ctx: Context,
@@ -88,18 +97,18 @@ export default class Settings extends Command {
             .filter(([name]) => name !== 'autoplaysource' && name !== 'autoplayseeds')
             .map(([name, fallback]) => {
                 const current = values[name] ?? fallback;
-                return `**${name}**: \`${current}\`${values[name] ? '' : ' *(default)*'}`;
+                return `**${name}**: \`${current}\`${values[name] ? '' : this.copy(ctx, 'defaultSuffix')}`;
             });
         lines.push(
-            `**autoplaysource**: \`${autoplay?.source ?? 'environment default'}\``,
-            `**autoplayseeds**: \`${autoplay?.seeds || client.config.autoplaySeeds.join(', ') || 'none'}\``
+            `**autoplaysource**: \`${autoplay?.source ?? this.copy(ctx, 'sourceEnv')}\``,
+            `**autoplayseeds**: \`${autoplay?.seeds || client.config.autoplaySeeds.join(', ') || this.copy(ctx, 'none')}\``
         );
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Guild settings')
+                    .setTitle(this.copy(ctx, 'guildTitle'))
                     .setDescription(lines.join('\n')),
             ],
         });
@@ -114,17 +123,18 @@ export default class Settings extends Command {
     ): Promise<unknown> {
         const current = await client.db.getAutoplaySetting(guildId).catch(() => null);
         if (!value) {
-            const source = current?.source ?? 'environment default';
-            const seeds = current?.seeds || client.config.autoplaySeeds.join(', ') || 'none';
+            const source = current?.source ?? this.copy(ctx, 'sourceEnv');
+            const seeds =
+                current?.seeds || client.config.autoplaySeeds.join(', ') || this.copy(ctx, 'none');
             return await ctx.sendMessage({
                 embeds: [
                     client
                         .embed()
                         .setColor(client.color.main)
-                        .setTitle('Autoplay settings')
+                        .setTitle(this.copy(ctx, 'autoplayTitle'))
                         .setDescription(
-                            `**source**: \`${source}\`\n**seeds**: \`${seeds}\`\n**legacy value**: \`${
-                                client.config.autoplaySeed || 'none'
+                            `**${this.copy(ctx, 'sourceLabel')}**: \`${source}\`\n**${this.copy(ctx, 'seedsLabel')}**: \`${seeds}\`\n**${this.copy(ctx, 'legacyLabel')}**: \`${
+                                client.config.autoplaySeed || this.copy(ctx, 'none')
                             }\``
                         ),
                 ],
@@ -138,18 +148,14 @@ export default class Settings extends Command {
                     client
                         .embed()
                         .setColor(client.color.green)
-                        .setDescription('Autoplay override removed.'),
+                        .setDescription(this.copy(ctx, 'autoplayRemoved')),
                 ],
             });
         }
 
         if (key === 'autoplaysource') {
             if (!['chart', 'curated', 'legacy'].includes(value)) {
-                return await this.fail(
-                    client,
-                    ctx,
-                    'Source must be `chart`, `curated`, or `legacy`.'
-                );
+                return await this.fail(client, ctx, this.copy(ctx, 'sourceInvalid'));
             }
             await client.db.setAutoplaySetting(guildId, {
                 source: value,
@@ -160,7 +166,7 @@ export default class Settings extends Command {
                     client
                         .embed()
                         .setColor(client.color.green)
-                        .setDescription(`Autoplay source set to **${value}**.`),
+                        .setDescription(this.copy(ctx, 'sourceSet', { source: value })),
                 ],
             });
         }
@@ -170,14 +176,14 @@ export default class Settings extends Command {
             .map(seed => seed.trim())
             .filter(Boolean)
             .slice(0, 10);
-        if (seeds.length === 0) return await this.fail(client, ctx, 'Provide at least one seed.');
+        if (seeds.length === 0) return await this.fail(client, ctx, this.copy(ctx, 'provideSeed'));
         await client.db.setAutoplaySetting(guildId, { source: 'curated', seeds: seeds.join(', ') });
         return await ctx.sendMessage({
             embeds: [
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(`Autoplay seeds set to **${seeds.join(', ')}**.`),
+                    .setDescription(this.copy(ctx, 'seedsSet', { seeds: seeds.join(', ') })),
             ],
         });
     }
@@ -195,7 +201,9 @@ export default class Settings extends Command {
                         .embed()
                         .setColor(client.color.green)
                         .setDescription(
-                            `Reset ${removed} guild setting${removed === 1 ? '' : 's'}.`
+                            this.copy(ctx, removed === 1 ? 'resetOne' : 'resetMany', {
+                                count: removed,
+                            })
                         ),
                 ],
             });
@@ -206,7 +214,7 @@ export default class Settings extends Command {
             return await this.fail(
                 client,
                 ctx,
-                `Unknown setting. Use one of: ${Object.keys(DEFAULTS).join(', ')}.`
+                this.copy(ctx, 'unknownSetting', { keys: Object.keys(DEFAULTS).join(', ') })
             );
         }
 
@@ -228,20 +236,20 @@ export default class Settings extends Command {
         }
 
         if (field.value.length > VALUE_LIMIT)
-            return await this.fail(client, ctx, 'That value is too long.');
+            return await this.fail(client, ctx, this.copy(ctx, 'valueTooLong'));
         if (key === 'ephemeral' && field.value !== 'true' && field.value !== 'false') {
-            return await this.fail(
-                client,
-                ctx,
-                '`ephemeral` must be `true` (private) or `false` (public).'
-            );
+            return await this.fail(client, ctx, this.copy(ctx, 'ephemeralInvalid'));
         }
         if (key === 'language') {
             if (!isSupportedLanguage(field.value)) {
                 return await this.fail(
                     client,
                     ctx,
-                    `Choose one of: ${SUPPORTED_LANGUAGES.map(language => languageName(language)).join(', ')}.`
+                    this.copy(ctx, 'languageChoices', {
+                        languages: SUPPORTED_LANGUAGES.map(language => languageName(language)).join(
+                            ', '
+                        ),
+                    })
                 );
             }
             field.value = resolveLanguage(field.value);
@@ -253,7 +261,7 @@ export default class Settings extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(`Set **${key}** to \`${field.value}\`.`),
+                    .setDescription(this.copy(ctx, 'setValue', { key, value: field.value })),
             ],
         });
     }

@@ -81,5 +81,27 @@
         "loaded": "Loaded **{{name}}** with {{count}} tracks{{skipped}}.",
         "unknownAction": "Unknown collection action.",
         "provideName": "Provide a collection name."
+    },
+    "settings": {
+        "guildTitle": "Guild settings",
+        "autoplayTitle": "Autoplay settings",
+        "sourceEnv": "environment default",
+        "none": "none",
+        "defaultSuffix": " *(default)*",
+        "sourceLabel": "source",
+        "seedsLabel": "seeds",
+        "legacyLabel": "legacy value",
+        "autoplayRemoved": "Autoplay override removed.",
+        "sourceInvalid": "Source must be `chart`, `curated`, or `legacy`.",
+        "sourceSet": "Autoplay source set to **{{source}}**.",
+        "provideSeed": "Provide at least one seed.",
+        "seedsSet": "Autoplay seeds set to **{{seeds}}**.",
+        "resetOne": "Reset {{count}} guild setting.",
+        "resetMany": "Reset {{count}} guild settings.",
+        "unknownSetting": "Unknown setting. Use one of: {{keys}}.",
+        "valueTooLong": "That value is too long.",
+        "ephemeralInvalid": "`ephemeral` must be `true` (private) or `false` (public).",
+        "languageChoices": "Choose one of: {{languages}}.",
+        "setValue": "Set **{{key}}** to `{{value}}`."
     }
 }

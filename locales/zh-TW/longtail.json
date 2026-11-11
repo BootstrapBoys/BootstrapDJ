@@ -81,5 +81,27 @@
         "loaded": "已載入 **{{name}}**，共 {{count}} 首曲目{{skipped}}",
         "unknownAction": "未知的集合操作。",
         "provideName": "請提供集合名稱。"
+    },
+    "settings": {
+        "guildTitle": "伺服器設定",
+        "autoplayTitle": "自動播放設定",
+        "sourceEnv": "環境預設值",
+        "none": "無",
+        "defaultSuffix": " *（預設）*",
+        "sourceLabel": "來源",
+        "seedsLabel": "種子",
+        "legacyLabel": "舊版值",
+        "autoplayRemoved": "已移除自動播放覆寫設定。",
+        "sourceInvalid": "來源必須是 `chart`、`curated` 或 `legacy`。",
+        "sourceSet": "已將自動播放來源設為 **{{source}}**。",
+        "provideSeed": "請提供至少一個種子。",
+        "seedsSet": "已將自動播放種子設為 **{{seeds}}**。",
+        "resetOne": "已重設 {{count}} 項伺服器設定。",
+        "resetMany": "已重設 {{count}} 項伺服器設定。",
+        "unknownSetting": "未知的設定。請使用下列其中一項：{{keys}}。",
+        "valueTooLong": "該值過長。",
+        "ephemeralInvalid": "`ephemeral` 必須是 `true`（私人）或 `false`（公開）。",
+        "languageChoices": "請選擇下列其中一種：{{languages}}。",
+        "setValue": "已將 **{{key}}** 設為 `{{value}}`。"
     }
 }

@@ -81,5 +81,27 @@
         "loaded": "Cargada **{{name}}** con {{count}} pistas{{skipped}}.",
         "unknownAction": "Acción de colección desconocida.",
         "provideName": "Indica el nombre de una colección."
+    },
+    "settings": {
+        "guildTitle": "Ajustes del servidor",
+        "autoplayTitle": "Ajustes de reproducción automática",
+        "sourceEnv": "predeterminado del entorno",
+        "none": "ninguno",
+        "defaultSuffix": " *(predeterminado)*",
+        "sourceLabel": "fuente",
+        "seedsLabel": "semillas",
+        "legacyLabel": "valor heredado",
+        "autoplayRemoved": "Se ha eliminado la configuración de reproducción automática.",
+        "sourceInvalid": "La fuente debe ser `chart`, `curated` o `legacy`.",
+        "sourceSet": "Fuente de reproducción automática establecida en **{{source}}**.",
+        "provideSeed": "Indica al menos una semilla.",
+        "seedsSet": "Semillas de reproducción automática establecidas en **{{seeds}}**.",
+        "resetOne": "Se ha restablecido {{count}} ajuste del servidor.",
+        "resetMany": "Se han restablecido {{count}} ajustes del servidor.",
+        "unknownSetting": "Ajuste desconocido. Usa uno de: {{keys}}.",
+        "valueTooLong": "Ese valor es demasiado largo.",
+        "ephemeralInvalid": "`ephemeral` debe ser `true` (privado) o `false` (público).",
+        "languageChoices": "Elige uno de: {{languages}}.",
+        "setValue": "**{{key}}** establecido en `{{value}}`."
     }
 }
