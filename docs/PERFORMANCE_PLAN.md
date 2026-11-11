@@ -266,13 +266,19 @@ therefore requires `prisma db push` and a production DB backup before it is depl
 
 ### Verification status
 
-- `npm run build`, `npm run lint`, `npm run format`, and `npm test` pass on `dev` at the last
-  local gate; the full test count is **412**.
+- `npm run build`, `npm run lint`, and `npm test` pass on `dev`; tracked files pass the Prettier
+  check, and CI run `42964322403` passed format, lint, build and coverage with **412/412 tests**.
+  The only local format warning was the untracked `BOT-TAP2-HANDOFF-2026-11-10.md`, which is not
+  part of the commit.
 - The required active BotTest soak (10+ players, at least 30 minutes) has **not** been run in this
   pass, so the write-count, event-loop and command-latency acceptance numbers remain open. Do not
   treat the microbenchmark as a soak result.
 - No Bun runtime is installed on the build host, so the P3 Bun spike is a documented deferral, not
-  a completed comparison. No runtime or language change is being made.
+  a completed comparison. Node 24 remains the supported runtime; a language or runtime rewrite is
+  not justified by the current evidence.
+- The sidecar/language decision remains deferred until telemetry shows the sidecar is a bottleneck.
+  No active-node cache was added: the resolver is an in-memory connected-node sort, and caching it
+  would introduce a stale-node failure mode without a measured hot path.
 - The P2 SSE transport option is not implemented; the low-risk polling option was selected. A
   multi-viewer request-count test remains pending.
 
