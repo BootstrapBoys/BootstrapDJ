@@ -281,10 +281,8 @@ therefore requires `prisma db push` and a production DB backup before it is depl
 
 ### Verification status
 
-- `npm run build`, `npm run lint`, and `npm test` pass on `dev`; tracked files pass the Prettier
-  check, and CI run `42964322403` passed format, lint, build and coverage with **412/412 tests**.
-  The only local format warning was the untracked `BOT-TAP2-HANDOFF-2026-11-10.md`, which is not
-  part of the commit.
+- `npm run build`, `npm run lint`, and `npm test` pass on `dev` with **419/419 tests** after the
+  SSE logout/expiry hardening.
 - The required active BotTest soak (10+ players, at least 30 minutes) has **not** been run in this
   pass, so the write-count, event-loop and command-latency acceptance numbers remain open. Do not
   treat the microbenchmark as a soak result.
@@ -294,7 +292,11 @@ therefore requires `prisma db push` and a production DB backup before it is depl
   No active-node cache was added: the resolver is an in-memory connected-node sort, and caching it
   would introduce a stale-node failure mode without a measured hot path.
 - The P2 SSE endpoint is implemented and measured below. The sidecar cache and SSE fan-out are
-  active; hidden-tab behavior and the browser OAuth `EventSource` handshake remain unmeasured.
+  active; browser transport, hidden-tab behavior, logout teardown, session expiry and backend-loss
+  fallback were exercised in Chromium 145 against the isolated loopback sidecar.
+- Actual Discord OAuth login/exchange was **not** exercised: the browser test used a signed session
+  cookie with the same cookie/`EventSource` path, because no test Discord account was available.
+  This remains the one unverified browser gate; it needs one human OAuth login.
 
 ### 10-client polling test (2026-11-11)
 
@@ -353,6 +355,35 @@ Ten authenticated fetch streams subscribed to `/api/events` for 30 seconds:
 The browser uses `EventSource` only in OAuth mode because `EventSource` cannot send the token-mode
 header; token mode retains the polling fallback. This test used a token-authenticated fetch stream,
 so it validates the server hub and fan-out, not the final browser `EventSource` handshake.
+
+### Browser and failure acceptance (2026-11-11)
+
+The browser pass used Chromium 145 against the isolated sidecar on loopback `8796`, with a signed
+session cookie and the real dashboard page. This exercises the browser cookie and `EventSource`
+path, but not the Discord authorization-code exchange.
+
+- Initial `/api/events` stream for the default guild: **OPEN**
+- Guild switch: old stream **CLOSED**, new guild stream **OPEN**
+- Simulated hidden tab: open stream **CLOSED**; returning visible opened a fresh stream
+- Backend sidecar stop: open stream **CLOSED**; recovery used `/api/player-state` polling fallback
+- Logout: existing stream **CLOSED**; session and CSRF cookies cleared; handshake returned `401`
+- Session expiry: stream closed at the next heartbeat and the page redirected to the Discord
+  authorization URL; an expired-cookie handshake returned `401`
+
+Permission matrix against the test guild:
+
+| Identity | Member | Admin | Controls | Settings | Listen |
+|---|---:|---:|---:|---:|---:|
+| Owner | yes | yes | yes | yes | yes |
+| Admin (test bot in production guild) | yes | yes | yes | yes | yes |
+| DJ role (`Role` row, test bot) | yes | no | yes | no | yes |
+| Ordinary member (test bot) | yes | no | no | no | yes |
+| Outsider | no | no | denied `403` on state | no | no |
+
+The DJ branch was exercised with a temporary `Role` row and removed afterwards. The outsider was a
+signed session for a non-member; `/api/guilds` returned an empty list and `/api/state` returned
+`403`. This is the browser/permission evidence; actual Discord OAuth remains the one open browser
+gate, and the active BotTest soak remains open.
 
 Neither feature changes the audio tap or Discord playback.
 
