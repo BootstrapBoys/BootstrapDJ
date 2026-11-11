@@ -21,8 +21,8 @@ production evidence (**430 tests**, 10-player soak, dashboard/voice systems).
 
 | Area | Upstream evidence | Our state | Recommendation |
 |---|---|---|---|
-| i18n / locales | `src/structures/I18n.ts`, i18next, `locales/*` with **32 languages**, `/language` command | No i18n; English strings are hardcoded | Implement a deliberate i18n foundation; do not copy locale files blindly |
-| `/playlocal` | `src/commands/music/PlayLocal.ts` accepts an attachment, validates audio/video MIME, searches with `source: "local"` | No local-file command | Implement attachment-first, after a Lavalink source spike |
+| i18n / locales | `src/structures/I18n.ts`, i18next, `locales/*` with **32 languages**, `/language` command | **Foundation added on `dev`:** i18next, `en-US`/`en-GB`, per-guild language, `/language`, dashboard selector; command/event string migration pending | Implement a deliberate i18n foundation; do not copy locale files blindly |
+| `/playlocal` | `src/commands/music/PlayLocal.ts` accepts an attachment, validates audio/video MIME, searches with `source: "local"` | **Implemented on `dev`:** attachment-only, MIME/size validation, HTTP-source fallback proven on the current node | Use the supported node source; keep host filesystem paths out |
 | Playlist robustness | `3114105a` non-existent load/steal crashes; `7c14d1e5` null checks; playlist deletion with songs | Own playlist implementation and tests | Compare edge cases, add only real gaps |
 | Queue/player lifecycle | `925a9612` skip/stop when only current remains; `827207c4` empty-queue errors | Own queue, scheduler, and session tests | Verify semantics with our regression suite; do not port blindly |
 | Setup/song-request updates | `639b0209`, `a3276bbc`, `a5740715`, `cfba720e`: stale setup messages, null voice channel, stage channels | Own `SetupSystem` and voice-state tests | Run targeted regressions; port behavior only if our equivalent differs |

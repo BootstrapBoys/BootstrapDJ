@@ -24,7 +24,7 @@ reviewed and green.<br>
 | # | Phase | Status | Gate |
 |---|---|---|---|
 | 1 | `/playlocal` Lavalink spike + command implementation | **Complete** | Real HTTP-source playback on test node **PASS**; unit/command tests; full gate |
-| 2 | i18n foundation, `language` setting, `/language`, dashboard selector, `en-US`/`en-GB` | Planned | Language switch persists; fallback/metadata tests; full gate |
+| 2 | i18n foundation, `language` setting, `/language`, dashboard selector, `en-US`/`en-GB` | **Complete** | Locale persistence and fallback tests pass; dashboard selector wired; full gate green |
 | 3 | Migrate bot command/event/error strings by domain | Planned | `en-US` key coverage; no hardcoded user-facing strings in migrated paths |
 | 4 | Targeted upstream fix audit: playlist, queue, setup, stage/voice, now-playing, lyrics | Planned | Each accepted fix has a regression test or explicit “already covered” note |
 | 5 | Translation import, key validator, dashboard localization, docs/container decision | Planned | Supported locales validated; CI green; release review |
@@ -50,6 +50,21 @@ reviewed and green.<br>
   source; it never accepts a host filesystem path.
 - Command surface: **110 commands / 73 slash**, unique names/aliases.
 - Gate: format, lint, build, **433/433 tests**, coverage **76.16% lines**.
+
+### Phase 2 evidence
+
+- `i18next` loads namespaces `common`, `commands`, `events`, `buttons`, `errors`,
+  and `dashboard` from `locales/<language>/`.
+- Initial catalogs: `en-US` (fallback) and `en-GB`; unknown locale codes resolve
+  to `en-US`.
+- Per-guild `language` setting is persisted in guild settings; `/language`
+  supports slash and prefix `set`/`reset`, and `/settings language <locale>`
+  validates the same codes.
+- Dashboard **Language** group exposes a selector backed by the same codes.
+- Locale resolution happens before command execution for both slash and prefix
+  contexts; responses use `ctx.t(...)`.
+- Command surface: **111 commands / 74 slash**, unique names/aliases.
+- Gate: format, lint, build, **441/441 tests**, coverage **76.36% lines**.
 
 ## Decision log
 

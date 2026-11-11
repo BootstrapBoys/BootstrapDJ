@@ -45,7 +45,7 @@
 | Phase | Scope | Size | Exit criterion |
 |---|---|---|---|
 | 0 | String inventory and key schema; map our 109 commands to namespaces; identify reused/generic errors | S | Key map and migration order approved |
-| 1 | i18next loader, fallback, `language` setting, `/language`, dashboard selector, key-coverage test | M | Switching language persists across restart and changes bot + dashboard text |
+| 1 | i18next loader, fallback, `language` setting, `/language`, dashboard selector, key-coverage test | M | Switching language persists across restart and changes bot + dashboard text **Implemented** |
 | 2 | Migrate core playback/queue/management commands and shared errors | L | Core command flows have no unlocalized user-facing strings in migrated paths |
 | 3 | Migrate events, setup/song-request, buttons, filters, owner/tools text | L | `en-US` catalog covers every migrated key; fallback works |
 | 4 | Dashboard localization and reviewed translation import | M/L | Supported locales pass key/placeholder validation and browser smoke |
@@ -106,8 +106,8 @@ proven before implementation.
 - Declare `defer`, voice/DJ/permission behavior, and Connect/Speak requirements.
 - Validate missing attachment, MIME (`audio/*`/`video/*`), size, guild, channel,
   and attachment URL; reject everything else before touching Lavalink.
-- Add the command to the command-list test; slash count becomes 73 (still below
-  the 100 cap).
+- Add the command to the command-list test; slash count becomes 74 after the
+  language command, still below the 100 cap.
 
 ### Phase 2 — playback path (M)
 
