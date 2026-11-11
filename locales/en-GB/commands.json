@@ -1,0 +1,7 @@
+{
+    "language": {
+        "description": "View or change the language for this server",
+        "language_option": "Language to use",
+        "reset_option": "Reset to the default language"
+    }
+}

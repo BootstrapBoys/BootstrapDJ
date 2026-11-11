@@ -227,6 +227,7 @@ export default class MessageCreate extends Event {
         }
 
         const ctx = new Context(message, args);
+        ctx.setLanguage(settings.language ?? this.client.config.defaultLanguage);
         ctx.deleteAfter = deleteAfterSeconds(settings);
         ctx.setArgs(args);
         void this.client.db.recordCommand(message.guildId, command.name).catch(() => {});

@@ -1,4 +1,5 @@
 import type { BootstrapClient } from '../core/index.js';
+import { isSupportedLanguage, resolveLanguage } from '../lib/i18n.js';
 import { AUTOPLAY_FIELDS, DEFAULTS, isKnownSetting } from '../lib/SettingsSchema.js';
 import { FILTERS } from './filters.js';
 import type { PlayerSnapshot } from './shardApi.js';
@@ -70,6 +71,13 @@ export function validateSetting(key: string, value: string): string {
         throw new SettingValidationError(`${key} is longer than ${MAX_VALUE_LENGTH} characters.`);
     }
     if (key === 'autoplayseeds') return normalizeSeeds(value);
+    if (key === 'language') {
+        if (value === '') return '';
+        if (!isSupportedLanguage(value)) {
+            throw new SettingValidationError('Language is not available.');
+        }
+        return resolveLanguage(value);
+    }
     if (value === '') return '';
 
     if (key === 'autoplaysource') {

@@ -140,7 +140,13 @@ export const BROWSER_SCRIPT = String.raw`
 
     // ---- settings catalogue ---------------------------------------------
 
+    const LANGUAGES = [
+        { value: 'en-US', label: 'English (United States)' },
+        { value: 'en-GB', label: 'English (United Kingdom)' },
+    ];
+
     const GROUPS = [
+        { title: 'Language', keys: ['language'] },
         {
             title: 'Playback',
             keys: [
@@ -186,6 +192,7 @@ export const BROWSER_SCRIPT = String.raw`
     ];
 
     const LABELS = {
+        language: 'Language',
         defaultvolume: 'Default volume',
         defaultautoplay: 'Default autoplay',
         defaultrepeat: 'Default repeat',
@@ -226,6 +233,8 @@ export const BROWSER_SCRIPT = String.raw`
     };
 
     const DESCRIPTIONS = {
+        language:
+            'Language used by the bot for this server. English (United States) is the fallback.',
         defaultvolume: 'Volume applied to new tracks; adaptive loudness uses it as the reference gain.',
         defaultautoplay: 'Start autoplay as soon as the queue runs out.',
         defaultrepeat: 'Loop mode for a new session: off, current track, or whole queue.',
@@ -335,7 +344,13 @@ export const BROWSER_SCRIPT = String.raw`
         box.appendChild(heading);
 
         let input;
-        if (key === 'autoplaysource') {
+        if (key === 'language') {
+            input = element('select');
+            for (const language of LANGUAGES) {
+                input.appendChild(option(language.value, language.label));
+            }
+            input.value = value || 'en-US';
+        } else if (key === 'autoplaysource') {
             input = element('select');
             for (const source of ['chart', 'curated', 'legacy']) input.appendChild(option(source, source));
             input.value = value || 'chart';

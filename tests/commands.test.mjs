@@ -84,6 +84,7 @@ test('the new feature commands are registered and keep ephemeral defaults', asyn
         'owner/Guild',
         'manage/Mappings',
         'manage/Permissions',
+        'manage/Language',
         'manage/Alias',
         'music/Backward',
         'music/EndTime',

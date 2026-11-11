@@ -161,6 +161,7 @@ export default class InteractionCreate extends Event {
         }
 
         const ctx = new Context(interaction, rawArgs, ephemeral);
+        ctx.setLanguage(settings.language ?? this.client.config.defaultLanguage);
         ctx.deleteAfter = deleteAfterSeconds(settings);
 
         if (command.defer) {

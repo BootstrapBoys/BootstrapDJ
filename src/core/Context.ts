@@ -20,6 +20,7 @@ import {
 } from 'discord.js';
 
 import type { BootstrapClient } from './index.js';
+import { DEFAULT_LANGUAGE, resolveLanguage, translate } from '../lib/i18n.js';
 
 type OutboundPayload = string | BaseMessageOptions;
 
@@ -72,6 +73,8 @@ export default class Context {
     public ephemeral: boolean;
     /** Per-guild auto-delete override in seconds; null falls back to config. */
     public deleteAfter: number | null = null;
+    /** Resolved server locale; set by the gateway adapter before command.run. */
+    public locale: string = DEFAULT_LANGUAGE;
 
     private deleteTimer: NodeJS.Timeout | null = null;
 
@@ -89,6 +92,7 @@ export default class Context {
             throw new Error('Context requires a BootstrapClient');
         }
         this.client = ctx.client;
+        this.locale = resolveLanguage(this.client.config.defaultLanguage);
         this.author = ctx instanceof Message ? ctx.author : ctx.user;
         this.channel = ctx.channel;
         this.guild = ctx.guild;
@@ -114,6 +118,16 @@ export default class Context {
 
     public get isInteraction(): boolean {
         return this.ctx instanceof ChatInputCommandInteraction;
+    }
+
+    /** Resolve a guild language before command execution. */
+    public setLanguage(language: unknown): void {
+        this.locale = resolveLanguage(language ?? this.client.config.defaultLanguage);
+    }
+
+    /** Translate user-facing copy in this context's guild language. */
+    public t(key: string, variables: Record<string, string | number> = {}): string {
+        return translate(key, this.locale, variables);
     }
 
     public setArgs(args: readonly unknown[]): void {

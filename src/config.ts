@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 
+import { DEFAULT_LANGUAGE, resolveLanguage } from './lib/i18n.js';
 import { parseFallbackNodes, toNodeOptions } from './lib/NodeConfig.js';
 import { SearchEngine } from './types.js';
 
@@ -99,6 +100,7 @@ const config = {
     botCoordinator: flag('BOT_COORDINATOR', false),
     shardCount: integer('SHARD_COUNT', 0),
     prefix: text('PREFIX', '!'),
+    defaultLanguage: resolveLanguage(text('DEFAULT_LANGUAGE', DEFAULT_LANGUAGE)),
     color: PALETTE,
     autoNode: flag('AUTO_NODE', true),
     searchEngine: text('SEARCH_ENGINE', SearchEngine.YouTube),

@@ -93,6 +93,8 @@ test('validation normalizes enums, booleans, integers and seeds', () => {
     assert.equal(validateSetting('ephemeral', 'TRUE'), 'true');
     assert.equal(validateSetting('defaultvolume', ' 80 '), '80');
     assert.equal(validateSetting('defaultvolume', ''), '');
+    assert.equal(validateSetting('language', 'en-gb'), 'en-GB');
+    assert.equal(validateSetting('language', ''), '');
     assert.equal(
         validateSetting('autoplayseeds', ' a, b, ,c, d, e, f, g, h, i, j, k '),
         'a, b, c, d, e, f, g, h, i, j'
@@ -109,6 +111,7 @@ test('out-of-range numbers and malformed enums are rejected', () => {
         ['maxtracklength', 'soon'],
         ['defaultrepeat', 'forever'],
         ['autoplaysource', 'radio'],
+        ['language', 'fr-FR'],
     ]) {
         assert.throws(() => validateSetting(key, value), SettingValidationError, `${key}=${value}`);
     }

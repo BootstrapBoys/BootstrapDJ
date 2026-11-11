@@ -1,0 +1,10 @@
+{
+    "language": {
+        "name": "English (United Kingdom)",
+        "current": "Current language: **{{language}}**.",
+        "set": "Language changed to **{{language}}**.",
+        "reset": "Language reset to **{{language}}**.",
+        "invalid": "That language is not available. Choose one of: {{languages}}.",
+        "list": "Available languages: {{languages}}."
+    }
+}

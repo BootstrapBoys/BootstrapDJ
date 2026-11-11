@@ -1,3 +1,5 @@
+import { DEFAULT_LANGUAGE } from './i18n.js';
+
 export const AUTOPLAY_FIELDS = new Set(['autoplaysource', 'autoplayseeds', 'autoplayreset']);
 
 export const DEFAULTS: Record<string, string> = {
@@ -6,6 +8,7 @@ export const DEFAULTS: Record<string, string> = {
     defaultrepeat: 'off',
     defaultshuffle: 'false',
     searchtype: 'dzsearch',
+    language: DEFAULT_LANGUAGE,
     maxqueue: '200',
     maxuserqueue: '50',
     voteskip: 'true',

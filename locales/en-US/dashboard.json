@@ -1,0 +1,6 @@
+{
+    "language": {
+        "label": "Language",
+        "description": "Language used by the bot for this server. English (United States) is the fallback."
+    }
+}
