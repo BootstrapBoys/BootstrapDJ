@@ -1,13 +1,13 @@
 # Pre-release audit report
 
-**Candidate:** `dev` at `35de1d9e`<br>
+**Candidate:** `dev` at `1252b093`<br>
 **Audit date:** 2026-11-11<br>
 **Production baseline:** `main` / `/root/Bot` at `dfd7ccb`<br>
 **Production status:** `DJBoot`, `dashboard`, `Lavalink`, and `Lavalink-Backup` online; no deploy<br>
-**Scope:** `main..dev`, 29 commits, 35 files (performance, dashboard SSE/cache, audio-stream test
+**Scope:** `main..dev`, 33 commits, 38 files (performance, dashboard SSE/cache, audio-stream test
 control, soak tooling, schema index, documentation)<br>
-**Overall result:** **conditional pass** — no remaining source blocker found; one historical
-credential finding and a required post-fix re-soak remain open.
+**Overall result:** **pass** — source and behavioral gates pass; only the planned production
+rollout steps remain.
 
 ## 1. Static and repository gates
 
@@ -95,11 +95,14 @@ Previously verified on the same performance code path:
 - SSE initial snapshot, guild switch, hidden-tab pause/resume, logout teardown, session expiry,
   backend outage fallback.
 - 10 dashboard audio streams across three players (4 + 4 + 2), 10 active tap listeners, no `429`s.
-- 10-player / 30-minute BotTest soak PASS: 120 samples, RSS growth 1.13%, heap growth 10.22%,
-  event-loop p99 22.07 ms, max 42.57 ms, max queue depth 47, 0 crashes, 30/30 workload commands.
+- 10-player / 30-minute BotTest soak **PASS** on `1252b093`: 120 samples, 10 players present in
+  every sample, 30/30 workload commands, 0 crashes, 0 workload failures, RSS growth -1.11%, heap
+  growth 9.45%, event-loop p99 22.41 ms, max 32.95 ms, max queue depth 6.
+  Artifact: `/root/BotBunTest/artifacts/soak/2026-11-11T09-47-32-981Z`. One sample showed nine
+  playing because the workload paused one player; all ten players remained present.
 
-**Required after the two fixes:** re-run the 10-player / 30-minute soak on the new candidate before
-merge. The earlier soak predates `0f4ef3f5` and `35de1d9e`; unit tests alone do not replace it.
+The post-fix soak gate is closed. The earlier soak predates `0f4ef3f5` and `35de1d9e`; this run used
+the current dashboard access-lease build.
 
 ## 6. Production configuration audit
 
@@ -113,14 +116,15 @@ merge. The earlier soak predates `0f4ef3f5` and `35de1d9e`; unit tests alone do 
 
 ## 7. Release recommendation
 
-**Do not merge/deploy yet.** Complete these gates in order:
+**Merge/deploy is eligible.** Complete these production prerequisites in order:
 
 1. ~~Rotate/revoke the historical Spotify credential~~ — resolved; app deleted and token revoked.
-2. Re-run the **10-player, 30-minute soak** on `05cee3a0` (deferred by user).
+2. ~~Re-run the **10-player, 30-minute soak** on the current candidate~~ — passed on `1252b093`.
 3. ~~Decide whether SSE permission revalidation is required~~ — implemented for SSE and audio.
 4. Remove the temporary Discord OAuth redirect (done).
 5. Create the integration branch, merge `main`, run the full gate and CI, then follow the production
-   rollout procedure in `docs/PRE_RELEASE_AUDIT_PLAN.md`.
+   rollout procedure in `docs/PRE_RELEASE_AUDIT_PLAN.md` (backup DB, `prisma db push`, restart
+   `DJBoot` + `dashboard`, verify).
 
-No source-level correctness blocker remains in the reviewed diff. The release is gated by the
-open security decision and the post-fix soak.
+No source-level correctness blocker remains in the reviewed diff. The remaining work is the planned
+production rollout and its verification.

@@ -281,11 +281,12 @@ therefore requires `prisma db push` and a production DB backup before it is depl
 
 ### Verification status
 
-- `npm run build`, `npm run lint`, and `npm test` pass on `dev` with **423/423 tests**.
-- The required active BotTest soak (10 players, 30 minutes) **PASSED**: 120 samples, RSS growth
-  **1.13%**, heap growth **10.22%**, event-loop p99 **22.07 ms**, max **42.57 ms**, maximum queue
-  depth **47**, **0 crashes**, **0 workload failures**, and **30/30 workload commands** succeeded.
-  Artifact: `/root/BotBunTest/artifacts/soak/2026-11-11T08-20-08-276Z`.
+- `npm run build`, `npm run lint`, and `npm test` pass on `dev` with **428/428 tests**.
+- The required active BotTest soak (10 players, 30 minutes) **PASSED**: 120 samples, 10 players
+  present in every sample, **30/30 workload commands**, **0 crashes**, **0 workload failures**,
+  RSS growth **-1.11%**, heap growth **9.45%**, event-loop p99 **22.41 ms**, max **32.95 ms**,
+  maximum queue depth **6**.
+  Artifact: `/root/BotBunTest/artifacts/soak/2026-11-11T09-47-32-981Z`.
 - Bun **1.4.4** was installed and the compatibility spike reached the database blocker described
   above. Node 24 remains the supported runtime; no Bun path is pending.
 - The sidecar/language decision remains deferred until telemetry shows the sidecar is a bottleneck.
@@ -384,7 +385,8 @@ Permission matrix against the test guild:
 The DJ branch was exercised with a temporary `Role` row and removed afterwards. The outsider was a
 signed session for a non-member; `/api/guilds` returned an empty list and `/api/state` returned
 `403`. The real OAuth account was the configured owner `zebz213`; its sidecar log showed SSE
-attachments for both the production guild and the test guild. The active BotTest soak remains open.
+attachments for both the production guild and the test guild. The active BotTest soak closed with a
+pass on `1252b093`.
 
 ### Ten-stream audio load test (2026-11-11)
 

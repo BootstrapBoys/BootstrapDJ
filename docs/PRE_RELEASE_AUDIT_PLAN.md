@@ -9,10 +9,11 @@ control, soak tooling and documentation<br>
 
 ## 0. What is already proven
 
-- `npm test`: **423/423**, `npm run build`, `npm run lint`, and CI green on `dev`.
-- Ten-player, 30-minute BotTest soak **PASS**: 120 samples, RSS growth **1.13%**, heap growth
-  **10.22%**, event-loop p99 **22.07 ms**, max **42.57 ms**, max queue depth **47**, zero crashes,
-  zero workload failures.
+- `npm test`: **428/428**, `npm run build`, `npm run lint`, and CI green on `dev`.
+- Ten-player, 30-minute BotTest soak **PASS** on `1252b093`: 120 samples, 10 players present every
+  sample, RSS growth **-1.11%**, heap growth **9.45%**, event-loop p99 **22.41 ms**, max **32.95
+  ms**, maximum queue depth **6**, zero crashes, zero workload failures, 30/30 commands. Artifact:
+  `/root/BotBunTest/artifacts/soak/2026-11-11T09-47-32-981Z`.
 - Ten dashboard audio streams against three players completed with no tap `429`s; server load was
   low (load average ~1.08 on four cores).
 - Real OAuth login, OAuth callback, SSE handshake, hidden-tab pause/resume, guild switch, logout,
