@@ -50,6 +50,7 @@ export function collectMetrics(client: BootstrapClient): Record<string, unknown>
         },
         resources: resourceCounts(),
         performance: performanceSnapshot(),
+        statsPending: client.listenerStats?.pendingCount?.() ?? 0,
         wsPing: client.ws.ping,
     };
 

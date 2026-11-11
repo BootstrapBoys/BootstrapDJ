@@ -50,5 +50,6 @@ export async function persistSession(db: SessionWriter, snapshot: SessionSnapsho
         paused: snapshot.paused,
     };
     incrementCounter('sessionWrites');
+    incrementCounter('sessionBytes', (payload.current?.length ?? 0) + payload.queue.length);
     await db.saveSession(payload);
 }

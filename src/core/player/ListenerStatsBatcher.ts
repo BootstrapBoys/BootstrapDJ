@@ -32,6 +32,10 @@ export class ListenerStatsBatcher {
         this.timer = null;
     }
 
+    public pendingCount(): number {
+        return this.pending.size;
+    }
+
     public add(guildId: string, rows: ListenerStatsRow[]): void {
         for (const row of rows) {
             if (!row.userId || row.seconds <= 0) continue;

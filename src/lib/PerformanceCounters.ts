@@ -6,10 +6,12 @@
  */
 export const performanceCounters = {
     sessionWrites: 0,
+    sessionBytes: 0,
     sessionWritesSkipped: 0,
     sessionErrors: 0,
     statsBatches: 0,
     statsRows: 0,
+    statsFlushMs: 0,
     statsErrors: 0,
     autoplaySearches: 0,
     autoplayCacheHits: 0,

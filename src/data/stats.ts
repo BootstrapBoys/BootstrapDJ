@@ -245,6 +245,7 @@ export class StatsStore {
         rows: Array<{ guildId: string; userId: string; seconds: number; deafSeconds: number }>
     ): Promise<void> {
         if (!rows.length) return;
+        const startedAt = Date.now();
         try {
             await this.prisma.$transaction(
                 rows.map(row =>
@@ -268,6 +269,8 @@ export class StatsStore {
         } catch (error) {
             incrementCounter('statsErrors');
             throw error;
+        } finally {
+            incrementCounter('statsFlushMs', Date.now() - startedAt);
         }
     }
 
