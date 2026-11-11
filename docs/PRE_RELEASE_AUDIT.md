@@ -40,22 +40,16 @@ occurred.
 
 ## 3. Security findings
 
-### 3.1 Historical 2021 client secret — OPEN
+### 3.1 Historical 2021 client secret — RESOLVED
 
 `gitleaks` found two matching **32-character hexadecimal `clientSecret`** values in the 2021
 `config.json` and `README.md` commits (`077f4a5302ba`, `f4bb0fea2fbb`). The files are removed from
 the current tree, and the value does **not** match any current production `.env` value. Production
 currently has no Spotify key configured.
 
-This still means a credential-like value is in public Git history. Recommended action:
-
-- Treat the old credential as exposed.
-- Rotate/revoke that Spotify application secret if the application still exists.
-- Do not rewrite Git history solely for this audit; rotation is the immediate control. A history
-  rewrite can be a separate decision.
-
-The three `curl-auth-header` findings are the upstream `youshallnotpass` placeholders in removed
-Docker files. No current release diff leaks were found.
+The credential owner confirmed the application was deleted and the token revoked. No Git history
+rewrite is needed for this audit. The three `curl-auth-header` findings are the upstream
+`youshallnotpass` placeholders in removed Docker files. No current release diff leaks were found.
 
 ### 3.2 Local `.env` — controlled
 
@@ -121,10 +115,10 @@ merge. The earlier soak predates `0f4ef3f5` and `35de1d9e`; unit tests alone do 
 
 **Do not merge/deploy yet.** Complete these gates in order:
 
-1. Rotate/revoke the historical Spotify credential if applicable; record the decision.
-2. Re-run the **10-player, 30-minute soak** on `35de1d9e`.
+1. ~~Rotate/revoke the historical Spotify credential~~ — resolved; app deleted and token revoked.
+2. Re-run the **10-player, 30-minute soak** on `35de1d9e` (deferred by user).
 3. Decide whether SSE permission revalidation is required before release.
-4. Remove the temporary Discord OAuth redirect.
+4. Remove the temporary Discord OAuth redirect (done).
 5. Create the integration branch, merge `main`, run the full gate and CI, then follow the production
    rollout procedure in `docs/PRE_RELEASE_AUDIT_PLAN.md`.
 
