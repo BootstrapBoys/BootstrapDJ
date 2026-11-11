@@ -237,14 +237,21 @@ export class StatsStore {
         guildId: string,
         rows: Array<{ userId: string; seconds: number; deafSeconds: number }>
     ): Promise<void> {
+        await this.recordListenerStatsBatch(rows.map(row => ({ guildId, ...row })));
+    }
+
+    /** One transaction for every guild's sampled listeners. */
+    public async recordListenerStatsBatch(
+        rows: Array<{ guildId: string; userId: string; seconds: number; deafSeconds: number }>
+    ): Promise<void> {
         if (!rows.length) return;
         try {
             await this.prisma.$transaction(
                 rows.map(row =>
                     this.prisma.statsListener.upsert({
-                        where: { guildId_userId: { guildId, userId: row.userId } },
+                        where: { guildId_userId: { guildId: row.guildId, userId: row.userId } },
                         create: {
-                            guildId,
+                            guildId: row.guildId,
                             userId: row.userId,
                             seconds: row.seconds,
                             deafSeconds: row.deafSeconds,

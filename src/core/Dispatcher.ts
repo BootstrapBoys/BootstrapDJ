@@ -204,20 +204,8 @@ export default class Dispatcher {
         this.player = player;
         this.node = node;
         this.nodeSession = node.sessionId;
-        this.startTimers();
+        this.client.playbackScheduler?.register(this);
         this.bindPlayerEvents();
-    }
-
-    private startTimers(): void {
-        this.timers.persist = setInterval(() => {
-            // Pause already wrote its snapshot and an idle player has nothing
-            // to save, so periodic writes would only churn the same row.
-            const saving = !this.paused && (this.current || this.queue.length);
-            if (saving) void this.persist();
-        }, 10_000);
-        this.timers.stats = setInterval(() => void this.sampleListeners(), 60_000);
-        (this.timers.persist as unknown as { unref?: () => void }).unref?.();
-        (this.timers.stats as unknown as { unref?: () => void }).unref?.();
     }
 
     /** Forward Shoukaku player events under the bot's own event names. */
@@ -336,19 +324,23 @@ export default class Dispatcher {
     }
 
     /** Count non-bot voice members once a minute for listener-time stats. */
-    private async sampleListeners(): Promise<void> {
-        if (this.paused247 || this.paused) return;
+    public listenerStatsRows(): Array<{
+        userId: string;
+        seconds: number;
+        deafSeconds: number;
+    }> {
+        if (this.paused247 || this.paused) return [];
         const guild = this.client.guilds.cache.get(this.guildId);
-        if (!guild || !this.voiceId) return;
+        if (!guild || !this.voiceId) return [];
         const channel = guild.channels.cache.get(this.voiceId);
-        if (!channel) return;
+        if (!channel) return [];
         if (
             channel.type !== ChannelType.GuildVoice &&
             channel.type !== ChannelType.GuildStageVoice
         ) {
-            return;
+            return [];
         }
-        const rows = channel.members
+        return channel.members
             .filter(member => !member.user.bot)
             .map(member => ({
                 userId: member.id,
@@ -356,6 +348,12 @@ export default class Dispatcher {
                 deafSeconds:
                     member.voice.deaf || member.voice.selfDeaf ? LISTENER_SAMPLE_SECONDS : 0,
             }));
+    }
+
+    /** Retained for direct callers; the process batcher uses listenerStatsRows(). */
+    public async sampleListeners(): Promise<void> {
+        const rows = this.listenerStatsRows();
+        if (!rows.length) return;
         await this.client.db.recordListenerStatsBulk(this.guildId, rows).catch(() => {});
     }
 
@@ -390,6 +388,7 @@ export default class Dispatcher {
     }
 
     public destroy(preserveSession: boolean = false): void {
+        this.client.playbackScheduler?.unregister(this.guildId, this);
         this.clearLookaheadRetry();
         this.engineStore?.dispose();
         this.coordinator.destroy(preserveSession);

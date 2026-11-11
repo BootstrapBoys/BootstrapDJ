@@ -40,6 +40,8 @@ function createPlugin(): BotPlugin {
                 client.logger.star('Saving playback state...');
                 const players = [...client.queue.values()];
                 await Promise.all(players.map(player => player.persist().catch(() => {})));
+                client.listenerStats?.stop();
+                await client.listenerStats?.flush(client).catch(() => {});
                 client.logger.star('Stopping plugins...');
                 await shutdownPlugins(client);
                 client.logger.star('Disconnecting from Discord...');

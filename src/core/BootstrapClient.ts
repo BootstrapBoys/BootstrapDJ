@@ -27,6 +27,8 @@ import { Utils } from '../lib/Utils.js';
 import loadPlugins from '../plugin/index.js';
 import { Command, Queue, ShoukakuClient } from './index.js';
 import Logger from './Logger.js';
+import { ListenerStatsBatcher } from './player/ListenerStatsBatcher.js';
+import { PlaybackScheduler } from './player/PlaybackScheduler.js';
 
 const CONTROL_BUTTON_IDS = new Set([
     'LOW_VOL_BUT',
@@ -52,6 +54,8 @@ export default class BootstrapClient extends Client {
     public shoukaku!: ShoukakuClient;
     public utils = Utils;
     public queue = new Queue(this);
+    public playbackScheduler = new PlaybackScheduler();
+    public listenerStats = new ListenerStatsBatcher();
     public shuttingDown = false;
     public earlCommand?: EarlCommandHandler;
     public earlRefreshSetup?: EarlSetupRefresher;
@@ -138,6 +142,7 @@ export default class BootstrapClient extends Client {
         await this.db
             .initialize()
             .catch(error => this.logger.warn(`[db] SQLite initialization failed: ${error}`));
+        this.listenerStats.start(this);
         this.startStatsMaintenance();
 
         const slashBody = await installCommands(this);
