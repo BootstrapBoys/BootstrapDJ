@@ -367,7 +367,9 @@ export async function route(
     }
 
     if (method === 'POST' && path === '/auth/logout') {
-        revokeSession(readSession(req));
+        const session = readSession(req);
+        revokeSession(session);
+        playerEvents.disconnectUser(session?.id ?? 'local');
         endSession(res);
         redirect(res, '/');
         return;

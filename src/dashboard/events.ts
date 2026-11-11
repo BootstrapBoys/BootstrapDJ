@@ -46,6 +46,22 @@ export class PlayerEventHub {
         return (this.clients.get(guildId)?.size ?? 0) < this.maxClientsPerGuild;
     }
 
+    /** Close every stream owned by a session, e.g. after logout. */
+    public disconnectUser(userId: string): void {
+        for (const [guildId, clients] of this.clients) {
+            for (const client of clients) {
+                if (client.userId !== userId) continue;
+                clients.delete(client);
+                try {
+                    client.res.end();
+                } catch {
+                    // Already disconnected.
+                }
+            }
+            if (!clients.size) this.stopTimers(guildId);
+        }
+    }
+
     public attach(host: DashboardHost, guildId: string, userId: string, res: ServerResponse): void {
         let clients = this.clients.get(guildId);
         if (!clients) {

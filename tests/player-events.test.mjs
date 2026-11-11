@@ -35,6 +35,10 @@ function fakeResponse() {
             chunks.push(String(chunk));
             return true;
         },
+        end() {
+            res.writableEnded = true;
+            close?.();
+        },
         once(event, callback) {
             if (event === 'close') close = callback;
         },
@@ -93,4 +97,19 @@ test('the hub updates once per interval, not once per client', async () => {
     assert.ok(host.calls <= 4, `upstream calls stayed bounded: ${host.calls}`);
 
     for (const client of clients) client.close();
+});
+
+test('logout closes only that user’s SSE streams', async () => {
+    const host = hostWithCounter();
+    const cache = new PlayerStateCache({ refreshMs: 50, staleMaxMs: 1_000 });
+    const hub = new PlayerEventHub(cache, { updateMs: 50, heartbeatMs: 1_000 });
+    const first = fakeResponse();
+    const second = fakeResponse();
+    hub.attach(host, 'guild', 'user-a', first);
+    hub.attach(host, 'guild', 'user-b', second);
+
+    hub.disconnectUser('user-a');
+    assert.equal(first.writableEnded, true);
+    assert.equal(second.writableEnded, false);
+    for (const client of [first, second]) client.close();
 });
