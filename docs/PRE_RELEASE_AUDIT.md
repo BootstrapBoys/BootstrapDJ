@@ -2,13 +2,13 @@
 
 **Candidate:** `dev` code at `1f4e28a9`<br>
 **Audit date:** 2026-11-11<br>
-**Production baseline:** deployed `/root/Bot` at `dfd7ccb`; `origin/main` at `b18898c7`
-(docs-only performance-plan commit ahead of production)<br>
-**Production status:** `DJBoot`, `dashboard`, `Lavalink`, and `Lavalink-Backup` online; no deploy<br>
+**Production baseline:** deployed `/root/Bot` at `e5c82580`; `origin/main` contains that code plus
+this documentation update<br>
+**Production status:** `DJBoot` (`e5c82580`), `dashboard`, `Lavalink`, and `Lavalink-Backup`
+online; deployed 2026-11-11 17:13 UTC<br>
 **Scope:** `main..dev`, 36 code commits, 38 files (performance, dashboard SSE/cache, audio-stream
 test control, soak tooling, schema index, optional cleanup, documentation)<br>
-**Overall result:** **pass** — source and behavioral gates pass; only the planned production
-rollout steps remain.
+**Overall result:** **pass** — deployed to production and verified on 2026-11-11.
 
 ## 1. Static and repository gates
 
@@ -127,5 +127,15 @@ the current dashboard access-lease build.
    rollout procedure in `docs/PRE_RELEASE_AUDIT_PLAN.md` (backup DB, `prisma db push`, restart
    `DJBoot` + `dashboard`, verify).
 
-No source-level correctness blocker remains in the reviewed diff. The remaining work is the planned
-production rollout and its verification.
+No source-level correctness blocker remains in the reviewed diff; the production deploy completed
+and passed verification.
+
+## 8. Deployment record
+
+- Deployed `e5c82580` to `/root/Bot` on **2026-11-11 17:13 UTC**.
+- Production DB backed up to `/root/BotDBBackups/20261111T171332Z` (DB, WAL, SHM).
+- Boot regenerated Prisma, ran `db push`, rebuilt, and resumed the saved session.
+- `RecentTrack` contains both `RecentTrack_guildId_id_idx` and `RecentTrack_guildId_playedAt_idx`;
+  61 rows were preserved.
+- `DJBoot`, `dashboard`, `Lavalink`, and `Lavalink-Backup` are online. The dashboard control API
+  returns 200; the public listener remains on `8795`; no Lavalink or firewall change was made.

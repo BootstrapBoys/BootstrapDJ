@@ -1,6 +1,7 @@
 # BootstrapDJ performance optimization plan
 
-**Status:** implemented on `dev`; 30-minute 10-player BotTest soak **PASS**; production rollout pending<br>
+**Status:** implemented on `main` at `e5c82580`; 30-minute 10-player BotTest soak **PASS**;
+production deployed 2026-11-11<br>
 **Baseline commit:** `dfd7ccb`<br>
 **Scope:** bot process, dashboard sidecar, persistence, autoplay, and runtime experiments
 

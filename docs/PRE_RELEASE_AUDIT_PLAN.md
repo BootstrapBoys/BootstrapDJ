@@ -46,8 +46,8 @@ control, soak tooling and documentation<br>
 **Goal:** make the reviewed commit unambiguous.
 
 - [ ] Record `dev` SHA and confirm `git status` is clean.
-- [ ] Verify `origin/main` is `b18898c7` and production `/root/Bot` is `dfd7ccb`; the only difference
-      is the documentation-only performance-plan commit.
+- [ ] Verify production `/root/Bot` is at `e5c82580`; `origin/main` contains that release code plus
+      documentation updates.
 - [ ] Confirm no test `.env`, test token, tunnel, or test route is in the working tree.
 - [ ] Archive the passing soak artifact path and the 10-stream load result.
 - [ ] Review the `main..dev` file list and commit list; classify every change as:
