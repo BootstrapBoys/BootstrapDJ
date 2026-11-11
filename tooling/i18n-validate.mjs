@@ -3,7 +3,15 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../locales');
-const REQUIRED_NAMESPACES = ['common', 'commands', 'events', 'buttons', 'errors', 'dashboard'];
+const REQUIRED_NAMESPACES = [
+    'common',
+    'commands',
+    'events',
+    'buttons',
+    'errors',
+    'dashboard',
+    'longtail',
+];
 const FALLBACK = 'en-US';
 const DESCRIPTION_LIMIT = 100;
 

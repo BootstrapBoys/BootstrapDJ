@@ -66,7 +66,15 @@ test('localized command descriptions contain every shipped locale', () => {
 
 test('every locale has the same keys in the shipped namespaces', () => {
     const root = path.resolve(process.cwd(), 'locales');
-    const namespaces = ['common', 'commands', 'events', 'buttons', 'errors', 'dashboard'];
+    const namespaces = [
+        'common',
+        'commands',
+        'events',
+        'buttons',
+        'errors',
+        'dashboard',
+        'longtail',
+    ];
     const flatten = (value, prefix = '') => {
         if (value === null || typeof value !== 'object') return [prefix];
         return Object.entries(value)

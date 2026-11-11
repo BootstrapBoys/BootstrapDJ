@@ -19,7 +19,7 @@ const AI_LOCALES = [
     'zh-CN',
     'zh-TW',
 ];
-const NAMESPACES = ['common', 'commands', 'events', 'buttons', 'errors', 'dashboard'];
+const NAMESPACES = ['common', 'commands', 'events', 'buttons', 'errors', 'dashboard', 'longtail'];
 
 test('every AI-translated locale file carries the native-review note', () => {
     for (const locale of AI_LOCALES) {

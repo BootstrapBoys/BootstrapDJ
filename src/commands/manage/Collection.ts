@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { LoadType, Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 import { getPlayLimits, queueHasRoom } from '../../lib/PlayLimits.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
@@ -133,6 +134,14 @@ export default class Collection extends Command {
         });
     }
 
+    private copy(
+        ctx: Context,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): string {
+        return tr(ctx, `longtail:collection.${key}`, variables);
+    }
+
     private note(
         client: BootstrapClient,
         ctx: Context,
@@ -216,7 +225,7 @@ export default class Collection extends Command {
     private async list(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
         const playlists = await client.db.getPlaylists(request.authorId);
         if (playlists.length === 0) {
-            return await this.note(client, ctx, 'You have no collections yet.', client.color.main);
+            return await this.note(client, ctx, this.copy(ctx, 'noCollections'), client.color.main);
         }
         const lines = playlists
             .slice(0, LIST_LIMIT)
@@ -229,7 +238,7 @@ export default class Collection extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Your collections')
+                    .setTitle(this.copy(ctx, 'listTitle'))
                     .setDescription(lines.join('\n')),
             ],
         });
@@ -242,12 +251,7 @@ export default class Collection extends Command {
     ): Promise<unknown> {
         const shares = await client.db.listCollectionShares(request.authorId);
         if (shares.length === 0) {
-            return await this.note(
-                client,
-                ctx,
-                'You have no shared collections.',
-                client.color.main
-            );
+            return await this.note(client, ctx, this.copy(ctx, 'noShares'), client.color.main);
         }
         const lines = shares.map(share => `\`${share.code}\` — **${share.name}**`);
         return await ctx.sendMessage({
@@ -255,7 +259,7 @@ export default class Collection extends Command {
                 client
                     .embed()
                     .setColor(client.color.main)
-                    .setTitle('Collection share codes')
+                    .setTitle(this.copy(ctx, 'sharesTitle'))
                     .setDescription(lines.join('\n')),
             ],
         });
@@ -266,20 +270,24 @@ export default class Collection extends Command {
         ctx: Context,
         request: Request
     ): Promise<unknown> {
-        if (!request.code) return await this.fail(client, ctx, 'Provide a share code.');
+        if (!request.code) return await this.fail(client, ctx, this.copy(ctx, 'provideShareCode'));
         const share = await client.db.getCollectionShare(request.code);
-        if (!share) return await this.fail(client, ctx, 'That share code is not valid.');
+        if (!share) return await this.fail(client, ctx, this.copy(ctx, 'invalidShareCode'));
 
         const destination = request.name || `${share.name} (imported)`;
         if (await client.db.getPLaylist(request.authorId, destination)) {
-            return await this.fail(client, ctx, 'A collection with that name already exists.');
+            return await this.fail(client, ctx, this.copy(ctx, 'nameExists'));
         }
         await client.db.createPlaylist(request.authorId, destination);
         const copied = await this.copyInto(client, request.authorId, share.name, destination);
         return await this.note(
             client,
             ctx,
-            `Imported **${share.name}** as **${destination}** (${copied} tracks).`,
+            this.copy(ctx, 'imported', {
+                source: share.name,
+                destination,
+                count: copied,
+            }),
             client.color.main
         );
     }
@@ -289,12 +297,12 @@ export default class Collection extends Command {
         ctx: Context,
         request: Request
     ): Promise<unknown> {
-        if (!request.code) return await this.fail(client, ctx, 'Provide a share code.');
+        if (!request.code) return await this.fail(client, ctx, this.copy(ctx, 'provideShareCode'));
         const removed = await client.db.deleteCollectionShare(request.authorId, request.code);
         return await this.note(
             client,
             ctx,
-            removed ? 'Share code removed.' : 'That share code is not yours.',
+            this.copy(ctx, removed ? 'shareRemoved' : 'shareNotYours'),
             removed ? client.color.green : client.color.red
         );
     }
@@ -305,16 +313,16 @@ export default class Collection extends Command {
         request: Request
     ): Promise<unknown> {
         if (request.name.length > NAME_LIMIT) {
-            return await this.fail(client, ctx, 'Collection names can be at most 50 characters.');
+            return await this.fail(client, ctx, this.copy(ctx, 'nameTooLong'));
         }
         if (await client.db.getPLaylist(request.authorId, request.name)) {
-            return await this.fail(client, ctx, 'That collection already exists.');
+            return await this.fail(client, ctx, this.copy(ctx, 'alreadyExists'));
         }
         await client.db.createPlaylist(request.authorId, request.name);
         return await this.note(
             client,
             ctx,
-            `Created collection **${request.name}**.`,
+            this.copy(ctx, 'created', { name: request.name }),
             client.color.green
         );
     }
@@ -328,18 +336,18 @@ export default class Collection extends Command {
         return await this.note(
             client,
             ctx,
-            removed ? `Deleted collection **${request.name}**.` : 'That collection does not exist.',
+            this.copy(ctx, removed ? 'deleted' : 'notExist', { name: request.name }),
             removed ? client.color.green : client.color.red
         );
     }
 
     private async save(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
         if (request.name.length > NAME_LIMIT) {
-            return await this.fail(client, ctx, 'Collection names can be at most 50 characters.');
+            return await this.fail(client, ctx, this.copy(ctx, 'nameTooLong'));
         }
         if (!ctx.guild) return;
         const player = client.queue.get(ctx.guild.id);
-        if (!player?.current) return await this.fail(client, ctx, 'Nothing is playing right now.');
+        if (!player?.current) return await this.fail(client, ctx, this.copy(ctx, 'nothingPlaying'));
 
         let added = 0;
         for (const track of [player.current, ...player.queue]) {
@@ -348,7 +356,10 @@ export default class Collection extends Command {
         return await this.note(
             client,
             ctx,
-            `Saved **${added}** track${added === 1 ? '' : 's'} to **${request.name}**.`,
+            this.copy(ctx, added === 1 ? 'savedOne' : 'savedMany', {
+                count: added,
+                name: request.name,
+            }),
             client.color.main
         );
     }
@@ -360,7 +371,7 @@ export default class Collection extends Command {
         return await this.note(
             client,
             ctx,
-            `Share code for **${request.name}**: \`${code}\`\nUse \`collection import\` with this code to copy it.`,
+            this.copy(ctx, 'shareCode', { name: request.name, code }),
             client.color.main
         );
     }
@@ -368,19 +379,27 @@ export default class Collection extends Command {
     private async view(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
         const rows = await client.db.getSong(request.authorId, request.name);
         if (rows.length === 0) {
-            return await this.note(client, ctx, `**${request.name}** is empty.`, client.color.main);
+            return await this.note(
+                client,
+                ctx,
+                this.copy(ctx, 'empty', { name: request.name }),
+                client.color.main
+            );
         }
         const lines = rows.slice(0, VIEW_LIMIT).map((row, position) => {
             try {
                 const parsed = JSON.parse(row.track) as {
                     info?: { title?: string; author?: string };
                 };
-                return `**${position + 1}.** ${parsed.info?.title ?? 'Unknown'} — ${parsed.info?.author ?? ''}`;
+                return `**${position + 1}.** ${parsed.info?.title ?? this.copy(ctx, 'unknownTrack')} — ${parsed.info?.author ?? ''}`;
             } catch {
-                return `**${position + 1}.** Unknown track`;
+                return `**${position + 1}.** ${this.copy(ctx, 'unknownTrack')}`;
             }
         });
-        const suffix = rows.length > VIEW_LIMIT ? `\n…and ${rows.length - VIEW_LIMIT} more` : '';
+        const suffix =
+            rows.length > VIEW_LIMIT
+                ? `\n${this.copy(ctx, 'more', { count: rows.length - VIEW_LIMIT })}`
+                : '';
         return await ctx.sendMessage({
             embeds: [
                 client
@@ -394,7 +413,12 @@ export default class Collection extends Command {
 
     private async clear(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
         await client.db.clearPlaylist(request.authorId, request.name);
-        return await this.note(client, ctx, `Cleared **${request.name}**.`, client.color.green);
+        return await this.note(
+            client,
+            ctx,
+            this.copy(ctx, 'cleared', { name: request.name }),
+            client.color.green
+        );
     }
 
     private async removeSong(
@@ -402,25 +426,28 @@ export default class Collection extends Command {
         ctx: Context,
         request: Request
     ): Promise<unknown> {
-        if (!request.query)
-            return await this.fail(client, ctx, 'Provide a track name or URL to remove.');
-        if (!client.queue.hasNode)
-            return await this.fail(client, ctx, 'No Lavalink node is available right now.');
+        if (!request.query) return await this.fail(client, ctx, this.copy(ctx, 'removeQuery'));
+        if (!client.queue.hasNode) return await this.fail(client, ctx, this.copy(ctx, 'noNode'));
 
         const track = client.utils.firstTrack(
             await client.queue.search(request.query, await resolveSearchEngine(client, ctx))
         );
         if (!track)
-            return await this.fail(client, ctx, `No results found for **${request.query}**.`);
+            return await this.fail(
+                client,
+                ctx,
+                this.copy(ctx, 'noResults', { query: request.query })
+            );
 
         const removed = await client.db.removeSong(request.authorId, request.name, songKey(track));
         const label = `[${track.info.title}](${track.info.uri})`;
         return await this.note(
             client,
             ctx,
-            removed
-                ? `Removed ${label} from **${request.name}**.`
-                : `${label} is not in **${request.name}**.`,
+            this.copy(ctx, removed ? 'removedTrack' : 'notInCollection', {
+                label,
+                name: request.name,
+            }),
             removed ? client.color.green : client.color.red
         );
     }
@@ -430,27 +457,26 @@ export default class Collection extends Command {
         ctx: Context,
         request: Request
     ): Promise<unknown> {
-        if (!request.index)
-            return await this.fail(client, ctx, 'Provide the 1-based track index to remove.');
+        if (!request.index) return await this.fail(client, ctx, this.copy(ctx, 'indexRequired'));
         const removed = await client.db.removeSongAt(request.authorId, request.name, request.index);
         return await this.note(
             client,
             ctx,
-            removed
-                ? `Removed track ${request.index} from **${request.name}**.`
-                : 'No track at that index.',
+            this.copy(ctx, removed ? 'removedIndex' : 'noIndex', {
+                index: request.index,
+                name: request.name,
+            }),
             removed ? client.color.green : client.color.red
         );
     }
 
     private async add(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
-        if (!request.query)
-            return await this.fail(client, ctx, 'Provide a track, search term, or playlist URL.');
+        if (!request.query) return await this.fail(client, ctx, this.copy(ctx, 'addQuery'));
         const result = await client.queue.search(
             request.query,
             await resolveSearchEngine(client, ctx)
         );
-        if (!result) return await this.fail(client, ctx, 'No results found.');
+        if (!result) return await this.fail(client, ctx, this.copy(ctx, 'noResultsPlain'));
 
         let tracks: Track[] = [];
         if (result.loadType === LoadType.PLAYLIST) tracks = result.data.tracks;
@@ -464,7 +490,10 @@ export default class Collection extends Command {
         return await this.note(
             client,
             ctx,
-            `Added ${added} track${added === 1 ? '' : 's'} to **${request.name}**.`,
+            this.copy(ctx, added === 1 ? 'addedOne' : 'addedMany', {
+                count: added,
+                name: request.name,
+            }),
             client.color.main
         );
     }
@@ -474,28 +503,35 @@ export default class Collection extends Command {
         ctx: Context,
         request: Request
     ): Promise<unknown> {
-        if (!request.target)
-            return await this.fail(client, ctx, 'Provide a target collection name.');
+        if (!request.target) return await this.fail(client, ctx, this.copy(ctx, 'targetRequired'));
         const merge = request.action === 'merge';
         if (!merge && (await client.db.getPLaylist(request.authorId, request.target))) {
-            return await this.fail(client, ctx, 'The target collection already exists.');
+            return await this.fail(client, ctx, this.copy(ctx, 'targetExists'));
         }
         if (!merge) await client.db.createPlaylist(request.authorId, request.target);
         const copied = await this.copyInto(client, request.authorId, request.name, request.target);
         if (request.action === 'rename')
             await client.db.deletePlaylist(request.authorId, request.name);
 
-        const verb = merge
-            ? 'Merged'
-            : request.action === 'rename'
-              ? 'Renamed'
-              : request.action === 'clone'
-                ? 'Cloned'
-                : 'Copied';
+        const verb = this.copy(
+            ctx,
+            merge
+                ? 'verbMerge'
+                : request.action === 'rename'
+                  ? 'verbRename'
+                  : request.action === 'clone'
+                    ? 'verbClone'
+                    : 'verbCopy'
+        );
         return await this.note(
             client,
             ctx,
-            `${verb} **${request.name}** → **${request.target}** (${copied} tracks).`,
+            this.copy(ctx, 'replicated', {
+                verb,
+                source: request.name,
+                target: request.target,
+                count: copied,
+            }),
             client.color.main
         );
     }
@@ -506,14 +542,15 @@ export default class Collection extends Command {
             !voice ||
             (voice.type !== ChannelType.GuildVoice && voice.type !== ChannelType.GuildStageVoice)
         ) {
-            return await this.fail(client, ctx, 'Join a voice channel first.');
+            return await this.fail(client, ctx, this.copy(ctx, 'joinVoice'));
         }
         const guild = ctx.guild;
         const author = ctx.author;
         if (!guild || !author) return;
 
         const rows = await client.db.getSong(request.authorId, request.name);
-        if (rows.length === 0) return await this.fail(client, ctx, 'That collection is empty.');
+        if (rows.length === 0)
+            return await this.fail(client, ctx, this.copy(ctx, 'emptyCollection'));
 
         let player = client.queue.get(guild.id);
         if (!player || player.isStale)
@@ -545,7 +582,11 @@ export default class Collection extends Command {
         return await this.note(
             client,
             ctx,
-            `Loaded **${request.name}** with ${queued.length} track${queued.length === 1 ? '' : 's'}${suffix}.`,
+            this.copy(ctx, 'loaded', {
+                name: request.name,
+                count: queued.length,
+                skipped: suffix,
+            }),
             client.color.main
         );
     }
@@ -571,7 +612,7 @@ export default class Collection extends Command {
                 break;
         }
 
-        if (!request.name) return await this.fail(client, ctx, 'Provide a collection name.');
+        if (!request.name) return await this.fail(client, ctx, this.copy(ctx, 'provideName'));
 
         switch (request.action) {
             case 'create':
@@ -585,7 +626,7 @@ export default class Collection extends Command {
         }
 
         const collection = await client.db.getPLaylist(request.authorId, request.name);
-        if (!collection) return await this.fail(client, ctx, 'That collection does not exist.');
+        if (!collection) return await this.fail(client, ctx, this.copy(ctx, 'notExist'));
 
         switch (request.action) {
             case 'share':
@@ -608,7 +649,7 @@ export default class Collection extends Command {
             case 'load':
                 return await this.load(client, ctx, request);
             default:
-                return await this.fail(client, ctx, 'Unknown collection action.');
+                return await this.fail(client, ctx, this.copy(ctx, 'unknownAction'));
         }
     }
 }

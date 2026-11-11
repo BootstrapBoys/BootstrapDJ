@@ -1,6 +1,7 @@
 import { ButtonInteraction, EmbedBuilder, StringSelectMenuInteraction } from 'discord.js';
 
 import { BootstrapClient, Dispatcher, Event } from '../../core/index.js';
+import { translate } from '../../lib/i18n.js';
 import { buttonReply } from '../../lib/SetupSystem.js';
 import { checkDj } from '../player/TrackStart.js';
 
@@ -57,6 +58,22 @@ export default class SetupButtons extends Event {
         await buttonReply(interaction, text, this.client.color.main);
     }
 
+    private async language(interaction: SetupInteraction): Promise<string> {
+        if (!this.client.db) return this.client.config?.defaultLanguage ?? 'en-US';
+        const settings = await this.client.db
+            .getGuildSettings(interaction.guildId)
+            .catch(() => ({}) as Record<string, string>);
+        return settings.language ?? this.client.config?.defaultLanguage ?? 'en-US';
+    }
+
+    private async copy(
+        interaction: SetupInteraction,
+        key: string,
+        variables: Record<string, string | number> = {}
+    ): Promise<string> {
+        return translate(`longtail:setup.${key}`, await this.language(interaction), variables);
+    }
+
     /** True when this message is a command reply, not the persisted mock. */
     private async isTrackScoped(
         interaction: SetupInteraction,
@@ -67,7 +84,7 @@ export default class SetupButtons extends Event {
         return setup?.messageId !== messageId || player.hasTrackScopedNowPlayingMessage(messageId);
     }
 
-    private nowPlayingEmbed(player: Dispatcher): EmbedBuilder | null {
+    private nowPlayingEmbed(player: Dispatcher, language: string): EmbedBuilder | null {
         const current = player.current;
         if (!current) return null;
         const icon =
@@ -78,9 +95,17 @@ export default class SetupButtons extends Event {
             : this.client.utils.formatTime(current.info.length);
         return this.client
             .embed()
-            .setAuthor({ name: 'Now Playing', iconURL: icon })
+            .setAuthor({
+                name: translate('longtail:setup.nowPlayingAuthor', language),
+                iconURL: icon,
+            })
             .setDescription(
-                `[${current.info.title}](${current.info.uri}) - ${duration} - Requested by ${current.info.requester}`
+                translate('longtail:setup.nowPlayingLine', language, {
+                    title: current.info.title,
+                    uri: current.info.uri ?? '',
+                    duration,
+                    requester: String(current.info.requester),
+                })
             )
             .setImage(current.info.artworkUrl ?? null);
     }
@@ -93,7 +118,7 @@ export default class SetupButtons extends Event {
         text: string
     ): Promise<void> {
         if (await this.isTrackScoped(interaction, player, messageId)) return;
-        const embed = this.nowPlayingEmbed(player);
+        const embed = this.nowPlayingEmbed(player, await this.language(interaction));
         if (!embed) return;
         await interaction.message
             .edit({
@@ -115,8 +140,13 @@ export default class SetupButtons extends Event {
     ): Promise<void> {
         const volume = Math.max(0, Math.min(200, player.player.volume + delta));
         void player.player.setGlobalVolume(volume).catch(() => {});
-        await this.confirm(interaction, `Volume set to ${volume}%`);
-        await this.editFeedback(interaction, player, messageId, `Volume: ${volume}%`);
+        await this.confirm(interaction, await this.copy(interaction, 'volumeSet', { volume }));
+        await this.editFeedback(
+            interaction,
+            player,
+            messageId,
+            await this.copy(interaction, 'volumeFooter', { volume })
+        );
     }
 
     private async togglePause(
@@ -124,40 +154,50 @@ export default class SetupButtons extends Event {
         player: Dispatcher,
         messageId: string
     ): Promise<void> {
-        const state = player.player.paused ? 'Resumed' : 'Paused';
+        const wasPaused = player.player.paused;
+        const state = await this.copy(interaction, wasPaused ? 'resumed' : 'paused');
         player.pause();
-        await this.confirm(interaction, `${state} the music.`);
+        await this.confirm(
+            interaction,
+            await this.copy(interaction, wasPaused ? 'resumedMusic' : 'pausedMusic')
+        );
         await this.editFeedback(
             interaction,
             player,
             messageId,
-            `${state} by ${interaction.member.displayName}`
+            await this.copy(interaction, 'stateFooter', {
+                state,
+                user: interaction.member.displayName,
+            })
         );
     }
 
     private async skip(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
         if (!player.queue.length) {
-            await this.confirm(interaction, 'There is no music to skip.');
+            await this.confirm(interaction, await this.copy(interaction, 'skipEmpty'));
             return;
         }
         player.skip();
-        await this.confirm(interaction, 'Skipped the music.');
+        await this.confirm(interaction, await this.copy(interaction, 'skipped'));
     }
 
     private async stop(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
-        const embed = this.nowPlayingEmbed(player);
+        const language = await this.language(interaction);
+        const embed = this.nowPlayingEmbed(player, language);
         player.stop();
-        await this.confirm(interaction, 'Stopped the music.');
+        await this.confirm(interaction, await this.copy(interaction, 'stopped'));
         if (!embed) return;
         await interaction.message
             .edit({
                 embeds: [
                     embed
                         .setFooter({
-                            text: `Stopped by ${interaction.member.displayName}`,
+                            text: await this.copy(interaction, 'stoppedFooter', {
+                                user: interaction.member.displayName,
+                            }),
                             iconURL: interaction.member.displayAvatarURL({}),
                         })
-                        .setDescription('Nothing playing right now')
+                        .setDescription(await this.copy(interaction, 'nothingPlaying'))
                         .setImage(this.client.config.links.img)
                         .setAuthor({
                             name: this.client.user?.username ?? 'BootstrapDJ',
@@ -176,26 +216,32 @@ export default class SetupButtons extends Event {
         const index = LOOP_MODES.indexOf(player.loop);
         const next = LOOP_MODES[(index + 1) % LOOP_MODES.length];
         player.setLoop(next);
-        await this.confirm(interaction, `Loop set to ${player.loop}.`);
+        await this.confirm(
+            interaction,
+            await this.copy(interaction, 'loopSet', { mode: player.loop })
+        );
         await this.editFeedback(
             interaction,
             player,
             messageId,
-            `Loop set to ${player.loop} by ${interaction.member.displayName}`
+            await this.copy(interaction, 'loopFooter', {
+                mode: player.loop,
+                user: interaction.member.displayName,
+            })
         );
     }
 
     private async shuffle(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
         player.setShuffle();
-        await this.confirm(interaction, 'Shuffled the queue.');
+        await this.confirm(interaction, await this.copy(interaction, 'shuffled'));
     }
 
     private async previous(interaction: SetupInteraction, player: Dispatcher): Promise<void> {
         if (!player.previous) {
-            await this.confirm(interaction, 'There is no previous track.');
+            await this.confirm(interaction, await this.copy(interaction, 'noPrevious'));
             return;
         }
-        await this.confirm(interaction, 'Playing the previous track.');
+        await this.confirm(interaction, await this.copy(interaction, 'previous'));
         player.previousTrack();
     }
 
@@ -209,26 +255,24 @@ export default class SetupButtons extends Event {
         const current = player.current;
         if (!current) return;
         if (delta < 0 && target < 0) {
-            await this.confirm(
-                interaction,
-                'You cannot rewind the music more than the length of the song.'
-            );
+            await this.confirm(interaction, await this.copy(interaction, 'rewindLimit'));
             return;
         }
         if (delta > 0 && target > current.info.length) {
-            await this.confirm(
-                interaction,
-                'You cannot forward the music more than the length of the song.'
-            );
+            await this.confirm(interaction, await this.copy(interaction, 'forwardLimit'));
             return;
         }
         player.seek(target);
-        await this.confirm(interaction, delta < 0 ? 'Rewound the music.' : 'Forwarded the music.');
+        const action = await this.copy(interaction, delta < 0 ? 'rewound' : 'forwarded');
+        await this.confirm(interaction, action);
         await this.editFeedback(
             interaction,
             player,
             messageId,
-            `${delta < 0 ? 'Rewound' : 'Forwarded'} by ${interaction.member.displayName}`
+            await this.copy(interaction, 'seekFooter', {
+                state: action,
+                user: interaction.member.displayName,
+            })
         );
     }
 
@@ -239,10 +283,7 @@ export default class SetupButtons extends Event {
             await interaction.deferReply({ ephemeral: true }).catch(() => {});
         }
         if (!interaction.member.voice.channel) {
-            return await this.deny(
-                interaction,
-                'You are not connected to a voice channel to use this button.'
-            );
+            return await this.deny(interaction, await this.copy(interaction, 'noVoice'));
         }
 
         const botMember = interaction.guild.members.me;
@@ -252,25 +293,24 @@ export default class SetupButtons extends Event {
         ) {
             return await this.deny(
                 interaction,
-                `You are not connected to ${botMember.voice.channel} to use these buttons.`
+                await this.copy(interaction, 'wrongVoice', {
+                    channel: String(botMember.voice.channel),
+                })
             );
         }
 
         const player = this.client.queue.get(interaction.guildId);
         if (!player?.current) {
-            return await this.deny(interaction, 'There is no music playing in this server.');
+            return await this.deny(interaction, await this.copy(interaction, 'noPlaying'));
         }
         if (!interaction.isButton()) return;
         if (!(await checkDj(this.client, interaction))) {
-            return await this.deny(
-                interaction,
-                'You need to have the DJ role to use this command.'
-            );
+            return await this.deny(interaction, await this.copy(interaction, 'djRequired'));
         }
 
         const action = this.actions[interaction.customId];
         if (!action) {
-            await this.confirm(interaction, 'This button is not available.');
+            await this.confirm(interaction, await this.copy(interaction, 'buttonUnavailable'));
             return;
         }
         await action(interaction, player, interaction.message.id);

@@ -7,7 +7,15 @@ import i18next, { type Resource } from 'i18next';
 /** Canonical locale used when a guild has no valid override. */
 export const DEFAULT_LANGUAGE = 'en-US';
 
-const NAMESPACES = ['common', 'commands', 'events', 'buttons', 'errors', 'dashboard'] as const;
+const NAMESPACES = [
+    'common',
+    'commands',
+    'events',
+    'buttons',
+    'errors',
+    'dashboard',
+    'longtail',
+] as const;
 /** Resolve from the module, not the shell cwd; pm2 and tests start differently. */
 const LOCALES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../locales');
 
