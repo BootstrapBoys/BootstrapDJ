@@ -1,12 +1,12 @@
 # Pre-release audit report
 
-**Candidate:** `dev` at `1252b093`<br>
+**Candidate:** `dev` code at `1f4e28a9`<br>
 **Audit date:** 2026-11-11<br>
 **Production baseline:** deployed `/root/Bot` at `dfd7ccb`; `origin/main` at `b18898c7`
 (docs-only performance-plan commit ahead of production)<br>
 **Production status:** `DJBoot`, `dashboard`, `Lavalink`, and `Lavalink-Backup` online; no deploy<br>
-**Scope:** `main..dev`, 34 commits, 38 files (performance, dashboard SSE/cache, audio-stream test
-control, soak tooling, schema index, documentation)<br>
+**Scope:** `main..dev`, 36 code commits, 38 files (performance, dashboard SSE/cache, audio-stream
+test control, soak tooling, schema index, optional cleanup, documentation)<br>
 **Overall result:** **pass** — source and behavioral gates pass; only the planned production
 rollout steps remain.
 
@@ -19,7 +19,7 @@ rollout steps remain.
 | `npm run lint` | PASS | Oxlint exit 0 |
 | `npm run build` | PASS | `tsc --project tsconfig.json` exit 0 |
 | `npm test` | PASS | **428/428** |
-| Coverage | PASS (target 75% lines) | **76.11% lines**, 80.50% functions, 70.41% branches |
+| Coverage | PASS (target 75% lines) | **76.10% lines**, 80.45% functions, 70.44% branches |
 | `npm audit --omit=dev` | PASS | 0 production vulnerabilities (276 dependencies) |
 | `git diff --check` | PASS | no whitespace errors |
 | Tracked `.env`/DB check | PASS | no `.env`, SQLite DB, token or secret file tracked |
@@ -78,13 +78,13 @@ The local ignored `.env` is not tracked, but was group-readable. Permissions wer
    a 60-second lease. Membership loss closes the SSE response or destroys the audio response;
    transient access-check failures keep the stream alive. Tests cover explicit revocation and
    transient errors. Commit `05cee3a0`.
+4. **Audio-cap rejection copy** — the 429 response now reports the configured stream limit instead
+   of always saying “only one”. Commit `7c24f241`.
+5. **Dead playback timer fields** — removed the unused `persist`/`stats` intervals and their
+   teardown calls; scheduling remains process-centralized. Commit `1f4e28a9`.
 
 ### Remaining minor / decision items
 
-- Audio-cap rejection text still says “Only one audio stream per dashboard user” even when the
-  test-only limit is greater than one. Cosmetic; fix when touching that route.
-- `PlaybackTimers` still carries unused `persist`/`stats` fields after scheduling moved to the
-  process scheduler. Cleanup only; no behavior impact.
 - Local audit Node was 22; CI release runtime is Node 24. CI is the authoritative runtime gate.
 
 ## 5. Behavioral evidence
