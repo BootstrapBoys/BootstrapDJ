@@ -295,8 +295,8 @@ therefore requires `prisma db push` and a production DB backup before it is depl
   No active-node cache was added: the resolver is an in-memory connected-node sort, and caching it
   would introduce a stale-node failure mode without a measured hot path.
 - The P2 SSE transport option is not implemented; the low-risk polling option was selected. The
-  multi-viewer polling count is now measured (below); SSE fan-out and hidden-tab behavior remain
-  unmeasured.
+  sidecar's uncached fan-out and the multi-viewer polling count are now measured (below); SSE
+  fan-out and hidden-tab behavior remain unmeasured.
 
 ### 10-client polling test (2026-11-11)
 
@@ -314,6 +314,22 @@ stayed alive. It was embedded dashboard mode, not the production sidecar topolog
 This validates the polling path and the counter. It does not validate OAuth permissions, audio
 Listen concurrency (token mode uses one fallback identity), hidden-tab suspension, or sidecar
 upstream fan-out.
+
+### Sidecar fan-out test (2026-11-11)
+
+A second isolated run used separate `ViewerBot` and `ViewerDashboard` processes from the same `dev`
+checkout, with the bot control API on `8798` and the dashboard on `8796`. The bot-side
+`dashboardControlPlayerRequests` counter was added specifically to measure the upstream calls.
+
+- 10 concurrent clients, 2-second interval, 30 seconds
+- **150/150 successful dashboard requests, 0 failures**
+- p95 **23 ms**, max **27 ms**
+- Bot control reads: **1 → 151**, exactly **+150**
+- The sidecar currently performs **one control read per browser poll**, confirming a 1:1 fan-out
+
+The next dashboard optimization should be a short sidecar cache or SSE fan-out. A cache should
+collapse many viewers' reads into one control call per interval; SSE should send changed snapshots
+without polling. Neither is implemented yet.
 
 ## 6. Execution order and gates
 
