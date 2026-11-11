@@ -120,3 +120,16 @@ test('concurrent persist calls coalesce and flush the changed state', async () =
     assert.equal(h.saves.length, 2);
     assert.equal(h.saves[1].queue.length, 2);
 });
+
+test('a queued persist resolves only after the changed snapshot is saved', async () => {
+    const h = harness({ holdSave: true });
+    const first = h.engine.persist();
+    h.state.queue.push(makeSong('during-save'));
+    const second = h.engine.persist();
+
+    h.release();
+    await second;
+    assert.equal(h.saves.length, 2, 'the queued caller waits for the second write');
+    assert.equal(h.saves[1].queue.length, 2);
+    await first;
+});

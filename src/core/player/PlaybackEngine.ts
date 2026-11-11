@@ -395,7 +395,10 @@ export class PlaybackEngine {
     public persist(): Promise<void> {
         if (this.persistInFlight) {
             this.persistQueued = true;
-            return this.persistInFlight;
+            // Resolve after the queued write, not the older in-flight one. A
+            // shutdown caller must not exit while its changed snapshot is
+            // still waiting in the coalescer.
+            return this.persistInFlight.then(() => this.persist());
         }
 
         const inFlight = this.writeSnapshot().finally(() => {
