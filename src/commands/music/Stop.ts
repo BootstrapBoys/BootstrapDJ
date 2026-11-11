@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
@@ -13,6 +14,6 @@ export default defineMusicCommand({
         if (!player) return;
         player.queue = [];
         player.stop();
-        return await replyOk(client, ctx, 'Stopped the music and cleared the queue');
+        return await replyOk(client, ctx, tr(ctx, 'commands:core.stopped'));
     },
 });

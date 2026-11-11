@@ -152,6 +152,7 @@ export default class InteractionCreate extends Event {
             args: rawArgs.map(option => String(option.value ?? '')),
             commandKey: interaction.commandName,
             isPrefix: false,
+            language: settings.language ?? this.client.config.defaultLanguage,
         });
 
         if (!gate.ok) {

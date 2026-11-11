@@ -5,6 +5,7 @@ import type { Song } from '../../core/Dispatcher.js';
 import type { BootstrapClient, Dispatcher } from '../../core/index.js';
 import { Event } from '../../core/index.js';
 import { dashboardVoiceChannelIdFor } from '../../lib/DashboardVoice.js';
+import { translate } from '../../lib/i18n.js';
 import { formatDuration } from '../../lib/NodeStatus.js';
 
 export default class QueueEnd extends Event {
@@ -15,16 +16,19 @@ export default class QueueEnd extends Event {
     private async confirmLeave(
         dispatcher: Dispatcher,
         channel: TextChannel,
-        seconds: number
+        seconds: number,
+        language: string
     ): Promise<void> {
+        const t = (key: string, variables: Record<string, string | number> = {}): string =>
+            translate(key, language, variables);
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setCustomId('timeout-stay')
-                .setLabel('Still listening')
+                .setLabel(t('events:queueEnd.stillListening'))
                 .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
                 .setCustomId('timeout-leave')
-                .setLabel('Leave')
+                .setLabel(t('events:queueEnd.leave'))
                 .setStyle(ButtonStyle.Secondary)
         );
         const prompt = await channel.send({
@@ -33,9 +37,7 @@ export default class QueueEnd extends Event {
                     .embed()
                     .setColor(this.client.color.main)
                     .setDescription(
-                        `The queue is empty. I'll leave in ${formatDuration(
-                            seconds * 1000
-                        )} unless someone confirms.`
+                        t('events:queueEnd.prompt', { time: formatDuration(seconds * 1000) })
                     ),
             ],
             components: [row],
@@ -51,14 +53,14 @@ export default class QueueEnd extends Event {
         collector.on('collect', async interaction => {
             if (interaction.customId === 'timeout-leave') {
                 await interaction.reply({
-                    content: 'Leaving the voice channel.',
+                    content: t('events:queueEnd.leaving'),
                     ephemeral: true,
                 });
                 collector.stop('leave');
                 dispatcher.destroy();
                 return;
             }
-            await interaction.reply({ content: 'Staying connected.', ephemeral: true });
+            await interaction.reply({ content: t('events:queueEnd.staying'), ephemeral: true });
             collector.stop('confirmed');
         });
         collector.on('end', async (_collected, reason) => {
@@ -114,7 +116,12 @@ export default class QueueEnd extends Event {
             confirmSeconds > 0 &&
             channel instanceof TextChannel
         ) {
-            await this.confirmLeave(dispatcher, channel, confirmSeconds);
+            await this.confirmLeave(
+                dispatcher,
+                channel,
+                confirmSeconds,
+                settings.language ?? this.client.config.defaultLanguage
+            );
             return;
         }
 

@@ -2,6 +2,7 @@ import type { CommandOptions } from '../core/Command.js';
 import type { ApplicationCommandOption, PermissionsString } from 'discord.js';
 
 import { BootstrapClient, Command, Context, Dispatcher } from '../core/index.js';
+import { tr } from './i18nContext.js';
 import { resolvePlayer } from './PlayerResolver.js';
 
 export type MusicRunContext = {
@@ -31,7 +32,6 @@ export interface MusicCommandDefinition {
 }
 
 const CLIENT_PERMISSIONS: PermissionsString[] = ['SendMessages', 'ViewChannel', 'EmbedLinks'];
-const NO_PLAYER = 'There is no music playing in this server.';
 
 /**
  * Build a standard music command from one behavior function.
@@ -78,7 +78,12 @@ export function defineMusicCommand(definition: MusicCommandDefinition): typeof C
             );
             if (!player && (definition.requirePlayer ?? true)) {
                 return await ctx.sendMessage({
-                    embeds: [client.embed().setColor(client.color.red).setDescription(NO_PLAYER)],
+                    embeds: [
+                        client
+                            .embed()
+                            .setColor(client.color.red)
+                            .setDescription(tr(ctx, 'errors:noPlayer')),
+                    ],
                 });
             }
             return await definition.run({ client, ctx, player, args });

@@ -3,6 +3,7 @@ import type { BootstrapClient, Context } from '../core/index.js';
 import { LoadType } from 'shoukaku';
 
 import { checkTrack, getPlayLimits } from './PlayLimits.js';
+import { tr } from './i18nContext.js';
 import { resolveSearchEngine } from './SearchEngine.js';
 
 export type PlayMode = 'queue' | 'next';
@@ -33,12 +34,7 @@ export async function runPlayRequest(
     if (!client.queue.hasNode) {
         await ctx.sendMessage({
             embeds: [
-                client
-                    .embed()
-                    .setColor(client.color.red)
-                    .setDescription(
-                        'No Lavalink node is available right now. Please try again in a moment.'
-                    ),
+                client.embed().setColor(client.color.red).setDescription(tr(ctx, 'errors:noNode')),
             ],
         });
         return;
@@ -48,14 +44,15 @@ export async function runPlayRequest(
     const searchEngine = await resolveSearchEngine(client, ctx, guildSettings);
     const res = await client.queue.search(query, searchEngine);
     const embed = client.embed();
-    const destination = mode === 'next' ? 'to play next in the queue' : 'to the queue';
+    const destination =
+        mode === 'next'
+            ? tr(ctx, 'commands:core.destinationNext')
+            : tr(ctx, 'commands:core.destinationQueue');
 
     if (!res) {
         await ctx.sendMessage({
             embeds: [
-                embed
-                    .setColor(client.color.red)
-                    .setDescription('There was an error while searching. Please try again.'),
+                embed.setColor(client.color.red).setDescription(tr(ctx, 'errors:searchFailed')),
             ],
         });
         return;
@@ -70,27 +67,19 @@ export async function runPlayRequest(
         const detail = exception?.cause || exception?.message || 'unknown';
         client.logger.error(`Lavalink load error for ${query}: ${detail}`);
         await ctx.sendMessage({
-            embeds: [
-                embed
-                    .setColor(client.color.red)
-                    .setDescription('There was an error while searching.'),
-            ],
+            embeds: [embed.setColor(client.color.red).setDescription(tr(ctx, 'errors:loadFailed'))],
         });
         return;
     }
     if (res.loadType === LoadType.EMPTY) {
         await ctx.sendMessage({
-            embeds: [
-                embed.setColor(client.color.red).setDescription('There were no results found.'),
-            ],
+            embeds: [embed.setColor(client.color.red).setDescription(tr(ctx, 'errors:noResults'))],
         });
         return;
     }
     if (res.loadType === LoadType.SEARCH && !res.data[0]) {
         await ctx.sendMessage({
-            embeds: [
-                embed.setColor(client.color.red).setDescription('There were no results found.'),
-            ],
+            embeds: [embed.setColor(client.color.red).setDescription(tr(ctx, 'errors:noResults'))],
         });
         return;
     }
@@ -100,11 +89,11 @@ export async function runPlayRequest(
     ) {
         await ctx.sendMessage({
             embeds: [
-                embed
-                    .setColor(client.color.red)
-                    .setDescription(
-                        `The playlist is too long. The maximum length is ${client.config.maxPlaylistSize} songs.`
-                    ),
+                embed.setColor(client.color.red).setDescription(
+                    tr(ctx, 'errors:playlistTooLong', {
+                        max: client.config.maxPlaylistSize,
+                    })
+                ),
             ],
         });
         return;
@@ -134,11 +123,13 @@ export async function runPlayRequest(
             await player.isPlaying();
             await ctx.sendMessage({
                 embeds: [
-                    embed
-                        .setColor(client.color.main)
-                        .setDescription(
-                            `Added [${res.data.info.title}](${res.data.info.uri}) ${destination}.`
-                        ),
+                    embed.setColor(client.color.main).setDescription(
+                        tr(ctx, 'commands:core.addedTrack', {
+                            title: res.data.info.title,
+                            uri: res.data.info.uri ?? '',
+                            destination,
+                        })
+                    ),
                 ],
             });
             return;
@@ -174,9 +165,12 @@ export async function runPlayRequest(
             await player.isPlaying();
             await ctx.sendMessage({
                 embeds: [
-                    embed
-                        .setColor(client.color.main)
-                        .setDescription(`Added ${accepted.length} songs ${destination}.`),
+                    embed.setColor(client.color.main).setDescription(
+                        tr(ctx, 'commands:core.addedPlaylist', {
+                            count: accepted.length,
+                            destination,
+                        })
+                    ),
                 ],
             });
             return;
@@ -188,7 +182,7 @@ export async function runPlayRequest(
                     embeds: [
                         embed
                             .setColor(client.color.red)
-                            .setDescription('There were no results found.'),
+                            .setDescription(tr(ctx, 'errors:noResults')),
                     ],
                 });
                 return;
@@ -206,11 +200,13 @@ export async function runPlayRequest(
             await player.isPlaying();
             await ctx.sendMessage({
                 embeds: [
-                    embed
-                        .setColor(client.color.main)
-                        .setDescription(
-                            `Added [${first.info.title}](${first.info.uri}) ${destination}.`
-                        ),
+                    embed.setColor(client.color.main).setDescription(
+                        tr(ctx, 'commands:core.addedTrack', {
+                            title: first.info.title,
+                            uri: first.info.uri ?? '',
+                            destination,
+                        })
+                    ),
                 ],
             });
             return;

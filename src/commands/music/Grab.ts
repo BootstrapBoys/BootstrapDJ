@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyDone, replyFail } from '../../lib/reply.js';
 
 export default defineMusicCommand({
@@ -12,7 +13,7 @@ export default defineMusicCommand({
         if (!author || !player) return;
 
         const song = player.current;
-        if (!song) return await replyFail(client, ctx, 'Nothing playing right now');
+        if (!song) return await replyFail(client, ctx, tr(ctx, 'commands:core.nothingPlaying'));
 
         const duration = song.info.isStream ? 'LIVE' : client.utils.formatTime(song.info.length);
         const card = client
@@ -21,15 +22,19 @@ export default defineMusicCommand({
             .setURL(song.info.uri ?? null)
             .setThumbnail(song.info.artworkUrl ?? null)
             .setDescription(
-                `**Duration:** ${duration}\n**Requested by:** ${song.info.requester}\n**Link:** [Click here](${song.info.uri})`
+                tr(ctx, 'commands:core.grabCard', {
+                    duration,
+                    requester: String(song.info.requester),
+                    uri: song.info.uri ?? '',
+                })
             )
             .setColor(client.color.main);
 
         try {
             await author.send({ embeds: [card] });
-            return await replyDone(client, ctx, '**I sent you a DM.**');
+            return await replyDone(client, ctx, tr(ctx, 'commands:core.dmSent'));
         } catch {
-            return await replyFail(client, ctx, "**I couldn't send you a DM.**");
+            return await replyFail(client, ctx, tr(ctx, 'commands:core.dmFailed'));
         }
     },
 });

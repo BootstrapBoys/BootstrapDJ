@@ -12,6 +12,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { applyCommandMetadata } from './commandMetadata.js';
+
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../commands');
 export type SlashBody = RESTPostAPIChatInputApplicationCommandsJSONBody;
 type SlashRoute = ReturnType<typeof Routes.applicationCommands>;
@@ -34,6 +36,7 @@ async function register(
     const CommandClass = module.default as new (client: BootstrapClient) => Command;
     const command = new CommandClass(client);
     command.category = dir;
+    applyCommandMetadata(command);
     client.commands.set(command.name, command);
     for (const alias of command.aliases) client.aliases.set(alias, command.name);
     if (!command.slashCommand) return null;

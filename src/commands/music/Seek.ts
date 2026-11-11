@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { parseTime } from '../../lib/QueueTools.js';
 import { replyFail, replyOk } from '../../lib/reply.js';
 
@@ -26,9 +27,10 @@ export default defineMusicCommand({
         if (!player) return;
 
         const time = parseTime(args.join(' '));
-        if (time === null) return await replyFail(client, ctx, 'Invalid time format.');
+        if (time === null)
+            return await replyFail(client, ctx, tr(ctx, 'commands:core.invalidTime'));
 
         player.seek(time);
-        return await replyOk(client, ctx, `Seeked to ${args[0]}`);
+        return await replyOk(client, ctx, tr(ctx, 'commands:core.seeked', { time: args[0] }));
     },
 });

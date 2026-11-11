@@ -1,5 +1,6 @@
 import type BootstrapClient from '../core/BootstrapClient.js';
 import type Command from '../core/Command.js';
+import { translate } from './i18n.js';
 import {
     ChannelType,
     Collection,
@@ -35,6 +36,8 @@ export interface GateInput {
     /** Prefix uses the typed alias; slash uses the registered command name. */
     commandKey: string;
     isPrefix: boolean;
+    /** Resolved guild locale; defaults to the process fallback. */
+    language?: string;
 }
 
 export interface GateResponse {
@@ -73,28 +76,33 @@ export function isOwner(memberId: string, owners: readonly string[] | null | und
  */
 export async function evaluateCommand(input: GateInput): Promise<GateResult> {
     const { client, command, guildId, member, me, channel, settings, args } = input;
+    const language = input.language ?? client.config.defaultLanguage;
+    const t = (key: string, variables: Record<string, string | number> = {}): string =>
+        translate(key, language, variables);
     const manageGuild = member.hasPermission(PermissionFlagsBits.ManageGuild);
 
     if (command.player?.voice) {
         const preferred = await client.preferredBotStatus(guildId);
         if (!preferred.allowed) {
             return deny(
-                `Voice commands are routed to **${preferred.name ?? 'the preferred bot'}** for this server. Use that bot.`
+                t('errors:gate.preferredBot', {
+                    name: preferred.name ?? 'the preferred bot',
+                })
             );
         }
     }
 
     if (settings.locked === 'true' && !manageGuild) {
-        return deny('This session is locked. A server manager must unlock it.');
+        return deny(t('errors:gate.locked'));
     }
 
     const permitted = await client.db.isCommandAllowed(guildId, command.name, member.id, [
         ...member.roleIds,
     ]);
-    if (!permitted) return deny('You are not allowed to use this command.');
+    if (!permitted) return deny(t('errors:gate.notAllowed'));
 
     if (settings.allowthreads === 'false' && channel.isThread()) {
-        return deny('Commands are disabled in threads for this server.');
+        return deny(t('errors:gate.threads'));
     }
 
     if (
@@ -104,15 +112,15 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
             .filter(Boolean)
             .includes(command.name)
     ) {
-        return deny(`**${command.name}** is disabled in this server.`);
+        return deny(t('errors:gate.disabled', { command: command.name }));
     }
 
     if (settings.commandchannel && settings.commandchannel !== channel.id) {
-        return deny(`Commands are restricted to <#${settings.commandchannel}>.`);
+        return deny(t('errors:gate.commandChannel', { channel: settings.commandchannel }));
     }
 
     if (settings.voicechannel && member.voiceChannel?.id !== settings.voicechannel) {
-        return deny(`You must be in <#${settings.voicechannel}> to use commands.`);
+        return deny(t('errors:gate.voiceChannel', { channel: settings.voicechannel }));
     }
 
     // No reply is possible in a channel the bot cannot see.
@@ -123,24 +131,27 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
             ok: false,
             dm: true,
             response: {
-                content: `I don't have **\`SendMessage\`** permission in \`${input.guildName}\`\nchannel: <#${channel.id}>`,
+                content: t('errors:gate.noSendMessages', {
+                    guild: input.guildName,
+                    channel: channel.id,
+                }),
             },
         };
     }
 
     if (!me.hasPermission(PermissionFlagsBits.EmbedLinks)) {
-        return deny("I don't have **`EmbedLinks`** permission.");
+        return deny(t('errors:gate.noEmbedLinks'));
     }
 
     for (const permission of command.permissions.client) {
         if (!me.hasPermission(permission)) {
-            return deny("I don't have enough permissions to execute this command.");
+            return deny(t('errors:gate.clientPermissions'));
         }
     }
 
     for (const permission of command.permissions.user) {
         if (!member.hasPermission(permission)) {
-            return deny("You don't have enough permissions to use this command.");
+            return deny(t('errors:gate.userPermissions'));
         }
     }
 
@@ -151,38 +162,33 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
     if (command.player) {
         if (command.player.voice) {
             if (!member.voiceChannel) {
-                return deny(
-                    `You must be connected to a voice channel to use this \`${command.name}\` command.`
-                );
+                return deny(t('errors:gate.voiceRequired', { command: command.name }));
             }
             if (!me.hasPermission(PermissionFlagsBits.Connect)) {
-                return deny(
-                    `I don't have \`CONNECT\` permissions to execute this \`${command.name}\` command.`
-                );
+                return deny(t('errors:gate.noConnect', { command: command.name }));
             }
             if (!me.hasPermission(PermissionFlagsBits.Speak)) {
-                return deny(
-                    `I don't have \`SPEAK\` permissions to execute this \`${command.name}\` command.`
-                );
+                return deny(t('errors:gate.noSpeak', { command: command.name }));
             }
             if (
                 member.voiceChannel.type === ChannelType.GuildStageVoice &&
                 !me.hasPermission(PermissionFlagsBits.RequestToSpeak)
             ) {
-                return deny(
-                    `I don't have \`REQUEST TO SPEAK\` permission to execute this \`${command.name}\` command.`
-                );
+                return deny(t('errors:gate.noRequestToSpeak', { command: command.name }));
             }
             if (me.voiceChannel && me.voiceChannel.id !== member.voiceChannel.id) {
                 return deny(
-                    `You are not connected to <#${me.voiceChannel.id}> to use this \`${command.name}\` command.`
+                    t('errors:gate.wrongVoice', {
+                        channel: me.voiceChannel.id,
+                        command: command.name,
+                    })
                 );
             }
         }
 
         if (command.player.active) {
             const player = client.queue.get(guildId);
-            if (!player?.current) return deny('Nothing is playing right now.');
+            if (!player?.current) return deny(t('errors:gate.nothingPlaying'));
         }
 
         if (command.player.dj) {
@@ -191,10 +197,10 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
                 const djRole = await client.db.getRoles(guildId);
                 // `getRoles` returns an array; an empty array is truthy and
                 // used to fall through to the misleading role-missing reply.
-                if (!djRole.length) return deny('DJ role is not set.');
+                if (!djRole.length) return deny(t('errors:gate.djRoleMissing'));
                 const hasDjRole = djRole.some(role => member.roleIds.includes(role.roleId));
                 if (!hasDjRole && !manageGuild) {
-                    return deny('You need to have the DJ role to use this command.');
+                    return deny(t('errors:gate.djRoleRequired'));
                 }
             }
         }
@@ -205,13 +211,16 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
         const embed = client
             .embed()
             .setColor(client.color.red)
-            .setTitle('Missing Arguments')
+            .setTitle(t('errors:gate.missingTitle'))
             .setDescription(
-                `Please provide the required arguments for the \`${command.name}\` command.\n\nExamples:\n${
-                    command.description.examples ? command.description.examples.join('\n') : 'None'
-                }`
+                t('errors:gate.missingDescription', {
+                    command: command.name,
+                    examples: command.description.examples
+                        ? command.description.examples.join('\n')
+                        : 'None',
+                })
             )
-            .setFooter({ text: 'Syntax: [] = optional, <> = required' });
+            .setFooter({ text: t('errors:gate.missingFooter') });
         return { ok: false, response: { embeds: [embed] } };
     }
 
@@ -230,7 +239,10 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
         const timeLeft = (expirationTime - now) / 1000;
         if (now < expirationTime && timeLeft > 0.9) {
             return deny(
-                `Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${input.commandKey}\` command.`
+                t('errors:gate.cooldown', {
+                    seconds: timeLeft.toFixed(1),
+                    command: input.commandKey,
+                })
             );
         }
         timestamps.set(member.id, now);
@@ -238,7 +250,7 @@ export async function evaluateCommand(input: GateInput): Promise<GateResult> {
     }
 
     if (args.some(arg => arg.includes('@everyone') || arg.includes('@here'))) {
-        return deny("You can't mention everyone or here.");
+        return deny(t('errors:gate.everyone'));
     }
 
     return { ok: true };

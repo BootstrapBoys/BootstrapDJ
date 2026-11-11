@@ -1,3 +1,35 @@
 {
-    "generic": "Something went wrong."
+    "generic": "Something went wrong.",
+    "gate": {
+        "preferredBot": "Voice commands are routed to **{{name}}** for this server. Use that bot.",
+        "locked": "This session is locked. A server manager must unlock it.",
+        "notAllowed": "You are not allowed to use this command.",
+        "threads": "Commands are disabled in threads for this server.",
+        "disabled": "**{{command}}** is disabled in this server.",
+        "commandChannel": "Commands are restricted to <#{{channel}}>.",
+        "voiceChannel": "You must be in <#{{channel}}> to use commands.",
+        "noSendMessages": "I don't have **`SendMessages`** permission in `{{guild}}`\nchannel: <#{{channel}}>",
+        "noEmbedLinks": "I don't have **`EmbedLinks`** permission.",
+        "clientPermissions": "I don't have enough permissions to execute this command.",
+        "userPermissions": "You don't have enough permissions to use this command.",
+        "voiceRequired": "You must be connected to a voice channel to use this `{{command}}` command.",
+        "noConnect": "I don't have `CONNECT` permissions to execute this `{{command}}` command.",
+        "noSpeak": "I don't have `SPEAK` permissions to execute this `{{command}}` command.",
+        "noRequestToSpeak": "I don't have `REQUEST TO SPEAK` permission to execute this `{{command}}` command.",
+        "wrongVoice": "You are not connected to <#{{channel}}> to use this `{{command}}` command.",
+        "nothingPlaying": "Nothing is playing right now.",
+        "djRoleMissing": "DJ role is not set.",
+        "djRoleRequired": "You need to have the DJ role to use this command.",
+        "missingTitle": "Missing Arguments",
+        "missingDescription": "Please provide the required arguments for the `{{command}}` command.\n\nExamples:\n{{examples}}",
+        "missingFooter": "Syntax: [] = optional, <> = required",
+        "cooldown": "Please wait {{seconds}} more second(s) before reusing the `{{command}}` command.",
+        "everyone": "You can't mention everyone or here."
+    },
+    "noPlayer": "There is no music playing in this server.",
+    "noNode": "No Lavalink node is available right now. Please try again in a moment.",
+    "searchFailed": "There was an error while searching. Please try again.",
+    "loadFailed": "There was an error while searching.",
+    "noResults": "There were no results found.",
+    "playlistTooLong": "The playlist is too long. The maximum length is {{max}} songs."
 }

@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyFail, replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
@@ -23,13 +24,13 @@ export default defineMusicCommand({
     run: async ({ client, ctx, player, args }) => {
         if (!player) return;
         if (!player.queue.length)
-            return await replyFail(client, ctx, 'There are no songs in the queue.');
+            return await replyFail(client, ctx, tr(ctx, 'commands:core.noQueue'));
 
         const target = Number(args[0]);
         const valid = Number.isInteger(target) && target >= 1 && target <= player.queue.length;
-        if (!valid) return await replyFail(client, ctx, 'Please provide a valid number.');
+        if (!valid) return await replyFail(client, ctx, tr(ctx, 'commands:core.validNumber'));
 
         player.skip(target);
-        return await replyOk(client, ctx, `Skipped to song number ${target}`);
+        return await replyOk(client, ctx, tr(ctx, 'commands:core.skippedTo', { target }));
     },
 });

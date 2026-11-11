@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyFail, replyOk } from '../../lib/reply.js';
 
 export default defineMusicCommand({
@@ -8,9 +9,9 @@ export default defineMusicCommand({
     dj: false,
     run: async ({ client, ctx, player }) => {
         if (!player) return;
-        if (!player.paused) return await replyFail(client, ctx, 'The player is not paused.');
+        if (!player.paused) return await replyFail(client, ctx, tr(ctx, 'commands:core.notPaused'));
 
         player.pause();
-        return await replyOk(client, ctx, 'Resumed the player');
+        return await replyOk(client, ctx, tr(ctx, 'commands:core.resumed'));
     },
 });

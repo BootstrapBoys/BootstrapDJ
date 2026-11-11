@@ -3,5 +3,620 @@
         "description": "View or change the language for this server",
         "language_option": "Language to use",
         "reset_option": "Reset to the default language"
+    },
+    "core": {
+        "noQueue": "There are no songs in the queue.",
+        "nothingPlaying": "Nothing playing right now",
+        "alreadyPaused": "The song is already paused",
+        "paused": "Paused the song",
+        "resumed": "Resumed the player",
+        "notPaused": "The player is not paused.",
+        "cleared": "Cleared the queue",
+        "shuffled": "Shuffled the queue",
+        "stopped": "Stopped the music and cleared the queue",
+        "invalidNumber": "That is not a valid number.",
+        "validNumber": "Please provide a valid number.",
+        "skipped": "Skipped [{{title}}]({{uri}})",
+        "skippedTo": "Skipped to song number {{target}}",
+        "removed": "Removed song number {{position}} from the queue",
+        "seeked": "Seeked to {{time}}",
+        "invalidTime": "Invalid time format.",
+        "volumeInvalid": "Please provide a valid number.",
+        "volumeLow": "The volume can't be lower than {{min}}.",
+        "volumeHigh": "The volume can't be higher than {{max}}.",
+        "volumeSet": "Set the volume to {{volume}}",
+        "notConnected": "I'm not in a voice channel",
+        "join": "Joined the voice channel",
+        "dmSent": "**I sent you a DM.**",
+        "dmFailed": "**I couldn't send you a DM.**",
+        "addedTrack": "Added [{{title}}]({{uri}}) {{destination}}.",
+        "addedPlaylist": "Added {{count}} songs {{destination}}.",
+        "destinationNext": "to play next in the queue",
+        "destinationQueue": "to the queue",
+        "alreadyConnected": "I'm already connected to {{channel}}",
+        "joined": "Joined {{channel}}",
+        "left": "Left {{channel}}",
+        "leftGeneric": "Left the voice channel",
+        "voiceChannel": "the voice channel",
+        "grabCard": "**Duration:** {{duration}}\n**Requested by:** {{requester}}\n**Link:** [Click here]({{uri}})",
+        "loopSong": "**Looping the song**",
+        "loopQueue": "**Looping the queue**",
+        "loopOff": "**Looping is now off**",
+        "autoplayDisabled": "Autoplay disabled and queued bot picks removed.",
+        "autoplayNoNode": "No Lavalink node is available right now. Please try again in a moment.",
+        "autoplayNoSeed": "I couldn't find anything for **{{label}}**. Autoplay was left unchanged.",
+        "autoplaySeeded": "Autoplay enabled — seeded from **{{label}}**, starting with **{{title}}** by {{author}}.",
+        "autoplayStarted": "Autoplay enabled — starting from **{{title}}** by {{author}}.",
+        "autoplayWaiting": "Autoplay enabled — I will pick tracks when the queue runs out.",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · Requested by {{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - Request By: {{requester}} - Duration: {{duration}}",
+        "queueNowPlaying": "Now playing: [{{title}}]({{uri}}) - Request By: {{requester}} - Duration: {{duration}}",
+        "queuedTracks": "Queued tracks",
+        "queueLength": "Queue length",
+        "autoplay": "Autoplay",
+        "loop": "Loop",
+        "on": "on",
+        "off": "off",
+        "queueAuthor": "Queue",
+        "queuePage": "Page {{page}} of {{total}}"
+    },
+    "metadata": {
+        "247": {
+            "description": "set the bot to stay in the vc"
+        },
+        "8d": {
+            "description": "on/off 8d filter"
+        },
+        "bassboost": {
+            "description": "on/off bassboost filter"
+        },
+        "distorsion": {
+            "description": "on/off distorsion filter"
+        },
+        "filter": {
+            "description": "Apply or clear audio filters",
+            "options": {
+                "8d": "Apply 8d",
+                "bassboost": "Apply bassboost",
+                "distortion": "Apply distortion",
+                "karaoke": "Apply karaoke",
+                "nightcore": "Apply nightcore",
+                "reset": "Apply reset",
+                "rotation": "Apply rotation",
+                "tremolo": "Apply tremolo",
+                "vibrato": "Apply vibrato",
+                "lowpass": "Apply lowpass",
+                "pitch": "Apply pitch with a value",
+                "rate": "Apply rate with a value",
+                "speed": "Apply speed with a value"
+            }
+        },
+        "filters": {
+            "description": "Shows active audio filters"
+        },
+        "karaoke": {
+            "description": "on/off the karaoke filter"
+        },
+        "nightcore": {
+            "description": "on/off nightcore filter"
+        },
+        "pitch": {
+            "description": "on/off the pitch filter",
+            "options": {
+                "number": "The number you want to set the pitch to"
+            }
+        },
+        "rate": {
+            "description": "Changes the playback rate (speed and pitch)",
+            "options": {
+                "rate": "Rate multiplier between 0.5 and 5"
+            }
+        },
+        "reset": {
+            "description": "Resets the active filters"
+        },
+        "rotation": {
+            "description": "on/off rotation filter"
+        },
+        "speed": {
+            "description": "Sets the speed of the song",
+            "options": {
+                "speed": "The speed you want to set"
+            }
+        },
+        "tremolo": {
+            "description": "on/off the tremolo filter"
+        },
+        "vibrato": {
+            "description": "on/off vibrato filter"
+        },
+        "lowpass": {
+            "description": "on/off lowpass filter"
+        },
+        "add": {
+            "description": "Adds a song to the playlist",
+            "options": {
+                "playlist": "The playlist you want to add",
+                "song": "The song you want to add"
+            }
+        },
+        "alias": {
+            "description": "Create, list, or remove custom command aliases",
+            "options": {
+                "action": "Add, remove, list, or clear aliases",
+                "alias": "Alias name",
+                "command": "Target command for add",
+                "scope": "Server-wide or only for you"
+            }
+        },
+        "autoplayconfig": {
+            "description": "Configures the autoplay cold-start source",
+            "options": {
+                "source": "Cold-start seed source",
+                "seeds": "Curated seeds, comma-separated (sets source to curated)",
+                "reset": "Remove the guild override and use environment defaults"
+            }
+        },
+        "playlist": {
+            "description": "Manage saved playlists",
+            "options": {
+                "action": "Collection operation",
+                "name": "Collection name",
+                "query": "Track or playlist URL for add",
+                "target": "Destination name for rename/copy/merge",
+                "index": "1-based track position for remove",
+                "code": "Share code"
+            }
+        },
+        "create": {
+            "description": "Creates a playlist",
+            "options": {
+                "name": "The name of the playlist"
+            }
+        },
+        "delete": {
+            "description": "Deletes a playlist",
+            "options": {
+                "playlist": "The playlist you want to delete"
+            }
+        },
+        "dj": {
+            "description": "Manage the DJ mode and associated roles",
+            "options": {
+                "add": "The dj role you want to add",
+                "remove": "The dj role you want to remove",
+                "clear": "Clears all dj roles",
+                "toggle": "Toggles the dj role"
+            }
+        },
+        "language": {
+            "description": "View or change the language for this server",
+            "options": {
+                "language": "Language to use",
+                "reset": "Reset to the default language"
+            }
+        },
+        "list": {
+            "description": "Lists playlists",
+            "options": {
+                "user": "Whose playlists to show"
+            }
+        },
+        "listen": {
+            "description": "Control voice commands (Earl the Ear) and your listening opt-out",
+            "options": {
+                "action": "What to do"
+            }
+        },
+        "load": {
+            "description": "Loads a playlist",
+            "options": {
+                "playlist": "The playlist you want to load"
+            }
+        },
+        "mappings": {
+            "description": "Create custom prefix shortcut expansions",
+            "options": {
+                "action": "Add, remove, list, or clear mappings",
+                "trigger": "Word typed after the prefix",
+                "expansion": "Command and arguments to run",
+                "scope": "Server-wide or only for you"
+            }
+        },
+        "permissions": {
+            "description": "Manage per-command allow/deny rules",
+            "options": {
+                "action": "List, allow, deny, or reset rules",
+                "command": "Command name; omit on reset to clear every rule",
+                "target": "User or role affected by the rule"
+            }
+        },
+        "prefix": {
+            "description": "Shows the bot's prefix",
+            "options": {
+                "set": "Sets the prefix",
+                "reset": "Resets the prefix to the default one"
+            }
+        },
+        "removesong": {
+            "description": "Removes a song from a playlist",
+            "options": {
+                "playlist": "The playlist to edit",
+                "song": "The song to remove"
+            }
+        },
+        "save": {
+            "description": "Saves the current queue to a playlist",
+            "options": {
+                "name": "Playlist name"
+            }
+        },
+        "selfprefix": {
+            "description": "Set a personal prefix for this server"
+        },
+        "settings": {
+            "description": "View or change per-guild bot settings",
+            "options": {
+                "key": "Setting name; omit to list all",
+                "value": "New value; omit to inspect the setting",
+                "reset": "Reset every setting for this guild"
+            }
+        },
+        "setup": {
+            "description": "Sets up the bot",
+            "options": {
+                "create": "Creates the song request channel",
+                "delete": "Deletes the song request channel",
+                "info": "Shows the song request channel"
+            }
+        },
+        "album": {
+            "description": "Looks up an album or queues its first result",
+            "options": {
+                "name": "Album name"
+            }
+        },
+        "artist": {
+            "description": "Looks up an artist or queues their top result",
+            "options": {
+                "name": "Artist name"
+            }
+        },
+        "autoplay": {
+            "description": "Toggles autoplay",
+            "options": {
+                "seed": "First artist or song",
+                "seed2": "Second artist or song (optional)",
+                "seed3": "Third artist or song (optional)"
+            }
+        },
+        "backward": {
+            "description": "Winds the current track backward",
+            "options": {
+                "time": "Amount to move back (30s, 1m, 01:30)"
+            }
+        },
+        "clearqueue": {
+            "description": "Clears the queue"
+        },
+        "endtime": {
+            "description": "Stops the current track at a given time",
+            "options": {
+                "time": "Where to stop (30s, 1m, 02:30)"
+            }
+        },
+        "fairplay": {
+            "description": "Round-robins the queue by requester"
+        },
+        "forward": {
+            "description": "Winds the current track forward",
+            "options": {
+                "time": "Amount to move forward (30s, 1m, 01:30)"
+            }
+        },
+        "grab": {
+            "description": "Grabs the current playing song"
+        },
+        "join": {
+            "description": "Joins the voice channel"
+        },
+        "leave": {
+            "description": "Leaves the voice channel"
+        },
+        "loop": {
+            "description": "loop the current song or the queue"
+        },
+        "lyrics": {
+            "description": "Shows lyrics for the current or searched song",
+            "options": {
+                "song": "Song to look up; defaults to the current track"
+            }
+        },
+        "massmove": {
+            "description": "Moves a block of queued tracks",
+            "options": {
+                "from": "First position in the block (1-based)",
+                "to": "Last position in the block (1-based)",
+                "destination": "Insertion position in the resulting queue (1-based)"
+            }
+        },
+        "massremove": {
+            "description": "Removes a range of queued tracks",
+            "options": {
+                "from": "First position to remove (1-based)",
+                "to": "Last position to remove (1-based)"
+            }
+        },
+        "move": {
+            "description": "Moves a queued track to another position",
+            "options": {
+                "from": "Current queue position (1-based)",
+                "to": "New queue position (1-based)"
+            }
+        },
+        "nowplaying": {
+            "description": "Shows the currently playing song"
+        },
+        "pause": {
+            "description": "Pauses the current song"
+        },
+        "play": {
+            "description": "Plays a song from YouTube or Spotify",
+            "options": {
+                "song": "The song you want to play"
+            }
+        },
+        "playleave": {
+            "description": "Plays a request and leaves voice when the queue ends",
+            "options": {
+                "query": "Track, search term, or playlist URL"
+            }
+        },
+        "playlocal": {
+            "description": "Plays an audio or video file uploaded to Discord",
+            "options": {
+                "file": "The audio or video file to play"
+            }
+        },
+        "playnext": {
+            "description": "Add the song to play next in queue",
+            "options": {
+                "song": "The song you want to play"
+            }
+        },
+        "playrecent": {
+            "description": "Queues tracks from recent playback history",
+            "options": {
+                "count": "How many recent tracks to queue (1-20)"
+            }
+        },
+        "playselect": {
+            "description": "Browse a playlist or search results and choose a track",
+            "options": {
+                "url": "Playlist URL or search term"
+            }
+        },
+        "playlistsearch": {
+            "description": "Shows tracks from a matching playlist",
+            "options": {
+                "query": "Playlist name or URL"
+            }
+        },
+        "previous": {
+            "description": "Plays the previous track again"
+        },
+        "queue": {
+            "description": "Shows the current queue"
+        },
+        "radio": {
+            "description": "Plays an internet radio station by name",
+            "options": {
+                "station": "Station name or genre"
+            }
+        },
+        "recentlyplayed": {
+            "description": "Shows recently played tracks"
+        },
+        "remove": {
+            "description": "Removes a song from the queue",
+            "options": {
+                "song": "The song number"
+            }
+        },
+        "removeabsent": {
+            "description": "Removes tracks requested by users not in the voice channel"
+        },
+        "removeduplicates": {
+            "description": "Removes duplicate queued tracks"
+        },
+        "removekeyword": {
+            "description": "Removes queued tracks matching a keyword",
+            "options": {
+                "keyword": "Text to match against title or author"
+            }
+        },
+        "removelast": {
+            "description": "Removes the last queued track"
+        },
+        "removeuser": {
+            "description": "Removes a user’s queued tracks",
+            "options": {
+                "user": "User whose tracks should be removed"
+            }
+        },
+        "replay": {
+            "description": "Replays the current track from the start"
+        },
+        "requested": {
+            "description": "Shows queued tracks requested by a user",
+            "options": {
+                "user": "Whose requests to show (defaults to you)"
+            }
+        },
+        "resume": {
+            "description": "Resumes the current song"
+        },
+        "reverse": {
+            "description": "Reverses the queued tracks"
+        },
+        "seek": {
+            "description": "Seeks to a certain time in the song",
+            "options": {
+                "time": "The time to seek to"
+            }
+        },
+        "selectrandom": {
+            "description": "Moves a random queued track to the front"
+        },
+        "sessionstats": {
+            "description": "Shows statistics for the current playback session"
+        },
+        "shuffle": {
+            "description": "Shuffles the queue"
+        },
+        "shufflerepeat": {
+            "description": "Shuffles the queue and enables queue repeat"
+        },
+        "skip": {
+            "description": "Skips the current song"
+        },
+        "skipto": {
+            "description": "Skips to a specific song in the queue",
+            "options": {
+                "number": "The number of the song you want to skip to"
+            }
+        },
+        "song": {
+            "description": "Shows information about the current or searched song",
+            "options": {
+                "query": "Song to look up; defaults to the current track"
+            }
+        },
+        "sort": {
+            "description": "Sorts the queued tracks",
+            "options": {
+                "by": "Field to sort by",
+                "order": "Sort direction"
+            }
+        },
+        "stop": {
+            "description": "Stops the music and clears the queue"
+        },
+        "swap": {
+            "description": "Swaps two queued tracks",
+            "options": {
+                "first": "First queue position (1-based)",
+                "second": "Second queue position (1-based)"
+            }
+        },
+        "top": {
+            "description": "Shows top search results for a query",
+            "options": {
+                "query": "Search query; defaults to top hits"
+            }
+        },
+        "volume": {
+            "description": "Sets the volume of the player",
+            "options": {
+                "number": "The volume you want to set"
+            }
+        },
+        "voteskip": {
+            "description": "Starts or joins a vote to skip the current track"
+        },
+        "eval": {
+            "description": "Evaluate code"
+        },
+        "guild": {
+            "description": "Inspect a guild the bot is currently in",
+            "options": {
+                "guild": "Guild name or ID (autocompletes)"
+            }
+        },
+        "guildleave": {
+            "description": "Leave a guild"
+        },
+        "guildlist": {
+            "description": "List all guilds the bot is in"
+        },
+        "reload": {
+            "description": "Reloads command modules without restarting (owner only)"
+        },
+        "restart": {
+            "description": "Restarts the bot process (owner only)"
+        },
+        "shutdown": {
+            "description": "Stops the bot process (owner only)"
+        },
+        "categories": {
+            "description": "Lists all command categories"
+        },
+        "faq": {
+            "description": "Common BootstrapDJ usage questions"
+        },
+        "guess": {
+            "description": "Starts a guess-the-song game for the current track"
+        },
+        "help": {
+            "description": "Shows the help menu",
+            "options": {
+                "command": "The command you want to get info on"
+            }
+        },
+        "info": {
+            "description": "Information about the bot"
+        },
+        "invite": {
+            "description": "Sends the bot's invite link"
+        },
+        "lavalink": {
+            "description": "Shows the current Lavalink stats"
+        },
+        "leaderboard": {
+            "description": "Shows the most active requesters this session"
+        },
+        "ping": {
+            "description": "Shows the bot's ping"
+        },
+        "premium": {
+            "description": "Explains the free feature policy"
+        },
+        "profile": {
+            "description": "View or customize a BootstrapDJ profile",
+            "options": {
+                "action": "View, set, or clear profile fields",
+                "key": "Field to change: color, bio, privacy, visible",
+                "value": "New value",
+                "user": "Profile to view"
+            }
+        },
+        "shards": {
+            "description": "Shows shard status"
+        },
+        "stats": {
+            "description": "Shows live bot statistics"
+        },
+        "support": {
+            "description": "How to get help with BootstrapDJ"
+        },
+        "tip": {
+            "description": "Shows a random BootstrapDJ tip"
+        },
+        "utility": {
+            "description": "Bot information and utility pages",
+            "options": {
+                "overview": "Show overview",
+                "stats": "Show stats",
+                "shards": "Show shards",
+                "categories": "Show categories",
+                "faq": "Show faq",
+                "tip": "Show tip",
+                "premium": "Show premium",
+                "support": "Show support",
+                "leaderboard": "Show leaderboard",
+                "commands": "Show commands",
+                "dashboard": "Show dashboard"
+            }
+        }
     }
 }

@@ -1,12 +1,13 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyOk } from '../../lib/reply.js';
 
 const NEXT_LOOP = { off: 'repeat', repeat: 'queue', queue: 'off' } as const;
 
 const LOOP_COPY: Record<string, string> = {
-    repeat: '**Looping the song**',
-    queue: '**Looping the queue**',
-    off: '**Looping is now off**',
+    repeat: 'commands:core.loopSong',
+    queue: 'commands:core.loopQueue',
+    off: 'commands:core.loopOff',
 };
 
 export default defineMusicCommand({
@@ -21,6 +22,6 @@ export default defineMusicCommand({
     run: async ({ client, ctx, player }) => {
         if (!player) return;
         player.setLoop(NEXT_LOOP[player.loop]);
-        return await replyOk(client, ctx, LOOP_COPY[player.loop]);
+        return await replyOk(client, ctx, tr(ctx, LOOP_COPY[player.loop]));
     },
 });

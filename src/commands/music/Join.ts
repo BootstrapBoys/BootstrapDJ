@@ -1,4 +1,5 @@
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyOk } from '../../lib/reply.js';
 import type { Dispatcher } from '../../core/index.js';
 
@@ -7,8 +8,8 @@ function voiceChannelId(player: Dispatcher, guildId: string): string | null {
     return player.voiceId ?? player.node.manager.connections.get(guildId)?.channelId ?? null;
 }
 
-function channelLabel(channelId: string | null): string {
-    return channelId ? `<#${channelId}>` : 'the voice channel';
+function channelLabel(ctx: Parameters<typeof tr>[0], channelId: string | null): string {
+    return channelId ? `<#${channelId}>` : tr(ctx, 'commands:core.voiceChannel');
 }
 
 export default defineMusicCommand({
@@ -26,7 +27,9 @@ export default defineMusicCommand({
             return await replyOk(
                 client,
                 ctx,
-                `I'm already connected to ${channelLabel(voiceChannelId(player, guild.id))}`
+                tr(ctx, 'commands:core.alreadyConnected', {
+                    channel: channelLabel(ctx, voiceChannelId(player, guild.id)),
+                })
             );
         }
 
@@ -39,7 +42,9 @@ export default defineMusicCommand({
         return await replyOk(
             client,
             ctx,
-            `Joined ${channelLabel(voiceChannelId(created, guild.id))}`
+            tr(ctx, 'commands:core.joined', {
+                channel: channelLabel(ctx, voiceChannelId(created, guild.id)),
+            })
         );
     },
 });

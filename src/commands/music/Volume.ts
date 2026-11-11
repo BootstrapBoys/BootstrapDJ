@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyFail, replyOk } from '../../lib/reply.js';
 
 const MIN_VOLUME = 0;
@@ -28,18 +29,26 @@ export default defineMusicCommand({
 
         const volume = Number(args[0]);
         if (!Number.isFinite(volume))
-            return await replyFail(client, ctx, 'Please provide a valid number.');
+            return await replyFail(client, ctx, tr(ctx, 'commands:core.volumeInvalid'));
         if (volume < MIN_VOLUME) {
-            return await replyFail(client, ctx, `The volume can't be lower than ${MIN_VOLUME}.`);
+            return await replyFail(
+                client,
+                ctx,
+                tr(ctx, 'commands:core.volumeLow', { min: MIN_VOLUME })
+            );
         }
         if (volume > MAX_VOLUME) {
-            return await replyFail(client, ctx, `The volume can't be higher than ${MAX_VOLUME}.`);
+            return await replyFail(
+                client,
+                ctx,
+                tr(ctx, 'commands:core.volumeHigh', { max: MAX_VOLUME })
+            );
         }
 
         await player.player.setGlobalVolume(volume);
         if (ctx.guild) {
             await client.db.setGuildSetting(ctx.guild.id, 'defaultvolume', String(volume));
         }
-        return await replyOk(client, ctx, `Set the volume to ${volume}`);
+        return await replyOk(client, ctx, tr(ctx, 'commands:core.volumeSet', { volume }));
     },
 });

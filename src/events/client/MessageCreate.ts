@@ -209,6 +209,7 @@ export default class MessageCreate extends Event {
             args,
             commandKey: key,
             isPrefix: true,
+            language: settings.language ?? this.client.config.defaultLanguage,
         });
         if (!gate.ok) {
             if (gate.silent) {

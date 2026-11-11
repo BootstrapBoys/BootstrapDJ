@@ -1,3 +1,10 @@
 {
-    "ready": "BootstrapDJ is ready."
+    "ready": "BootstrapDJ is ready.",
+    "queueEnd": {
+        "stillListening": "Still listening",
+        "leave": "Leave",
+        "prompt": "The queue is empty. I'll leave in {{time}} unless someone confirms.",
+        "leaving": "Leaving the voice channel.",
+        "staying": "Staying connected."
+    }
 }

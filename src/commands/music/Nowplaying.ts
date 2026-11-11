@@ -1,5 +1,6 @@
 import { getNowPlayingButtons } from '../../lib/Buttons.js';
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyFail } from '../../lib/reply.js';
 
 const BAR_WIDTH = 14;
@@ -17,7 +18,7 @@ export default defineMusicCommand({
     run: async ({ client, ctx, player }) => {
         if (!player) return;
         const track = player.current;
-        if (!track) return await replyFail(client, ctx, 'Nothing playing right now');
+        if (!track) return await replyFail(client, ctx, tr(ctx, 'commands:core.nothingPlaying'));
 
         const position = player.player.position;
         const duration = track.info.length;
@@ -33,7 +34,13 @@ export default defineMusicCommand({
             .setAuthor({ name: 'Now Playing', iconURL: ctx.guild?.iconURL({}) ?? undefined })
             .setThumbnail(track.info.artworkUrl ?? null)
             .setDescription(
-                `[${track.info.title}](${track.info.uri}) · Requested by ${track.info.requester}\n\n\`${bar}\` ${timing}`
+                tr(ctx, 'commands:core.nowPlayingLine', {
+                    title: track.info.title,
+                    uri: track.info.uri ?? '',
+                    requester: String(track.info.requester),
+                    bar,
+                    timing,
+                })
             );
 
         const message = await ctx.sendMessage({

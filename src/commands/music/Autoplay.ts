@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { defineMusicCommand } from '../../lib/musicCommand.js';
+import { tr } from '../../lib/i18nContext.js';
 import { replyFail, replyOk } from '../../lib/reply.js';
 
 const SEED_OPTIONS = ['seed', 'seed2', 'seed3'] as const;
@@ -53,17 +54,13 @@ export default defineMusicCommand({
         const label = seeds.join(', ');
 
         if (!client.queue.hasNode) {
-            return await replyFail(
-                client,
-                ctx,
-                'No Lavalink node is available right now. Please try again in a moment.'
-            );
+            return await replyFail(client, ctx, tr(ctx, 'commands:core.autoplayNoNode'));
         }
 
         // Bare /autoplay while it is on means "turn it off".
         if (seeds.length === 0 && existing?.autoplay) {
             await existing.setAutoplay(false);
-            return await replyOk(client, ctx, 'Autoplay disabled and queued bot picks removed.');
+            return await replyOk(client, ctx, tr(ctx, 'commands:core.autoplayDisabled'));
         }
 
         let player = existing;
@@ -77,7 +74,7 @@ export default defineMusicCommand({
                 return await replyFail(
                     client,
                     ctx,
-                    `I couldn't find anything for **${label}**. Autoplay was left unchanged.`
+                    tr(ctx, 'commands:core.autoplayNoSeed', { label })
                 );
             }
             await player.setAutoplay(true);
@@ -85,14 +82,21 @@ export default defineMusicCommand({
             return await replyOk(
                 client,
                 ctx,
-                `Autoplay enabled — seeded from **${label}**, starting with **${picked.info.title}** by ${picked.info.author}.`
+                tr(ctx, 'commands:core.autoplaySeeded', {
+                    label,
+                    title: picked.info.title,
+                    author: picked.info.author,
+                })
             );
         }
 
         const first = await player.setAutoplay(true);
         const description = first
-            ? `Autoplay enabled — starting from **${first.info.title}** by ${first.info.author}.`
-            : 'Autoplay enabled — I will pick tracks when the queue runs out.';
+            ? tr(ctx, 'commands:core.autoplayStarted', {
+                  title: first.info.title,
+                  author: first.info.author,
+              })
+            : tr(ctx, 'commands:core.autoplayWaiting');
         return await replyOk(client, ctx, description);
     },
 });
