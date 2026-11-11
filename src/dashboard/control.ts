@@ -16,6 +16,7 @@ import { addDashboardSong } from './playback.js';
 import { audioTapTargetFor } from './audioTap.js';
 import { applyDashboardListenerCount, scheduleDashboardCleanupFromSettings } from './cleanup.js';
 import { clearDashboardListeners } from './listeners.js';
+import { incrementCounter } from '../lib/PerformanceCounters.js';
 import {
     addPlaylistTracks,
     clearPlaylist,
@@ -125,6 +126,7 @@ async function handleControl(
 
     if (method === 'GET' && path === '/internal/player') {
         const guildId = url.searchParams.get('guildId') ?? '';
+        incrementCounter('dashboardControlPlayerRequests');
         json(res, 200, await remotePlayer(client, guildId));
         return;
     }

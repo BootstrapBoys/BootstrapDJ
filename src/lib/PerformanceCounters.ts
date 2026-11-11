@@ -18,6 +18,7 @@ export const performanceCounters = {
     autoplayCacheMisses: 0,
     autoplayCoalesced: 0,
     dashboardPlayerRequests: 0,
+    dashboardControlPlayerRequests: 0,
 };
 
 export type PerformanceCounter = keyof typeof performanceCounters;
