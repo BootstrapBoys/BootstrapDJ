@@ -1,3 +1,4 @@
+import { incrementCounter } from '../../lib/PerformanceCounters.js';
 import type { Song } from '../Dispatcher.js';
 import { recordPlayFailure } from './PlaybackFailure.js';
 
@@ -111,6 +112,12 @@ export class PlaybackEngine {
      * flight, so a retry scheduled before `/stop` cannot start audio after it.
      */
     private generation = 0;
+    /** Coalesce fire-and-forget saves so one mutation cannot race another. */
+    private persistInFlight: Promise<void> | null = null;
+    private persistQueued = false;
+    private lastSavedSignature = '';
+    private lastSavedTarget = '';
+    private lastSavedPosition = -1;
 
     public constructor(
         private readonly state: PlaybackState,
@@ -334,9 +341,35 @@ export class PlaybackEngine {
     }
 
     /** Snapshot the live state so a crash or restart can resume it. */
-    public async persist(): Promise<void> {
+    private stateSignature(target: { textId: string; voiceId: string }): string {
+        return [
+            target.textId,
+            target.voiceId,
+            this.state.current?.encoded ?? '',
+            this.state.queue.map(song => song.encoded).join('\u0000'),
+            this.state.loop,
+            this.state.autoplay ? '1' : '0',
+            this.state.paused ? '1' : '0',
+            this.ports.player.volume(),
+        ].join('|');
+    }
+
+    private async writeSnapshot(): Promise<void> {
         const target = this.ports.host.sessionTarget();
         if (!target) return;
+
+        const position = this.ports.player.position();
+        const targetKey = `${target.textId}:${target.voiceId}`;
+        const signature = this.stateSignature(target);
+        if (
+            targetKey === this.lastSavedTarget &&
+            signature === this.lastSavedSignature &&
+            Math.abs(position - this.lastSavedPosition) < 2_000
+        ) {
+            incrementCounter('sessionWritesSkipped');
+            return;
+        }
+
         try {
             await this.ports.sessions.save({
                 guildId: this.guildId,
@@ -344,14 +377,35 @@ export class PlaybackEngine {
                 voiceId: target.voiceId,
                 current: this.state.current,
                 queue: this.state.queue,
-                position: this.ports.player.position(),
+                position,
                 loop: this.state.loop,
                 autoplay: this.state.autoplay,
                 volume: this.ports.player.volume(),
                 paused: this.state.paused,
             });
+            this.lastSavedTarget = targetKey;
+            this.lastSavedSignature = signature;
+            this.lastSavedPosition = position;
         } catch (error) {
+            incrementCounter('sessionErrors');
             this.ports.logger.error(`[session] persist failed for ${this.guildId}: ${error}`);
         }
+    }
+
+    public persist(): Promise<void> {
+        if (this.persistInFlight) {
+            this.persistQueued = true;
+            return this.persistInFlight;
+        }
+
+        const inFlight = this.writeSnapshot().finally(() => {
+            this.persistInFlight = null;
+            if (this.persistQueued) {
+                this.persistQueued = false;
+                void this.persist();
+            }
+        });
+        this.persistInFlight = inFlight;
+        return inFlight;
     }
 }
