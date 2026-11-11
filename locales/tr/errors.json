@@ -1,0 +1,38 @@
+{
+    "generic": "Bir şeyler ters gitti.",
+    "gate": {
+        "preferredBot": "Bu sunucuda ses komutları **{{name}}** botuna yönlendiriliyor. O botu kullanın.",
+        "locked": "Bu oturum kilitli. Bir sunucu yöneticisinin kilidi açması gerekiyor.",
+        "notAllowed": "Bu komutu kullanma izniniz yok.",
+        "threads": "Bu sunucuda komutlar konu başlıklarında devre dışı.",
+        "disabled": "**{{command}}** bu sunucuda devre dışı.",
+        "commandChannel": "Komutlar <#{{channel}}> kanalıyla sınırlı.",
+        "voiceChannel": "Komutları kullanmak için <#{{channel}}> kanalında olmalısınız.",
+        "noSendMessages": "`{{guild}}` sunucusunda **`SendMessages`** iznim yok\nkanal: <#{{channel}}>",
+        "noEmbedLinks": "**`EmbedLinks`** iznim yok.",
+        "clientPermissions": "Bu komutu çalıştırmak için yeterli iznim yok.",
+        "userPermissions": "Bu komutu kullanmak için yeterli izniniz yok.",
+        "voiceRequired": "Bu `{{command}}` komutunu kullanmak için bir ses kanalına bağlı olmalısınız.",
+        "noConnect": "Bu `{{command}}` komutunu çalıştırmak için `CONNECT` iznim yok.",
+        "noSpeak": "Bu `{{command}}` komutunu çalıştırmak için `SPEAK` iznim yok.",
+        "noRequestToSpeak": "Bu `{{command}}` komutunu çalıştırmak için `REQUEST TO SPEAK` iznim yok.",
+        "wrongVoice": "Bu `{{command}}` komutunu kullanmak için <#{{channel}}> kanalına bağlı değilsiniz.",
+        "nothingPlaying": "Şu anda hiçbir şey çalmıyor.",
+        "djRoleMissing": "DJ rolü ayarlanmamış.",
+        "djRoleRequired": "Bu komutu kullanmak için DJ rolüne sahip olmanız gerekiyor.",
+        "missingTitle": "Eksik Argümanlar",
+        "missingDescription": "Lütfen `{{command}}` komutu için gerekli argümanları girin.\n\nÖrnekler:\n{{examples}}",
+        "missingFooter": "Sözdizimi: [] = isteğe bağlı, <> = gerekli",
+        "cooldown": "`{{command}}` komutunu yeniden kullanmadan önce lütfen {{seconds}} saniye daha bekleyin.",
+        "everyone": "@everyone veya @here etiketleyemezsiniz."
+    },
+    "noPlayer": "Bu sunucuda müzik çalmıyor.",
+    "noNode": "Şu anda kullanılabilir bir Lavalink düğümü yok. Lütfen birazdan tekrar deneyin.",
+    "searchFailed": "Arama sırasında bir hata oluştu. Lütfen tekrar deneyin.",
+    "loadFailed": "Arama sırasında bir hata oluştu.",
+    "noResults": "Hiç sonuç bulunamadı.",
+    "playlistTooLong": "Çalma listesi çok uzun. Maksimum uzunluk {{max}} şarkı.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

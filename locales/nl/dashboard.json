@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Taal",
+        "description": "Taal die de bot voor deze server gebruikt. Engels (Verenigde Staten) is de terugvaloptie."
+    },
+    "player": {
+        "title": "Speler",
+        "nothingPlaying": "Er speelt niets",
+        "idle": "inactief",
+        "queued": "{{count}} in de wachtrij",
+        "resume": "Hervatten",
+        "pause": "Pauzeren",
+        "disconnect": "Loskoppelen",
+        "listen": "Luisteren",
+        "mute": "Dempen",
+        "unmute": "Dempen opheffen",
+        "connecting": "Verbinden",
+        "listenTitle": "Deze browseraudio van de bot afspelen",
+        "muteTitle": "Alleen deze browser dempen",
+        "unmuteTitle": "Dempen van alleen deze browser opheffen",
+        "listenDenied": "Je rollen staan luisteren niet toe",
+        "playing": "speelt af",
+        "paused": "gepauzeerd",
+        "autoplay": "autoplay"
+    },
+    "queue": {
+        "title": "Wachtrij",
+        "empty": "Niets in de wachtrij.",
+        "addPlaceholder": "Nummernaam of URL",
+        "add": "Nummer toevoegen",
+        "skipTo": "Overslaan naar {{title}}",
+        "remove": "Dit nummer verwijderen"
+    },
+    "filters": {
+        "title": "Filters"
+    },
+    "settings": {
+        "title": "Instellingen",
+        "cancel": "Annuleren",
+        "save": "Instellingen opslaan",
+        "autoplayReset": "Autoplay-overschrijving resetten",
+        "other": "Overig"
+    },
+    "status": {
+        "connected": "Verbonden",
+        "readOnly": "Alleen-lezen",
+        "error": "Fout",
+        "noGuilds": "Geen servers"
+    },
+    "app": {
+        "install": "App installeren"
+    },
+    "stats": {
+        "title": "Statistieken",
+        "personalTitle": "Mijn statistieken"
+    },
+    "playlists": {
+        "title": "Afspeellijsten"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

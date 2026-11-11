@@ -1,0 +1,13 @@
+{
+    "ready": "BootstrapDJ is gereed.",
+    "queueEnd": {
+        "stillListening": "Nog aan het luisteren",
+        "leave": "Vertrekken",
+        "prompt": "De wachtrij is leeg. Ik vertrek over {{time}}, tenzij iemand bevestigt.",
+        "leaving": "Ik verlaat het spraakkanaal.",
+        "staying": "Verbonden blijven."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

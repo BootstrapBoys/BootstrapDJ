@@ -56,8 +56,10 @@ reviewed and green.<br>
 
 - `i18next` loads namespaces `common`, `commands`, `events`, `buttons`, `errors`,
   and `dashboard` from `locales/<language>/`.
-- Initial catalogs: `en-US` (fallback) and `en-GB`; unknown locale codes resolve
-  to `en-US`.
+- Initial catalogs are **16 locales**: `en-US` (fallback/source), `en-GB`, and
+  AI-translated `es-ES`, `pt-BR`, `fr`, `de`, `ru`, `ja`, `ko`, `zh-CN`,
+  `zh-TW`, `it`, `tr`, `pl`, `nl`, `id`. Every AI file carries
+  `_meta.note = "**AI Translated, awaiting native translation**"`.
 - Per-guild `language` setting is persisted in guild settings; `/language`
   supports slash and prefix `set`/`reset`, and `/settings language <locale>`
   validates the same codes.
@@ -93,12 +95,13 @@ reviewed and green.<br>
 
 - `npm run i18n:validate` checks JSON, namespaces, missing/extra keys,
   placeholders, and Discord description limits; CI runs it before lint.
-- Dashboard settings modal and Language field copy switch with the guild
-  language; broader player-panel localization stays deferred.
+- Dashboard settings modal, Language field, player/queue labels, status text, and
+  audio-tap control copy switch with the guild language; statistics/playlist
+  detail panels remain English.
 - `docs/I18N.md` records translator workflow, import policy, and the deliberate
   no-Docker/Bun/Drizzle decision.
-- Gate: format, locale validation, lint, build, **444/444 tests**, coverage
-  **76.32% lines**.
+- Gate: format, locale validation, lint, build, **447/447 tests**, coverage
+  **76.41% lines**.
 
 ### Production deployment — 2026-11-11
 

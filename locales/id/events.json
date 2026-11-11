@@ -1,0 +1,13 @@
+{
+    "ready": "BootstrapDJ siap.",
+    "queueEnd": {
+        "stillListening": "Tetap mendengarkan",
+        "leave": "Keluar",
+        "prompt": "Antrean kosong. Saya akan keluar dalam {{time}} kecuali ada yang mengonfirmasi.",
+        "leaving": "Keluar dari kanal suara.",
+        "staying": "Tetap terhubung."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

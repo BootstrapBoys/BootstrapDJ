@@ -1,0 +1,647 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "language": {
+        "description": "このサーバーの言語を表示または変更します",
+        "language_option": "使用する言語",
+        "reset_option": "既定の言語にリセットします"
+    },
+    "core": {
+        "noQueue": "キューに曲がありません。",
+        "nothingPlaying": "現在何も再生されていません",
+        "alreadyPaused": "曲はすでに一時停止しています",
+        "paused": "曲を一時停止しました",
+        "resumed": "再生を再開しました",
+        "notPaused": "プレイヤーは一時停止していません。",
+        "cleared": "キューをクリアしました",
+        "shuffled": "キューをシャッフルしました",
+        "stopped": "再生を停止し、キューをクリアしました",
+        "invalidNumber": "有効な数値ではありません。",
+        "validNumber": "有効な数値を指定してください。",
+        "skipped": "[{{title}}]({{uri}}) をスキップしました",
+        "skippedTo": "{{target}} 番目の曲にスキップしました",
+        "removed": "{{position}} 番目の曲をキューから削除しました",
+        "seeked": "{{time}} にシークしました",
+        "invalidTime": "時間の形式が正しくありません。",
+        "volumeInvalid": "有効な数値を指定してください。",
+        "volumeLow": "音量を {{min}} より低くすることはできません。",
+        "volumeHigh": "音量を {{max}} より高くすることはできません。",
+        "volumeSet": "音量を {{volume}} に設定しました",
+        "notConnected": "ボイスチャンネルに接続していません",
+        "join": "ボイスチャンネルに参加しました",
+        "dmSent": "**DM を送信しました。**",
+        "dmFailed": "**DM を送信できませんでした。**",
+        "addedTrack": "[{{title}}]({{uri}}) を{{destination}}に追加しました。",
+        "addedPlaylist": "{{count}} 曲を{{destination}}に追加しました。",
+        "destinationNext": "キューの先頭",
+        "destinationQueue": "キュー",
+        "alreadyConnected": "すでに {{channel}} に接続しています",
+        "joined": "{{channel}} に参加しました",
+        "left": "{{channel}} から退出しました",
+        "leftGeneric": "ボイスチャンネルから退出しました",
+        "voiceChannel": "ボイスチャンネル",
+        "grabCard": "**再生時間:** {{duration}}\n**リクエスト:** {{requester}}\n**リンク:** [こちら]({{uri}})",
+        "loopSong": "**曲をリピートしています**",
+        "loopQueue": "**キューをリピートしています**",
+        "loopOff": "**リピートをオフにしました**",
+        "autoplayDisabled": "自動再生を無効にし、ボットが追加した曲をキューから削除しました。",
+        "autoplayNoNode": "現在利用可能な Lavalink ノードがありません。しばらくしてから再度お試しください。",
+        "autoplayNoSeed": "**{{label}}** に該当するものが見つかりませんでした。自動再生は変更していません。",
+        "autoplaySeeded": "自動再生を有効にしました — **{{label}}** を起点に、{{author}} の **{{title}}** から開始します。",
+        "autoplayStarted": "自動再生を有効にしました — {{author}} の **{{title}}** から開始します。",
+        "autoplayWaiting": "自動再生を有効にしました — キューがなくなったら自動で選曲します。",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · リクエスト: {{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - リクエスト: {{requester}} - 再生時間: {{duration}}",
+        "queueNowPlaying": "再生中: [{{title}}]({{uri}}) - リクエスト: {{requester}} - 再生時間: {{duration}}",
+        "queuedTracks": "キューの曲数",
+        "queueLength": "キューの長さ",
+        "autoplay": "自動再生",
+        "loop": "リピート",
+        "on": "オン",
+        "off": "オフ",
+        "queueAuthor": "キュー",
+        "queuePage": "{{page}} / {{total}} ページ"
+    },
+    "metadata": {
+        "247": {
+            "description": "ボットをボイスチャンネルに留めます"
+        },
+        "8d": {
+            "description": "8D フィルターをオン/オフします"
+        },
+        "bassboost": {
+            "description": "低音ブーストフィルターをオン/オフします"
+        },
+        "distorsion": {
+            "description": "ディストーションフィルターをオン/オフします"
+        },
+        "filter": {
+            "description": "オーディオフィルターを適用または解除します",
+            "options": {
+                "8d": "8D を適用",
+                "bassboost": "低音ブーストを適用",
+                "distortion": "ディストーションを適用",
+                "karaoke": "カラオケを適用",
+                "nightcore": "ナイトコアを適用",
+                "reset": "フィルターをリセット",
+                "rotation": "ローテーションを適用",
+                "tremolo": "トレモロを適用",
+                "vibrato": "ビブラートを適用",
+                "lowpass": "ローパスを適用",
+                "pitch": "値指定でピッチを適用",
+                "rate": "値指定でレートを適用",
+                "speed": "値指定で速度を適用"
+            }
+        },
+        "filters": {
+            "description": "有効なオーディオフィルターを表示します"
+        },
+        "karaoke": {
+            "description": "カラオケフィルターをオン/オフします"
+        },
+        "nightcore": {
+            "description": "ナイトコアフィルターをオン/オフします"
+        },
+        "pitch": {
+            "description": "ピッチフィルターをオン/オフします",
+            "options": {
+                "number": "設定するピッチの数値"
+            }
+        },
+        "rate": {
+            "description": "再生レート（速度とピッチ）を変更します",
+            "options": {
+                "rate": "0.5〜5 の倍率"
+            }
+        },
+        "reset": {
+            "description": "有効なフィルターをリセットします"
+        },
+        "rotation": {
+            "description": "ローテーションフィルターをオン/オフします"
+        },
+        "speed": {
+            "description": "曲の再生速度を設定します",
+            "options": {
+                "speed": "設定する速度"
+            }
+        },
+        "tremolo": {
+            "description": "トレモロフィルターをオン/オフします"
+        },
+        "vibrato": {
+            "description": "ビブラートフィルターをオン/オフします"
+        },
+        "lowpass": {
+            "description": "ローパスフィルターをオン/オフします"
+        },
+        "add": {
+            "description": "プレイリストに曲を追加します",
+            "options": {
+                "playlist": "追加先のプレイリスト",
+                "song": "追加する曲"
+            }
+        },
+        "alias": {
+            "description": "カスタムコマンドエイリアスを作成・一覧・削除します",
+            "options": {
+                "action": "エイリアスの追加・削除・一覧・クリア",
+                "alias": "エイリアス名",
+                "command": "追加時の対象コマンド",
+                "scope": "サーバー全体または自分のみ"
+            }
+        },
+        "autoplayconfig": {
+            "description": "自動再生のコールドスタート元を設定します",
+            "options": {
+                "source": "コールドスタートのシード元",
+                "seeds": "カンマ区切りの厳選シード（source を curated に設定）",
+                "reset": "サーバー設定を削除し、環境既定値を使用します"
+            }
+        },
+        "playlist": {
+            "description": "保存済みプレイリストを管理します",
+            "options": {
+                "action": "コレクションの操作",
+                "name": "コレクション名",
+                "query": "追加する曲またはプレイリストの URL",
+                "target": "名前変更・コピー・結合の宛先名",
+                "index": "削除する曲の位置（1 始まり）",
+                "code": "共有コード"
+            }
+        },
+        "create": {
+            "description": "プレイリストを作成します",
+            "options": {
+                "name": "プレイリスト名"
+            }
+        },
+        "delete": {
+            "description": "プレイリストを削除します",
+            "options": {
+                "playlist": "削除するプレイリスト"
+            }
+        },
+        "dj": {
+            "description": "DJ モードと関連ロールを管理します",
+            "options": {
+                "add": "追加する DJ ロール",
+                "remove": "削除する DJ ロール",
+                "clear": "すべての DJ ロールをクリアします",
+                "toggle": "DJ ロールを切り替えます"
+            }
+        },
+        "language": {
+            "description": "このサーバーの言語を表示または変更します",
+            "options": {
+                "language": "使用する言語",
+                "reset": "既定の言語にリセットします"
+            }
+        },
+        "list": {
+            "description": "プレイリストを一覧表示します",
+            "options": {
+                "user": "表示するプレイリストの持ち主"
+            }
+        },
+        "listen": {
+            "description": "音声コマンド（Earl the Ear）と試聴のオプトアウトを管理します",
+            "options": {
+                "action": "実行する操作"
+            }
+        },
+        "load": {
+            "description": "プレイリストを読み込みます",
+            "options": {
+                "playlist": "読み込むプレイリスト"
+            }
+        },
+        "mappings": {
+            "description": "カスタムのプレフィックスショートカットを登録します",
+            "options": {
+                "action": "マッピングの追加・削除・一覧・クリア",
+                "trigger": "プレフィックス後に続く単語",
+                "expansion": "実行するコマンドと引数",
+                "scope": "サーバー全体または自分のみ"
+            }
+        },
+        "permissions": {
+            "description": "コマンドごとの許可・拒否ルールを管理します",
+            "options": {
+                "action": "ルールの一覧・許可・拒否・リセット",
+                "command": "コマンド名。リセット時に省略すると全ルールを削除",
+                "target": "ルールの対象ユーザーまたはロール"
+            }
+        },
+        "prefix": {
+            "description": "ボットのプレフィックスを表示します",
+            "options": {
+                "set": "プレフィックスを設定します",
+                "reset": "プレフィックスを既定値に戻します"
+            }
+        },
+        "removesong": {
+            "description": "プレイリストから曲を削除します",
+            "options": {
+                "playlist": "編集するプレイリスト",
+                "song": "削除する曲"
+            }
+        },
+        "save": {
+            "description": "現在のキューをプレイリストとして保存します",
+            "options": {
+                "name": "プレイリスト名"
+            }
+        },
+        "selfprefix": {
+            "description": "このサーバー用の個人プレフィックスを設定します"
+        },
+        "settings": {
+            "description": "サーバーごとのボット設定を表示または変更します",
+            "options": {
+                "key": "設定名。省略するとすべて表示",
+                "value": "新しい値。省略すると現在値を表示",
+                "reset": "このサーバーの全設定をリセットします"
+            }
+        },
+        "setup": {
+            "description": "ボットをセットアップします",
+            "options": {
+                "create": "曲リクエストチャンネルを作成します",
+                "delete": "曲リクエストチャンネルを削除します",
+                "info": "曲リクエストチャンネルを表示します"
+            }
+        },
+        "album": {
+            "description": "アルバムを検索し、最初の結果をキューに追加します",
+            "options": {
+                "name": "アルバム名"
+            }
+        },
+        "artist": {
+            "description": "アーティストを検索し、最上位の結果をキューに追加します",
+            "options": {
+                "name": "アーティスト名"
+            }
+        },
+        "autoplay": {
+            "description": "自動再生を切り替えます",
+            "options": {
+                "seed": "1 つ目のアーティストまたは曲",
+                "seed2": "2 つ目のアーティストまたは曲（任意）",
+                "seed3": "3 つ目のアーティストまたは曲（任意）"
+            }
+        },
+        "backward": {
+            "description": "現在の曲を巻き戻します",
+            "options": {
+                "time": "戻す長さ（30s、1m、01:30）"
+            }
+        },
+        "clearqueue": {
+            "description": "キューをクリアします"
+        },
+        "endtime": {
+            "description": "指定した位置で現在の曲を停止します",
+            "options": {
+                "time": "停止する位置（30s、1m、02:30）"
+            }
+        },
+        "fairplay": {
+            "description": "リクエスト者ごとにキューを順番に再生します"
+        },
+        "forward": {
+            "description": "現在の曲を早送りします",
+            "options": {
+                "time": "進める長さ（30s、1m、01:30）"
+            }
+        },
+        "grab": {
+            "description": "再生中の曲を取得します"
+        },
+        "join": {
+            "description": "ボイスチャンネルに参加します"
+        },
+        "leave": {
+            "description": "ボイスチャンネルから退出します"
+        },
+        "loop": {
+            "description": "現在の曲またはキューをリピートします"
+        },
+        "lyrics": {
+            "description": "再生中または検索した曲の歌詞を表示します",
+            "options": {
+                "song": "検索する曲。既定は現在の曲"
+            }
+        },
+        "massmove": {
+            "description": "キューの曲をまとめて移動します",
+            "options": {
+                "from": "範囲の開始位置（1 始まり）",
+                "to": "範囲の終了位置（1 始まり）",
+                "destination": "移動後の挿入位置（1 始まり）"
+            }
+        },
+        "massremove": {
+            "description": "キューの曲を範囲指定で削除します",
+            "options": {
+                "from": "削除開始位置（1 始まり）",
+                "to": "削除終了位置（1 始まり）"
+            }
+        },
+        "move": {
+            "description": "キューの曲を別の位置に移動します",
+            "options": {
+                "from": "現在のキュー位置（1 始まり）",
+                "to": "新しいキュー位置（1 始まり）"
+            }
+        },
+        "nowplaying": {
+            "description": "再生中の曲を表示します"
+        },
+        "pause": {
+            "description": "現在の曲を一時停止します"
+        },
+        "play": {
+            "description": "YouTube または Spotify から曲を再生します",
+            "options": {
+                "song": "再生する曲"
+            }
+        },
+        "playleave": {
+            "description": "リクエストを再生し、キュー終了時に退出します",
+            "options": {
+                "query": "曲、検索語、またはプレイリスト URL"
+            }
+        },
+        "playlocal": {
+            "description": "Discord にアップロードされた音声・動画を再生します",
+            "options": {
+                "file": "再生する音声または動画ファイル"
+            }
+        },
+        "playnext": {
+            "description": "次に再生する曲としてキューに追加します",
+            "options": {
+                "song": "再生する曲"
+            }
+        },
+        "playrecent": {
+            "description": "最近の再生履歴から曲をキューに追加します",
+            "options": {
+                "count": "追加する最近の曲数（1〜20）"
+            }
+        },
+        "playselect": {
+            "description": "プレイリストや検索結果から曲を選択します",
+            "options": {
+                "url": "プレイリスト URL または検索語"
+            }
+        },
+        "playlistsearch": {
+            "description": "一致するプレイリストの曲を表示します",
+            "options": {
+                "query": "プレイリスト名または URL"
+            }
+        },
+        "previous": {
+            "description": "前の曲をもう一度再生します"
+        },
+        "queue": {
+            "description": "現在のキューを表示します"
+        },
+        "radio": {
+            "description": "インターネットラジオを名前で再生します",
+            "options": {
+                "station": "局名またはジャンル"
+            }
+        },
+        "recentlyplayed": {
+            "description": "最近再生した曲を表示します"
+        },
+        "remove": {
+            "description": "キューから曲を削除します",
+            "options": {
+                "song": "曲番号"
+            }
+        },
+        "removeabsent": {
+            "description": "ボイスチャンネルにいないユーザーのリクエスト曲を削除します"
+        },
+        "removeduplicates": {
+            "description": "キューの重複曲を削除します"
+        },
+        "removekeyword": {
+            "description": "キーワードに一致するキューの曲を削除します",
+            "options": {
+                "keyword": "タイトルまたはアーティストに一致させる文字列"
+            }
+        },
+        "removelast": {
+            "description": "キューの最後の曲を削除します"
+        },
+        "removeuser": {
+            "description": "指定ユーザーのキューの曲を削除します",
+            "options": {
+                "user": "曲を削除するユーザー"
+            }
+        },
+        "replay": {
+            "description": "現在の曲を最初から再生し直します"
+        },
+        "requested": {
+            "description": "指定ユーザーがリクエストした曲を表示します",
+            "options": {
+                "user": "表示するユーザー（既定は自分）"
+            }
+        },
+        "resume": {
+            "description": "現在の曲を再開します"
+        },
+        "reverse": {
+            "description": "キューの曲順を逆にします"
+        },
+        "seek": {
+            "description": "曲内の指定した位置にシークします",
+            "options": {
+                "time": "シーク先の位置"
+            }
+        },
+        "selectrandom": {
+            "description": "キューの曲をランダムに先頭へ移動します"
+        },
+        "sessionstats": {
+            "description": "現在の再生セッションの統計を表示します"
+        },
+        "shuffle": {
+            "description": "キューをシャッフルします"
+        },
+        "shufflerepeat": {
+            "description": "キューをシャッフルし、キューのリピートを有効にします"
+        },
+        "skip": {
+            "description": "現在の曲をスキップします"
+        },
+        "skipto": {
+            "description": "キューの指定した曲へスキップします",
+            "options": {
+                "number": "スキップ先の曲番号"
+            }
+        },
+        "song": {
+            "description": "再生中または検索した曲の情報を表示します",
+            "options": {
+                "query": "検索する曲。既定は現在の曲"
+            }
+        },
+        "sort": {
+            "description": "キューの曲を並べ替えます",
+            "options": {
+                "by": "並べ替えの基準",
+                "order": "並べ替えの順序"
+            }
+        },
+        "stop": {
+            "description": "再生を停止し、キューをクリアします"
+        },
+        "swap": {
+            "description": "キューの 2 曲を入れ替えます",
+            "options": {
+                "first": "1 つ目のキュー位置（1 始まり）",
+                "second": "2 つ目のキュー位置（1 始まり）"
+            }
+        },
+        "top": {
+            "description": "検索語の上位結果を表示します",
+            "options": {
+                "query": "検索語。既定は上位ヒット"
+            }
+        },
+        "volume": {
+            "description": "プレイヤーの音量を設定します",
+            "options": {
+                "number": "設定する音量"
+            }
+        },
+        "voteskip": {
+            "description": "現在の曲のスキップ投票を開始または参加します"
+        },
+        "eval": {
+            "description": "コードを評価します"
+        },
+        "guild": {
+            "description": "ボットが参加中のサーバーを検査します",
+            "options": {
+                "guild": "サーバー名または ID（自動補完）"
+            }
+        },
+        "guildleave": {
+            "description": "サーバーから退出します"
+        },
+        "guildlist": {
+            "description": "ボットが参加中の全サーバーを一覧表示します"
+        },
+        "reload": {
+            "description": "再起動せずにコマンドモジュールを再読み込みします（所有者のみ）"
+        },
+        "restart": {
+            "description": "ボットプロセスを再起動します（所有者のみ）"
+        },
+        "shutdown": {
+            "description": "ボットプロセスを停止します（所有者のみ）"
+        },
+        "categories": {
+            "description": "すべてのコマンドカテゴリを一覧表示します"
+        },
+        "faq": {
+            "description": "BootstrapDJ のよくある質問"
+        },
+        "guess": {
+            "description": "現在の曲で曲名当てゲームを開始します"
+        },
+        "help": {
+            "description": "ヘルプメニューを表示します",
+            "options": {
+                "command": "情報を表示するコマンド"
+            }
+        },
+        "info": {
+            "description": "ボットの情報を表示します"
+        },
+        "invite": {
+            "description": "ボットの招待リンクを送信します"
+        },
+        "lavalink": {
+            "description": "現在の Lavalink 統計を表示します"
+        },
+        "leaderboard": {
+            "description": "今回のセッションで最もアクティブなリクエスト者を表示します"
+        },
+        "ping": {
+            "description": "ボットの ping を表示します"
+        },
+        "premium": {
+            "description": "無料機能の方針を説明します"
+        },
+        "profile": {
+            "description": "BootstrapDJ プロフィールを表示またはカスタマイズします",
+            "options": {
+                "action": "プロフィール項目の表示・設定・クリア",
+                "key": "変更する項目: color、bio、privacy、visible",
+                "value": "新しい値",
+                "user": "表示するプロフィール"
+            }
+        },
+        "shards": {
+            "description": "シャードの状態を表示します"
+        },
+        "stats": {
+            "description": "ボットのリアルタイム統計を表示します"
+        },
+        "support": {
+            "description": "BootstrapDJ のサポート情報"
+        },
+        "tip": {
+            "description": "BootstrapDJ のヒントをランダムに表示します"
+        },
+        "utility": {
+            "description": "ボット情報とユーティリティページ",
+            "options": {
+                "overview": "概要を表示",
+                "stats": "統計を表示",
+                "shards": "シャードを表示",
+                "categories": "カテゴリを表示",
+                "faq": "FAQ を表示",
+                "tip": "ヒントを表示",
+                "premium": "プレミアムを表示",
+                "support": "サポートを表示",
+                "leaderboard": "ランキングを表示",
+                "commands": "コマンドを表示",
+                "dashboard": "ダッシュボードを表示"
+            }
+        }
+    },
+    "profile": {
+        "private": "このプロフィールは非公開です。",
+        "noBio": "自己紹介は未設定です。",
+        "visibility": "公開範囲",
+        "hidden": "非表示",
+        "visible": "表示",
+        "privacy": "プライバシー",
+        "serverVisible": "サーバーに公開",
+        "no": "いいえ",
+        "yes": "はい",
+        "avatarShape": "アバターの形状",
+        "reset": "プロフィールをリセットしました。",
+        "chooseField": "color、bio、privacy、visible のいずれかを指定してください。",
+        "hex": "`#ff8800` のような 16 進カラーを使用してください。",
+        "bioLimit": "自己紹介は 200 文字までです。",
+        "privacyValue": "プライバシーは `public` または `private` である必要があります。",
+        "backgroundLimit": "背景は 200 文字までです。",
+        "avatarShapeValue": "アバターの形状は `circle`、`square`、`rounded` のいずれかである必要があります。",
+        "borderLimit": "アバターの枠は 50 文字までです。",
+        "unknown": "不明なプロフィール項目です。",
+        "updated": "プロフィールの **{{key}}** を更新しました。"
+    }
+}

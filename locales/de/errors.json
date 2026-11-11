@@ -1,0 +1,38 @@
+{
+    "generic": "Etwas ist schiefgelaufen.",
+    "gate": {
+        "preferredBot": "Sprachbefehle werden auf diesem Server an **{{name}}** weitergeleitet. Verwende diesen Bot.",
+        "locked": "Diese Sitzung ist gesperrt. Ein Servermanager muss sie entsperren.",
+        "notAllowed": "Du darfst diesen Befehl nicht verwenden.",
+        "threads": "Befehle sind in Threads auf diesem Server deaktiviert.",
+        "disabled": "**{{command}}** ist auf diesem Server deaktiviert.",
+        "commandChannel": "Befehle sind auf <#{{channel}}> beschränkt.",
+        "voiceChannel": "Du musst dich in <#{{channel}}> befinden, um Befehle zu nutzen.",
+        "noSendMessages": "Mir fehlt die Berechtigung **`SendMessages`** in `{{guild}}`\nKanal: <#{{channel}}>",
+        "noEmbedLinks": "Mir fehlt die Berechtigung **`EmbedLinks`**.",
+        "clientPermissions": "Mir fehlen die nötigen Berechtigungen, um diesen Befehl auszuführen.",
+        "userPermissions": "Dir fehlen die nötigen Berechtigungen, um diesen Befehl zu nutzen.",
+        "voiceRequired": "Du musst mit einem Sprachkanal verbunden sein, um den Befehl `{{command}}` zu nutzen.",
+        "noConnect": "Mir fehlt die Berechtigung `CONNECT`, um den Befehl `{{command}}` auszuführen.",
+        "noSpeak": "Mir fehlt die Berechtigung `SPEAK`, um den Befehl `{{command}}` auszuführen.",
+        "noRequestToSpeak": "Mir fehlt die Berechtigung `REQUEST TO SPEAK`, um den Befehl `{{command}}` auszuführen.",
+        "wrongVoice": "Du bist nicht mit <#{{channel}}> verbunden, um den Befehl `{{command}}` zu nutzen.",
+        "nothingPlaying": "Derzeit wird nichts abgespielt.",
+        "djRoleMissing": "Es ist keine DJ-Rolle festgelegt.",
+        "djRoleRequired": "Du benötigst die DJ-Rolle, um diesen Befehl zu nutzen.",
+        "missingTitle": "Fehlende Argumente",
+        "missingDescription": "Bitte gib die erforderlichen Argumente für den Befehl `{{command}}` an.\n\nBeispiele:\n{{examples}}",
+        "missingFooter": "Syntax: [] = optional, <> = erforderlich",
+        "cooldown": "Bitte warte noch {{seconds}} Sekunde(n), bevor du den Befehl `{{command}}` erneut verwendest.",
+        "everyone": "Du kannst nicht @everyone oder @here erwähnen."
+    },
+    "noPlayer": "Auf diesem Server wird keine Musik abgespielt.",
+    "noNode": "Derzeit ist kein Lavalink-Node verfügbar. Bitte versuche es gleich noch einmal.",
+    "searchFailed": "Bei der Suche ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+    "loadFailed": "Bei der Suche ist ein Fehler aufgetreten.",
+    "noResults": "Es wurden keine Ergebnisse gefunden.",
+    "playlistTooLong": "Die Wiedergabeliste ist zu lang. Die maximale Länge beträgt {{max}} Songs.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

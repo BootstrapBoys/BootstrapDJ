@@ -11,9 +11,10 @@ metadata, validator; long-tail embeds remain follow-up)<br>
    dashboard UI second. Recommend not translating slash command **names** in
    the first release; keep canonical names/aliases stable and localize
    descriptions and responses. This avoids breaking invocations and aliases.
-2. **Initial languages:** ship `en-US` plus `en-GB` as the complete catalog, then
-   import reviewed upstream translations in batches. Do not import all 32
-   upstream locales before our command keys are stable.
+2. **Initial languages:** ship **16 locales**: `en-US` source, `en-GB`, and
+   AI-translated `es-ES`, `pt-BR`, `fr`, `de`, `ru`, `ja`, `ko`, `zh-CN`,
+   `zh-TW`, `it`, `tr`, `pl`, `nl`, `id`. Every AI file is marked
+   `**AI Translated, awaiting native translation**` until native review.
 3. **`/playlocal` input:** attachment-only, matching upstream. Do not expose
    arbitrary host paths; a host-path command is a different security and
    deployment feature.

@@ -1,0 +1,13 @@
+{
+    "ready": "BootstrapDJ hazır.",
+    "queueEnd": {
+        "stillListening": "Dinlemeye devam et",
+        "leave": "Ayrıl",
+        "prompt": "Sıra boş. Biri onaylamazsa {{time}} içinde ayrılacağım.",
+        "leaving": "Ses kanalından ayrılıyorum.",
+        "staying": "Bağlı kalıyorum."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

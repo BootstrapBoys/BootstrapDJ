@@ -1,0 +1,647 @@
+{
+    "language": {
+        "description": "이 서버의 언어를 확인하거나 변경합니다",
+        "language_option": "사용할 언어",
+        "reset_option": "기본 언어로 초기화"
+    },
+    "core": {
+        "noQueue": "대기열에 곡이 없습니다.",
+        "nothingPlaying": "현재 재생 중인 곡이 없습니다",
+        "alreadyPaused": "이미 일시정지된 곡입니다",
+        "paused": "곡을 일시정지했습니다",
+        "resumed": "플레이어를 재개했습니다",
+        "notPaused": "플레이어가 일시정지 상태가 아닙니다.",
+        "cleared": "대기열을 비웠습니다",
+        "shuffled": "대기열을 섞었습니다",
+        "stopped": "음악을 중지하고 대기열을 비웠습니다",
+        "invalidNumber": "올바른 숫자가 아닙니다.",
+        "validNumber": "올바른 숫자를 입력해 주세요.",
+        "skipped": "[{{title}}]({{uri}}) 곡을 건너뛰었습니다",
+        "skippedTo": "{{target}}번 곡으로 건너뛰었습니다",
+        "removed": "대기열에서 {{position}}번 곡을 제거했습니다",
+        "seeked": "{{time}} 위치로 이동했습니다",
+        "invalidTime": "시간 형식이 올바르지 않습니다.",
+        "volumeInvalid": "올바른 숫자를 입력해 주세요.",
+        "volumeLow": "볼륨은 {{min}}보다 낮을 수 없습니다.",
+        "volumeHigh": "볼륨은 {{max}}보다 높을 수 없습니다.",
+        "volumeSet": "볼륨을 {{volume}}로 설정했습니다",
+        "notConnected": "음성 채널에 연결되어 있지 않습니다",
+        "join": "음성 채널에 참가했습니다",
+        "dmSent": "**DM을 보냈습니다.**",
+        "dmFailed": "**DM을 보내지 못했습니다.**",
+        "addedTrack": "[{{title}}]({{uri}}) 곡을 {{destination}} 추가했습니다.",
+        "addedPlaylist": "{{count}}곡을 {{destination}} 추가했습니다.",
+        "destinationNext": "대기열 맨 앞(다음 재생)에",
+        "destinationQueue": "대기열에",
+        "alreadyConnected": "이미 {{channel}}에 연결되어 있습니다",
+        "joined": "{{channel}}에 참가했습니다",
+        "left": "{{channel}}에서 나갔습니다",
+        "leftGeneric": "음성 채널에서 나갔습니다",
+        "voiceChannel": "음성 채널",
+        "grabCard": "**길이:** {{duration}}\n**요청자:** {{requester}}\n**링크:** [여기를 클릭하세요]({{uri}})",
+        "loopSong": "**곡 반복 중**",
+        "loopQueue": "**대기열 반복 중**",
+        "loopOff": "**반복이 꺼졌습니다**",
+        "autoplayDisabled": "자동재생을 비활성화하고 봇이 추가한 곡을 대기열에서 제거했습니다.",
+        "autoplayNoNode": "현재 사용 가능한 Lavalink 노드가 없습니다. 잠시 후 다시 시도해 주세요.",
+        "autoplayNoSeed": "**{{label}}**에 대한 결과를 찾지 못했습니다. 자동재생은 변경되지 않았습니다.",
+        "autoplaySeeded": "자동재생을 활성화했습니다 — **{{label}}**에서 시작하여 {{author}}의 **{{title}}**부터 재생합니다.",
+        "autoplayStarted": "자동재생을 활성화했습니다 — {{author}}의 **{{title}}**부터 시작합니다.",
+        "autoplayWaiting": "자동재생을 활성화했습니다 — 대기열이 끝나면 곡을 선택하겠습니다.",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · {{requester}}님의 요청\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - 요청자: {{requester}} - 길이: {{duration}}",
+        "queueNowPlaying": "재생 중: [{{title}}]({{uri}}) - 요청자: {{requester}} - 길이: {{duration}}",
+        "queuedTracks": "대기 중인 곡",
+        "queueLength": "대기열 길이",
+        "autoplay": "자동재생",
+        "loop": "반복",
+        "on": "켜짐",
+        "off": "꺼짐",
+        "queueAuthor": "대기열",
+        "queuePage": "{{total}}페이지 중 {{page}}페이지"
+    },
+    "metadata": {
+        "247": {
+            "description": "봇이 음성 채널에 계속 남아 있도록 설정합니다"
+        },
+        "8d": {
+            "description": "8D 필터를 켜거나 끕니다"
+        },
+        "bassboost": {
+            "description": "베이스 부스트 필터를 켜거나 끕니다"
+        },
+        "distorsion": {
+            "description": "왜곡 필터를 켜거나 끕니다"
+        },
+        "filter": {
+            "description": "오디오 필터를 적용하거나 해제합니다",
+            "options": {
+                "8d": "8D 적용",
+                "bassboost": "베이스 부스트 적용",
+                "distortion": "왜곡 적용",
+                "karaoke": "노래방 적용",
+                "nightcore": "나이트코어 적용",
+                "reset": "초기화 적용",
+                "rotation": "회전 적용",
+                "tremolo": "트레몰로 적용",
+                "vibrato": "비브라토 적용",
+                "lowpass": "로우패스 적용",
+                "pitch": "값을 지정해 피치 적용",
+                "rate": "값을 지정해 속도 비율 적용",
+                "speed": "값을 지정해 속도 적용"
+            }
+        },
+        "filters": {
+            "description": "활성화된 오디오 필터를 표시합니다"
+        },
+        "karaoke": {
+            "description": "노래방 필터를 켜거나 끕니다"
+        },
+        "nightcore": {
+            "description": "나이트코어 필터를 켜거나 끕니다"
+        },
+        "pitch": {
+            "description": "피치 필터를 켜거나 끕니다",
+            "options": {
+                "number": "설정할 피치 값"
+            }
+        },
+        "rate": {
+            "description": "재생 속도(속도와 피치)를 변경합니다",
+            "options": {
+                "rate": "0.5에서 5 사이의 속도 배율"
+            }
+        },
+        "reset": {
+            "description": "활성화된 필터를 초기화합니다"
+        },
+        "rotation": {
+            "description": "회전 필터를 켜거나 끕니다"
+        },
+        "speed": {
+            "description": "곡의 속도를 설정합니다",
+            "options": {
+                "speed": "설정할 속도"
+            }
+        },
+        "tremolo": {
+            "description": "트레몰로 필터를 켜거나 끕니다"
+        },
+        "vibrato": {
+            "description": "비브라토 필터를 켜거나 끕니다"
+        },
+        "lowpass": {
+            "description": "로우패스 필터를 켜거나 끕니다"
+        },
+        "add": {
+            "description": "재생목록에 곡을 추가합니다",
+            "options": {
+                "playlist": "추가할 재생목록",
+                "song": "추가할 곡"
+            }
+        },
+        "alias": {
+            "description": "사용자 지정 명령 별칭을 만들거나 나열하거나 제거합니다",
+            "options": {
+                "action": "별칭 추가, 제거, 나열 또는 전체 삭제",
+                "alias": "별칭 이름",
+                "command": "추가할 대상 명령",
+                "scope": "서버 전체 또는 본인만"
+            }
+        },
+        "autoplayconfig": {
+            "description": "자동재생 콜드 스타트 소스를 설정합니다",
+            "options": {
+                "source": "콜드 스타트 시드 소스",
+                "seeds": "쉼표로 구분된 큐레이션 시드 (소스를 curated로 설정)",
+                "reset": "서버 설정을 제거하고 환경 기본값 사용"
+            }
+        },
+        "playlist": {
+            "description": "저장된 재생목록을 관리합니다",
+            "options": {
+                "action": "컬렉션 작업",
+                "name": "컬렉션 이름",
+                "query": "추가할 트랙 또는 재생목록 URL",
+                "target": "이름 변경/복사/병합 대상 이름",
+                "index": "제거할 트랙 위치 (1부터 시작)",
+                "code": "공유 코드"
+            }
+        },
+        "create": {
+            "description": "재생목록을 만듭니다",
+            "options": {
+                "name": "재생목록 이름"
+            }
+        },
+        "delete": {
+            "description": "재생목록을 삭제합니다",
+            "options": {
+                "playlist": "삭제할 재생목록"
+            }
+        },
+        "dj": {
+            "description": "DJ 모드와 관련 역할을 관리합니다",
+            "options": {
+                "add": "추가할 DJ 역할",
+                "remove": "제거할 DJ 역할",
+                "clear": "모든 DJ 역할을 삭제합니다",
+                "toggle": "DJ 역할을 전환합니다"
+            }
+        },
+        "language": {
+            "description": "이 서버의 언어를 확인하거나 변경합니다",
+            "options": {
+                "language": "사용할 언어",
+                "reset": "기본 언어로 초기화"
+            }
+        },
+        "list": {
+            "description": "재생목록을 나열합니다",
+            "options": {
+                "user": "재생목록을 표시할 사용자"
+            }
+        },
+        "listen": {
+            "description": "음성 명령(Earl the Ear)과 듣기 옵트아웃을 제어합니다",
+            "options": {
+                "action": "수행할 작업"
+            }
+        },
+        "load": {
+            "description": "재생목록을 불러옵니다",
+            "options": {
+                "playlist": "불러올 재생목록"
+            }
+        },
+        "mappings": {
+            "description": "사용자 지정 접두사 단축어를 만듭니다",
+            "options": {
+                "action": "매핑 추가, 제거, 나열 또는 전체 삭제",
+                "trigger": "접두사 뒤에 입력하는 단어",
+                "expansion": "실행할 명령과 인수",
+                "scope": "서버 전체 또는 본인만"
+            }
+        },
+        "permissions": {
+            "description": "명령별 허용/거부 규칙을 관리합니다",
+            "options": {
+                "action": "규칙 나열, 허용, 거부 또는 초기화",
+                "command": "명령 이름 (초기화 시 생략하면 모든 규칙 삭제)",
+                "target": "규칙이 적용될 사용자 또는 역할"
+            }
+        },
+        "prefix": {
+            "description": "봇의 접두사를 표시합니다",
+            "options": {
+                "set": "접두사를 설정합니다",
+                "reset": "접두사를 기본값으로 초기화합니다"
+            }
+        },
+        "removesong": {
+            "description": "재생목록에서 곡을 제거합니다",
+            "options": {
+                "playlist": "편집할 재생목록",
+                "song": "제거할 곡"
+            }
+        },
+        "save": {
+            "description": "현재 대기열을 재생목록으로 저장합니다",
+            "options": {
+                "name": "재생목록 이름"
+            }
+        },
+        "selfprefix": {
+            "description": "이 서버에서 사용할 개인 접두사를 설정합니다"
+        },
+        "settings": {
+            "description": "서버별 봇 설정을 확인하거나 변경합니다",
+            "options": {
+                "key": "설정 이름 (생략하면 전체 목록 표시)",
+                "value": "새 값 (생략하면 현재 설정 확인)",
+                "reset": "이 서버의 모든 설정 초기화"
+            }
+        },
+        "setup": {
+            "description": "봇을 설정합니다",
+            "options": {
+                "create": "곡 요청 채널을 만듭니다",
+                "delete": "곡 요청 채널을 삭제합니다",
+                "info": "곡 요청 채널을 표시합니다"
+            }
+        },
+        "album": {
+            "description": "앨범을 조회하거나 첫 번째 결과를 대기열에 추가합니다",
+            "options": {
+                "name": "앨범 이름"
+            }
+        },
+        "artist": {
+            "description": "아티스트를 조회하거나 최상위 결과를 대기열에 추가합니다",
+            "options": {
+                "name": "아티스트 이름"
+            }
+        },
+        "autoplay": {
+            "description": "자동재생을 전환합니다",
+            "options": {
+                "seed": "첫 번째 아티스트 또는 곡",
+                "seed2": "두 번째 아티스트 또는 곡 (선택)",
+                "seed3": "세 번째 아티스트 또는 곡 (선택)"
+            }
+        },
+        "backward": {
+            "description": "현재 트랙을 뒤로 되감습니다",
+            "options": {
+                "time": "뒤로 이동할 양 (30s, 1m, 01:30)"
+            }
+        },
+        "clearqueue": {
+            "description": "대기열을 비웁니다"
+        },
+        "endtime": {
+            "description": "지정한 시간에 현재 트랙을 중지합니다",
+            "options": {
+                "time": "중지할 위치 (30s, 1m, 02:30)"
+            }
+        },
+        "fairplay": {
+            "description": "요청자별로 대기열을 돌아가며 재생합니다"
+        },
+        "forward": {
+            "description": "현재 트랙을 앞으로 감습니다",
+            "options": {
+                "time": "앞으로 이동할 양 (30s, 1m, 01:30)"
+            }
+        },
+        "grab": {
+            "description": "현재 재생 중인 곡을 가져옵니다"
+        },
+        "join": {
+            "description": "음성 채널에 참가합니다"
+        },
+        "leave": {
+            "description": "음성 채널에서 나갑니다"
+        },
+        "loop": {
+            "description": "현재 곡 또는 대기열을 반복합니다"
+        },
+        "lyrics": {
+            "description": "현재 곡 또는 검색한 곡의 가사를 표시합니다",
+            "options": {
+                "song": "조회할 곡 (기본값: 현재 트랙)"
+            }
+        },
+        "massmove": {
+            "description": "대기열 트랙 블록을 이동합니다",
+            "options": {
+                "from": "블록의 시작 위치 (1부터 시작)",
+                "to": "블록의 끝 위치 (1부터 시작)",
+                "destination": "결과 대기열의 삽입 위치 (1부터 시작)"
+            }
+        },
+        "massremove": {
+            "description": "대기열 트랙 범위를 제거합니다",
+            "options": {
+                "from": "제거할 시작 위치 (1부터 시작)",
+                "to": "제거할 끝 위치 (1부터 시작)"
+            }
+        },
+        "move": {
+            "description": "대기 중인 트랙을 다른 위치로 이동합니다",
+            "options": {
+                "from": "현재 대기열 위치 (1부터 시작)",
+                "to": "새 대기열 위치 (1부터 시작)"
+            }
+        },
+        "nowplaying": {
+            "description": "현재 재생 중인 곡을 표시합니다"
+        },
+        "pause": {
+            "description": "현재 곡을 일시정지합니다"
+        },
+        "play": {
+            "description": "YouTube 또는 Spotify에서 곡을 재생합니다",
+            "options": {
+                "song": "재생할 곡"
+            }
+        },
+        "playleave": {
+            "description": "요청을 재생하고 대기열이 끝나면 음성 채널에서 나갑니다",
+            "options": {
+                "query": "트랙, 검색어 또는 재생목록 URL"
+            }
+        },
+        "playlocal": {
+            "description": "Discord에 업로드된 오디오 또는 비디오 파일을 재생합니다",
+            "options": {
+                "file": "재생할 오디오 또는 비디오 파일"
+            }
+        },
+        "playnext": {
+            "description": "대기열에서 다음에 재생할 곡으로 추가합니다",
+            "options": {
+                "song": "재생할 곡"
+            }
+        },
+        "playrecent": {
+            "description": "최근 재생 기록의 트랙을 대기열에 추가합니다",
+            "options": {
+                "count": "대기열에 추가할 최근 트랙 수 (1-20)"
+            }
+        },
+        "playselect": {
+            "description": "재생목록이나 검색 결과를 둘러보고 트랙을 선택합니다",
+            "options": {
+                "url": "재생목록 URL 또는 검색어"
+            }
+        },
+        "playlistsearch": {
+            "description": "일치하는 재생목록의 트랙을 표시합니다",
+            "options": {
+                "query": "재생목록 이름 또는 URL"
+            }
+        },
+        "previous": {
+            "description": "이전 트랙을 다시 재생합니다"
+        },
+        "queue": {
+            "description": "현재 대기열을 표시합니다"
+        },
+        "radio": {
+            "description": "이름으로 인터넷 라디오 방송국을 재생합니다",
+            "options": {
+                "station": "방송국 이름 또는 장르"
+            }
+        },
+        "recentlyplayed": {
+            "description": "최근 재생한 트랙을 표시합니다"
+        },
+        "remove": {
+            "description": "대기열에서 곡을 제거합니다",
+            "options": {
+                "song": "곡 번호"
+            }
+        },
+        "removeabsent": {
+            "description": "음성 채널에 없는 사용자가 요청한 트랙을 제거합니다"
+        },
+        "removeduplicates": {
+            "description": "중복된 대기열 트랙을 제거합니다"
+        },
+        "removekeyword": {
+            "description": "키워드와 일치하는 대기열 트랙을 제거합니다",
+            "options": {
+                "keyword": "제목 또는 아티스트와 대조할 텍스트"
+            }
+        },
+        "removelast": {
+            "description": "마지막으로 추가된 대기열 트랙을 제거합니다"
+        },
+        "removeuser": {
+            "description": "사용자가 요청한 대기열 트랙을 제거합니다",
+            "options": {
+                "user": "트랙을 제거할 사용자"
+            }
+        },
+        "replay": {
+            "description": "현재 트랙을 처음부터 다시 재생합니다"
+        },
+        "requested": {
+            "description": "사용자가 요청한 대기열 트랙을 표시합니다",
+            "options": {
+                "user": "요청을 표시할 사용자 (기본값: 본인)"
+            }
+        },
+        "resume": {
+            "description": "현재 곡을 재개합니다"
+        },
+        "reverse": {
+            "description": "대기열 트랙 순서를 뒤집습니다"
+        },
+        "seek": {
+            "description": "곡의 특정 시간으로 이동합니다",
+            "options": {
+                "time": "이동할 시간"
+            }
+        },
+        "selectrandom": {
+            "description": "무작위 대기열 트랙을 맨 앞으로 이동합니다"
+        },
+        "sessionstats": {
+            "description": "현재 재생 세션의 통계를 표시합니다"
+        },
+        "shuffle": {
+            "description": "대기열을 섞습니다"
+        },
+        "shufflerepeat": {
+            "description": "대기열을 섞고 대기열 반복을 켭니다"
+        },
+        "skip": {
+            "description": "현재 곡을 건너뜁니다"
+        },
+        "skipto": {
+            "description": "대기열의 특정 곡으로 건너뜁니다",
+            "options": {
+                "number": "건너뛸 곡 번호"
+            }
+        },
+        "song": {
+            "description": "현재 곡 또는 검색한 곡의 정보를 표시합니다",
+            "options": {
+                "query": "조회할 곡 (기본값: 현재 트랙)"
+            }
+        },
+        "sort": {
+            "description": "대기열 트랙을 정렬합니다",
+            "options": {
+                "by": "정렬 기준 필드",
+                "order": "정렬 방향"
+            }
+        },
+        "stop": {
+            "description": "음악을 중지하고 대기열을 비웁니다"
+        },
+        "swap": {
+            "description": "대기열 트랙 두 개의 순서를 바꿉니다",
+            "options": {
+                "first": "첫 번째 대기열 위치 (1부터 시작)",
+                "second": "두 번째 대기열 위치 (1부터 시작)"
+            }
+        },
+        "top": {
+            "description": "검색어의 상위 검색 결과를 표시합니다",
+            "options": {
+                "query": "검색어 (기본값: 상위 결과)"
+            }
+        },
+        "volume": {
+            "description": "플레이어 볼륨을 설정합니다",
+            "options": {
+                "number": "설정할 볼륨"
+            }
+        },
+        "voteskip": {
+            "description": "현재 트랙 건너뛰기 투표를 시작하거나 참여합니다"
+        },
+        "eval": {
+            "description": "코드를 실행합니다"
+        },
+        "guild": {
+            "description": "봇이 참가 중인 서버를 조회합니다",
+            "options": {
+                "guild": "서버 이름 또는 ID (자동 완성)"
+            }
+        },
+        "guildleave": {
+            "description": "서버에서 나갑니다"
+        },
+        "guildlist": {
+            "description": "봇이 참가 중인 모든 서버를 나열합니다"
+        },
+        "reload": {
+            "description": "재시작 없이 명령 모듈을 다시 불러옵니다 (소유자 전용)"
+        },
+        "restart": {
+            "description": "봇 프로세스를 다시 시작합니다 (소유자 전용)"
+        },
+        "shutdown": {
+            "description": "봇 프로세스를 중지합니다 (소유자 전용)"
+        },
+        "categories": {
+            "description": "모든 명령 카테고리를 나열합니다"
+        },
+        "faq": {
+            "description": "BootstrapDJ 사용에 관한 자주 묻는 질문"
+        },
+        "guess": {
+            "description": "현재 트랙으로 노래 맞히기 게임을 시작합니다"
+        },
+        "help": {
+            "description": "도움말 메뉴를 표시합니다",
+            "options": {
+                "command": "정보를 확인할 명령"
+            }
+        },
+        "info": {
+            "description": "봇에 대한 정보"
+        },
+        "invite": {
+            "description": "봇의 초대 링크를 보냅니다"
+        },
+        "lavalink": {
+            "description": "현재 Lavalink 통계를 표시합니다"
+        },
+        "leaderboard": {
+            "description": "이번 세션에서 가장 활발한 요청자를 표시합니다"
+        },
+        "ping": {
+            "description": "봇의 핑을 표시합니다"
+        },
+        "premium": {
+            "description": "무료 기능 정책을 설명합니다"
+        },
+        "profile": {
+            "description": "BootstrapDJ 프로필을 확인하거나 꾸밉니다",
+            "options": {
+                "action": "프로필 필드 확인, 설정 또는 초기화",
+                "key": "변경할 필드: color, bio, privacy, visible",
+                "value": "새 값",
+                "user": "확인할 프로필"
+            }
+        },
+        "shards": {
+            "description": "샤드 상태를 표시합니다"
+        },
+        "stats": {
+            "description": "실시간 봇 통계를 표시합니다"
+        },
+        "support": {
+            "description": "BootstrapDJ 도움말을 받는 방법"
+        },
+        "tip": {
+            "description": "무작위 BootstrapDJ 팁을 표시합니다"
+        },
+        "utility": {
+            "description": "봇 정보 및 유틸리티 페이지",
+            "options": {
+                "overview": "개요 표시",
+                "stats": "통계 표시",
+                "shards": "샤드 표시",
+                "categories": "카테고리 표시",
+                "faq": "FAQ 표시",
+                "tip": "팁 표시",
+                "premium": "프리미엄 표시",
+                "support": "지원 표시",
+                "leaderboard": "순위 표시",
+                "commands": "명령 표시",
+                "dashboard": "대시보드 표시"
+            }
+        }
+    },
+    "profile": {
+        "private": "비공개 프로필입니다.",
+        "noBio": "소개가 설정되지 않았습니다.",
+        "visibility": "공개 범위",
+        "hidden": "숨김",
+        "visible": "공개",
+        "privacy": "개인정보 설정",
+        "serverVisible": "서버 공개",
+        "no": "아니요",
+        "yes": "예",
+        "avatarShape": "아바타 모양",
+        "reset": "프로필이 초기화되었습니다.",
+        "chooseField": "color, bio, privacy, visible 중 하나를 선택하세요.",
+        "hex": "`#ff8800`과 같은 16진수 색상을 사용하세요.",
+        "bioLimit": "소개는 200자로 제한됩니다.",
+        "privacyValue": "개인정보 설정은 `public` 또는 `private`이어야 합니다.",
+        "backgroundLimit": "배경은 200자로 제한됩니다.",
+        "avatarShapeValue": "아바타 모양은 `circle`, `square`, `rounded` 중 하나여야 합니다.",
+        "borderLimit": "아바타 테두리는 50자로 제한됩니다.",
+        "unknown": "알 수 없는 프로필 필드입니다.",
+        "updated": "프로필 **{{key}}** 항목을 업데이트했습니다."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

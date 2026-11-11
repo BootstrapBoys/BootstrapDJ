@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Język",
+        "description": "Język używany przez bota na tym serwerze. Domyślnym językiem jest angielski (Stany Zjednoczone)."
+    },
+    "player": {
+        "title": "Odtwarzacz",
+        "nothingPlaying": "Nic nie jest odtwarzane",
+        "idle": "bezczynny",
+        "queued": "{{count}} w kolejce",
+        "resume": "Wznów",
+        "pause": "Wstrzymaj",
+        "disconnect": "Rozłącz",
+        "listen": "Słuchaj",
+        "mute": "Wycisz",
+        "unmute": "Wyłącz wyciszenie",
+        "connecting": "Łączenie",
+        "listenTitle": "Odtwarzaj ten dźwięk z bota w przeglądarce",
+        "muteTitle": "Wycisz tylko tę przeglądarkę",
+        "unmuteTitle": "Wyłącz wyciszenie tylko w tej przeglądarce",
+        "listenDenied": "Twoje role nie pozwalają na słuchanie",
+        "playing": "odtwarzanie",
+        "paused": "wstrzymane",
+        "autoplay": "autoodtwarzanie"
+    },
+    "queue": {
+        "title": "Kolejka",
+        "empty": "Kolejka jest pusta.",
+        "addPlaceholder": "Nazwa utworu lub URL",
+        "add": "Dodaj utwór",
+        "skipTo": "Przejdź do {{title}}",
+        "remove": "Usuń ten utwór"
+    },
+    "filters": {
+        "title": "Filtry"
+    },
+    "settings": {
+        "title": "Ustawienia",
+        "cancel": "Anuluj",
+        "save": "Zapisz ustawienia",
+        "autoplayReset": "Zresetuj nadpisanie autoodtwarzania",
+        "other": "Inne"
+    },
+    "status": {
+        "connected": "Połączono",
+        "readOnly": "Tylko do odczytu",
+        "error": "Błąd",
+        "noGuilds": "Brak serwerów"
+    },
+    "app": {
+        "install": "Zainstaluj aplikację"
+    },
+    "stats": {
+        "title": "Statystyki",
+        "personalTitle": "Moje statystyki"
+    },
+    "playlists": {
+        "title": "Playlisty"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

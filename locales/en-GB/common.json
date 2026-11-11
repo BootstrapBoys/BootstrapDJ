@@ -6,5 +6,8 @@
         "reset": "Language reset to **{{language}}**.",
         "invalid": "That language is not available. Choose one of: {{languages}}.",
         "list": "Available languages: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
     }
 }

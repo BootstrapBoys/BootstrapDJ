@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Idioma",
+        "description": "Idioma usado pelo bot neste servidor. Inglês (Estados Unidos) é o idioma de reserva."
+    },
+    "player": {
+        "title": "Reprodutor",
+        "nothingPlaying": "Nada tocando",
+        "idle": "ocioso",
+        "queued": "{{count}} na fila",
+        "resume": "Retomar",
+        "pause": "Pausar",
+        "disconnect": "Desconectar",
+        "listen": "Ouvir",
+        "mute": "Silenciar",
+        "unmute": "Ativar som",
+        "connecting": "Conectando",
+        "listenTitle": "Reproduzir este áudio do navegador pelo bot",
+        "muteTitle": "Silenciar somente este navegador",
+        "unmuteTitle": "Ativar o som somente deste navegador",
+        "listenDenied": "Seus cargos não permitem ouvir",
+        "playing": "reproduzindo",
+        "paused": "pausado",
+        "autoplay": "reprodução automática"
+    },
+    "queue": {
+        "title": "Fila",
+        "empty": "Nada na fila.",
+        "addPlaceholder": "Nome da música ou URL",
+        "add": "Adicionar música",
+        "skipTo": "Pular para {{title}}",
+        "remove": "Remover esta faixa"
+    },
+    "filters": {
+        "title": "Filtros"
+    },
+    "settings": {
+        "title": "Configurações",
+        "cancel": "Cancelar",
+        "save": "Salvar configurações",
+        "autoplayReset": "Redefinir substituição da reprodução automática",
+        "other": "Outros"
+    },
+    "status": {
+        "connected": "Conectado",
+        "readOnly": "Somente leitura",
+        "error": "Erro",
+        "noGuilds": "Nenhum servidor"
+    },
+    "app": {
+        "install": "Instalar app"
+    },
+    "stats": {
+        "title": "Estatísticas",
+        "personalTitle": "Minhas estatísticas"
+    },
+    "playlists": {
+        "title": "Playlists"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

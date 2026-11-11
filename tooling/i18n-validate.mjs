@@ -11,9 +11,9 @@ function flatten(value, prefix = '') {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) {
         return [prefix];
     }
-    return Object.entries(value).flatMap(([key, child]) =>
-        flatten(child, prefix ? `${prefix}.${key}` : key)
-    );
+    return Object.entries(value)
+        .filter(([key]) => !key.startsWith('_'))
+        .flatMap(([key, child]) => flatten(child, prefix ? `${prefix}.${key}` : key));
 }
 
 function readCatalog(language) {

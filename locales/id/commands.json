@@ -1,0 +1,647 @@
+{
+    "language": {
+        "description": "Lihat atau ubah bahasa untuk server ini",
+        "language_option": "Bahasa yang digunakan",
+        "reset_option": "Atur ulang ke bahasa default"
+    },
+    "core": {
+        "noQueue": "Tidak ada lagu di antrean.",
+        "nothingPlaying": "Tidak ada yang diputar saat ini",
+        "alreadyPaused": "Lagu sudah dijeda",
+        "paused": "Lagu dijeda",
+        "resumed": "Pemutar dilanjutkan",
+        "notPaused": "Pemutar tidak sedang dijeda.",
+        "cleared": "Antrean dikosongkan",
+        "shuffled": "Antrean diacak",
+        "stopped": "Musik dihentikan dan antrean dikosongkan",
+        "invalidNumber": "Itu bukan angka yang valid.",
+        "validNumber": "Harap berikan angka yang valid.",
+        "skipped": "Melewati [{{title}}]({{uri}})",
+        "skippedTo": "Melewati ke lagu nomor {{target}}",
+        "removed": "Menghapus lagu nomor {{position}} dari antrean",
+        "seeked": "Melompat ke {{time}}",
+        "invalidTime": "Format waktu tidak valid.",
+        "volumeInvalid": "Harap berikan angka yang valid.",
+        "volumeLow": "Volume tidak boleh lebih rendah dari {{min}}.",
+        "volumeHigh": "Volume tidak boleh lebih tinggi dari {{max}}.",
+        "volumeSet": "Volume diatur ke {{volume}}",
+        "notConnected": "Saya tidak berada di kanal suara",
+        "join": "Bergabung ke kanal suara",
+        "dmSent": "**Saya mengirim DM kepada Anda.**",
+        "dmFailed": "**Saya tidak dapat mengirim DM kepada Anda.**",
+        "addedTrack": "Menambahkan [{{title}}]({{uri}}) {{destination}}.",
+        "addedPlaylist": "Menambahkan {{count}} lagu {{destination}}.",
+        "destinationNext": "untuk diputar berikutnya dalam antrean",
+        "destinationQueue": "ke antrean",
+        "alreadyConnected": "Saya sudah terhubung ke {{channel}}",
+        "joined": "Bergabung ke {{channel}}",
+        "left": "Keluar dari {{channel}}",
+        "leftGeneric": "Keluar dari kanal suara",
+        "voiceChannel": "kanal suara",
+        "grabCard": "**Durasi:** {{duration}}\n**Diminta oleh:** {{requester}}\n**Tautan:** [Klik di sini]({{uri}})",
+        "loopSong": "**Mengulang lagu**",
+        "loopQueue": "**Mengulang antrean**",
+        "loopOff": "**Pengulangan dimatikan**",
+        "autoplayDisabled": "Putar otomatis dinonaktifkan dan pilihan lagu dari bot dihapus.",
+        "autoplayNoNode": "Tidak ada node Lavalink yang tersedia saat ini. Silakan coba lagi sebentar lagi.",
+        "autoplayNoSeed": "Saya tidak menemukan apa pun untuk **{{label}}**. Putar otomatis tidak diubah.",
+        "autoplaySeeded": "Putar otomatis diaktifkan — dimulai dari **{{label}}**, diawali dengan **{{title}}** oleh {{author}}.",
+        "autoplayStarted": "Putar otomatis diaktifkan — dimulai dari **{{title}}** oleh {{author}}.",
+        "autoplayWaiting": "Putar otomatis diaktifkan — saya akan memilih trek saat antrean habis.",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · Diminta oleh {{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - Diminta oleh: {{requester}} - Durasi: {{duration}}",
+        "queueNowPlaying": "Sedang diputar: [{{title}}]({{uri}}) - Diminta oleh: {{requester}} - Durasi: {{duration}}",
+        "queuedTracks": "Trek dalam antrean",
+        "queueLength": "Panjang antrean",
+        "autoplay": "Putar otomatis",
+        "loop": "Pengulangan",
+        "on": "aktif",
+        "off": "nonaktif",
+        "queueAuthor": "Antrean",
+        "queuePage": "Halaman {{page}} dari {{total}}"
+    },
+    "metadata": {
+        "247": {
+            "description": "mengatur bot agar tetap di kanal suara"
+        },
+        "8d": {
+            "description": "filter 8d aktif/nonaktif"
+        },
+        "bassboost": {
+            "description": "filter bassboost aktif/nonaktif"
+        },
+        "distorsion": {
+            "description": "filter distorsi aktif/nonaktif"
+        },
+        "filter": {
+            "description": "Terapkan atau hapus filter audio",
+            "options": {
+                "8d": "Terapkan 8d",
+                "bassboost": "Terapkan bassboost",
+                "distortion": "Terapkan distorsi",
+                "karaoke": "Terapkan karaoke",
+                "nightcore": "Terapkan nightcore",
+                "reset": "Setel ulang filter",
+                "rotation": "Terapkan rotasi",
+                "tremolo": "Terapkan tremolo",
+                "vibrato": "Terapkan vibrato",
+                "lowpass": "Terapkan lowpass",
+                "pitch": "Terapkan pitch dengan nilai",
+                "rate": "Terapkan laju dengan nilai",
+                "speed": "Terapkan kecepatan dengan nilai"
+            }
+        },
+        "filters": {
+            "description": "Menampilkan filter audio yang aktif"
+        },
+        "karaoke": {
+            "description": "filter karaoke aktif/nonaktif"
+        },
+        "nightcore": {
+            "description": "filter nightcore aktif/nonaktif"
+        },
+        "pitch": {
+            "description": "filter pitch aktif/nonaktif",
+            "options": {
+                "number": "Angka untuk mengatur pitch"
+            }
+        },
+        "rate": {
+            "description": "Mengubah laju pemutaran (kecepatan dan pitch)",
+            "options": {
+                "rate": "Pengali laju antara 0.5 dan 5"
+            }
+        },
+        "reset": {
+            "description": "Mengatur ulang filter yang aktif"
+        },
+        "rotation": {
+            "description": "filter rotasi aktif/nonaktif"
+        },
+        "speed": {
+            "description": "Mengatur kecepatan lagu",
+            "options": {
+                "speed": "Kecepatan yang ingin diatur"
+            }
+        },
+        "tremolo": {
+            "description": "filter tremolo aktif/nonaktif"
+        },
+        "vibrato": {
+            "description": "filter vibrato aktif/nonaktif"
+        },
+        "lowpass": {
+            "description": "filter lowpass aktif/nonaktif"
+        },
+        "add": {
+            "description": "Menambahkan lagu ke playlist",
+            "options": {
+                "playlist": "Playlist yang ingin ditambahkan",
+                "song": "Lagu yang ingin ditambahkan"
+            }
+        },
+        "alias": {
+            "description": "Membuat, menampilkan, atau menghapus alias perintah khusus",
+            "options": {
+                "action": "Tambah, hapus, tampilkan, atau kosongkan alias",
+                "alias": "Nama alias",
+                "command": "Perintah tujuan untuk ditambahkan",
+                "scope": "Seluruh server atau hanya untuk Anda"
+            }
+        },
+        "autoplayconfig": {
+            "description": "Mengatur sumber awal putar otomatis",
+            "options": {
+                "source": "Sumber awal putar otomatis",
+                "seeds": "Seed terkurasi, dipisahkan koma (mengatur sumber ke curated)",
+                "reset": "Hapus penimpaan server dan gunakan default lingkungan"
+            }
+        },
+        "playlist": {
+            "description": "Kelola playlist tersimpan",
+            "options": {
+                "action": "Operasi koleksi",
+                "name": "Nama koleksi",
+                "query": "URL trek atau playlist untuk ditambahkan",
+                "target": "Nama tujuan untuk mengganti nama/menyalin/menggabungkan",
+                "index": "Posisi trek berbasis 1 untuk penghapusan",
+                "code": "Kode berbagi"
+            }
+        },
+        "create": {
+            "description": "Membuat playlist",
+            "options": {
+                "name": "Nama playlist"
+            }
+        },
+        "delete": {
+            "description": "Menghapus playlist",
+            "options": {
+                "playlist": "Playlist yang ingin dihapus"
+            }
+        },
+        "dj": {
+            "description": "Mengelola mode DJ dan peran terkait",
+            "options": {
+                "add": "Peran DJ yang ingin ditambahkan",
+                "remove": "Peran DJ yang ingin dihapus",
+                "clear": "Menghapus semua peran DJ",
+                "toggle": "Mengaktifkan/menonaktifkan peran DJ"
+            }
+        },
+        "language": {
+            "description": "Lihat atau ubah bahasa untuk server ini",
+            "options": {
+                "language": "Bahasa yang digunakan",
+                "reset": "Atur ulang ke bahasa default"
+            }
+        },
+        "list": {
+            "description": "Menampilkan daftar playlist",
+            "options": {
+                "user": "Playlist milik siapa yang ditampilkan"
+            }
+        },
+        "listen": {
+            "description": "Mengatur perintah suara (Earl the Ear) dan penolakan mendengarkan Anda",
+            "options": {
+                "action": "Yang ingin dilakukan"
+            }
+        },
+        "load": {
+            "description": "Memuat playlist",
+            "options": {
+                "playlist": "Playlist yang ingin dimuat"
+            }
+        },
+        "mappings": {
+            "description": "Membuat perluasan pintasan prefiks khusus",
+            "options": {
+                "action": "Tambah, hapus, tampilkan, atau kosongkan pemetaan",
+                "trigger": "Kata yang diketik setelah prefiks",
+                "expansion": "Perintah dan argumen yang dijalankan",
+                "scope": "Seluruh server atau hanya untuk Anda"
+            }
+        },
+        "permissions": {
+            "description": "Mengelola aturan izinkan/tolak per perintah",
+            "options": {
+                "action": "Tampilkan, izinkan, tolak, atau atur ulang aturan",
+                "command": "Nama perintah; kosongkan saat reset untuk menghapus semua aturan",
+                "target": "Pengguna atau peran yang terdampak aturan"
+            }
+        },
+        "prefix": {
+            "description": "Menampilkan prefiks bot",
+            "options": {
+                "set": "Mengatur prefiks",
+                "reset": "Mengatur ulang prefiks ke default"
+            }
+        },
+        "removesong": {
+            "description": "Menghapus lagu dari playlist",
+            "options": {
+                "playlist": "Playlist yang ingin diedit",
+                "song": "Lagu yang ingin dihapus"
+            }
+        },
+        "save": {
+            "description": "Menyimpan antrean saat ini ke playlist",
+            "options": {
+                "name": "Nama playlist"
+            }
+        },
+        "selfprefix": {
+            "description": "Mengatur prefiks pribadi untuk server ini"
+        },
+        "settings": {
+            "description": "Lihat atau ubah pengaturan bot per server",
+            "options": {
+                "key": "Nama pengaturan; kosongkan untuk menampilkan semua",
+                "value": "Nilai baru; kosongkan untuk memeriksa pengaturan",
+                "reset": "Atur ulang semua pengaturan untuk server ini"
+            }
+        },
+        "setup": {
+            "description": "Menyiapkan bot",
+            "options": {
+                "create": "Membuat kanal permintaan lagu",
+                "delete": "Menghapus kanal permintaan lagu",
+                "info": "Menampilkan kanal permintaan lagu"
+            }
+        },
+        "album": {
+            "description": "Mencari album atau mengantrekan hasil pertamanya",
+            "options": {
+                "name": "Nama album"
+            }
+        },
+        "artist": {
+            "description": "Mencari artis atau mengantrekan hasil teratasnya",
+            "options": {
+                "name": "Nama artis"
+            }
+        },
+        "autoplay": {
+            "description": "Mengaktifkan/menonaktifkan putar otomatis",
+            "options": {
+                "seed": "Artis atau lagu pertama",
+                "seed2": "Artis atau lagu kedua (opsional)",
+                "seed3": "Artis atau lagu ketiga (opsional)"
+            }
+        },
+        "backward": {
+            "description": "Memundurkan trek saat ini",
+            "options": {
+                "time": "Jumlah untuk mundur (30s, 1m, 01:30)"
+            }
+        },
+        "clearqueue": {
+            "description": "Mengosongkan antrean"
+        },
+        "endtime": {
+            "description": "Menghentikan trek saat ini pada waktu tertentu",
+            "options": {
+                "time": "Posisi berhenti (30s, 1m, 02:30)"
+            }
+        },
+        "fairplay": {
+            "description": "Menggilir antrean berdasarkan peminta"
+        },
+        "forward": {
+            "description": "Memajukan trek saat ini",
+            "options": {
+                "time": "Jumlah untuk maju (30s, 1m, 01:30)"
+            }
+        },
+        "grab": {
+            "description": "Mengambil lagu yang sedang diputar"
+        },
+        "join": {
+            "description": "Bergabung ke kanal suara"
+        },
+        "leave": {
+            "description": "Keluar dari kanal suara"
+        },
+        "loop": {
+            "description": "Mengulang lagu saat ini atau antrean"
+        },
+        "lyrics": {
+            "description": "Menampilkan lirik untuk lagu saat ini atau yang dicari",
+            "options": {
+                "song": "Lagu yang dicari; default ke trek saat ini"
+            }
+        },
+        "massmove": {
+            "description": "Memindahkan blok trek dalam antrean",
+            "options": {
+                "from": "Posisi pertama dalam blok (berbasis 1)",
+                "to": "Posisi terakhir dalam blok (berbasis 1)",
+                "destination": "Posisi penyisipan pada antrean hasil (berbasis 1)"
+            }
+        },
+        "massremove": {
+            "description": "Menghapus rentang trek dalam antrean",
+            "options": {
+                "from": "Posisi pertama yang dihapus (berbasis 1)",
+                "to": "Posisi terakhir yang dihapus (berbasis 1)"
+            }
+        },
+        "move": {
+            "description": "Memindahkan trek dalam antrean ke posisi lain",
+            "options": {
+                "from": "Posisi antrean saat ini (berbasis 1)",
+                "to": "Posisi antrean baru (berbasis 1)"
+            }
+        },
+        "nowplaying": {
+            "description": "Menampilkan lagu yang sedang diputar"
+        },
+        "pause": {
+            "description": "Menjeda lagu saat ini"
+        },
+        "play": {
+            "description": "Memutar lagu dari YouTube atau Spotify",
+            "options": {
+                "song": "Lagu yang ingin diputar"
+            }
+        },
+        "playleave": {
+            "description": "Memutar permintaan lalu keluar dari suara saat antrean habis",
+            "options": {
+                "query": "Trek, kata kunci pencarian, atau URL playlist"
+            }
+        },
+        "playlocal": {
+            "description": "Memutar file audio atau video yang diunggah ke Discord",
+            "options": {
+                "file": "File audio atau video yang diputar"
+            }
+        },
+        "playnext": {
+            "description": "Menambahkan lagu agar diputar berikutnya di antrean",
+            "options": {
+                "song": "Lagu yang ingin diputar"
+            }
+        },
+        "playrecent": {
+            "description": "Mengantrekan trek dari riwayat pemutaran terakhir",
+            "options": {
+                "count": "Jumlah trek terakhir yang diantrekan (1-20)"
+            }
+        },
+        "playselect": {
+            "description": "Menelusuri playlist atau hasil pencarian dan memilih trek",
+            "options": {
+                "url": "URL playlist atau kata kunci pencarian"
+            }
+        },
+        "playlistsearch": {
+            "description": "Menampilkan trek dari playlist yang cocok",
+            "options": {
+                "query": "Nama playlist atau URL"
+            }
+        },
+        "previous": {
+            "description": "Memutar lagi trek sebelumnya"
+        },
+        "queue": {
+            "description": "Menampilkan antrean saat ini"
+        },
+        "radio": {
+            "description": "Memutar stasiun radio internet berdasarkan nama",
+            "options": {
+                "station": "Nama stasiun atau genre"
+            }
+        },
+        "recentlyplayed": {
+            "description": "Menampilkan trek yang baru diputar"
+        },
+        "remove": {
+            "description": "Menghapus lagu dari antrean",
+            "options": {
+                "song": "Nomor lagu"
+            }
+        },
+        "removeabsent": {
+            "description": "Menghapus trek yang diminta pengguna yang tidak ada di kanal suara"
+        },
+        "removeduplicates": {
+            "description": "Menghapus trek duplikat dalam antrean"
+        },
+        "removekeyword": {
+            "description": "Menghapus trek dalam antrean yang cocok dengan kata kunci",
+            "options": {
+                "keyword": "Teks untuk dicocokkan dengan judul atau artis"
+            }
+        },
+        "removelast": {
+            "description": "Menghapus trek terakhir dalam antrean"
+        },
+        "removeuser": {
+            "description": "Menghapus trek dalam antrean milik pengguna",
+            "options": {
+                "user": "Pengguna yang treknya akan dihapus"
+            }
+        },
+        "replay": {
+            "description": "Memutar ulang trek saat ini dari awal"
+        },
+        "requested": {
+            "description": "Menampilkan trek dalam antrean yang diminta pengguna",
+            "options": {
+                "user": "Permintaan siapa yang ditampilkan (default: Anda)"
+            }
+        },
+        "resume": {
+            "description": "Melanjutkan lagu saat ini"
+        },
+        "reverse": {
+            "description": "Membalik urutan trek dalam antrean"
+        },
+        "seek": {
+            "description": "Melompat ke waktu tertentu dalam lagu",
+            "options": {
+                "time": "Waktu yang ingin dituju"
+            }
+        },
+        "selectrandom": {
+            "description": "Memindahkan trek acak dalam antrean ke urutan depan"
+        },
+        "sessionstats": {
+            "description": "Menampilkan statistik sesi pemutaran saat ini"
+        },
+        "shuffle": {
+            "description": "Mengacak antrean"
+        },
+        "shufflerepeat": {
+            "description": "Mengacak antrean dan mengaktifkan pengulangan antrean"
+        },
+        "skip": {
+            "description": "Melewati lagu saat ini"
+        },
+        "skipto": {
+            "description": "Melewati ke lagu tertentu dalam antrean",
+            "options": {
+                "number": "Nomor lagu yang ingin dituju"
+            }
+        },
+        "song": {
+            "description": "Menampilkan info tentang lagu saat ini atau yang dicari",
+            "options": {
+                "query": "Lagu yang dicari; default ke trek saat ini"
+            }
+        },
+        "sort": {
+            "description": "Mengurutkan trek dalam antrean",
+            "options": {
+                "by": "Bidang untuk pengurutan",
+                "order": "Arah pengurutan"
+            }
+        },
+        "stop": {
+            "description": "Menghentikan musik dan mengosongkan antrean"
+        },
+        "swap": {
+            "description": "Menukar dua trek dalam antrean",
+            "options": {
+                "first": "Posisi antrean pertama (berbasis 1)",
+                "second": "Posisi antrean kedua (berbasis 1)"
+            }
+        },
+        "top": {
+            "description": "Menampilkan hasil pencarian teratas untuk kueri",
+            "options": {
+                "query": "Kueri pencarian; default ke hasil teratas"
+            }
+        },
+        "volume": {
+            "description": "Mengatur volume pemutar",
+            "options": {
+                "number": "Volume yang ingin diatur"
+            }
+        },
+        "voteskip": {
+            "description": "Memulai atau ikut serta dalam voting untuk melewati trek"
+        },
+        "eval": {
+            "description": "Menjalankan kode"
+        },
+        "guild": {
+            "description": "Memeriksa server tempat bot berada",
+            "options": {
+                "guild": "Nama atau ID server (autocomplete)"
+            }
+        },
+        "guildleave": {
+            "description": "Keluar dari server"
+        },
+        "guildlist": {
+            "description": "Menampilkan semua server tempat bot berada"
+        },
+        "reload": {
+            "description": "Memuat ulang modul perintah tanpa restart (khusus owner)"
+        },
+        "restart": {
+            "description": "Memulai ulang proses bot (khusus owner)"
+        },
+        "shutdown": {
+            "description": "Menghentikan proses bot (khusus owner)"
+        },
+        "categories": {
+            "description": "Menampilkan semua kategori perintah"
+        },
+        "faq": {
+            "description": "Pertanyaan umum penggunaan BootstrapDJ"
+        },
+        "guess": {
+            "description": "Memulai permainan tebak lagu untuk trek saat ini"
+        },
+        "help": {
+            "description": "Menampilkan menu bantuan",
+            "options": {
+                "command": "Perintah yang ingin diketahui informasinya"
+            }
+        },
+        "info": {
+            "description": "Informasi tentang bot"
+        },
+        "invite": {
+            "description": "Mengirim tautan undangan bot"
+        },
+        "lavalink": {
+            "description": "Menampilkan statistik Lavalink saat ini"
+        },
+        "leaderboard": {
+            "description": "Menampilkan peminta paling aktif pada sesi ini"
+        },
+        "ping": {
+            "description": "Menampilkan ping bot"
+        },
+        "premium": {
+            "description": "Menjelaskan kebijakan fitur gratis"
+        },
+        "profile": {
+            "description": "Lihat atau sesuaikan profil BootstrapDJ",
+            "options": {
+                "action": "Lihat, atur, atau hapus bidang profil",
+                "key": "Bidang yang diubah: color, bio, privacy, visible",
+                "value": "Nilai baru",
+                "user": "Profil yang ingin dilihat"
+            }
+        },
+        "shards": {
+            "description": "Menampilkan status shard"
+        },
+        "stats": {
+            "description": "Menampilkan statistik bot secara langsung"
+        },
+        "support": {
+            "description": "Cara mendapatkan bantuan untuk BootstrapDJ"
+        },
+        "tip": {
+            "description": "Menampilkan tips acak BootstrapDJ"
+        },
+        "utility": {
+            "description": "Halaman informasi dan utilitas bot",
+            "options": {
+                "overview": "Tampilkan ringkasan",
+                "stats": "Tampilkan statistik",
+                "shards": "Tampilkan shard",
+                "categories": "Tampilkan kategori",
+                "faq": "Tampilkan FAQ",
+                "tip": "Tampilkan tips",
+                "premium": "Tampilkan premium",
+                "support": "Tampilkan dukungan",
+                "leaderboard": "Tampilkan papan peringkat",
+                "commands": "Tampilkan perintah",
+                "dashboard": "Tampilkan dasbor"
+            }
+        }
+    },
+    "profile": {
+        "private": "Profil tersebut bersifat privat.",
+        "noBio": "Belum ada bio.",
+        "visibility": "Visibilitas",
+        "hidden": "tersembunyi",
+        "visible": "terlihat",
+        "privacy": "Privasi",
+        "serverVisible": "Terlihat oleh server",
+        "no": "tidak",
+        "yes": "ya",
+        "avatarShape": "Bentuk avatar",
+        "reset": "Profil diatur ulang.",
+        "chooseField": "Pilih color, bio, privacy, atau visible.",
+        "hex": "Gunakan warna heksadesimal seperti `#ff8800`.",
+        "bioLimit": "Bio dibatasi 200 karakter.",
+        "privacyValue": "Privasi harus `public` atau `private`.",
+        "backgroundLimit": "Latar belakang dibatasi 200 karakter.",
+        "avatarShapeValue": "Bentuk avatar harus `circle`, `square`, atau `rounded`.",
+        "borderLimit": "Bingkai avatar dibatasi 50 karakter.",
+        "unknown": "Bidang profil tidak dikenal.",
+        "updated": "Profil **{{key}}** diperbarui."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

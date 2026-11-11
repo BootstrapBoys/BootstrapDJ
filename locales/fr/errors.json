@@ -1,0 +1,38 @@
+{
+    "generic": "Une erreur est survenue.",
+    "gate": {
+        "preferredBot": "Les commandes vocales sont routées vers **{{name}}** pour ce serveur. Utilisez ce bot.",
+        "locked": "Cette session est verrouillée. Un gestionnaire du serveur doit la déverrouiller.",
+        "notAllowed": "Vous n'êtes pas autorisé à utiliser cette commande.",
+        "threads": "Les commandes sont désactivées dans les fils pour ce serveur.",
+        "disabled": "**{{command}}** est désactivée sur ce serveur.",
+        "commandChannel": "Les commandes sont limitées à <#{{channel}}>.",
+        "voiceChannel": "Vous devez être dans <#{{channel}}> pour utiliser les commandes.",
+        "noSendMessages": "Je n'ai pas la permission **`SendMessages`** dans `{{guild}}`\nsalon : <#{{channel}}>",
+        "noEmbedLinks": "Je n'ai pas la permission **`EmbedLinks`**.",
+        "clientPermissions": "Je n'ai pas les permissions nécessaires pour exécuter cette commande.",
+        "userPermissions": "Vous n'avez pas les permissions nécessaires pour utiliser cette commande.",
+        "voiceRequired": "Vous devez être connecté à un salon vocal pour utiliser la commande `{{command}}`.",
+        "noConnect": "Je n'ai pas la permission `CONNECT` pour exécuter la commande `{{command}}`.",
+        "noSpeak": "Je n'ai pas la permission `SPEAK` pour exécuter la commande `{{command}}`.",
+        "noRequestToSpeak": "Je n'ai pas la permission `REQUEST TO SPEAK` pour exécuter la commande `{{command}}`.",
+        "wrongVoice": "Vous n'êtes pas connecté à <#{{channel}}> pour utiliser la commande `{{command}}`.",
+        "nothingPlaying": "Aucune musique n'est en cours de lecture.",
+        "djRoleMissing": "Le rôle DJ n'est pas défini.",
+        "djRoleRequired": "Vous devez avoir le rôle DJ pour utiliser cette commande.",
+        "missingTitle": "Arguments manquants",
+        "missingDescription": "Veuillez fournir les arguments requis pour la commande `{{command}}`.\n\nExemples :\n{{examples}}",
+        "missingFooter": "Syntaxe : [] = facultatif, <> = obligatoire",
+        "cooldown": "Veuillez patienter {{seconds}} seconde(s) avant de réutiliser la commande `{{command}}`.",
+        "everyone": "Vous ne pouvez pas mentionner everyone ou here."
+    },
+    "noPlayer": "Aucune musique n'est en cours de lecture sur ce serveur.",
+    "noNode": "Aucun nœud Lavalink n'est disponible pour le moment. Veuillez réessayer dans un instant.",
+    "searchFailed": "Une erreur est survenue pendant la recherche. Veuillez réessayer.",
+    "loadFailed": "Une erreur est survenue pendant la recherche.",
+    "noResults": "Aucun résultat n'a été trouvé.",
+    "playlistTooLong": "La playlist est trop longue. La longueur maximale est de {{max}} chansons.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

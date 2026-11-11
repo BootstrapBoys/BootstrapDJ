@@ -1,4 +1,5 @@
 import { BROWSER_SCRIPT } from './browser.js';
+import { SUPPORTED_LANGUAGES, translate } from '../lib/i18n.js';
 
 /**
  * Stylesheet for the dashboard. Written as ordinary CSS (not minified) because
@@ -660,11 +661,65 @@ const PLAYER_ICONS = String.raw`<button class="ctrl" data-player="previous" titl
 <button class="ctrl" data-player="shuffle" title="Shuffle queue" aria-label="Shuffle queue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
 <button class="ctrl" id="loop-btn" data-player="loop" title="Cycle loop" aria-label="Cycle loop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm0 10h10v-3l4 4-4 4v-3H5v-6h2v4z"/></svg><span id="loop-label">off</span></button>`;
 
+const DASHBOARD_COPY_KEYS = [
+    'player.title',
+    'player.nothingPlaying',
+    'player.idle',
+    'player.queued',
+    'player.playing',
+    'player.paused',
+    'player.autoplay',
+    'player.resume',
+    'player.pause',
+    'player.disconnect',
+    'player.listen',
+    'player.mute',
+    'player.unmute',
+    'player.connecting',
+    'player.listenTitle',
+    'player.muteTitle',
+    'player.unmuteTitle',
+    'player.listenDenied',
+    'queue.title',
+    'queue.empty',
+    'queue.addPlaceholder',
+    'queue.add',
+    'queue.skipTo',
+    'queue.remove',
+    'filters.title',
+    'settings.title',
+    'settings.cancel',
+    'settings.save',
+    'settings.autoplayReset',
+    'settings.other',
+    'status.connected',
+    'status.readOnly',
+    'status.error',
+    'status.noGuilds',
+    'stats.title',
+    'stats.personalTitle',
+    'playlists.title',
+    'language.label',
+    'language.description',
+] as const;
+
+function dashboardCopy(): Record<string, Record<string, string>> {
+    const copy: Record<string, Record<string, string>> = {};
+    for (const language of SUPPORTED_LANGUAGES) {
+        copy[language] = {};
+        for (const key of DASHBOARD_COPY_KEYS) {
+            copy[language][key] = translate(`dashboard:${key}`, language);
+        }
+    }
+    return copy;
+}
+
 const VOLUME_CONTROL = String.raw`<label class="volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input id="volume" type="range" min="0" max="200" step="5" value="100"><span id="volume-label">100%</span></label>`;
 
 /** Full dashboard document. `oauth` switches the client into login-gated mode. */
 export function renderDashboard(oauth: boolean): string {
     const bodyAttributes = oauth ? ' data-oauth="1"' : '';
+    const copyJson = JSON.stringify(dashboardCopy()).replace(/</g, '\\u003c');
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -744,6 +799,7 @@ ${VOLUME_CONTROL}
   <a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a><span class="sep">·</span>
   <a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">Legal</a><button id="install-btn" class="footer-install" type="button" title="Install BootstrapDJ" aria-label="Install BootstrapDJ" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9h3l-4 4-4-4h3z"/><path d="M5 19h14v2H5z"/></svg>Install app</button>
 </footer>
+<script>window.__DASHBOARD_COPY__ = ${copyJson};</script>
 <script>${BROWSER_SCRIPT}</script>
 </body>
 </html>`;

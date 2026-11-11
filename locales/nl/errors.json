@@ -1,0 +1,38 @@
+{
+    "generic": "Er is iets misgegaan.",
+    "gate": {
+        "preferredBot": "Spraakopdrachten worden voor deze server naar **{{name}}** gestuurd. Gebruik die bot.",
+        "locked": "Deze sessie is vergrendeld. Een serverbeheerder moet deze ontgrendelen.",
+        "notAllowed": "Je mag dit commando niet gebruiken.",
+        "threads": "Commando's zijn uitgeschakeld in threads op deze server.",
+        "disabled": "**{{command}}** is uitgeschakeld op deze server.",
+        "commandChannel": "Commando's zijn beperkt tot <#{{channel}}>.",
+        "voiceChannel": "Je moet in <#{{channel}}> zijn om commando's te gebruiken.",
+        "noSendMessages": "Ik heb geen **`SendMessages`**-rechten in `{{guild}}`\nkanaal: <#{{channel}}>",
+        "noEmbedLinks": "Ik heb geen **`EmbedLinks`**-rechten.",
+        "clientPermissions": "Ik heb niet genoeg rechten om dit commando uit te voeren.",
+        "userPermissions": "Je hebt niet genoeg rechten om dit commando te gebruiken.",
+        "voiceRequired": "Je moet verbonden zijn met een spraakkanaal om dit `{{command}}`-commando te gebruiken.",
+        "noConnect": "Ik heb geen `CONNECT`-rechten om dit `{{command}}`-commando uit te voeren.",
+        "noSpeak": "Ik heb geen `SPEAK`-rechten om dit `{{command}}`-commando uit te voeren.",
+        "noRequestToSpeak": "Ik heb geen `REQUEST TO SPEAK`-rechten om dit `{{command}}`-commando uit te voeren.",
+        "wrongVoice": "Je bent niet verbonden met <#{{channel}}> om dit `{{command}}`-commando te gebruiken.",
+        "nothingPlaying": "Er wordt momenteel niets afgespeeld.",
+        "djRoleMissing": "Er is geen DJ-rol ingesteld.",
+        "djRoleRequired": "Je hebt de DJ-rol nodig om dit commando te gebruiken.",
+        "missingTitle": "Ontbrekende argumenten",
+        "missingDescription": "Geef de vereiste argumenten op voor het `{{command}}`-commando.\n\nVoorbeelden:\n{{examples}}",
+        "missingFooter": "Syntaxis: [] = optioneel, <> = vereist",
+        "cooldown": "Wacht nog {{seconds}} seconde(n) voordat je het `{{command}}`-commando opnieuw gebruikt.",
+        "everyone": "Je kunt niet iedereen of hier vermelden."
+    },
+    "noPlayer": "Er wordt geen muziek afgespeeld op deze server.",
+    "noNode": "Er is momenteel geen Lavalink-node beschikbaar. Probeer het zo meteen opnieuw.",
+    "searchFailed": "Er is een fout opgetreden bij het zoeken. Probeer het opnieuw.",
+    "loadFailed": "Er is een fout opgetreden bij het zoeken.",
+    "noResults": "Er zijn geen resultaten gevonden.",
+    "playlistTooLong": "De afspeellijst is te lang. De maximale lengte is {{max}} nummers.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

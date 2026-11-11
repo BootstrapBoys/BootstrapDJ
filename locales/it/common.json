@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "Italiano",
+        "current": "Lingua attuale: **{{language}}**.",
+        "set": "Lingua cambiata in **{{language}}**.",
+        "reset": "Lingua reimpostata su **{{language}}**.",
+        "invalid": "Questa lingua non è disponibile. Scegli tra: {{languages}}.",
+        "list": "Lingue disponibili: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

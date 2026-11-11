@@ -1,0 +1,647 @@
+{
+    "language": {
+        "description": "Bu sunucunun dilini görüntüler veya değiştirir",
+        "language_option": "Kullanılacak dil",
+        "reset_option": "Varsayılan dile sıfırla"
+    },
+    "core": {
+        "noQueue": "Sırada hiç şarkı yok.",
+        "nothingPlaying": "Şu anda hiçbir şey çalmıyor",
+        "alreadyPaused": "Şarkı zaten duraklatılmış",
+        "paused": "Şarkı duraklatıldı",
+        "resumed": "Oynatıcı devam ettirildi",
+        "notPaused": "Oynatıcı duraklatılmış değil.",
+        "cleared": "Sıra temizlendi",
+        "shuffled": "Sıra karıştırıldı",
+        "stopped": "Müzik durduruldu ve sıra temizlendi",
+        "invalidNumber": "Bu geçerli bir sayı değil.",
+        "validNumber": "Lütfen geçerli bir sayı girin.",
+        "skipped": "[{{title}}]({{uri}}) atlandı",
+        "skippedTo": "{{target}} numaralı şarkıya atlandı",
+        "removed": "{{position}} numaralı şarkı sıradan kaldırıldı",
+        "seeked": "{{time}} konumuna atlandı",
+        "invalidTime": "Geçersiz zaman formatı.",
+        "volumeInvalid": "Lütfen geçerli bir sayı girin.",
+        "volumeLow": "Ses düzeyi {{min}} değerinden düşük olamaz.",
+        "volumeHigh": "Ses düzeyi {{max}} değerinden yüksek olamaz.",
+        "volumeSet": "Ses düzeyi {{volume}} olarak ayarlandı",
+        "notConnected": "Bir ses kanalında değilim",
+        "join": "Ses kanalına katıldım",
+        "dmSent": "**Size DM gönderdim.**",
+        "dmFailed": "**Size DM gönderemedim.**",
+        "addedTrack": "[{{title}}]({{uri}}) {{destination}} eklendi.",
+        "addedPlaylist": "{{count}} şarkı {{destination}} eklendi.",
+        "destinationNext": "sıranın başına",
+        "destinationQueue": "sıraya",
+        "alreadyConnected": "{{channel}} kanalına zaten bağlıyım",
+        "joined": "{{channel}} kanalına katıldım",
+        "left": "{{channel}} kanalından ayrıldım",
+        "leftGeneric": "Ses kanalından ayrıldım",
+        "voiceChannel": "ses kanalı",
+        "grabCard": "**Süre:** {{duration}}\n**İsteyen:** {{requester}}\n**Bağlantı:** [Buraya tıkla]({{uri}})",
+        "loopSong": "**Şarkı döngüye alındı**",
+        "loopQueue": "**Sıra döngüye alındı**",
+        "loopOff": "**Döngü artık kapalı**",
+        "autoplayDisabled": "Otomatik oynatma kapatıldı ve botun seçtiği parçalar sıradan kaldırıldı.",
+        "autoplayNoNode": "Şu anda kullanılabilir bir Lavalink düğümü yok. Lütfen birazdan tekrar deneyin.",
+        "autoplayNoSeed": "**{{label}}** için hiçbir şey bulamadım. Otomatik oynatma değiştirilmedi.",
+        "autoplaySeeded": "Otomatik oynatma açıldı — **{{label}}** kaynağından başlatıldı; ilk parça {{author}} tarafından **{{title}}**.",
+        "autoplayStarted": "Otomatik oynatma açıldı — {{author}} tarafından **{{title}}** ile başlıyor.",
+        "autoplayWaiting": "Otomatik oynatma açıldı — sıra tükendiğinde parça seçeceğim.",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · İsteyen: {{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - İsteyen: {{requester}} - Süre: {{duration}}",
+        "queueNowPlaying": "Şu anda çalıyor: [{{title}}]({{uri}}) - İsteyen: {{requester}} - Süre: {{duration}}",
+        "queuedTracks": "Sıradaki parçalar",
+        "queueLength": "Sıra uzunluğu",
+        "autoplay": "Otomatik oynatma",
+        "loop": "Döngü",
+        "on": "açık",
+        "off": "kapalı",
+        "queueAuthor": "Sıra",
+        "queuePage": "Sayfa {{page}} / {{total}}"
+    },
+    "metadata": {
+        "247": {
+            "description": "Botu ses kanalında kalmaya ayarlar"
+        },
+        "8d": {
+            "description": "8D filtresini aç/kapat"
+        },
+        "bassboost": {
+            "description": "Bas güçlendirme filtresini aç/kapat"
+        },
+        "distorsion": {
+            "description": "Bozulma filtresini aç/kapat"
+        },
+        "filter": {
+            "description": "Ses filtrelerini uygular veya temizler",
+            "options": {
+                "8d": "8D uygula",
+                "bassboost": "Bas güçlendirme uygula",
+                "distortion": "Bozulma uygula",
+                "karaoke": "Karaoke uygula",
+                "nightcore": "Nightcore uygula",
+                "reset": "Sıfırla",
+                "rotation": "Döndürme uygula",
+                "tremolo": "Tremolo uygula",
+                "vibrato": "Vibrato uygula",
+                "lowpass": "Alçak geçiren uygula",
+                "pitch": "Değerle perde uygula",
+                "rate": "Değerle hız oranı uygula",
+                "speed": "Değerle hız uygula"
+            }
+        },
+        "filters": {
+            "description": "Etkin ses filtrelerini gösterir"
+        },
+        "karaoke": {
+            "description": "Karaoke filtresini aç/kapat"
+        },
+        "nightcore": {
+            "description": "Nightcore filtresini aç/kapat"
+        },
+        "pitch": {
+            "description": "Perde filtresini aç/kapat",
+            "options": {
+                "number": "Perdeyi ayarlamak istediğiniz sayı"
+            }
+        },
+        "rate": {
+            "description": "Oynatma hızını (hız ve perde) değiştirir",
+            "options": {
+                "rate": "0,5 ile 5 arasında hız çarpanı"
+            }
+        },
+        "reset": {
+            "description": "Etkin filtreleri sıfırlar"
+        },
+        "rotation": {
+            "description": "Döndürme filtresini aç/kapat"
+        },
+        "speed": {
+            "description": "Şarkının hızını ayarlar",
+            "options": {
+                "speed": "Ayarlamak istediğiniz hız"
+            }
+        },
+        "tremolo": {
+            "description": "Tremolo filtresini aç/kapat"
+        },
+        "vibrato": {
+            "description": "Vibrato filtresini aç/kapat"
+        },
+        "lowpass": {
+            "description": "Alçak geçiren filtresini aç/kapat"
+        },
+        "add": {
+            "description": "Çalma listesine şarkı ekler",
+            "options": {
+                "playlist": "Eklemek istediğiniz çalma listesi",
+                "song": "Eklemek istediğiniz şarkı"
+            }
+        },
+        "alias": {
+            "description": "Özel komut kısaltmaları oluşturur, listeler veya kaldırır",
+            "options": {
+                "action": "Kısaltma ekle, kaldır, listele veya temizle",
+                "alias": "Kısaltma adı",
+                "command": "Ekleme için hedef komut",
+                "scope": "Sunucu geneli veya yalnızca sizin için"
+            }
+        },
+        "autoplayconfig": {
+            "description": "Otomatik oynatmanın soğuk başlangıç kaynağını yapılandırır",
+            "options": {
+                "source": "Soğuk başlangıç tohum kaynağı",
+                "seeds": "Virgülle ayrılmış özel tohumlar (kaynağı curated yapar)",
+                "reset": "Sunucu geçersiz kılmasını kaldır ve ortam varsayılanlarını kullan"
+            }
+        },
+        "playlist": {
+            "description": "Kayıtlı çalma listelerini yönetir",
+            "options": {
+                "action": "Koleksiyon işlemi",
+                "name": "Koleksiyon adı",
+                "query": "Ekleme için parça veya çalma listesi URL'si",
+                "target": "Yeniden adlandırma/kopyalama/birleştirme için hedef ad",
+                "index": "Kaldırma için 1 tabanlı parça konumu",
+                "code": "Paylaşım kodu"
+            }
+        },
+        "create": {
+            "description": "Çalma listesi oluşturur",
+            "options": {
+                "name": "Çalma listesinin adı"
+            }
+        },
+        "delete": {
+            "description": "Çalma listesini siler",
+            "options": {
+                "playlist": "Silmek istediğiniz çalma listesi"
+            }
+        },
+        "dj": {
+            "description": "DJ modunu ve ilgili rolleri yönetir",
+            "options": {
+                "add": "Eklemek istediğiniz DJ rolü",
+                "remove": "Kaldırmak istediğiniz DJ rolü",
+                "clear": "Tüm DJ rollerini temizler",
+                "toggle": "DJ rolünü açıp kapatır"
+            }
+        },
+        "language": {
+            "description": "Bu sunucunun dilini görüntüler veya değiştirir",
+            "options": {
+                "language": "Kullanılacak dil",
+                "reset": "Varsayılan dile sıfırla"
+            }
+        },
+        "list": {
+            "description": "Çalma listelerini listeler",
+            "options": {
+                "user": "Kimin çalma listelerinin gösterileceği"
+            }
+        },
+        "listen": {
+            "description": "Sesli komutları (Earl the Ear) ve dinleme izninizi yönetir",
+            "options": {
+                "action": "Ne yapılacak"
+            }
+        },
+        "load": {
+            "description": "Bir çalma listesi yükler",
+            "options": {
+                "playlist": "Yüklemek istediğiniz çalma listesi"
+            }
+        },
+        "mappings": {
+            "description": "Özel önek kısayol genişletmeleri oluşturur",
+            "options": {
+                "action": "Eşleme ekle, kaldır, listele veya temizle",
+                "trigger": "Önekten sonra yazılan kelime",
+                "expansion": "Çalıştırılacak komut ve argümanlar",
+                "scope": "Sunucu geneli veya yalnızca sizin için"
+            }
+        },
+        "permissions": {
+            "description": "Komut başına izin/ret kurallarını yönetir",
+            "options": {
+                "action": "Kuralları listele, izin ver, reddet veya sıfırla",
+                "command": "Komut adı; tüm kuralları temizlemek için sıfırlamada boş bırakın",
+                "target": "Kuraldan etkilenen kullanıcı veya rol"
+            }
+        },
+        "prefix": {
+            "description": "Botun önekini gösterir",
+            "options": {
+                "set": "Öneki ayarlar",
+                "reset": "Öneki varsayılana sıfırlar"
+            }
+        },
+        "removesong": {
+            "description": "Çalma listesinden şarkı kaldırır",
+            "options": {
+                "playlist": "Düzenlenecek çalma listesi",
+                "song": "Kaldırılacak şarkı"
+            }
+        },
+        "save": {
+            "description": "Geçerli sırayı bir çalma listesine kaydeder",
+            "options": {
+                "name": "Çalma listesi adı"
+            }
+        },
+        "selfprefix": {
+            "description": "Bu sunucu için kişisel önek ayarlar"
+        },
+        "settings": {
+            "description": "Sunucuya özel bot ayarlarını görüntüler veya değiştirir",
+            "options": {
+                "key": "Ayar adı; tümünü listelemek için boş bırakın",
+                "value": "Yeni değer; ayarı görmek için boş bırakın",
+                "reset": "Bu sunucu için tüm ayarları sıfırla"
+            }
+        },
+        "setup": {
+            "description": "Botu kurar",
+            "options": {
+                "create": "Şarkı istek kanalını oluşturur",
+                "delete": "Şarkı istek kanalını siler",
+                "info": "Şarkı istek kanalını gösterir"
+            }
+        },
+        "album": {
+            "description": "Bir albümü arar veya ilk sonucunu sıraya ekler",
+            "options": {
+                "name": "Albüm adı"
+            }
+        },
+        "artist": {
+            "description": "Bir sanatçıyı arar veya en iyi sonucunu sıraya ekler",
+            "options": {
+                "name": "Sanatçı adı"
+            }
+        },
+        "autoplay": {
+            "description": "Otomatik oynatmayı açar veya kapatır",
+            "options": {
+                "seed": "İlk sanatçı veya şarkı",
+                "seed2": "İkinci sanatçı veya şarkı (isteğe bağlı)",
+                "seed3": "Üçüncü sanatçı veya şarkı (isteğe bağlı)"
+            }
+        },
+        "backward": {
+            "description": "Geçerli parçayı geri sarar",
+            "options": {
+                "time": "Geri sarma miktarı (30s, 1m, 01:30)"
+            }
+        },
+        "clearqueue": {
+            "description": "Sırayı temizler"
+        },
+        "endtime": {
+            "description": "Geçerli parçayı belirli bir zamanda durdurur",
+            "options": {
+                "time": "Nerede duracağı (30s, 1m, 02:30)"
+            }
+        },
+        "fairplay": {
+            "description": "Sırayı isteyenlere göre dönüşümlü olarak sıralar"
+        },
+        "forward": {
+            "description": "Geçerli parçayı ileri sarar",
+            "options": {
+                "time": "İleri sarma miktarı (30s, 1m, 01:30)"
+            }
+        },
+        "grab": {
+            "description": "Çalan şarkıyı yakalar"
+        },
+        "join": {
+            "description": "Ses kanalına katılır"
+        },
+        "leave": {
+            "description": "Ses kanalından ayrılır"
+        },
+        "loop": {
+            "description": "Geçerli şarkıyı veya sırayı döngüye alır"
+        },
+        "lyrics": {
+            "description": "Geçerli veya aranan şarkının sözlerini gösterir",
+            "options": {
+                "song": "Aranacak şarkı; varsayılan geçerli parça"
+            }
+        },
+        "massmove": {
+            "description": "Sıradaki bir parça bloğunu taşır",
+            "options": {
+                "from": "Bloğun ilk konumu (1 tabanlı)",
+                "to": "Bloğun son konumu (1 tabanlı)",
+                "destination": "Oluşan sıradaki ekleme konumu (1 tabanlı)"
+            }
+        },
+        "massremove": {
+            "description": "Sıradaki bir parça aralığını kaldırır",
+            "options": {
+                "from": "Kaldırılacak ilk konum (1 tabanlı)",
+                "to": "Kaldırılacak son konum (1 tabanlı)"
+            }
+        },
+        "move": {
+            "description": "Sıradaki bir parçayı başka bir konuma taşır",
+            "options": {
+                "from": "Geçerli sıra konumu (1 tabanlı)",
+                "to": "Yeni sıra konumu (1 tabanlı)"
+            }
+        },
+        "nowplaying": {
+            "description": "Şu anda çalan şarkıyı gösterir"
+        },
+        "pause": {
+            "description": "Geçerli şarkıyı duraklatır"
+        },
+        "play": {
+            "description": "YouTube veya Spotify'dan şarkı çalar",
+            "options": {
+                "song": "Çalmak istediğiniz şarkı"
+            }
+        },
+        "playleave": {
+            "description": "Bir isteği çalar ve sıra bitince ses kanalından ayrılır",
+            "options": {
+                "query": "Parça, arama terimi veya çalma listesi URL'si"
+            }
+        },
+        "playlocal": {
+            "description": "Discord'a yüklenen bir ses veya video dosyasını çalar",
+            "options": {
+                "file": "Çalınacak ses veya video dosyası"
+            }
+        },
+        "playnext": {
+            "description": "Şarkıyı sırada sonraki olarak çalınacak şekilde ekler",
+            "options": {
+                "song": "Çalmak istediğiniz şarkı"
+            }
+        },
+        "playrecent": {
+            "description": "Son çalma geçmişinden parçaları sıraya ekler",
+            "options": {
+                "count": "Sıraya eklenecek son parça sayısı (1-20)"
+            }
+        },
+        "playselect": {
+            "description": "Bir çalma listesine veya arama sonuçlarına göz atıp parça seçin",
+            "options": {
+                "url": "Çalma listesi URL'si veya arama terimi"
+            }
+        },
+        "playlistsearch": {
+            "description": "Eşleşen bir çalma listesindeki parçaları gösterir",
+            "options": {
+                "query": "Çalma listesi adı veya URL'si"
+            }
+        },
+        "previous": {
+            "description": "Önceki parçayı yeniden çalar"
+        },
+        "queue": {
+            "description": "Geçerli sırayı gösterir"
+        },
+        "radio": {
+            "description": "Bir internet radyo istasyonunu adıyla çalar",
+            "options": {
+                "station": "İstasyon adı veya türü"
+            }
+        },
+        "recentlyplayed": {
+            "description": "Son çalınan parçaları gösterir"
+        },
+        "remove": {
+            "description": "Sıradan bir şarkı kaldırır",
+            "options": {
+                "song": "Şarkı numarası"
+            }
+        },
+        "removeabsent": {
+            "description": "Ses kanalında olmayan kullanıcıların istediği parçaları kaldırır"
+        },
+        "removeduplicates": {
+            "description": "Sıradaki yinelenen parçaları kaldırır"
+        },
+        "removekeyword": {
+            "description": "Bir anahtar kelimeyle eşleşen sıradaki parçaları kaldırır",
+            "options": {
+                "keyword": "Başlık veya sanatçıyla eşleştirilecek metin"
+            }
+        },
+        "removelast": {
+            "description": "Sıradaki son parçayı kaldırır"
+        },
+        "removeuser": {
+            "description": "Bir kullanıcının sıradaki parçalarını kaldırır",
+            "options": {
+                "user": "Parçaları kaldırılacak kullanıcı"
+            }
+        },
+        "replay": {
+            "description": "Geçerli parçayı baştan yeniden çalar"
+        },
+        "requested": {
+            "description": "Bir kullanıcının istediği sıradaki parçaları gösterir",
+            "options": {
+                "user": "İstekleri gösterilecek kişi (varsayılan siz)"
+            }
+        },
+        "resume": {
+            "description": "Geçerli şarkıya devam eder"
+        },
+        "reverse": {
+            "description": "Sıradaki parçaların sırasını tersine çevirir"
+        },
+        "seek": {
+            "description": "Şarkıda belirli bir zamana atlar",
+            "options": {
+                "time": "Atlanacak zaman"
+            }
+        },
+        "selectrandom": {
+            "description": "Sıradaki rastgele bir parçayı en öne taşır"
+        },
+        "sessionstats": {
+            "description": "Geçerli oynatma oturumunun istatistiklerini gösterir"
+        },
+        "shuffle": {
+            "description": "Sırayı karıştırır"
+        },
+        "shufflerepeat": {
+            "description": "Sırayı karıştırır ve sıra tekrarını açar"
+        },
+        "skip": {
+            "description": "Geçerli şarkıyı atlar"
+        },
+        "skipto": {
+            "description": "Sıradaki belirli bir şarkıya atlar",
+            "options": {
+                "number": "Atlamak istediğiniz şarkının numarası"
+            }
+        },
+        "song": {
+            "description": "Geçerli veya aranan şarkı hakkında bilgi gösterir",
+            "options": {
+                "query": "Aranacak şarkı; varsayılan geçerli parça"
+            }
+        },
+        "sort": {
+            "description": "Sıradaki parçaları sıralar",
+            "options": {
+                "by": "Sıralama alanı",
+                "order": "Sıralama yönü"
+            }
+        },
+        "stop": {
+            "description": "Müziği durdurur ve sırayı temizler"
+        },
+        "swap": {
+            "description": "Sıradaki iki parçanın yerini değiştirir",
+            "options": {
+                "first": "İlk sıra konumu (1 tabanlı)",
+                "second": "İkinci sıra konumu (1 tabanlı)"
+            }
+        },
+        "top": {
+            "description": "Bir sorgu için en iyi arama sonuçlarını gösterir",
+            "options": {
+                "query": "Arama sorgusu; varsayılan olarak en iyi sonuçlar"
+            }
+        },
+        "volume": {
+            "description": "Oynatıcının ses düzeyini ayarlar",
+            "options": {
+                "number": "Ayarlamak istediğiniz ses düzeyi"
+            }
+        },
+        "voteskip": {
+            "description": "Geçerli parçayı atlamak için oylama başlatır veya katılır"
+        },
+        "eval": {
+            "description": "Kod çalıştırır"
+        },
+        "guild": {
+            "description": "Botun bulunduğu bir sunucuyu inceler",
+            "options": {
+                "guild": "Sunucu adı veya kimliği (otomatik tamamlanır)"
+            }
+        },
+        "guildleave": {
+            "description": "Bir sunucudan ayrılır"
+        },
+        "guildlist": {
+            "description": "Botun bulunduğu tüm sunucuları listeler"
+        },
+        "reload": {
+            "description": "Komut modüllerini yeniden başlatmadan yeniler (yalnızca sahip)"
+        },
+        "restart": {
+            "description": "Bot sürecini yeniden başlatır (yalnızca sahip)"
+        },
+        "shutdown": {
+            "description": "Bot sürecini durdurur (yalnızca sahip)"
+        },
+        "categories": {
+            "description": "Tüm komut kategorilerini listeler"
+        },
+        "faq": {
+            "description": "Sık sorulan BootstrapDJ kullanım soruları"
+        },
+        "guess": {
+            "description": "Geçerli parça için şarkı tahmin oyunu başlatır"
+        },
+        "help": {
+            "description": "Yardım menüsünü gösterir",
+            "options": {
+                "command": "Hakkında bilgi almak istediğiniz komut"
+            }
+        },
+        "info": {
+            "description": "Bot hakkında bilgiler"
+        },
+        "invite": {
+            "description": "Botun davet bağlantısını gönderir"
+        },
+        "lavalink": {
+            "description": "Geçerli Lavalink istatistiklerini gösterir"
+        },
+        "leaderboard": {
+            "description": "Bu oturumun en aktif istek sahiplerini gösterir"
+        },
+        "ping": {
+            "description": "Botun pingini gösterir"
+        },
+        "premium": {
+            "description": "Ücretsiz özellik politikasını açıklar"
+        },
+        "profile": {
+            "description": "Bir BootstrapDJ profilini görüntüler veya özelleştirir",
+            "options": {
+                "action": "Profil alanlarını görüntüle, ayarla veya temizle",
+                "key": "Değiştirilecek alan: color, bio, privacy, visible",
+                "value": "Yeni değer",
+                "user": "Görüntülenecek profil"
+            }
+        },
+        "shards": {
+            "description": "Shard durumunu gösterir"
+        },
+        "stats": {
+            "description": "Canlı bot istatistiklerini gösterir"
+        },
+        "support": {
+            "description": "BootstrapDJ ile ilgili nasıl yardım alınır"
+        },
+        "tip": {
+            "description": "Rastgele bir BootstrapDJ ipucu gösterir"
+        },
+        "utility": {
+            "description": "Bot bilgileri ve yardımcı sayfalar",
+            "options": {
+                "overview": "Genel bakışı göster",
+                "stats": "İstatistikleri göster",
+                "shards": "Shard'ları göster",
+                "categories": "Kategorileri göster",
+                "faq": "SSS'yi göster",
+                "tip": "İpucunu göster",
+                "premium": "Premium'u göster",
+                "support": "Desteği göster",
+                "leaderboard": "Liderlik tablosunu göster",
+                "commands": "Komutları göster",
+                "dashboard": "Paneli göster"
+            }
+        }
+    },
+    "profile": {
+        "private": "Bu profil gizli.",
+        "noBio": "Biyografi ayarlanmamış.",
+        "visibility": "Görünürlük",
+        "hidden": "gizli",
+        "visible": "görünür",
+        "privacy": "Gizlilik",
+        "serverVisible": "Sunucuda görünür",
+        "no": "hayır",
+        "yes": "evet",
+        "avatarShape": "Avatar şekli",
+        "reset": "Profil sıfırlandı.",
+        "chooseField": "Renk, biyografi, gizlilik veya görünürlük seçin.",
+        "hex": "`#ff8800` gibi bir hex renk kullanın.",
+        "bioLimit": "Biyografiler 200 karakterle sınırlıdır.",
+        "privacyValue": "Gizlilik `public` veya `private` olmalıdır.",
+        "backgroundLimit": "Arka planlar 200 karakterle sınırlıdır.",
+        "avatarShapeValue": "Avatar şekli `circle`, `square` veya `rounded` olmalıdır.",
+        "borderLimit": "Avatar kenarlıkları 50 karakterle sınırlıdır.",
+        "unknown": "Bilinmeyen profil alanı.",
+        "updated": "**{{key}}** profil alanı güncellendi."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

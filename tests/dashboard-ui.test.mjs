@@ -30,3 +30,28 @@ test('playlist detail exposes a shuffle-and-load control', () => {
     assert.match(html, /shuffleLoad\.onclick = \(\) => queuePlaylist\(true\)/);
     assert.match(html, /shuffle,/);
 });
+
+test('dashboard embeds copy for all supported locales', () => {
+    assert.match(html, /window\.__DASHBOARD_COPY__/);
+    assert.match(html, /"player\.title"/);
+    for (const locale of [
+        'en-US',
+        'en-GB',
+        'es-ES',
+        'pt-BR',
+        'fr',
+        'de',
+        'ru',
+        'ja',
+        'ko',
+        'zh-CN',
+        'zh-TW',
+        'it',
+        'tr',
+        'pl',
+        'nl',
+        'id',
+    ]) {
+        assert.match(html, new RegExp(`"${locale}"`), `${locale} copy is embedded`);
+    }
+});

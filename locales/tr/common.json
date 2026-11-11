@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "Türkçe",
+        "current": "Geçerli dil: **{{language}}**.",
+        "set": "Dil **{{language}}** olarak değiştirildi.",
+        "reset": "Dil **{{language}}** olarak sıfırlandı.",
+        "invalid": "Bu dil kullanılamıyor. Şunlardan birini seçin: {{languages}}.",
+        "list": "Kullanılabilir diller: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

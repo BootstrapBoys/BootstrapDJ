@@ -6,5 +6,8 @@
         "prompt": "The queue is empty. I'll leave in {{time}} unless someone confirms.",
         "leaving": "Leaving the voice channel.",
         "staying": "Staying connected."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
     }
 }

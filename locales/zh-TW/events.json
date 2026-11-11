@@ -1,0 +1,13 @@
+{
+    "ready": "BootstrapDJ 已準備就緒。",
+    "queueEnd": {
+        "stillListening": "繼續聆聽",
+        "leave": "離開",
+        "prompt": "佇列已清空。若無人確認，我將在 {{time}} 後離開。",
+        "leaving": "正在離開語音頻道。",
+        "staying": "保持連線。"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

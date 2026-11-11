@@ -1,0 +1,38 @@
+{
+    "generic": "發生錯誤。",
+    "gate": {
+        "preferredBot": "此伺服器的語音指令已交由 **{{name}}** 處理。請使用該機器人。",
+        "locked": "此工作階段已鎖定。需要伺服器管理員解鎖。",
+        "notAllowed": "你沒有權限使用此指令。",
+        "threads": "此伺服器已停用在討論串中使用指令。",
+        "disabled": "**{{command}}** 已在此伺服器停用。",
+        "commandChannel": "指令僅限於 <#{{channel}}> 使用。",
+        "voiceChannel": "你必須在 <#{{channel}}> 才能使用指令。",
+        "noSendMessages": "我在 `{{guild}}` 沒有 **`SendMessages`** 權限\n頻道：<#{{channel}}>",
+        "noEmbedLinks": "我沒有 **`EmbedLinks`** 權限。",
+        "clientPermissions": "我沒有足夠的權限執行此指令。",
+        "userPermissions": "你沒有足夠的權限使用此指令。",
+        "voiceRequired": "你必須連線至語音頻道才能使用 `{{command}}` 指令。",
+        "noConnect": "我沒有 `CONNECT` 權限執行 `{{command}}` 指令。",
+        "noSpeak": "我沒有 `SPEAK` 權限執行 `{{command}}` 指令。",
+        "noRequestToSpeak": "我沒有 `REQUEST TO SPEAK` 權限執行 `{{command}}` 指令。",
+        "wrongVoice": "你未連線至 <#{{channel}}>，無法使用 `{{command}}` 指令。",
+        "nothingPlaying": "目前沒有正在播放的內容。",
+        "djRoleMissing": "尚未設定 DJ 身分組。",
+        "djRoleRequired": "你需要擁有 DJ 身分組才能使用此指令。",
+        "missingTitle": "缺少參數",
+        "missingDescription": "請提供 `{{command}}` 指令所需的參數。\n\n範例：\n{{examples}}",
+        "missingFooter": "語法：[] = 選填，<> = 必填",
+        "cooldown": "請再等待 {{seconds}} 秒後才能再次使用 `{{command}}` 指令。",
+        "everyone": "你無法提及 everyone 或 here。"
+    },
+    "noPlayer": "此伺服器沒有正在播放的音樂。",
+    "noNode": "目前沒有可用的 Lavalink 節點。請稍後再試。",
+    "searchFailed": "搜尋時發生錯誤。請再試一次。",
+    "loadFailed": "搜尋時發生錯誤。",
+    "noResults": "找不到任何結果。",
+    "playlistTooLong": "播放清單過長。長度上限為 {{max}} 首歌曲。",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

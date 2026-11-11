@@ -1,0 +1,13 @@
+{
+    "ready": "BootstrapDJ가 준비되었습니다.",
+    "queueEnd": {
+        "stillListening": "계속 듣기",
+        "leave": "나가기",
+        "prompt": "대기열이 비어 있습니다. 아무도 확인하지 않으면 {{time}} 후에 나가겠습니다.",
+        "leaving": "음성 채널에서 나갑니다.",
+        "staying": "연결을 유지합니다."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

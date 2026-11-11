@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Langue",
+        "description": "Langue utilisée par le bot pour ce serveur. L'anglais (États-Unis) sert de langue de secours."
+    },
+    "player": {
+        "title": "Lecteur",
+        "nothingPlaying": "Aucune lecture",
+        "idle": "inactif",
+        "queued": "{{count}} en attente",
+        "resume": "Reprendre",
+        "pause": "Pause",
+        "disconnect": "Déconnecter",
+        "listen": "Écouter",
+        "mute": "Muet",
+        "unmute": "Réactiver le son",
+        "connecting": "Connexion",
+        "listenTitle": "Écouter dans ce navigateur l'audio du bot",
+        "muteTitle": "Couper le son de ce navigateur uniquement",
+        "unmuteTitle": "Réactiver le son de ce navigateur uniquement",
+        "listenDenied": "Vos rôles ne permettent pas l'écoute",
+        "playing": "en lecture",
+        "paused": "en pause",
+        "autoplay": "lecture auto"
+    },
+    "queue": {
+        "title": "File d'attente",
+        "empty": "Rien en file d'attente.",
+        "addPlaceholder": "Nom de la chanson ou URL",
+        "add": "Ajouter une chanson",
+        "skipTo": "Passer à {{title}}",
+        "remove": "Retirer ce titre"
+    },
+    "filters": {
+        "title": "Filtres"
+    },
+    "settings": {
+        "title": "Paramètres",
+        "cancel": "Annuler",
+        "save": "Enregistrer les paramètres",
+        "autoplayReset": "Réinitialiser la lecture auto",
+        "other": "Autre"
+    },
+    "status": {
+        "connected": "Connecté",
+        "readOnly": "Lecture seule",
+        "error": "Erreur",
+        "noGuilds": "Aucun serveur"
+    },
+    "app": {
+        "install": "Installer l'application"
+    },
+    "stats": {
+        "title": "Statistiques",
+        "personalTitle": "Mes statistiques"
+    },
+    "playlists": {
+        "title": "Playlists"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

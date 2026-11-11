@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "語言",
+        "description": "此伺服器機器人使用的語言。英文（美國）為後備語言。"
+    },
+    "player": {
+        "title": "播放器",
+        "nothingPlaying": "沒有正在播放的內容",
+        "idle": "閒置",
+        "queued": "已排入 {{count}} 首",
+        "resume": "繼續播放",
+        "pause": "暫停",
+        "disconnect": "中斷連線",
+        "listen": "聆聽",
+        "mute": "靜音",
+        "unmute": "取消靜音",
+        "connecting": "連線中",
+        "listenTitle": "從機器人播放此瀏覽器的音訊",
+        "muteTitle": "僅將此瀏覽器靜音",
+        "unmuteTitle": "僅取消此瀏覽器的靜音",
+        "listenDenied": "你的身分組不允許聆聽",
+        "playing": "播放中",
+        "paused": "已暫停",
+        "autoplay": "自動播放"
+    },
+    "queue": {
+        "title": "佇列",
+        "empty": "佇列中沒有內容。",
+        "addPlaceholder": "歌曲名稱或網址",
+        "add": "新增歌曲",
+        "skipTo": "跳至 {{title}}",
+        "remove": "移除此曲目"
+    },
+    "filters": {
+        "title": "濾波器"
+    },
+    "settings": {
+        "title": "設定",
+        "cancel": "取消",
+        "save": "儲存設定",
+        "autoplayReset": "重設自動播放覆寫",
+        "other": "其他"
+    },
+    "status": {
+        "connected": "已連線",
+        "readOnly": "唯讀",
+        "error": "錯誤",
+        "noGuilds": "沒有伺服器"
+    },
+    "app": {
+        "install": "安裝應用程式"
+    },
+    "stats": {
+        "title": "統計資料",
+        "personalTitle": "我的統計"
+    },
+    "playlists": {
+        "title": "播放清單"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

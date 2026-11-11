@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Dil",
+        "description": "Botun bu sunucuda kullandığı dil. İngilizce (Amerika Birleşik Devletleri) yedek dildir."
+    },
+    "player": {
+        "title": "Oynatıcı",
+        "nothingPlaying": "Çalan bir şey yok",
+        "idle": "boşta",
+        "queued": "sırada {{count}}",
+        "resume": "Devam et",
+        "pause": "Duraklat",
+        "disconnect": "Bağlantıyı kes",
+        "listen": "Dinle",
+        "mute": "Sesi kapat",
+        "unmute": "Sesi aç",
+        "connecting": "Bağlanıyor",
+        "listenTitle": "Bu tarayıcı sesini bottan çal",
+        "muteTitle": "Yalnızca bu tarayıcının sesini kapat",
+        "unmuteTitle": "Yalnızca bu tarayıcının sesini aç",
+        "listenDenied": "Rolleriniz dinlemenize izin vermiyor",
+        "playing": "çalıyor",
+        "paused": "duraklatıldı",
+        "autoplay": "otomatik oynatma"
+    },
+    "queue": {
+        "title": "Sıra",
+        "empty": "Sırada bir şey yok.",
+        "addPlaceholder": "Şarkı adı veya URL",
+        "add": "Şarkı ekle",
+        "skipTo": "{{title}} şarkısına atla",
+        "remove": "Bu parçayı kaldır"
+    },
+    "filters": {
+        "title": "Filtreler"
+    },
+    "settings": {
+        "title": "Ayarlar",
+        "cancel": "İptal",
+        "save": "Ayarları kaydet",
+        "autoplayReset": "Otomatik oynatma geçersiz kılmasını sıfırla",
+        "other": "Diğer"
+    },
+    "status": {
+        "connected": "Bağlandı",
+        "readOnly": "Salt okunur",
+        "error": "Hata",
+        "noGuilds": "Sunucu yok"
+    },
+    "app": {
+        "install": "Uygulamayı kur"
+    },
+    "stats": {
+        "title": "İstatistikler",
+        "personalTitle": "İstatistiklerim"
+    },
+    "playlists": {
+        "title": "Çalma listeleri"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

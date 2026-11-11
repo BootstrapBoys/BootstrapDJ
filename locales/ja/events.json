@@ -1,0 +1,13 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "ready": "BootstrapDJ の準備ができました。",
+    "queueEnd": {
+        "stillListening": "待機を続ける",
+        "leave": "退出する",
+        "prompt": "キューが空です。誰も確認しない場合、{{time}} 後に退出します。",
+        "leaving": "ボイスチャンネルから退出します。",
+        "staying": "接続を維持します。"
+    }
+}

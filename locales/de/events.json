@@ -1,0 +1,13 @@
+{
+    "ready": "BootstrapDJ ist bereit.",
+    "queueEnd": {
+        "stillListening": "Weiter zuhören",
+        "leave": "Verlassen",
+        "prompt": "Die Warteschlange ist leer. Ich verlasse den Kanal in {{time}}, wenn niemand bestätigt.",
+        "leaving": "Ich verlasse den Sprachkanal.",
+        "staying": "Ich bleibe verbunden."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "generic": "問題が発生しました。",
+    "gate": {
+        "preferredBot": "このサーバーでは音声コマンドは **{{name}}** に転送されます。そのボットを使用してください。",
+        "locked": "このセッションはロックされています。サーバー管理者がロックを解除する必要があります。",
+        "notAllowed": "このコマンドを使用する権限がありません。",
+        "threads": "このサーバーではスレッド内でコマンドを使用できません。",
+        "disabled": "**{{command}}** はこのサーバーで無効になっています。",
+        "commandChannel": "コマンドは <#{{channel}}> に制限されています。",
+        "voiceChannel": "コマンドを使用するには <#{{channel}}> に接続している必要があります。",
+        "noSendMessages": "`{{guild}}` で **`SendMessages`** 権限がありません\nチャンネル: <#{{channel}}>",
+        "noEmbedLinks": "**`EmbedLinks`** 権限がありません。",
+        "clientPermissions": "このコマンドを実行するための権限が不足しています。",
+        "userPermissions": "このコマンドを使用するための権限が不足しています。",
+        "voiceRequired": "この `{{command}}` コマンドを使用するにはボイスチャンネルに接続している必要があります。",
+        "noConnect": "この `{{command}}` コマンドを実行するための `CONNECT` 権限がありません。",
+        "noSpeak": "この `{{command}}` コマンドを実行するための `SPEAK` 権限がありません。",
+        "noRequestToSpeak": "この `{{command}}` コマンドを実行するための `REQUEST TO SPEAK` 権限がありません。",
+        "wrongVoice": "<#{{channel}}> に接続していないため、この `{{command}}` コマンドを使用できません。",
+        "nothingPlaying": "現在何も再生されていません。",
+        "djRoleMissing": "DJ ロールが設定されていません。",
+        "djRoleRequired": "このコマンドを使用するには DJ ロールが必要です。",
+        "missingTitle": "引数が不足しています",
+        "missingDescription": "`{{command}}` コマンドに必要な引数を指定してください。\n\n例:\n{{examples}}",
+        "missingFooter": "構文: [] = 任意, <> = 必須",
+        "cooldown": "`{{command}}` コマンドを再度使用するまで、あと {{seconds}} 秒お待ちください。",
+        "everyone": "@everyone や @here をメンションすることはできません。"
+    },
+    "noPlayer": "このサーバーでは音楽が再生されていません。",
+    "noNode": "現在利用可能な Lavalink ノードがありません。しばらくしてから再度お試しください。",
+    "searchFailed": "検索中にエラーが発生しました。もう一度お試しください。",
+    "loadFailed": "検索中にエラーが発生しました。",
+    "noResults": "結果が見つかりませんでした。",
+    "playlistTooLong": "プレイリストが長すぎます。最大 {{max}} 曲までです。"
+}

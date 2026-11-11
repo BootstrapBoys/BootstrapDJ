@@ -45,10 +45,10 @@
         "autoplayDisabled": "Autoplay disabled and queued bot picks removed.",
         "autoplayNoNode": "No Lavalink node is available right now. Please try again in a moment.",
         "autoplayNoSeed": "I couldn't find anything for **{{label}}**. Autoplay was left unchanged.",
-        "autoplaySeeded": "Autoplay enabled — seeded from **{{label}}**, starting with **{{title}}** by {{author}}.",
-        "autoplayStarted": "Autoplay enabled — starting from **{{title}}** by {{author}}.",
-        "autoplayWaiting": "Autoplay enabled — I will pick tracks when the queue runs out.",
-        "nowPlayingLine": "[{{title}}]({{uri}}) · Requested by {{requester}}\n\n`{{bar}}` {{timing}}",
+        "autoplaySeeded": "Autoplay enabled \u2014 seeded from **{{label}}**, starting with **{{title}}** by {{author}}.",
+        "autoplayStarted": "Autoplay enabled \u2014 starting from **{{title}}** by {{author}}.",
+        "autoplayWaiting": "Autoplay enabled \u2014 I will pick tracks when the queue runs out.",
+        "nowPlayingLine": "[{{title}}]({{uri}}) \u00b7 Requested by {{requester}}\n\n`{{bar}}` {{timing}}",
         "queueLine": "{{index}}. [{{title}}]({{uri}}) - Request By: {{requester}} - Duration: {{duration}}",
         "queueNowPlaying": "Now playing: [{{title}}]({{uri}}) - Request By: {{requester}} - Duration: {{duration}}",
         "queuedTracks": "Queued tracks",
@@ -439,7 +439,7 @@
             "description": "Removes the last queued track"
         },
         "removeuser": {
-            "description": "Removes a user’s queued tracks",
+            "description": "Removes a user\u2019s queued tracks",
             "options": {
                 "user": "User whose tracks should be removed"
             }
@@ -618,5 +618,30 @@
                 "dashboard": "Show dashboard"
             }
         }
+    },
+    "profile": {
+        "private": "That profile is private.",
+        "noBio": "No bio set.",
+        "visibility": "Visibility",
+        "hidden": "hidden",
+        "visible": "visible",
+        "privacy": "Privacy",
+        "serverVisible": "Server visible",
+        "no": "no",
+        "yes": "yes",
+        "avatarShape": "Avatar shape",
+        "reset": "Profile reset.",
+        "chooseField": "Choose color, bio, privacy, or visible.",
+        "hex": "Use a hex color such as `#ff8800`.",
+        "bioLimit": "Bios are limited to 200 characters.",
+        "privacyValue": "Privacy must be `public` or `private`.",
+        "backgroundLimit": "Backgrounds are limited to 200 characters.",
+        "avatarShapeValue": "Avatar shape must be `circle`, `square`, or `rounded`.",
+        "borderLimit": "Avatar borders are limited to 50 characters.",
+        "unknown": "Unknown profile field.",
+        "updated": "Updated profile **{{key}}**."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
     }
 }

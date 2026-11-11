@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Sprache",
+        "description": "Sprache, die der Bot für diesen Server verwendet. Englisch (Vereinigte Staaten) ist der Fallback."
+    },
+    "player": {
+        "title": "Player",
+        "nothingPlaying": "Nichts wird abgespielt",
+        "idle": "inaktiv",
+        "queued": "{{count}} in der Warteschlange",
+        "resume": "Fortsetzen",
+        "pause": "Pause",
+        "disconnect": "Trennen",
+        "listen": "Zuhören",
+        "mute": "Stummschalten",
+        "unmute": "Ton einschalten",
+        "connecting": "Verbinden",
+        "listenTitle": "Dieses Browser-Audio über den Bot abspielen",
+        "muteTitle": "Nur diesen Browser stummschalten",
+        "unmuteTitle": "Nur diesen Browser laut schalten",
+        "listenDenied": "Deine Rollen erlauben kein Zuhören",
+        "playing": "spielt",
+        "paused": "pausiert",
+        "autoplay": "Autoplay"
+    },
+    "queue": {
+        "title": "Warteschlange",
+        "empty": "Nichts in der Warteschlange.",
+        "addPlaceholder": "Songname oder URL",
+        "add": "Song hinzufügen",
+        "skipTo": "Zu {{title}} springen",
+        "remove": "Diesen Titel entfernen"
+    },
+    "filters": {
+        "title": "Filter"
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "cancel": "Abbrechen",
+        "save": "Einstellungen speichern",
+        "autoplayReset": "Autoplay-Überschreibung zurücksetzen",
+        "other": "Sonstiges"
+    },
+    "status": {
+        "connected": "Verbunden",
+        "readOnly": "Schreibgeschützt",
+        "error": "Fehler",
+        "noGuilds": "Keine Server"
+    },
+    "app": {
+        "install": "App installieren"
+    },
+    "stats": {
+        "title": "Statistik",
+        "personalTitle": "Meine Statistiken"
+    },
+    "playlists": {
+        "title": "Wiedergabelisten"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

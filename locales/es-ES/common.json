@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "Español (España)",
+        "current": "Idioma actual: **{{language}}**.",
+        "set": "Idioma cambiado a **{{language}}**.",
+        "reset": "Idioma restablecido a **{{language}}**.",
+        "invalid": "Ese idioma no está disponible. Elige uno de estos: {{languages}}.",
+        "list": "Idiomas disponibles: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

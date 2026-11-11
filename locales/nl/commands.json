@@ -1,0 +1,647 @@
+{
+    "language": {
+        "description": "Taal voor deze server bekijken of wijzigen",
+        "language_option": "Te gebruiken taal",
+        "reset_option": "Terugzetten naar de standaardtaal"
+    },
+    "core": {
+        "noQueue": "Er zitten geen nummers in de wachtrij.",
+        "nothingPlaying": "Er wordt momenteel niets afgespeeld",
+        "alreadyPaused": "Het nummer is al gepauzeerd",
+        "paused": "Nummer gepauzeerd",
+        "resumed": "Speler hervat",
+        "notPaused": "De speler is niet gepauzeerd.",
+        "cleared": "Wachtrij geleegd",
+        "shuffled": "Wachtrij geschud",
+        "stopped": "Muziek gestopt en wachtrij geleegd",
+        "invalidNumber": "Dat is geen geldig getal.",
+        "validNumber": "Geef een geldig getal op.",
+        "skipped": "Overgeslagen: [{{title}}]({{uri}})",
+        "skippedTo": "Overgeslagen naar nummer {{target}}",
+        "removed": "Nummer {{position}} uit de wachtrij verwijderd",
+        "seeked": "Gesprongen naar {{time}}",
+        "invalidTime": "Ongeldig tijdformaat.",
+        "volumeInvalid": "Geef een geldig getal op.",
+        "volumeLow": "Het volume kan niet lager zijn dan {{min}}.",
+        "volumeHigh": "Het volume kan niet hoger zijn dan {{max}}.",
+        "volumeSet": "Volume ingesteld op {{volume}}",
+        "notConnected": "Ik zit niet in een spraakkanaal",
+        "join": "Spraakkanaal betreden",
+        "dmSent": "**Ik heb je een DM gestuurd.**",
+        "dmFailed": "**Ik kon je geen DM sturen.**",
+        "addedTrack": "[{{title}}]({{uri}}) {{destination}} toegevoegd.",
+        "addedPlaylist": "{{count}} nummers {{destination}} toegevoegd.",
+        "destinationNext": "vooraan in de wachtrij",
+        "destinationQueue": "aan de wachtrij",
+        "alreadyConnected": "Ik ben al verbonden met {{channel}}",
+        "joined": "Verbonden met {{channel}}",
+        "left": "Verbinding met {{channel}} verbroken",
+        "leftGeneric": "Verbinding met het spraakkanaal verbroken",
+        "voiceChannel": "het spraakkanaal",
+        "grabCard": "**Duur:** {{duration}}\n**Aangevraagd door:** {{requester}}\n**Link:** [Klik hier]({{uri}})",
+        "loopSong": "**Nummer wordt herhaald**",
+        "loopQueue": "**Wachtrij wordt herhaald**",
+        "loopOff": "**Herhalen staat nu uit**",
+        "autoplayDisabled": "Autoplay uitgeschakeld en door de bot gekozen nummers verwijderd.",
+        "autoplayNoNode": "Er is momenteel geen Lavalink-node beschikbaar. Probeer het zo meteen opnieuw.",
+        "autoplayNoSeed": "Ik kon niets vinden voor **{{label}}**. Autoplay is ongewijzigd gebleven.",
+        "autoplaySeeded": "Autoplay ingeschakeld — gestart vanuit **{{label}}**, beginnend met **{{title}}** van {{author}}.",
+        "autoplayStarted": "Autoplay ingeschakeld — beginnend met **{{title}}** van {{author}}.",
+        "autoplayWaiting": "Autoplay ingeschakeld — ik kies nummers zodra de wachtrij leegloopt.",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · Aangevraagd door {{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - Aangevraagd door: {{requester}} - Duur: {{duration}}",
+        "queueNowPlaying": "Speelt nu: [{{title}}]({{uri}}) - Aangevraagd door: {{requester}} - Duur: {{duration}}",
+        "queuedTracks": "Nummers in wachtrij",
+        "queueLength": "Wachtrijlengte",
+        "autoplay": "Autoplay",
+        "loop": "Herhalen",
+        "on": "aan",
+        "off": "uit",
+        "queueAuthor": "Wachtrij",
+        "queuePage": "Pagina {{page}} van {{total}}"
+    },
+    "metadata": {
+        "247": {
+            "description": "laat de bot in het spraakkanaal blijven"
+        },
+        "8d": {
+            "description": "8d-filter aan/uit"
+        },
+        "bassboost": {
+            "description": "bassboost-filter aan/uit"
+        },
+        "distorsion": {
+            "description": "distorsie-filter aan/uit"
+        },
+        "filter": {
+            "description": "Audiofilters toepassen of wissen",
+            "options": {
+                "8d": "8d toepassen",
+                "bassboost": "Bassboost toepassen",
+                "distortion": "Distortion toepassen",
+                "karaoke": "Karaoke toepassen",
+                "nightcore": "Nightcore toepassen",
+                "reset": "Reset toepassen",
+                "rotation": "Rotation toepassen",
+                "tremolo": "Tremolo toepassen",
+                "vibrato": "Vibrato toepassen",
+                "lowpass": "Lowpass toepassen",
+                "pitch": "Pitch toepassen met een waarde",
+                "rate": "Rate toepassen met een waarde",
+                "speed": "Speed toepassen met een waarde"
+            }
+        },
+        "filters": {
+            "description": "Toont actieve audiofilters"
+        },
+        "karaoke": {
+            "description": "karaoke-filter aan/uit"
+        },
+        "nightcore": {
+            "description": "nightcore-filter aan/uit"
+        },
+        "pitch": {
+            "description": "pitch-filter aan/uit",
+            "options": {
+                "number": "De pitch die je wilt instellen"
+            }
+        },
+        "rate": {
+            "description": "Wijzigt de afspeelsnelheid (snelheid en pitch)",
+            "options": {
+                "rate": "Snelheidsfactor tussen 0,5 en 5"
+            }
+        },
+        "reset": {
+            "description": "Zet de actieve filters terug"
+        },
+        "rotation": {
+            "description": "rotation-filter aan/uit"
+        },
+        "speed": {
+            "description": "Stelt de snelheid van het nummer in",
+            "options": {
+                "speed": "De snelheid die je wilt instellen"
+            }
+        },
+        "tremolo": {
+            "description": "tremolo-filter aan/uit"
+        },
+        "vibrato": {
+            "description": "vibrato-filter aan/uit"
+        },
+        "lowpass": {
+            "description": "lowpass-filter aan/uit"
+        },
+        "add": {
+            "description": "Voegt een nummer toe aan de afspeellijst",
+            "options": {
+                "playlist": "De afspeellijst waaraan je wilt toevoegen",
+                "song": "Het nummer dat je wilt toevoegen"
+            }
+        },
+        "alias": {
+            "description": "Aangepaste commandobijnamen maken, tonen of verwijderen",
+            "options": {
+                "action": "Bijnamen toevoegen, verwijderen, tonen of wissen",
+                "alias": "Naam van de bijnaam",
+                "command": "Doelcommando om toe te voegen",
+                "scope": "Voor de hele server of alleen voor jou"
+            }
+        },
+        "autoplayconfig": {
+            "description": "Configureert de autoplay-bron voor een koude start",
+            "options": {
+                "source": "Bron voor koude-startseeds",
+                "seeds": "Eigen seeds, kommagescheiden (zet source op curated)",
+                "reset": "Serveroverschrijving wissen en omgevingsstandaarden gebruiken"
+            }
+        },
+        "playlist": {
+            "description": "Beheer opgeslagen afspeellijsten",
+            "options": {
+                "action": "Collectiebewerking",
+                "name": "Naam van de collectie",
+                "query": "Nummer- of afspeellijst-URL om toe te voegen",
+                "target": "Doelnaam voor hernoemen/kopiëren/samenvoegen",
+                "index": "Positie van het nummer om te verwijderen (vanaf 1)",
+                "code": "Deelcode"
+            }
+        },
+        "create": {
+            "description": "Maakt een afspeellijst",
+            "options": {
+                "name": "De naam van de afspeellijst"
+            }
+        },
+        "delete": {
+            "description": "Verwijdert een afspeellijst",
+            "options": {
+                "playlist": "De afspeellijst die je wilt verwijderen"
+            }
+        },
+        "dj": {
+            "description": "Beheer de DJ-modus en bijbehorende rollen",
+            "options": {
+                "add": "De DJ-rol die je wilt toevoegen",
+                "remove": "De DJ-rol die je wilt verwijderen",
+                "clear": "Wist alle DJ-rollen",
+                "toggle": "Schakelt de DJ-rol in of uit"
+            }
+        },
+        "language": {
+            "description": "Taal voor deze server bekijken of wijzigen",
+            "options": {
+                "language": "Te gebruiken taal",
+                "reset": "Terugzetten naar de standaardtaal"
+            }
+        },
+        "list": {
+            "description": "Toont afspeellijsten",
+            "options": {
+                "user": "Wiens afspeellijsten je wilt zien"
+            }
+        },
+        "listen": {
+            "description": "Beheer spraakopdrachten (Earl the Ear) en je luister-opt-out",
+            "options": {
+                "action": "Wat je wilt doen"
+            }
+        },
+        "load": {
+            "description": "Laadt een afspeellijst",
+            "options": {
+                "playlist": "De afspeellijst die je wilt laden"
+            }
+        },
+        "mappings": {
+            "description": "Aangepaste prefix-snelkoppelingen maken",
+            "options": {
+                "action": "Mappings toevoegen, verwijderen, tonen of wissen",
+                "trigger": "Woord dat na de prefix wordt getypt",
+                "expansion": "Commando en argumenten om uit te voeren",
+                "scope": "Voor de hele server of alleen voor jou"
+            }
+        },
+        "permissions": {
+            "description": "Beheer toestemmingsregels per commando",
+            "options": {
+                "action": "Regels tonen, toestaan, weigeren of resetten",
+                "command": "Commandonaam; laat leeg bij reset om alle regels te wissen",
+                "target": "Gebruiker of rol waarop de regel van toepassing is"
+            }
+        },
+        "prefix": {
+            "description": "Toont de prefix van de bot",
+            "options": {
+                "set": "Stelt de prefix in",
+                "reset": "Zet de prefix terug naar de standaard"
+            }
+        },
+        "removesong": {
+            "description": "Verwijdert een nummer uit een afspeellijst",
+            "options": {
+                "playlist": "De afspeellijst om te bewerken",
+                "song": "Het nummer dat je wilt verwijderen"
+            }
+        },
+        "save": {
+            "description": "Slaat de huidige wachtrij op als afspeellijst",
+            "options": {
+                "name": "Naam van de afspeellijst"
+            }
+        },
+        "selfprefix": {
+            "description": "Stel een persoonlijke prefix in voor deze server"
+        },
+        "settings": {
+            "description": "Botinstellingen per server bekijken of wijzigen",
+            "options": {
+                "key": "Naam van de instelling; laat leeg om alles te tonen",
+                "value": "Nieuwe waarde; laat leeg om de instelling te bekijken",
+                "reset": "Alle instellingen voor deze server resetten"
+            }
+        },
+        "setup": {
+            "description": "Stelt de bot in",
+            "options": {
+                "create": "Maakt het aanvraagkanaal aan",
+                "delete": "Verwijdert het aanvraagkanaal",
+                "info": "Toont het aanvraagkanaal"
+            }
+        },
+        "album": {
+            "description": "Zoekt een album op of zet het eerste resultaat in de wachtrij",
+            "options": {
+                "name": "Albumnaam"
+            }
+        },
+        "artist": {
+            "description": "Zoekt een artiest op of zet het beste resultaat in de wachtrij",
+            "options": {
+                "name": "Artiestnaam"
+            }
+        },
+        "autoplay": {
+            "description": "Schakelt autoplay in of uit",
+            "options": {
+                "seed": "Eerste artiest of nummer",
+                "seed2": "Tweede artiest of nummer (optioneel)",
+                "seed3": "Derde artiest of nummer (optioneel)"
+            }
+        },
+        "backward": {
+            "description": "Spoelt het huidige nummer terug",
+            "options": {
+                "time": "Hoeveel je terug wilt (30s, 1m, 01:30)"
+            }
+        },
+        "clearqueue": {
+            "description": "Leegt de wachtrij"
+        },
+        "endtime": {
+            "description": "Stopt het huidige nummer op een bepaald tijdstip",
+            "options": {
+                "time": "Waar te stoppen (30s, 1m, 02:30)"
+            }
+        },
+        "fairplay": {
+            "description": "Wisselt de wachtrij af per aanvrager"
+        },
+        "forward": {
+            "description": "Spoelt het huidige nummer vooruit",
+            "options": {
+                "time": "Hoeveel je vooruit wilt (30s, 1m, 01:30)"
+            }
+        },
+        "grab": {
+            "description": "Pakt het nummer dat nu speelt"
+        },
+        "join": {
+            "description": "Voegt zich bij het spraakkanaal"
+        },
+        "leave": {
+            "description": "Verlaat het spraakkanaal"
+        },
+        "loop": {
+            "description": "herhaal het huidige nummer of de wachtrij"
+        },
+        "lyrics": {
+            "description": "Toont songtekst van het huidige of gezochte nummer",
+            "options": {
+                "song": "Nummer om op te zoeken; standaard het huidige nummer"
+            }
+        },
+        "massmove": {
+            "description": "Verplaatst een blok nummers uit de wachtrij",
+            "options": {
+                "from": "Eerste positie in het blok (vanaf 1)",
+                "to": "Laatste positie in het blok (vanaf 1)",
+                "destination": "Invoegpositie in de resulterende wachtrij (vanaf 1)"
+            }
+        },
+        "massremove": {
+            "description": "Verwijdert een reeks nummers uit de wachtrij",
+            "options": {
+                "from": "Eerste positie om te verwijderen (vanaf 1)",
+                "to": "Laatste positie om te verwijderen (vanaf 1)"
+            }
+        },
+        "move": {
+            "description": "Verplaatst een nummer in de wachtrij naar een andere positie",
+            "options": {
+                "from": "Huidige positie in de wachtrij (vanaf 1)",
+                "to": "Nieuwe positie in de wachtrij (vanaf 1)"
+            }
+        },
+        "nowplaying": {
+            "description": "Toont het nummer dat nu speelt"
+        },
+        "pause": {
+            "description": "Pauzeert het huidige nummer"
+        },
+        "play": {
+            "description": "Speelt een nummer van YouTube of Spotify",
+            "options": {
+                "song": "Het nummer dat je wilt afspelen"
+            }
+        },
+        "playleave": {
+            "description": "Speelt een aanvraag af en verlaat spraak als de wachtrij leeg is",
+            "options": {
+                "query": "Nummer, zoekterm of afspeellijst-URL"
+            }
+        },
+        "playlocal": {
+            "description": "Speelt een audio- of videobestand dat op Discord is geüpload",
+            "options": {
+                "file": "Het audio- of videobestand om af te spelen"
+            }
+        },
+        "playnext": {
+            "description": "Voegt het nummer toe om hierna af te spelen",
+            "options": {
+                "song": "Het nummer dat je wilt afspelen"
+            }
+        },
+        "playrecent": {
+            "description": "Zet nummers uit de recente afspeelgeschiedenis in de wachtrij",
+            "options": {
+                "count": "Hoeveel recente nummers in de wachtrij (1-20)"
+            }
+        },
+        "playselect": {
+            "description": "Blader door een afspeellijst of zoekresultaten en kies een nummer",
+            "options": {
+                "url": "Afspeellijst-URL of zoekterm"
+            }
+        },
+        "playlistsearch": {
+            "description": "Toont nummers uit een overeenkomende afspeellijst",
+            "options": {
+                "query": "Naam van de afspeellijst of URL"
+            }
+        },
+        "previous": {
+            "description": "Speelt het vorige nummer opnieuw"
+        },
+        "queue": {
+            "description": "Toont de huidige wachtrij"
+        },
+        "radio": {
+            "description": "Speelt een internetradiostation af op naam",
+            "options": {
+                "station": "Naam van het station of genre"
+            }
+        },
+        "recentlyplayed": {
+            "description": "Toont recent afgespeelde nummers"
+        },
+        "remove": {
+            "description": "Verwijdert een nummer uit de wachtrij",
+            "options": {
+                "song": "Positie van het nummer in de wachtrij"
+            }
+        },
+        "removeabsent": {
+            "description": "Verwijdert nummers van gebruikers die niet in het spraakkanaal zitten"
+        },
+        "removeduplicates": {
+            "description": "Verwijdert dubbele nummers uit de wachtrij"
+        },
+        "removekeyword": {
+            "description": "Verwijdert nummers die overeenkomen met een trefwoord",
+            "options": {
+                "keyword": "Tekst om te zoeken in titel of artiest"
+            }
+        },
+        "removelast": {
+            "description": "Verwijdert het laatste nummer uit de wachtrij"
+        },
+        "removeuser": {
+            "description": "Verwijdert de nummers van een gebruiker uit de wachtrij",
+            "options": {
+                "user": "Gebruiker wiens nummers verwijderd moeten worden"
+            }
+        },
+        "replay": {
+            "description": "Speelt het huidige nummer opnieuw vanaf het begin"
+        },
+        "requested": {
+            "description": "Toont nummers in de wachtrij die een gebruiker aanvroeg",
+            "options": {
+                "user": "Wiens aanvragen je wilt zien (standaard jij)"
+            }
+        },
+        "resume": {
+            "description": "Hervat het huidige nummer"
+        },
+        "reverse": {
+            "description": "Keert de volgorde van de wachtrij om"
+        },
+        "seek": {
+            "description": "Springt naar een bepaald tijdstip in het nummer",
+            "options": {
+                "time": "Het tijdstip om naartoe te springen"
+            }
+        },
+        "selectrandom": {
+            "description": "Verplaatst een willekeurig nummer naar voren"
+        },
+        "sessionstats": {
+            "description": "Toont statistieken van de huidige afspeelsessie"
+        },
+        "shuffle": {
+            "description": "Schudt de wachtrij"
+        },
+        "shufflerepeat": {
+            "description": "Schudt de wachtrij en zet herhalen van de wachtrij aan"
+        },
+        "skip": {
+            "description": "Slaat het huidige nummer over"
+        },
+        "skipto": {
+            "description": "Slaat over naar een specifiek nummer in de wachtrij",
+            "options": {
+                "number": "De positie van het nummer waar je naartoe wilt"
+            }
+        },
+        "song": {
+            "description": "Toont informatie over het huidige of gezochte nummer",
+            "options": {
+                "query": "Nummer om op te zoeken; standaard het huidige nummer"
+            }
+        },
+        "sort": {
+            "description": "Sorteert de nummers in de wachtrij",
+            "options": {
+                "by": "Veld om op te sorteren",
+                "order": "Sorteerrichting"
+            }
+        },
+        "stop": {
+            "description": "Stopt de muziek en leegt de wachtrij"
+        },
+        "swap": {
+            "description": "Wisselt twee nummers in de wachtrij",
+            "options": {
+                "first": "Eerste positie in de wachtrij (vanaf 1)",
+                "second": "Tweede positie in de wachtrij (vanaf 1)"
+            }
+        },
+        "top": {
+            "description": "Toont de beste zoekresultaten voor een zoekopdracht",
+            "options": {
+                "query": "Zoekopdracht; standaard de beste resultaten"
+            }
+        },
+        "volume": {
+            "description": "Stelt het volume van de speler in",
+            "options": {
+                "number": "Het volume dat je wilt instellen"
+            }
+        },
+        "voteskip": {
+            "description": "Start of sluit je aan bij een stemming om over te slaan"
+        },
+        "eval": {
+            "description": "Code uitvoeren"
+        },
+        "guild": {
+            "description": "Inspecteer een server waar de bot in zit",
+            "options": {
+                "guild": "Servernaam of ID (met autocomplete)"
+            }
+        },
+        "guildleave": {
+            "description": "Verlaat een server"
+        },
+        "guildlist": {
+            "description": "Toont alle servers waar de bot in zit"
+        },
+        "reload": {
+            "description": "Herlaadt commandomodules zonder herstart (alleen eigenaar)"
+        },
+        "restart": {
+            "description": "Herstart het botproces (alleen eigenaar)"
+        },
+        "shutdown": {
+            "description": "Stopt het botproces (alleen eigenaar)"
+        },
+        "categories": {
+            "description": "Toont alle commandocategorieën"
+        },
+        "faq": {
+            "description": "Veelgestelde vragen over BootstrapDJ"
+        },
+        "guess": {
+            "description": "Start een raad-het-nummer-spel voor het huidige nummer"
+        },
+        "help": {
+            "description": "Toont het helpmenu",
+            "options": {
+                "command": "Het commando waarover je info wilt"
+            }
+        },
+        "info": {
+            "description": "Informatie over de bot"
+        },
+        "invite": {
+            "description": "Stuurt de uitnodigingslink van de bot"
+        },
+        "lavalink": {
+            "description": "Toont de huidige Lavalink-statistieken"
+        },
+        "leaderboard": {
+            "description": "Toont de actiefste aanvragers van deze sessie"
+        },
+        "ping": {
+            "description": "Toont de ping van de bot"
+        },
+        "premium": {
+            "description": "Legt het gratis functiebeleid uit"
+        },
+        "profile": {
+            "description": "Bekijk of pas een BootstrapDJ-profiel aan",
+            "options": {
+                "action": "Profielvelden bekijken, instellen of wissen",
+                "key": "Veld om te wijzigen: color, bio, privacy, visible",
+                "value": "Nieuwe waarde",
+                "user": "Profiel om te bekijken"
+            }
+        },
+        "shards": {
+            "description": "Toont de shardstatus"
+        },
+        "stats": {
+            "description": "Toont live botstatistieken"
+        },
+        "support": {
+            "description": "Hoe je hulp krijgt bij BootstrapDJ"
+        },
+        "tip": {
+            "description": "Toont een willekeurige BootstrapDJ-tip"
+        },
+        "utility": {
+            "description": "Botinformatie en hulppagina's",
+            "options": {
+                "overview": "Toon overzicht",
+                "stats": "Toon statistieken",
+                "shards": "Toon shards",
+                "categories": "Toon categorieën",
+                "faq": "Toon faq",
+                "tip": "Toon tip",
+                "premium": "Toon premium",
+                "support": "Toon support",
+                "leaderboard": "Toon ranglijst",
+                "commands": "Toon commando's",
+                "dashboard": "Toon dashboard"
+            }
+        }
+    },
+    "profile": {
+        "private": "Dat profiel is privé.",
+        "noBio": "Geen bio ingesteld.",
+        "visibility": "Zichtbaarheid",
+        "hidden": "verborgen",
+        "visible": "zichtbaar",
+        "privacy": "Privacy",
+        "serverVisible": "Zichtbaar op server",
+        "no": "nee",
+        "yes": "ja",
+        "avatarShape": "Avatarvorm",
+        "reset": "Profiel gereset.",
+        "chooseField": "Kies color, bio, privacy of visible.",
+        "hex": "Gebruik een hexkleur zoals `#ff8800`.",
+        "bioLimit": "Bio's zijn beperkt tot 200 tekens.",
+        "privacyValue": "Privacy moet `public` of `private` zijn.",
+        "backgroundLimit": "Achtergronden zijn beperkt tot 200 tekens.",
+        "avatarShapeValue": "Avatarvorm moet `circle`, `square` of `rounded` zijn.",
+        "borderLimit": "Avatarranden zijn beperkt tot 50 tekens.",
+        "unknown": "Onbekend profielveld.",
+        "updated": "Profiel **{{key}}** bijgewerkt."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

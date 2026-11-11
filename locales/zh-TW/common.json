@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "繁體中文（台灣）",
+        "current": "目前語言：**{{language}}**。",
+        "set": "語言已變更為 **{{language}}**。",
+        "reset": "語言已重設為 **{{language}}**。",
+        "invalid": "該語言無法使用。請選擇下列其中一種：{{languages}}。",
+        "list": "可用語言：{{languages}}。"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

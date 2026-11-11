@@ -1,0 +1,38 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "generic": "出了点问题。",
+    "gate": {
+        "preferredBot": "本服务器的语音指令已交由 **{{name}}** 处理。请使用该机器人。",
+        "locked": "当前会话已锁定，需要服务器管理员解锁。",
+        "notAllowed": "你无权使用此命令。",
+        "threads": "本服务器已在子区中禁用命令。",
+        "disabled": "**{{command}}** 已在本服务器禁用。",
+        "commandChannel": "命令仅限在 <#{{channel}}> 中使用。",
+        "voiceChannel": "你必须位于 <#{{channel}}> 才能使用命令。",
+        "noSendMessages": "我在 `{{guild}}` 中没有 **`SendMessages`** 权限\n频道：<#{{channel}}>",
+        "noEmbedLinks": "我没有 **`EmbedLinks`** 权限。",
+        "clientPermissions": "我没有执行此命令所需的权限。",
+        "userPermissions": "你没有使用此命令所需的权限。",
+        "voiceRequired": "你必须先加入语音频道才能使用 `{{command}}` 命令。",
+        "noConnect": "我没有执行 `{{command}}` 命令所需的 `CONNECT` 权限。",
+        "noSpeak": "我没有执行 `{{command}}` 命令所需的 `SPEAK` 权限。",
+        "noRequestToSpeak": "我没有执行 `{{command}}` 命令所需的 `REQUEST TO SPEAK` 权限。",
+        "wrongVoice": "你未连接到 <#{{channel}}>，无法使用 `{{command}}` 命令。",
+        "nothingPlaying": "当前没有正在播放的内容。",
+        "djRoleMissing": "未设置 DJ 角色。",
+        "djRoleRequired": "你需要拥有 DJ 角色才能使用此命令。",
+        "missingTitle": "缺少参数",
+        "missingDescription": "请为 `{{command}}` 命令提供必需的参数。\n\n示例：\n{{examples}}",
+        "missingFooter": "语法：[] 表示可选，<> 表示必填",
+        "cooldown": "请等待 {{seconds}} 秒后再使用 `{{command}}` 命令。",
+        "everyone": "你不能提及 @everyone 或 @here。"
+    },
+    "noPlayer": "本服务器没有正在播放的音乐。",
+    "noNode": "当前没有可用的 Lavalink 节点，请稍后重试。",
+    "searchFailed": "搜索时出错，请重试。",
+    "loadFailed": "搜索时出错。",
+    "noResults": "未找到任何结果。",
+    "playlistTooLong": "播放列表过长，最多只能包含 {{max}} 首歌曲。"
+}

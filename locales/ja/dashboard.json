@@ -1,0 +1,63 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "language": {
+        "label": "言語",
+        "description": "このサーバーでボットが使用する言語です。フォールバックは English (United States) です。"
+    },
+    "player": {
+        "title": "プレイヤー",
+        "nothingPlaying": "再生中の曲はありません",
+        "idle": "待機中",
+        "queued": "{{count}} 曲が待機中",
+        "resume": "再開",
+        "pause": "一時停止",
+        "disconnect": "切断",
+        "listen": "試聴",
+        "mute": "ミュート",
+        "unmute": "ミュート解除",
+        "connecting": "接続中",
+        "listenTitle": "このブラウザの音声をボットから再生します",
+        "muteTitle": "このブラウザのみミュートします",
+        "unmuteTitle": "このブラウザのみミュートを解除します",
+        "listenDenied": "あなたのロールでは試聴できません",
+        "playing": "再生中",
+        "paused": "一時停止中",
+        "autoplay": "自動再生"
+    },
+    "queue": {
+        "title": "キュー",
+        "empty": "キューに何もありません。",
+        "addPlaceholder": "曲名または URL",
+        "add": "曲を追加",
+        "skipTo": "{{title}} へスキップ",
+        "remove": "この曲を削除"
+    },
+    "filters": {
+        "title": "フィルター"
+    },
+    "settings": {
+        "title": "設定",
+        "cancel": "キャンセル",
+        "save": "設定を保存",
+        "autoplayReset": "自動再生の上書きをリセット",
+        "other": "その他"
+    },
+    "status": {
+        "connected": "接続済み",
+        "readOnly": "読み取り専用",
+        "error": "エラー",
+        "noGuilds": "サーバーなし"
+    },
+    "app": {
+        "install": "アプリをインストール"
+    },
+    "stats": {
+        "title": "統計",
+        "personalTitle": "自分の統計"
+    },
+    "playlists": {
+        "title": "プレイリスト"
+    }
+}

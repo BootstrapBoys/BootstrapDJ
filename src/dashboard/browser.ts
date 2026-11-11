@@ -144,29 +144,31 @@ export const BROWSER_SCRIPT = String.raw`
     const LANGUAGES = [
         { value: 'en-US', label: 'English (United States)' },
         { value: 'en-GB', label: 'English (United Kingdom)' },
+        { value: 'es-ES', label: 'Español (España)' },
+        { value: 'pt-BR', label: 'Português (Brasil)' },
+        { value: 'fr', label: 'Français' },
+        { value: 'de', label: 'Deutsch' },
+        { value: 'ru', label: 'Русский' },
+        { value: 'ja', label: '日本語' },
+        { value: 'ko', label: '한국어' },
+        { value: 'zh-CN', label: '简体中文' },
+        { value: 'zh-TW', label: '繁體中文' },
+        { value: 'it', label: 'Italiano' },
+        { value: 'tr', label: 'Türkçe' },
+        { value: 'pl', label: 'Polski' },
+        { value: 'nl', label: 'Nederlands' },
+        { value: 'id', label: 'Bahasa Indonesia' },
     ];
 
-    const DASHBOARD_COPY = {
-        'en-US': {
-            settingsTitle: 'Settings',
-            settingsCancel: 'Cancel',
-            settingsSave: 'Save settings',
-            languageLabel: 'Language',
-            languageDescription:
-                'Language used by the bot for this server. English (United States) is the fallback.',
-        },
-        'en-GB': {
-            settingsTitle: 'Settings',
-            settingsCancel: 'Cancel',
-            settingsSave: 'Save settings',
-            languageLabel: 'Language',
-            languageDescription:
-                'Language used by the bot for this server. English (United States) is the fallback language.',
-        },
-    };
+    const DASHBOARD_COPY = window.__DASHBOARD_COPY__ || {};
 
-    function copy(key, fallback) {
-        return (DASHBOARD_COPY[state.language] || DASHBOARD_COPY['en-US'])[key] || fallback;
+    function copy(key, fallback, variables) {
+        const table = DASHBOARD_COPY[state.language] || DASHBOARD_COPY['en-US'] || {};
+        let value = table[key] || fallback;
+        for (const name of Object.keys(variables || {})) {
+            value = value.split('{{' + name + '}}').join(String(variables[name]));
+        }
+        return value;
     }
 
     const GROUPS = [
@@ -358,11 +360,11 @@ export const BROWSER_SCRIPT = String.raw`
         const heading = element('span', 'setting-label small');
         const label =
             key === 'language'
-                ? copy('languageLabel', LABELS[key] || key)
+                ? copy('language.label', LABELS[key] || key)
                 : LABELS[key] || key;
         const description =
             key === 'language'
-                ? copy('languageDescription', DESCRIPTIONS[key] || '')
+                ? copy('language.description', DESCRIPTIONS[key] || '')
                 : DESCRIPTIONS[key];
         heading.appendChild(element('span', '', label));
         if (description) {
@@ -572,16 +574,35 @@ export const BROWSER_SCRIPT = String.raw`
         progressWrap.setAttribute('aria-valuetext', clock);
     }
 
+    function applyStaticCopy() {
+        const textSelectors = {
+            '.player-top h2': 'player.title',
+            '.queue-head h3': 'queue.title',
+            '#filters-panel h2': 'filters.title',
+            '#settings-title': 'settings.title',
+            '#settings-cancel': 'settings.cancel',
+            '#save': 'settings.save',
+        };
+        for (const selector of Object.keys(textSelectors)) {
+            const node = find(selector);
+            if (node) node.textContent = copy(textSelectors[selector], node.textContent);
+        }
+        const queueInput = find('#queue-query');
+        if (queueInput) queueInput.placeholder = copy('queue.addPlaceholder', queueInput.placeholder);
+        const queueButton = find('#queue-add-btn');
+        if (queueButton) queueButton.textContent = copy('queue.add', queueButton.textContent);
+    }
+
     function resetPlayerPanel() {
         state.queueSignature = null;
         progress = { track: '', serverPosition: 0, position: 0, duration: 0, sampledAt: Date.now(), paused: true };
-        find('#now-title').textContent = 'Nothing playing';
+        find('#now-title').textContent = copy('player.nothingPlaying', 'Nothing playing');
         find('#now-meta').textContent = '';
-        find('#player-state').textContent = 'idle';
+        find('#player-state').textContent = copy('player.idle', 'idle');
         find('#progress-bar').style.transform = 'scaleX(0)';
         find('#now-time').textContent = '0:00 / 0:00';
         find('#queue-list').textContent = '';
-        find('#queue-list').appendChild(element('div', 'small', 'Nothing queued.'));
+        find('#queue-list').appendChild(element('div', 'small', copy('queue.empty', 'Nothing queued.')));
         find('#queue-count').textContent = '';
         progressWrap.classList.add('disabled');
         progressWrap.tabIndex = -1;
@@ -591,8 +612,8 @@ export const BROWSER_SCRIPT = String.raw`
         find('#loop-btn').classList.remove('on');
         const toggle = find('#toggle-btn');
         toggle.classList.add('paused');
-        toggle.title = 'Resume';
-        toggle.setAttribute('aria-label', 'Resume');
+        toggle.title = copy('player.resume', 'Resume');
+        toggle.setAttribute('aria-label', copy('player.resume', 'Resume'));
     }
 
     function syncProgress(player) {
@@ -634,7 +655,7 @@ export const BROWSER_SCRIPT = String.raw`
         const list = find('#queue-list');
         list.textContent = '';
         if (!player.upcoming || !player.upcoming.length) {
-            list.appendChild(element('div', 'small', 'Nothing queued.'));
+            list.appendChild(element('div', 'small', copy('queue.empty', 'Nothing queued.')));
             return;
         }
         for (const track of player.upcoming) {
@@ -645,7 +666,7 @@ export const BROWSER_SCRIPT = String.raw`
                 element('span', 'qmeta', (track.author || '') + (track.duration ? ' · ' + formatClock(track.duration) : ''))
             );
             if (state.access.controls) {
-                row.title = 'Skip to ' + track.title;
+                row.title = copy('queue.skipTo', 'Skip to {{title}}', { title: track.title });
                 row.tabIndex = 0;
                 row.role = 'button';
                 row.onclick = () => playerAction('jump', track.position);
@@ -666,12 +687,15 @@ export const BROWSER_SCRIPT = String.raw`
             resetPlayerPanel();
             return;
         }
-        find('#now-title').textContent = player.title || 'Nothing playing';
+        find('#now-title').textContent = player.title || copy('player.nothingPlaying', 'Nothing playing');
         find('#now-meta').textContent = player.author || '';
         syncProgress(player);
         paintProgress();
+        const playerState = player.paused
+            ? copy('player.paused', 'paused')
+            : copy('player.playing', 'playing');
         find('#player-state').textContent =
-            (player.paused ? 'paused' : 'playing') + (player.autoplay ? ' · autoplay' : '');
+            playerState + (player.autoplay ? ' · ' + copy('player.autoplay', 'autoplay') : '');
         renderVolume(player.volume === null || player.volume === undefined ? 100 : player.volume);
 
         find('#loop-label').textContent = player.loop;
@@ -689,6 +713,7 @@ export const BROWSER_SCRIPT = String.raw`
     function render() {
         const data = state.data;
         state.language = data.settings?.language || 'en-US';
+        applyStaticCopy();
         renderPlayer(data);
         renderFilters(data.filters);
         refreshAudioForFilterChange(data.filters);
@@ -719,9 +744,11 @@ export const BROWSER_SCRIPT = String.raw`
         try {
             state.data = await request('/api/state?guildId=' + encodeURIComponent(state.guildId));
             render();
-            find('#status').textContent = state.access.controls ? 'Connected' : 'Read-only';
+            find('#status').textContent = state.access.controls
+                ? copy('status.connected', 'Connected')
+                : copy('status.readOnly', 'Read-only');
         } catch (error) {
-            find('#status').textContent = 'Error';
+            find('#status').textContent = copy('status.error', 'Error');
             notify(error.message, true);
         }
     }
@@ -810,7 +837,7 @@ export const BROWSER_SCRIPT = String.raw`
 
         if (!state.guilds.length) {
             applyAccess();
-            find('#status').textContent = 'No guilds';
+            find('#status').textContent = copy('status.noGuilds', 'No guilds');
             return;
         }
         state.guildId = state.guilds[0].id;
@@ -1012,20 +1039,20 @@ export const BROWSER_SCRIPT = String.raw`
             disconnectButton.style.display = audio.status === 'off' ? 'none' : '';
         }
         if (audio.status === 'starting') {
-            label.textContent = 'Connecting';
-            button.title = 'Connecting to the audio tap';
+            label.textContent = copy('player.connecting', 'Connecting');
+            button.title = copy('player.connecting', 'Connecting to the audio tap');
         } else if (audio.status === 'on' && audio.muted) {
-            label.textContent = 'Unmute';
-            button.title = 'Unmute this browser only';
+            label.textContent = copy('player.unmute', 'Unmute');
+            button.title = copy('player.unmuteTitle', 'Unmute this browser only');
         } else if (audio.status === 'on') {
-            label.textContent = 'Mute';
-            button.title = 'Mute this browser only';
+            label.textContent = copy('player.mute', 'Mute');
+            button.title = copy('player.muteTitle', 'Mute this browser only');
         } else if (!canListen) {
-            label.textContent = 'Listen';
-            button.title = 'Your roles do not allow listening';
+            label.textContent = copy('player.listen', 'Listen');
+            button.title = copy('player.listenDenied', 'Your roles do not allow listening');
         } else {
-            label.textContent = 'Listen';
-            button.title = 'Play this browser audio from the bot';
+            label.textContent = copy('player.listen', 'Listen');
+            button.title = copy('player.listenTitle', 'Play this browser audio from the bot');
         }
     }
 
@@ -1615,9 +1642,9 @@ export const BROWSER_SCRIPT = String.raw`
     const settingsModal = find('#settings-modal');
 
     function openSettings() {
-        find('#settings-title').textContent = copy('settingsTitle', 'Settings');
-        find('#settings-cancel').textContent = copy('settingsCancel', 'Cancel');
-        find('#save').textContent = copy('settingsSave', 'Save settings');
+        find('#settings-title').textContent = copy('settings.title', 'Settings');
+        find('#settings-cancel').textContent = copy('settings.cancel', 'Cancel');
+        find('#save').textContent = copy('settings.save', 'Save settings');
         settingsModal.classList.add('open');
     }
 

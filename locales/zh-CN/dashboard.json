@@ -1,0 +1,63 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "language": {
+        "label": "语言",
+        "description": "机器人用于本服务器的语言，默认回退为英语（美国）。"
+    },
+    "player": {
+        "title": "播放器",
+        "nothingPlaying": "没有正在播放的内容",
+        "idle": "空闲",
+        "queued": "已排队 {{count}} 首",
+        "resume": "继续播放",
+        "pause": "暂停",
+        "disconnect": "断开连接",
+        "listen": "收听",
+        "mute": "静音",
+        "unmute": "取消静音",
+        "connecting": "正在连接",
+        "listenTitle": "由此机器人播放此浏览器的音频",
+        "muteTitle": "仅将此浏览器静音",
+        "unmuteTitle": "仅取消此浏览器静音",
+        "listenDenied": "你的角色不允许收听",
+        "playing": "播放中",
+        "paused": "已暂停",
+        "autoplay": "自动播放"
+    },
+    "queue": {
+        "title": "队列",
+        "empty": "队列为空。",
+        "addPlaceholder": "歌曲名称或 URL",
+        "add": "添加歌曲",
+        "skipTo": "跳转至 {{title}}",
+        "remove": "移除此曲目"
+    },
+    "filters": {
+        "title": "滤镜"
+    },
+    "settings": {
+        "title": "设置",
+        "cancel": "取消",
+        "save": "保存设置",
+        "autoplayReset": "重置自动播放覆盖设置",
+        "other": "其他"
+    },
+    "status": {
+        "connected": "已连接",
+        "readOnly": "只读",
+        "error": "错误",
+        "noGuilds": "无服务器"
+    },
+    "app": {
+        "install": "安装应用"
+    },
+    "stats": {
+        "title": "统计信息",
+        "personalTitle": "我的统计"
+    },
+    "playlists": {
+        "title": "播放列表"
+    }
+}

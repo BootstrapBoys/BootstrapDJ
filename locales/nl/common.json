@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "Nederlands",
+        "current": "Huidige taal: **{{language}}**.",
+        "set": "Taal gewijzigd naar **{{language}}**.",
+        "reset": "Taal teruggezet naar **{{language}}**.",
+        "invalid": "Die taal is niet beschikbaar. Kies een van: {{languages}}.",
+        "list": "Beschikbare talen: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

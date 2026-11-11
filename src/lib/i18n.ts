@@ -103,6 +103,26 @@ export function localizedDescriptions(key: string): Record<string, string> {
     return localizations;
 }
 
+/** Native names for language pickers; do not translate another language's name. */
+const LANGUAGE_NAMES: Record<string, string> = {
+    de: 'Deutsch',
+    'en-GB': 'English (United Kingdom)',
+    'en-US': 'English (United States)',
+    'es-ES': 'Español (España)',
+    fr: 'Français',
+    id: 'Bahasa Indonesia',
+    it: 'Italiano',
+    ja: '日本語',
+    ko: '한국어',
+    nl: 'Nederlands',
+    pl: 'Polski',
+    'pt-BR': 'Português (Brasil)',
+    ru: 'Русский',
+    tr: 'Türkçe',
+    'zh-CN': '简体中文',
+    'zh-TW': '繁體中文',
+};
+
 export function languageName(language: string): string {
-    return translate('common:language.name', language);
+    return LANGUAGE_NAMES[language] ?? language;
 }

@@ -1,0 +1,13 @@
+{
+    "ready": "O BootstrapDJ está pronto.",
+    "queueEnd": {
+        "stillListening": "Continuar ouvindo",
+        "leave": "Sair",
+        "prompt": "A fila está vazia. Vou sair em {{time}}, a menos que alguém confirme.",
+        "leaving": "Saindo do canal de voz.",
+        "staying": "Continuando conectado."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

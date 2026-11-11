@@ -1,0 +1,38 @@
+{
+    "generic": "Qualcosa è andato storto.",
+    "gate": {
+        "preferredBot": "I comandi vocali di questo server sono gestiti da **{{name}}**. Usa quel bot.",
+        "locked": "Questa sessione è bloccata. Un gestore del server deve sbloccarla.",
+        "notAllowed": "Non ti è consentito usare questo comando.",
+        "threads": "I comandi sono disattivati nei thread di questo server.",
+        "disabled": "**{{command}}** è disattivato in questo server.",
+        "commandChannel": "I comandi sono limitati a <#{{channel}}>.",
+        "voiceChannel": "Devi trovarti in <#{{channel}}> per usare i comandi.",
+        "noSendMessages": "Non ho il permesso **`SendMessages`** in `{{guild}}`\ncanale: <#{{channel}}>",
+        "noEmbedLinks": "Non ho il permesso **`EmbedLinks`**.",
+        "clientPermissions": "Non ho i permessi necessari per eseguire questo comando.",
+        "userPermissions": "Non hai i permessi necessari per usare questo comando.",
+        "voiceRequired": "Devi essere connesso a un canale vocale per usare il comando `{{command}}`.",
+        "noConnect": "Non ho il permesso `CONNECT` per eseguire il comando `{{command}}`.",
+        "noSpeak": "Non ho il permesso `SPEAK` per eseguire il comando `{{command}}`.",
+        "noRequestToSpeak": "Non ho il permesso `REQUEST TO SPEAK` per eseguire il comando `{{command}}`.",
+        "wrongVoice": "Non sei connesso a <#{{channel}}> per usare il comando `{{command}}`.",
+        "nothingPlaying": "Al momento non c'è nulla in riproduzione.",
+        "djRoleMissing": "Il ruolo DJ non è impostato.",
+        "djRoleRequired": "Devi avere il ruolo DJ per usare questo comando.",
+        "missingTitle": "Argomenti mancanti",
+        "missingDescription": "Fornisci gli argomenti richiesti per il comando `{{command}}`.\n\nEsempi:\n{{examples}}",
+        "missingFooter": "Sintassi: [] = facoltativo, <> = obbligatorio",
+        "cooldown": "Attendi ancora {{seconds}} secondo/i prima di riusare il comando `{{command}}`.",
+        "everyone": "Non puoi menzionare everyone o here."
+    },
+    "noPlayer": "In questo server non c'è musica in riproduzione.",
+    "noNode": "Nessun nodo Lavalink è disponibile in questo momento. Riprova tra poco.",
+    "searchFailed": "Si è verificato un errore durante la ricerca. Riprova.",
+    "loadFailed": "Si è verificato un errore durante la ricerca.",
+    "noResults": "Nessun risultato trovato.",
+    "playlistTooLong": "La playlist è troppo lunga. Il numero massimo è {{max}} brani.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

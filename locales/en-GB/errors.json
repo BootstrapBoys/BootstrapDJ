@@ -31,5 +31,8 @@
     "searchFailed": "There was an error while searching. Please try again.",
     "loadFailed": "There was an error while searching.",
     "noResults": "There were no results found.",
-    "playlistTooLong": "The playlist is too long. The maximum length is {{max}} songs."
+    "playlistTooLong": "The playlist is too long. The maximum length is {{max}} songs.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
 }

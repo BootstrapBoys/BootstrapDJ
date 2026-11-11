@@ -2,5 +2,62 @@
     "language": {
         "label": "Language",
         "description": "Language used by the bot for this server. English (United States) is the fallback."
+    },
+    "player": {
+        "title": "Player",
+        "nothingPlaying": "Nothing playing",
+        "idle": "idle",
+        "queued": "{{count}} queued",
+        "resume": "Resume",
+        "pause": "Pause",
+        "disconnect": "Disconnect",
+        "listen": "Listen",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "connecting": "Connecting",
+        "listenTitle": "Play this browser audio from the bot",
+        "muteTitle": "Mute this browser only",
+        "unmuteTitle": "Unmute this browser only",
+        "listenDenied": "Your roles do not allow listening",
+        "playing": "playing",
+        "paused": "paused",
+        "autoplay": "autoplay"
+    },
+    "queue": {
+        "title": "Queue",
+        "empty": "Nothing queued.",
+        "addPlaceholder": "Song name or URL",
+        "add": "Add song",
+        "skipTo": "Skip to {{title}}",
+        "remove": "Remove this track"
+    },
+    "filters": {
+        "title": "Filters"
+    },
+    "settings": {
+        "title": "Settings",
+        "cancel": "Cancel",
+        "save": "Save settings",
+        "autoplayReset": "Reset autoplay override",
+        "other": "Other"
+    },
+    "status": {
+        "connected": "Connected",
+        "readOnly": "Read-only",
+        "error": "Error",
+        "noGuilds": "No guilds"
+    },
+    "app": {
+        "install": "Install app"
+    },
+    "stats": {
+        "title": "Statistics",
+        "personalTitle": "My stats"
+    },
+    "playlists": {
+        "title": "Playlists"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
     }
 }

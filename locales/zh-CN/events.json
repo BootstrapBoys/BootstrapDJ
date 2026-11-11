@@ -1,0 +1,13 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "ready": "BootstrapDJ 已就绪。",
+    "queueEnd": {
+        "stillListening": "继续收听",
+        "leave": "离开",
+        "prompt": "队列已空。若无人确认，我将在 {{time}} 后离开。",
+        "leaving": "正在离开语音频道。",
+        "staying": "保持连接。"
+    }
+}

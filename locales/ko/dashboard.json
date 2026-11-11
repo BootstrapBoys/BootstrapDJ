@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "언어",
+        "description": "이 서버에서 봇이 사용하는 언어입니다. English (United States)가 기본값입니다."
+    },
+    "player": {
+        "title": "플레이어",
+        "nothingPlaying": "재생 중인 곡 없음",
+        "idle": "대기 중",
+        "queued": "{{count}}곡 대기 중",
+        "resume": "재개",
+        "pause": "일시정지",
+        "disconnect": "연결 해제",
+        "listen": "듣기",
+        "mute": "음소거",
+        "unmute": "음소거 해제",
+        "connecting": "연결 중",
+        "listenTitle": "이 브라우저 오디오를 봇에서 재생",
+        "muteTitle": "이 브라우저만 음소거",
+        "unmuteTitle": "이 브라우저만 음소거 해제",
+        "listenDenied": "보유한 역할로는 듣기가 허용되지 않습니다",
+        "playing": "재생 중",
+        "paused": "일시정지됨",
+        "autoplay": "자동재생"
+    },
+    "queue": {
+        "title": "대기열",
+        "empty": "대기 중인 곡이 없습니다.",
+        "addPlaceholder": "곡 이름 또는 URL",
+        "add": "곡 추가",
+        "skipTo": "{{title}}로 건너뛰기",
+        "remove": "이 트랙 제거"
+    },
+    "filters": {
+        "title": "필터"
+    },
+    "settings": {
+        "title": "설정",
+        "cancel": "취소",
+        "save": "설정 저장",
+        "autoplayReset": "자동재생 재정의 초기화",
+        "other": "기타"
+    },
+    "status": {
+        "connected": "연결됨",
+        "readOnly": "읽기 전용",
+        "error": "오류",
+        "noGuilds": "서버 없음"
+    },
+    "app": {
+        "install": "앱 설치"
+    },
+    "stats": {
+        "title": "통계",
+        "personalTitle": "내 통계"
+    },
+    "playlists": {
+        "title": "재생목록"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

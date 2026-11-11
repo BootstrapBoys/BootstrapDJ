@@ -1,0 +1,13 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "language": {
+        "name": "英语（美国）",
+        "current": "当前语言：**{{language}}**。",
+        "set": "语言已切换为 **{{language}}**。",
+        "reset": "语言已重置为 **{{language}}**。",
+        "invalid": "该语言不可用。请从以下语言中选择：{{languages}}。",
+        "list": "可用语言：{{languages}}。"
+    }
+}

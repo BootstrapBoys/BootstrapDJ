@@ -10,10 +10,28 @@ import {
     localizedDescriptions,
     resolveLanguage,
     translate,
+    languageName,
 } from '../dist/lib/i18n.js';
 
 test('locale catalogs expose the initial supported languages', () => {
-    assert.deepEqual(SUPPORTED_LANGUAGES, ['en-GB', 'en-US']);
+    assert.deepEqual(SUPPORTED_LANGUAGES, [
+        'de',
+        'en-GB',
+        'en-US',
+        'es-ES',
+        'fr',
+        'id',
+        'it',
+        'ja',
+        'ko',
+        'nl',
+        'pl',
+        'pt-BR',
+        'ru',
+        'tr',
+        'zh-CN',
+        'zh-TW',
+    ]);
     assert.equal(DEFAULT_LANGUAGE, 'en-US');
 });
 
@@ -34,6 +52,12 @@ test('translations are selected by locale and interpolate variables', () => {
     );
 });
 
+test('language pickers use native names rather than translating the fallback name', () => {
+    assert.equal(languageName('es-ES'), 'Español (España)');
+    assert.equal(languageName('ja'), '日本語');
+    assert.equal(languageName('zh-TW'), '繁體中文');
+});
+
 test('localized command descriptions contain every shipped locale', () => {
     const descriptions = localizedDescriptions('commands:language.description');
     assert.equal(descriptions['en-US'], 'View or change the language for this server');
@@ -45,9 +69,9 @@ test('every locale has the same keys in the shipped namespaces', () => {
     const namespaces = ['common', 'commands', 'events', 'buttons', 'errors', 'dashboard'];
     const flatten = (value, prefix = '') => {
         if (value === null || typeof value !== 'object') return [prefix];
-        return Object.entries(value).flatMap(([key, child]) =>
-            flatten(child, prefix ? `${prefix}.${key}` : key)
-        );
+        return Object.entries(value)
+            .filter(([key]) => !key.startsWith('_'))
+            .flatMap(([key, child]) => flatten(child, prefix ? `${prefix}.${key}` : key));
     };
     const keysFor = language => {
         const keys = [];

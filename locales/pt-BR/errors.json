@@ -1,0 +1,38 @@
+{
+    "generic": "Algo deu errado.",
+    "gate": {
+        "preferredBot": "Os comandos de voz são encaminhados para **{{name}}** neste servidor. Use esse bot.",
+        "locked": "Esta sessão está bloqueada. Um gerente do servidor precisa desbloqueá-la.",
+        "notAllowed": "Você não tem permissão para usar este comando.",
+        "threads": "Os comandos estão desativados em threads neste servidor.",
+        "disabled": "**{{command}}** está desativado neste servidor.",
+        "commandChannel": "Os comandos estão restritos a <#{{channel}}>.",
+        "voiceChannel": "Você precisa estar em <#{{channel}}> para usar os comandos.",
+        "noSendMessages": "Não tenho a permissão **`SendMessages`** em `{{guild}}`\ncanal: <#{{channel}}>",
+        "noEmbedLinks": "Não tenho a permissão **`EmbedLinks`**.",
+        "clientPermissions": "Não tenho permissões suficientes para executar este comando.",
+        "userPermissions": "Você não tem permissões suficientes para usar este comando.",
+        "voiceRequired": "Você precisa estar conectado a um canal de voz para usar o comando `{{command}}`.",
+        "noConnect": "Não tenho a permissão `CONNECT` para executar o comando `{{command}}`.",
+        "noSpeak": "Não tenho a permissão `SPEAK` para executar o comando `{{command}}`.",
+        "noRequestToSpeak": "Não tenho a permissão `REQUEST TO SPEAK` para executar o comando `{{command}}`.",
+        "wrongVoice": "Você não está conectado a <#{{channel}}> para usar o comando `{{command}}`.",
+        "nothingPlaying": "Nada está tocando no momento.",
+        "djRoleMissing": "O cargo de DJ não está definido.",
+        "djRoleRequired": "Você precisa ter o cargo de DJ para usar este comando.",
+        "missingTitle": "Argumentos ausentes",
+        "missingDescription": "Forneça os argumentos obrigatórios do comando `{{command}}`.\n\nExemplos:\n{{examples}}",
+        "missingFooter": "Sintaxe: [] = opcional, <> = obrigatório",
+        "cooldown": "Aguarde mais {{seconds}} segundo(s) antes de reutilizar o comando `{{command}}`.",
+        "everyone": "Você não pode mencionar everyone ou here."
+    },
+    "noPlayer": "Não há música tocando neste servidor.",
+    "noNode": "Nenhum nó do Lavalink está disponível no momento. Tente novamente em instantes.",
+    "searchFailed": "Ocorreu um erro durante a busca. Tente novamente.",
+    "loadFailed": "Ocorreu um erro durante a busca.",
+    "noResults": "Nenhum resultado foi encontrado.",
+    "playlistTooLong": "A playlist é muito longa. O limite é de {{max}} músicas.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

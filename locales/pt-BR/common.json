@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "Português (Brasil)",
+        "current": "Idioma atual: **{{language}}**.",
+        "set": "Idioma alterado para **{{language}}**.",
+        "reset": "Idioma redefinido para **{{language}}**.",
+        "invalid": "Esse idioma não está disponível. Escolha um destes: {{languages}}.",
+        "list": "Idiomas disponíveis: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

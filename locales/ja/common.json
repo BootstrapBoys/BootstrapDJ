@@ -1,0 +1,13 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "language": {
+        "name": "日本語",
+        "current": "現在の言語: **{{language}}**。",
+        "set": "言語を **{{language}}** に変更しました。",
+        "reset": "言語を **{{language}}** にリセットしました。",
+        "invalid": "その言語は利用できません。次のいずれかを選択してください: {{languages}}。",
+        "list": "利用可能な言語: {{languages}}。"
+    }
+}

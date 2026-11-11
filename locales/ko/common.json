@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "한국어",
+        "current": "현재 언어: **{{language}}**.",
+        "set": "언어가 **{{language}}**로 변경되었습니다.",
+        "reset": "언어가 **{{language}}**로 초기화되었습니다.",
+        "invalid": "사용할 수 없는 언어입니다. 다음 중 하나를 선택하세요: {{languages}}.",
+        "list": "사용 가능한 언어: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

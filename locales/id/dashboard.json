@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Bahasa",
+        "description": "Bahasa yang digunakan bot untuk server ini. English (United States) adalah bahasa cadangan."
+    },
+    "player": {
+        "title": "Pemutar",
+        "nothingPlaying": "Tidak ada yang diputar",
+        "idle": "menganggur",
+        "queued": "{{count}} dalam antrean",
+        "resume": "Lanjutkan",
+        "pause": "Jeda",
+        "disconnect": "Putuskan sambungan",
+        "listen": "Dengarkan",
+        "mute": "Bisukan",
+        "unmute": "Aktifkan suara",
+        "connecting": "Menghubungkan",
+        "listenTitle": "Putar audio browser ini dari bot",
+        "muteTitle": "Bisukan hanya browser ini",
+        "unmuteTitle": "Aktifkan suara hanya untuk browser ini",
+        "listenDenied": "Peran Anda tidak mengizinkan mendengarkan",
+        "playing": "memutar",
+        "paused": "dijeda",
+        "autoplay": "putar otomatis"
+    },
+    "queue": {
+        "title": "Antrean",
+        "empty": "Antrean kosong.",
+        "addPlaceholder": "Nama lagu atau URL",
+        "add": "Tambah lagu",
+        "skipTo": "Lompat ke {{title}}",
+        "remove": "Hapus trek ini"
+    },
+    "filters": {
+        "title": "Filter"
+    },
+    "settings": {
+        "title": "Pengaturan",
+        "cancel": "Batal",
+        "save": "Simpan pengaturan",
+        "autoplayReset": "Atur ulang override putar otomatis",
+        "other": "Lainnya"
+    },
+    "status": {
+        "connected": "Terhubung",
+        "readOnly": "Hanya baca",
+        "error": "Kesalahan",
+        "noGuilds": "Tidak ada server"
+    },
+    "app": {
+        "install": "Pasang aplikasi"
+    },
+    "stats": {
+        "title": "Statistik",
+        "personalTitle": "Statistik saya"
+    },
+    "playlists": {
+        "title": "Playlist"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

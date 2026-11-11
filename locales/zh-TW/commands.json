@@ -1,0 +1,647 @@
+{
+    "language": {
+        "description": "檢視或變更此伺服器的語言",
+        "language_option": "要使用的語言",
+        "reset_option": "重設為預設語言"
+    },
+    "core": {
+        "noQueue": "佇列中沒有任何歌曲。",
+        "nothingPlaying": "目前沒有正在播放的內容",
+        "alreadyPaused": "歌曲已經暫停",
+        "paused": "已暫停歌曲",
+        "resumed": "已繼續播放",
+        "notPaused": "播放器目前並未暫停。",
+        "cleared": "已清空佇列",
+        "shuffled": "已隨機排序佇列",
+        "stopped": "已停止音樂並清空佇列",
+        "invalidNumber": "這不是有效的數字。",
+        "validNumber": "請提供有效的數字。",
+        "skipped": "已略過 [{{title}}]({{uri}})",
+        "skippedTo": "已略過至第 {{target}} 首歌曲",
+        "removed": "已從佇列移除第 {{position}} 首歌曲",
+        "seeked": "已跳轉至 {{time}}",
+        "invalidTime": "時間格式無效。",
+        "volumeInvalid": "請提供有效的數字。",
+        "volumeLow": "音量不能低於 {{min}}。",
+        "volumeHigh": "音量不能高於 {{max}}。",
+        "volumeSet": "已將音量設為 {{volume}}",
+        "notConnected": "我目前不在語音頻道中",
+        "join": "已加入語音頻道",
+        "dmSent": "**我已私訊你。**",
+        "dmFailed": "**我無法私訊你。**",
+        "addedTrack": "已新增 [{{title}}]({{uri}}){{destination}}。",
+        "addedPlaylist": "已新增 {{count}} 首歌曲{{destination}}。",
+        "destinationNext": "至佇列中下一首播放",
+        "destinationQueue": "至佇列",
+        "alreadyConnected": "我已連線至 {{channel}}",
+        "joined": "已加入 {{channel}}",
+        "left": "已離開 {{channel}}",
+        "leftGeneric": "已離開語音頻道",
+        "voiceChannel": "語音頻道",
+        "grabCard": "**長度：** {{duration}}\n**點播者：** {{requester}}\n**連結：** [點擊這裡]({{uri}})",
+        "loopSong": "**正在循環播放歌曲**",
+        "loopQueue": "**正在循環播放佇列**",
+        "loopOff": "**已關閉循環播放**",
+        "autoplayDisabled": "已停用自動播放，並移除機器人自動挑選的曲目。",
+        "autoplayNoNode": "目前沒有可用的 Lavalink 節點。請稍後再試。",
+        "autoplayNoSeed": "我找不到與 **{{label}}** 相關的內容。自動播放設定未變更。",
+        "autoplaySeeded": "已啟用自動播放 — 以 **{{label}}** 為種子，從 {{author}} 的 **{{title}}** 開始。",
+        "autoplayStarted": "已啟用自動播放 — 從 {{author}} 的 **{{title}}** 開始。",
+        "autoplayWaiting": "已啟用自動播放 — 佇列播完後我會自動挑選曲目。",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · 點播者：{{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - 點播者：{{requester}} - 長度：{{duration}}",
+        "queueNowPlaying": "正在播放：[{{title}}]({{uri}}) - 點播者：{{requester}} - 長度：{{duration}}",
+        "queuedTracks": "佇列曲目",
+        "queueLength": "佇列長度",
+        "autoplay": "自動播放",
+        "loop": "循環",
+        "on": "開啟",
+        "off": "關閉",
+        "queueAuthor": "佇列",
+        "queuePage": "第 {{page}} 頁，共 {{total}} 頁"
+    },
+    "metadata": {
+        "247": {
+            "description": "讓機器人持續留在語音頻道"
+        },
+        "8d": {
+            "description": "開啟/關閉 8D 音效"
+        },
+        "bassboost": {
+            "description": "開啟/關閉重低音音效"
+        },
+        "distorsion": {
+            "description": "開啟/關閉失真音效"
+        },
+        "filter": {
+            "description": "套用或清除音效濾波器",
+            "options": {
+                "8d": "套用 8D 音效",
+                "bassboost": "套用重低音",
+                "distortion": "套用失真",
+                "karaoke": "套用卡拉 OK",
+                "nightcore": "套用 Nightcore",
+                "reset": "重設所有濾波器",
+                "rotation": "套用旋轉音效",
+                "tremolo": "套用震音",
+                "vibrato": "套用揉音",
+                "lowpass": "套用低通濾波",
+                "pitch": "以指定數值套用音高",
+                "rate": "以指定數值套用速率",
+                "speed": "以指定數值套用速度"
+            }
+        },
+        "filters": {
+            "description": "顯示目前啟用的音效濾波器"
+        },
+        "karaoke": {
+            "description": "開啟/關閉卡拉 OK 濾波器"
+        },
+        "nightcore": {
+            "description": "開啟/關閉 Nightcore 濾波器"
+        },
+        "pitch": {
+            "description": "開啟/關閉音高濾波器",
+            "options": {
+                "number": "你想設定的音高數值"
+            }
+        },
+        "rate": {
+            "description": "變更播放速率（速度與音高）",
+            "options": {
+                "rate": "0.5 至 5 之間的速率倍率"
+            }
+        },
+        "reset": {
+            "description": "重設目前啟用的濾波器"
+        },
+        "rotation": {
+            "description": "開啟/關閉旋轉濾波器"
+        },
+        "speed": {
+            "description": "設定歌曲的播放速度",
+            "options": {
+                "speed": "你想設定的速度"
+            }
+        },
+        "tremolo": {
+            "description": "開啟/關閉震音濾波器"
+        },
+        "vibrato": {
+            "description": "開啟/關閉揉音濾波器"
+        },
+        "lowpass": {
+            "description": "開啟/關閉低通濾波器"
+        },
+        "add": {
+            "description": "新增歌曲至播放清單",
+            "options": {
+                "playlist": "你想新增的播放清單",
+                "song": "你想新增的歌曲"
+            }
+        },
+        "alias": {
+            "description": "建立、列出或移除自訂指令別名",
+            "options": {
+                "action": "新增、移除、列出或清除別名",
+                "alias": "別名名稱",
+                "command": "新增時的目標指令",
+                "scope": "伺服器全體或僅限自己"
+            }
+        },
+        "autoplayconfig": {
+            "description": "設定自動播放的冷啟動來源",
+            "options": {
+                "source": "冷啟動種子來源",
+                "seeds": "精選種子，以逗號分隔（將來源設為精選）",
+                "reset": "移除伺服器覆寫設定，改用環境預設值"
+            }
+        },
+        "playlist": {
+            "description": "管理已儲存的播放清單",
+            "options": {
+                "action": "集合操作",
+                "name": "集合名稱",
+                "query": "新增用的曲目或播放清單網址",
+                "target": "重新命名、複製或合併的目標名稱",
+                "index": "移除用的曲目位置（從 1 起算）",
+                "code": "分享代碼"
+            }
+        },
+        "create": {
+            "description": "建立播放清單",
+            "options": {
+                "name": "播放清單名稱"
+            }
+        },
+        "delete": {
+            "description": "刪除播放清單",
+            "options": {
+                "playlist": "你想刪除的播放清單"
+            }
+        },
+        "dj": {
+            "description": "管理 DJ 模式與相關身分組",
+            "options": {
+                "add": "你想新增的 DJ 身分組",
+                "remove": "你想移除的 DJ 身分組",
+                "clear": "清除所有 DJ 身分組",
+                "toggle": "切換 DJ 身分組"
+            }
+        },
+        "language": {
+            "description": "檢視或變更此伺服器的語言",
+            "options": {
+                "language": "要使用的語言",
+                "reset": "重設為預設語言"
+            }
+        },
+        "list": {
+            "description": "列出播放清單",
+            "options": {
+                "user": "要顯示誰的播放清單"
+            }
+        },
+        "listen": {
+            "description": "控制語音指令（Earl the Ear）與你的聆聽退出設定",
+            "options": {
+                "action": "要執行的動作"
+            }
+        },
+        "load": {
+            "description": "載入播放清單",
+            "options": {
+                "playlist": "你想載入的播放清單"
+            }
+        },
+        "mappings": {
+            "description": "建立自訂前綴快捷展開",
+            "options": {
+                "action": "新增、移除、列出或清除對應",
+                "trigger": "前綴之後輸入的字詞",
+                "expansion": "要執行的指令與參數",
+                "scope": "伺服器全體或僅限自己"
+            }
+        },
+        "permissions": {
+            "description": "管理各指令的允許與拒絕規則",
+            "options": {
+                "action": "列出、允許、拒絕或重設規則",
+                "command": "指令名稱；重設時省略可清除所有規則",
+                "target": "規則影響的使用者或身分組"
+            }
+        },
+        "prefix": {
+            "description": "顯示機器人的前綴",
+            "options": {
+                "set": "設定前綴",
+                "reset": "將前綴重設為預設值"
+            }
+        },
+        "removesong": {
+            "description": "從播放清單移除歌曲",
+            "options": {
+                "playlist": "要編輯的播放清單",
+                "song": "要移除的歌曲"
+            }
+        },
+        "save": {
+            "description": "將目前佇列儲存為播放清單",
+            "options": {
+                "name": "播放清單名稱"
+            }
+        },
+        "selfprefix": {
+            "description": "為此伺服器設定個人前綴"
+        },
+        "settings": {
+            "description": "檢視或變更各伺服器的機器人設定",
+            "options": {
+                "key": "設定名稱；省略可列出全部",
+                "value": "新數值；省略可檢視該設定",
+                "reset": "重設此伺服器的所有設定"
+            }
+        },
+        "setup": {
+            "description": "設定機器人",
+            "options": {
+                "create": "建立點歌頻道",
+                "delete": "刪除點歌頻道",
+                "info": "顯示點歌頻道"
+            }
+        },
+        "album": {
+            "description": "查詢專輯或將第一筆結果加入佇列",
+            "options": {
+                "name": "專輯名稱"
+            }
+        },
+        "artist": {
+            "description": "查詢歌手或將其熱門結果加入佇列",
+            "options": {
+                "name": "歌手名稱"
+            }
+        },
+        "autoplay": {
+            "description": "切換自動播放",
+            "options": {
+                "seed": "第一位歌手或第一首歌曲",
+                "seed2": "第二位歌手或第二首歌曲（選填）",
+                "seed3": "第三位歌手或第三首歌曲（選填）"
+            }
+        },
+        "backward": {
+            "description": "將目前曲目往回倒轉",
+            "options": {
+                "time": "要往回移動的長度（30s、1m、01:30）"
+            }
+        },
+        "clearqueue": {
+            "description": "清空佇列"
+        },
+        "endtime": {
+            "description": "在指定時間停止目前曲目",
+            "options": {
+                "time": "停止的位置（30s、1m、02:30）"
+            }
+        },
+        "fairplay": {
+            "description": "依點播者輪流排序佇列"
+        },
+        "forward": {
+            "description": "將目前曲目往前快轉",
+            "options": {
+                "time": "要往前移動的長度（30s、1m、01:30）"
+            }
+        },
+        "grab": {
+            "description": "取得目前播放的歌曲"
+        },
+        "join": {
+            "description": "加入語音頻道"
+        },
+        "leave": {
+            "description": "離開語音頻道"
+        },
+        "loop": {
+            "description": "循環播放目前歌曲或佇列"
+        },
+        "lyrics": {
+            "description": "顯示目前或所搜尋歌曲的歌詞",
+            "options": {
+                "song": "要查詢的歌曲；預設為目前曲目"
+            }
+        },
+        "massmove": {
+            "description": "移動一整段佇列曲目",
+            "options": {
+                "from": "區段的第一個位置（從 1 起算）",
+                "to": "區段的最後一個位置（從 1 起算）",
+                "destination": "插入結果佇列的位置（從 1 起算）"
+            }
+        },
+        "massremove": {
+            "description": "移除一整段佇列曲目",
+            "options": {
+                "from": "要移除的第一個位置（從 1 起算）",
+                "to": "要移除的最後一個位置（從 1 起算）"
+            }
+        },
+        "move": {
+            "description": "將佇列曲目移至其他位置",
+            "options": {
+                "from": "目前的佇列位置（從 1 起算）",
+                "to": "新的佇列位置（從 1 起算）"
+            }
+        },
+        "nowplaying": {
+            "description": "顯示目前播放的歌曲"
+        },
+        "pause": {
+            "description": "暫停目前歌曲"
+        },
+        "play": {
+            "description": "播放來自 YouTube 或 Spotify 的歌曲",
+            "options": {
+                "song": "你想播放的歌曲"
+            }
+        },
+        "playleave": {
+            "description": "播放點播內容，並在佇列結束後離開語音頻道",
+            "options": {
+                "query": "曲目、搜尋關鍵字或播放清單網址"
+            }
+        },
+        "playlocal": {
+            "description": "播放上傳至 Discord 的音訊或影片檔案",
+            "options": {
+                "file": "要播放的音訊或影片檔案"
+            }
+        },
+        "playnext": {
+            "description": "新增歌曲至佇列中下一首播放",
+            "options": {
+                "song": "你想播放的歌曲"
+            }
+        },
+        "playrecent": {
+            "description": "從最近的播放紀錄加入曲目",
+            "options": {
+                "count": "要加入的近期曲目數量（1-20）"
+            }
+        },
+        "playselect": {
+            "description": "瀏覽播放清單或搜尋結果並選擇曲目",
+            "options": {
+                "url": "播放清單網址或搜尋關鍵字"
+            }
+        },
+        "playlistsearch": {
+            "description": "顯示符合的播放清單中的曲目",
+            "options": {
+                "query": "播放清單名稱或網址"
+            }
+        },
+        "previous": {
+            "description": "再次播放上一首曲目"
+        },
+        "queue": {
+            "description": "顯示目前佇列"
+        },
+        "radio": {
+            "description": "依名稱播放網路廣播電台",
+            "options": {
+                "station": "電台名稱或類型"
+            }
+        },
+        "recentlyplayed": {
+            "description": "顯示最近播放的曲目"
+        },
+        "remove": {
+            "description": "從佇列移除歌曲",
+            "options": {
+                "song": "歌曲編號"
+            }
+        },
+        "removeabsent": {
+            "description": "移除不在語音頻道中的使用者所點播的曲目"
+        },
+        "removeduplicates": {
+            "description": "移除佇列中的重複曲目"
+        },
+        "removekeyword": {
+            "description": "移除符合關鍵字的佇列曲目",
+            "options": {
+                "keyword": "用來比對標題或作者的文字"
+            }
+        },
+        "removelast": {
+            "description": "移除佇列中最後一首曲目"
+        },
+        "removeuser": {
+            "description": "移除某位使用者點播的曲目",
+            "options": {
+                "user": "要移除其曲目的使用者"
+            }
+        },
+        "replay": {
+            "description": "從頭重新播放目前曲目"
+        },
+        "requested": {
+            "description": "顯示某位使用者點播的佇列曲目",
+            "options": {
+                "user": "要顯示誰的點播（預設為你）"
+            }
+        },
+        "resume": {
+            "description": "繼續播放目前歌曲"
+        },
+        "reverse": {
+            "description": "反轉佇列曲目的順序"
+        },
+        "seek": {
+            "description": "跳轉至歌曲中的指定時間",
+            "options": {
+                "time": "要跳轉的時間"
+            }
+        },
+        "selectrandom": {
+            "description": "將隨機一首佇列曲目移至最前面"
+        },
+        "sessionstats": {
+            "description": "顯示目前播放工作階段的統計資料"
+        },
+        "shuffle": {
+            "description": "隨機排序佇列"
+        },
+        "shufflerepeat": {
+            "description": "隨機排序佇列並啟用佇列循環"
+        },
+        "skip": {
+            "description": "略過目前歌曲"
+        },
+        "skipto": {
+            "description": "略過至佇列中指定的歌曲",
+            "options": {
+                "number": "你想略過至的歌曲編號"
+            }
+        },
+        "song": {
+            "description": "顯示目前或所搜尋歌曲的資訊",
+            "options": {
+                "query": "要查詢的歌曲；預設為目前曲目"
+            }
+        },
+        "sort": {
+            "description": "排序佇列曲目",
+            "options": {
+                "by": "排序依據的欄位",
+                "order": "排序方向"
+            }
+        },
+        "stop": {
+            "description": "停止音樂並清空佇列"
+        },
+        "swap": {
+            "description": "交換兩首佇列曲目",
+            "options": {
+                "first": "第一個佇列位置（從 1 起算）",
+                "second": "第二個佇列位置（從 1 起算）"
+            }
+        },
+        "top": {
+            "description": "顯示查詢的熱門搜尋結果",
+            "options": {
+                "query": "搜尋關鍵字；預設為熱門結果"
+            }
+        },
+        "volume": {
+            "description": "設定播放器的音量",
+            "options": {
+                "number": "你想設定的音量"
+            }
+        },
+        "voteskip": {
+            "description": "發起或加入略過目前曲目的投票"
+        },
+        "eval": {
+            "description": "執行評估程式碼"
+        },
+        "guild": {
+            "description": "檢視機器人目前所在的伺服器",
+            "options": {
+                "guild": "伺服器名稱或 ID（可自動完成）"
+            }
+        },
+        "guildleave": {
+            "description": "離開伺服器"
+        },
+        "guildlist": {
+            "description": "列出機器人所在的所有伺服器"
+        },
+        "reload": {
+            "description": "重新載入指令模組而不重新啟動（僅限擁有者）"
+        },
+        "restart": {
+            "description": "重新啟動機器人程序（僅限擁有者）"
+        },
+        "shutdown": {
+            "description": "停止機器人程序（僅限擁有者）"
+        },
+        "categories": {
+            "description": "列出所有指令分類"
+        },
+        "faq": {
+            "description": "BootstrapDJ 常見使用問題"
+        },
+        "guess": {
+            "description": "以目前曲目開始猜歌遊戲"
+        },
+        "help": {
+            "description": "顯示說明選單",
+            "options": {
+                "command": "你想查詢資訊的指令"
+            }
+        },
+        "info": {
+            "description": "關於此機器人的資訊"
+        },
+        "invite": {
+            "description": "傳送機器人的邀請連結"
+        },
+        "lavalink": {
+            "description": "顯示目前的 Lavalink 統計資料"
+        },
+        "leaderboard": {
+            "description": "顯示本工作階段最活躍的點播者"
+        },
+        "ping": {
+            "description": "顯示機器人的延遲"
+        },
+        "premium": {
+            "description": "說明免費功能政策"
+        },
+        "profile": {
+            "description": "檢視或自訂 BootstrapDJ 個人檔案",
+            "options": {
+                "action": "檢視、設定或清除個人檔案欄位",
+                "key": "要變更的欄位：color、bio、privacy、visible",
+                "value": "新數值",
+                "user": "要檢視的個人檔案"
+            }
+        },
+        "shards": {
+            "description": "顯示分片狀態"
+        },
+        "stats": {
+            "description": "顯示即時機器人統計資料"
+        },
+        "support": {
+            "description": "如何取得 BootstrapDJ 的協助"
+        },
+        "tip": {
+            "description": "顯示隨機的 BootstrapDJ 提示"
+        },
+        "utility": {
+            "description": "機器人資訊與實用頁面",
+            "options": {
+                "overview": "顯示總覽",
+                "stats": "顯示統計",
+                "shards": "顯示分片",
+                "categories": "顯示分類",
+                "faq": "顯示常見問題",
+                "tip": "顯示提示",
+                "premium": "顯示 Premium",
+                "support": "顯示支援",
+                "leaderboard": "顯示排行榜",
+                "commands": "顯示指令",
+                "dashboard": "顯示控制面板"
+            }
+        }
+    },
+    "profile": {
+        "private": "該個人檔案為私人。",
+        "noBio": "尚未設定個人簡介。",
+        "visibility": "可見度",
+        "hidden": "隱藏",
+        "visible": "顯示",
+        "privacy": "隱私",
+        "serverVisible": "伺服器可見",
+        "no": "否",
+        "yes": "是",
+        "avatarShape": "頭像形狀",
+        "reset": "個人檔案已重設。",
+        "chooseField": "請選擇 color、bio、privacy 或 visible。",
+        "hex": "請使用十六進位色碼，例如 `#ff8800`。",
+        "bioLimit": "個人簡介上限為 200 個字元。",
+        "privacyValue": "隱私設定必須為 `public` 或 `private`。",
+        "backgroundLimit": "背景上限為 200 個字元。",
+        "avatarShapeValue": "頭像形狀必須為 `circle`、`square` 或 `rounded`。",
+        "borderLimit": "頭像邊框上限為 50 個字元。",
+        "unknown": "未知的個人檔案欄位。",
+        "updated": "已更新個人檔案 **{{key}}**。"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

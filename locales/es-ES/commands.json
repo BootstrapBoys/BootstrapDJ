@@ -1,0 +1,647 @@
+{
+    "language": {
+        "description": "Ver o cambiar el idioma de este servidor",
+        "language_option": "Idioma que usar",
+        "reset_option": "Restablecer al idioma predeterminado"
+    },
+    "core": {
+        "noQueue": "No hay canciones en la cola.",
+        "nothingPlaying": "No se está reproduciendo nada ahora mismo",
+        "alreadyPaused": "La canción ya está en pausa",
+        "paused": "Canción pausada",
+        "resumed": "Reproductor reanudado",
+        "notPaused": "El reproductor no está en pausa.",
+        "cleared": "Cola vaciada",
+        "shuffled": "Cola mezclada",
+        "stopped": "Música detenida y cola vaciada",
+        "invalidNumber": "Ese no es un número válido.",
+        "validNumber": "Indica un número válido.",
+        "skipped": "Se ha saltado [{{title}}]({{uri}})",
+        "skippedTo": "He saltado a la canción número {{target}}",
+        "removed": "Canción número {{position}} eliminada de la cola",
+        "seeked": "Reproduciendo desde {{time}}",
+        "invalidTime": "Formato de tiempo no válido.",
+        "volumeInvalid": "Indica un número válido.",
+        "volumeLow": "El volumen no puede ser inferior a {{min}}.",
+        "volumeHigh": "El volumen no puede ser superior a {{max}}.",
+        "volumeSet": "Volumen ajustado a {{volume}}",
+        "notConnected": "No estoy en un canal de voz",
+        "join": "Me he unido al canal de voz",
+        "dmSent": "**Te he enviado un mensaje directo.**",
+        "dmFailed": "**No he podido enviarte un mensaje directo.**",
+        "addedTrack": "Añadido [{{title}}]({{uri}}) {{destination}}.",
+        "addedPlaylist": "Añadidas {{count}} canciones {{destination}}.",
+        "destinationNext": "para reproducir a continuación en la cola",
+        "destinationQueue": "a la cola",
+        "alreadyConnected": "Ya estaba en {{channel}}",
+        "joined": "Ya estoy en {{channel}}",
+        "left": "He salido de {{channel}}",
+        "leftGeneric": "He salido del canal de voz",
+        "voiceChannel": "el canal de voz",
+        "grabCard": "**Duración:** {{duration}}\n**Solicitada por:** {{requester}}\n**Enlace:** [Haz clic aquí]({{uri}})",
+        "loopSong": "**Repitiendo la canción**",
+        "loopQueue": "**Repitiendo la cola**",
+        "loopOff": "**Repetición desactivada**",
+        "autoplayDisabled": "Reproducción automática desactivada y pistas añadidas por el bot retiradas de la cola.",
+        "autoplayNoNode": "No hay ningún nodo de Lavalink disponible ahora mismo. Inténtalo de nuevo en un momento.",
+        "autoplayNoSeed": "No he encontrado nada para **{{label}}**. La reproducción automática no ha cambiado.",
+        "autoplaySeeded": "Reproducción automática activada — a partir de **{{label}}**, empezando por **{{title}}** de {{author}}.",
+        "autoplayStarted": "Reproducción automática activada — empezando por **{{title}}** de {{author}}.",
+        "autoplayWaiting": "Reproducción automática activada — elegiré pistas cuando se acabe la cola.",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · Solicitada por {{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - Solicitada por: {{requester}} - Duración: {{duration}}",
+        "queueNowPlaying": "Reproduciendo ahora: [{{title}}]({{uri}}) - Solicitada por: {{requester}} - Duración: {{duration}}",
+        "queuedTracks": "Pistas en cola",
+        "queueLength": "Longitud de la cola",
+        "autoplay": "Reproducción automática",
+        "loop": "Repetición",
+        "on": "activado",
+        "off": "desactivado",
+        "queueAuthor": "Cola",
+        "queuePage": "Página {{page}} de {{total}}"
+    },
+    "metadata": {
+        "247": {
+            "description": "Hace que el bot se quede en el canal de voz"
+        },
+        "8d": {
+            "description": "Activa o desactiva el filtro 8d"
+        },
+        "bassboost": {
+            "description": "Activa o desactiva el filtro bassboost"
+        },
+        "distorsion": {
+            "description": "Activa o desactiva el filtro de distorsión"
+        },
+        "filter": {
+            "description": "Aplica o borra filtros de audio",
+            "options": {
+                "8d": "Aplicar 8d",
+                "bassboost": "Aplicar bassboost",
+                "distortion": "Aplicar distorsión",
+                "karaoke": "Aplicar karaoke",
+                "nightcore": "Aplicar nightcore",
+                "reset": "Quitar todos los filtros",
+                "rotation": "Aplicar rotación",
+                "tremolo": "Aplicar trémolo",
+                "vibrato": "Aplicar vibrato",
+                "lowpass": "Aplicar pasa bajos",
+                "pitch": "Aplicar tono con un valor",
+                "rate": "Aplicar ritmo con un valor",
+                "speed": "Aplicar velocidad con un valor"
+            }
+        },
+        "filters": {
+            "description": "Muestra los filtros de audio activos"
+        },
+        "karaoke": {
+            "description": "Activa o desactiva el filtro karaoke"
+        },
+        "nightcore": {
+            "description": "Activa o desactiva el filtro nightcore"
+        },
+        "pitch": {
+            "description": "Activa o desactiva el filtro de tono",
+            "options": {
+                "number": "Valor de tono que quieres aplicar"
+            }
+        },
+        "rate": {
+            "description": "Cambia la velocidad de reproducción (velocidad y tono)",
+            "options": {
+                "rate": "Multiplicador de ritmo entre 0,5 y 5"
+            }
+        },
+        "reset": {
+            "description": "Restablece los filtros activos"
+        },
+        "rotation": {
+            "description": "Activa o desactiva el filtro de rotación"
+        },
+        "speed": {
+            "description": "Establece la velocidad de la canción",
+            "options": {
+                "speed": "Velocidad que quieres establecer"
+            }
+        },
+        "tremolo": {
+            "description": "Activa o desactiva el filtro de trémolo"
+        },
+        "vibrato": {
+            "description": "Activa o desactiva el filtro de vibrato"
+        },
+        "lowpass": {
+            "description": "Activa o desactiva el filtro pasa bajos"
+        },
+        "add": {
+            "description": "Añade una canción a la lista de reproducción",
+            "options": {
+                "playlist": "La lista de reproducción a la que quieres añadir",
+                "song": "La canción que quieres añadir"
+            }
+        },
+        "alias": {
+            "description": "Crea, lista o elimina alias de comandos personalizados",
+            "options": {
+                "action": "Añadir, eliminar, listar o borrar alias",
+                "alias": "Nombre del alias",
+                "command": "Comando de destino al añadir",
+                "scope": "Para todo el servidor o solo para ti"
+            }
+        },
+        "autoplayconfig": {
+            "description": "Configura la fuente de inicio de la reproducción automática",
+            "options": {
+                "source": "Fuente de semillas para el inicio",
+                "seeds": "Semillas seleccionadas, separadas por comas (ajusta la fuente a curated)",
+                "reset": "Quita la configuración del servidor y usa los valores del entorno"
+            }
+        },
+        "playlist": {
+            "description": "Gestiona las listas de reproducción guardadas",
+            "options": {
+                "action": "Operación que realizar",
+                "name": "Nombre de la colección",
+                "query": "URL de pista o lista de reproducción para añadir",
+                "target": "Nombre de destino para renombrar, copiar o combinar",
+                "index": "Posición de la pista que quitar (empieza en 1)",
+                "code": "Código para compartir"
+            }
+        },
+        "create": {
+            "description": "Crea una lista de reproducción",
+            "options": {
+                "name": "El nombre de la lista de reproducción"
+            }
+        },
+        "delete": {
+            "description": "Elimina una lista de reproducción",
+            "options": {
+                "playlist": "La lista de reproducción que quieres eliminar"
+            }
+        },
+        "dj": {
+            "description": "Gestiona el modo DJ y los roles asociados",
+            "options": {
+                "add": "El rol de DJ que quieres añadir",
+                "remove": "El rol de DJ que quieres quitar",
+                "clear": "Borra todos los roles de DJ",
+                "toggle": "Activa o desactiva el rol de DJ"
+            }
+        },
+        "language": {
+            "description": "Ver o cambiar el idioma de este servidor",
+            "options": {
+                "language": "Idioma que usar",
+                "reset": "Restablecer al idioma predeterminado"
+            }
+        },
+        "list": {
+            "description": "Muestra las listas de reproducción",
+            "options": {
+                "user": "De quién mostrar las listas de reproducción"
+            }
+        },
+        "listen": {
+            "description": "Controla los comandos de voz (Earl the Ear) y tu exclusión de escucha",
+            "options": {
+                "action": "Qué hacer"
+            }
+        },
+        "load": {
+            "description": "Carga una lista de reproducción",
+            "options": {
+                "playlist": "La lista de reproducción que quieres cargar"
+            }
+        },
+        "mappings": {
+            "description": "Crea atajos personalizados para el prefijo",
+            "options": {
+                "action": "Añadir, eliminar, listar o borrar asignaciones",
+                "trigger": "Palabra escrita después del prefijo",
+                "expansion": "Comando y argumentos que ejecutar",
+                "scope": "Para todo el servidor o solo para ti"
+            }
+        },
+        "permissions": {
+            "description": "Gestiona las reglas de permitir o denegar por comando",
+            "options": {
+                "action": "Listar, permitir, denegar o restablecer reglas",
+                "command": "Nombre del comando; omítelo al restablecer para borrar todas las reglas",
+                "target": "Usuario o rol afectado por la regla"
+            }
+        },
+        "prefix": {
+            "description": "Muestra el prefijo del bot",
+            "options": {
+                "set": "Establece el prefijo",
+                "reset": "Restablece el prefijo al predeterminado"
+            }
+        },
+        "removesong": {
+            "description": "Quita una canción de una lista de reproducción",
+            "options": {
+                "playlist": "La lista de reproducción que editar",
+                "song": "La canción que quitar"
+            }
+        },
+        "save": {
+            "description": "Guarda la cola actual en una lista de reproducción",
+            "options": {
+                "name": "Nombre de la lista de reproducción"
+            }
+        },
+        "selfprefix": {
+            "description": "Establece un prefijo personal para este servidor"
+        },
+        "settings": {
+            "description": "Ver o cambiar los ajustes del bot por servidor",
+            "options": {
+                "key": "Nombre del ajuste; omítelo para listarlos todos",
+                "value": "Valor nuevo; omítelo para consultar el ajuste",
+                "reset": "Restablece todos los ajustes de este servidor"
+            }
+        },
+        "setup": {
+            "description": "Configura el bot",
+            "options": {
+                "create": "Crea el canal de peticiones de canciones",
+                "delete": "Elimina el canal de peticiones de canciones",
+                "info": "Muestra el canal de peticiones de canciones"
+            }
+        },
+        "album": {
+            "description": "Busca un álbum o pone en cola su primer resultado",
+            "options": {
+                "name": "Nombre del álbum"
+            }
+        },
+        "artist": {
+            "description": "Busca un artista o pone en cola su mejor resultado",
+            "options": {
+                "name": "Nombre del artista"
+            }
+        },
+        "autoplay": {
+            "description": "Activa o desactiva la reproducción automática",
+            "options": {
+                "seed": "Primer artista o canción",
+                "seed2": "Segundo artista o canción (opcional)",
+                "seed3": "Tercer artista o canción (opcional)"
+            }
+        },
+        "backward": {
+            "description": "Retrocede en la pista actual",
+            "options": {
+                "time": "Cuánto retroceder (30s, 1m, 01:30)"
+            }
+        },
+        "clearqueue": {
+            "description": "Vacía la cola"
+        },
+        "endtime": {
+            "description": "Detiene la pista actual en un momento dado",
+            "options": {
+                "time": "Dónde detenerla (30s, 1m, 02:30)"
+            }
+        },
+        "fairplay": {
+            "description": "Reparte la cola por turnos entre quienes la piden"
+        },
+        "forward": {
+            "description": "Avanza en la pista actual",
+            "options": {
+                "time": "Cuánto avanzar (30s, 1m, 01:30)"
+            }
+        },
+        "grab": {
+            "description": "Captura la canción que se está reproduciendo"
+        },
+        "join": {
+            "description": "Se une al canal de voz"
+        },
+        "leave": {
+            "description": "Sale del canal de voz"
+        },
+        "loop": {
+            "description": "Repite la canción actual o la cola"
+        },
+        "lyrics": {
+            "description": "Muestra la letra de la canción actual o de una búsqueda",
+            "options": {
+                "song": "Canción que buscar; por defecto, la pista actual"
+            }
+        },
+        "massmove": {
+            "description": "Mueve un bloque de pistas en cola",
+            "options": {
+                "from": "Primera posición del bloque (empieza en 1)",
+                "to": "Última posición del bloque (empieza en 1)",
+                "destination": "Posición de inserción en la cola resultante (empieza en 1)"
+            }
+        },
+        "massremove": {
+            "description": "Quita un intervalo de pistas en cola",
+            "options": {
+                "from": "Primera posición que quitar (empieza en 1)",
+                "to": "Última posición que quitar (empieza en 1)"
+            }
+        },
+        "move": {
+            "description": "Mueve una pista en cola a otra posición",
+            "options": {
+                "from": "Posición actual en la cola (empieza en 1)",
+                "to": "Nueva posición en la cola (empieza en 1)"
+            }
+        },
+        "nowplaying": {
+            "description": "Muestra la canción que se está reproduciendo"
+        },
+        "pause": {
+            "description": "Pausa la canción actual"
+        },
+        "play": {
+            "description": "Reproduce una canción de YouTube o Spotify",
+            "options": {
+                "song": "La canción que quieres reproducir"
+            }
+        },
+        "playleave": {
+            "description": "Reproduce una petición y sale del canal de voz al acabar la cola",
+            "options": {
+                "query": "Pista, término de búsqueda o URL de lista"
+            }
+        },
+        "playlocal": {
+            "description": "Reproduce un archivo de audio o vídeo subido a Discord",
+            "options": {
+                "file": "El archivo de audio o vídeo que reproducir"
+            }
+        },
+        "playnext": {
+            "description": "Añade la canción para que suene a continuación",
+            "options": {
+                "song": "La canción que quieres reproducir"
+            }
+        },
+        "playrecent": {
+            "description": "Pone en cola pistas del historial reciente",
+            "options": {
+                "count": "Cuántas pistas recientes poner en cola (1-20)"
+            }
+        },
+        "playselect": {
+            "description": "Explora una lista o resultados de búsqueda y elige una pista",
+            "options": {
+                "url": "URL de la lista o término de búsqueda"
+            }
+        },
+        "playlistsearch": {
+            "description": "Muestra las pistas de una lista de reproducción que coincida",
+            "options": {
+                "query": "Nombre o URL de la lista de reproducción"
+            }
+        },
+        "previous": {
+            "description": "Vuelve a reproducir la pista anterior"
+        },
+        "queue": {
+            "description": "Muestra la cola actual"
+        },
+        "radio": {
+            "description": "Reproduce una emisora de radio por internet según su nombre",
+            "options": {
+                "station": "Nombre de la emisora o género"
+            }
+        },
+        "recentlyplayed": {
+            "description": "Muestra las pistas reproducidas recientemente"
+        },
+        "remove": {
+            "description": "Quita una canción de la cola",
+            "options": {
+                "song": "El número de la canción"
+            }
+        },
+        "removeabsent": {
+            "description": "Quita las pistas pedidas por usuarios que no están en el canal de voz"
+        },
+        "removeduplicates": {
+            "description": "Quita las pistas duplicadas de la cola"
+        },
+        "removekeyword": {
+            "description": "Quita las pistas en cola que coincidan con una palabra clave",
+            "options": {
+                "keyword": "Texto que buscar en el título o el autor"
+            }
+        },
+        "removelast": {
+            "description": "Quita la última pista de la cola"
+        },
+        "removeuser": {
+            "description": "Quita las pistas en cola de un usuario",
+            "options": {
+                "user": "Usuario cuyas pistas quieres quitar"
+            }
+        },
+        "replay": {
+            "description": "Vuelve a reproducir la pista actual desde el principio"
+        },
+        "requested": {
+            "description": "Muestra las pistas en cola pedidas por un usuario",
+            "options": {
+                "user": "De quién mostrar las peticiones (por defecto, tú)"
+            }
+        },
+        "resume": {
+            "description": "Reanuda la canción actual"
+        },
+        "reverse": {
+            "description": "Invierte el orden de las pistas en cola"
+        },
+        "seek": {
+            "description": "Salta a un momento concreto de la canción",
+            "options": {
+                "time": "El momento al que saltar"
+            }
+        },
+        "selectrandom": {
+            "description": "Mueve una pista aleatoria de la cola al principio"
+        },
+        "sessionstats": {
+            "description": "Muestra estadísticas de la sesión de reproducción actual"
+        },
+        "shuffle": {
+            "description": "Mezcla la cola"
+        },
+        "shufflerepeat": {
+            "description": "Mezcla la cola y activa la repetición de la cola"
+        },
+        "skip": {
+            "description": "Salta la canción actual"
+        },
+        "skipto": {
+            "description": "Salta a una canción concreta de la cola",
+            "options": {
+                "number": "El número de la canción a la que quieres saltar"
+            }
+        },
+        "song": {
+            "description": "Muestra información de la canción actual o de una búsqueda",
+            "options": {
+                "query": "Canción que buscar; por defecto, la pista actual"
+            }
+        },
+        "sort": {
+            "description": "Ordena las pistas en cola",
+            "options": {
+                "by": "Campo por el que ordenar",
+                "order": "Dirección del orden"
+            }
+        },
+        "stop": {
+            "description": "Detiene la música y vacía la cola"
+        },
+        "swap": {
+            "description": "Intercambia dos pistas en cola",
+            "options": {
+                "first": "Primera posición en la cola (empieza en 1)",
+                "second": "Segunda posición en la cola (empieza en 1)"
+            }
+        },
+        "top": {
+            "description": "Muestra los mejores resultados de búsqueda de una consulta",
+            "options": {
+                "query": "Consulta de búsqueda; por defecto, los más populares"
+            }
+        },
+        "volume": {
+            "description": "Establece el volumen del reproductor",
+            "options": {
+                "number": "El volumen que quieres establecer"
+            }
+        },
+        "voteskip": {
+            "description": "Inicia o se une a una votación para saltar la pista actual"
+        },
+        "eval": {
+            "description": "Evalúa código"
+        },
+        "guild": {
+            "description": "Inspecciona un servidor en el que está el bot",
+            "options": {
+                "guild": "Nombre o ID del servidor (se autocompleta)"
+            }
+        },
+        "guildleave": {
+            "description": "Sale de un servidor"
+        },
+        "guildlist": {
+            "description": "Lista todos los servidores en los que está el bot"
+        },
+        "reload": {
+            "description": "Recarga los módulos de comandos sin reiniciar (solo el propietario)"
+        },
+        "restart": {
+            "description": "Reinicia el proceso del bot (solo el propietario)"
+        },
+        "shutdown": {
+            "description": "Detiene el proceso del bot (solo el propietario)"
+        },
+        "categories": {
+            "description": "Lista todas las categorías de comandos"
+        },
+        "faq": {
+            "description": "Preguntas frecuentes sobre el uso de BootstrapDJ"
+        },
+        "guess": {
+            "description": "Inicia un juego de adivinar la canción actual"
+        },
+        "help": {
+            "description": "Muestra el menú de ayuda",
+            "options": {
+                "command": "El comando sobre el que quieres información"
+            }
+        },
+        "info": {
+            "description": "Información sobre el bot"
+        },
+        "invite": {
+            "description": "Envía el enlace de invitación del bot"
+        },
+        "lavalink": {
+            "description": "Muestra las estadísticas actuales de Lavalink"
+        },
+        "leaderboard": {
+            "description": "Muestra quién ha pedido más canciones en esta sesión"
+        },
+        "ping": {
+            "description": "Muestra el ping del bot"
+        },
+        "premium": {
+            "description": "Explica la política de funciones gratuitas"
+        },
+        "profile": {
+            "description": "Ver o personalizar un perfil de BootstrapDJ",
+            "options": {
+                "action": "Ver, establecer o borrar campos del perfil",
+                "key": "Campo que cambiar: color, bio, privacy o visible",
+                "value": "Valor nuevo",
+                "user": "Perfil que quieres ver"
+            }
+        },
+        "shards": {
+            "description": "Muestra el estado de los shards"
+        },
+        "stats": {
+            "description": "Muestra estadísticas del bot en tiempo real"
+        },
+        "support": {
+            "description": "Cómo obtener ayuda con BootstrapDJ"
+        },
+        "tip": {
+            "description": "Muestra un consejo aleatorio de BootstrapDJ"
+        },
+        "utility": {
+            "description": "Páginas de información y utilidades del bot",
+            "options": {
+                "overview": "Mostrar resumen",
+                "stats": "Mostrar estadísticas",
+                "shards": "Mostrar shards",
+                "categories": "Mostrar categorías",
+                "faq": "Mostrar preguntas frecuentes",
+                "tip": "Mostrar consejo",
+                "premium": "Mostrar premium",
+                "support": "Mostrar soporte",
+                "leaderboard": "Mostrar clasificación",
+                "commands": "Mostrar comandos",
+                "dashboard": "Mostrar panel"
+            }
+        }
+    },
+    "profile": {
+        "private": "Ese perfil es privado.",
+        "noBio": "No hay biografía.",
+        "visibility": "Visibilidad",
+        "hidden": "oculto",
+        "visible": "visible",
+        "privacy": "Privacidad",
+        "serverVisible": "Visible en el servidor",
+        "no": "no",
+        "yes": "sí",
+        "avatarShape": "Forma del avatar",
+        "reset": "Perfil restablecido.",
+        "chooseField": "Elige color, bio, privacidad o visible.",
+        "hex": "Usa un color hexadecimal como `#ff8800`.",
+        "bioLimit": "Las biografías están limitadas a 200 caracteres.",
+        "privacyValue": "La privacidad debe ser `public` o `private`.",
+        "backgroundLimit": "Los fondos están limitados a 200 caracteres.",
+        "avatarShapeValue": "La forma del avatar debe ser `circle`, `square` o `rounded`.",
+        "borderLimit": "Los bordes de avatar están limitados a 50 caracteres.",
+        "unknown": "Campo de perfil desconocido.",
+        "updated": "Perfil **{{key}}** actualizado."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

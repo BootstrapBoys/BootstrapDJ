@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "Bahasa Indonesia",
+        "current": "Bahasa saat ini: **{{language}}**.",
+        "set": "Bahasa diubah ke **{{language}}**.",
+        "reset": "Bahasa diatur ulang ke **{{language}}**.",
+        "invalid": "Bahasa tersebut tidak tersedia. Pilih salah satu: {{languages}}.",
+        "list": "Bahasa yang tersedia: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

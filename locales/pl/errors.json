@@ -1,0 +1,38 @@
+{
+    "generic": "Coś poszło nie tak.",
+    "gate": {
+        "preferredBot": "Polecenia głosowe na tym serwerze są kierowane do **{{name}}**. Użyj tego bota.",
+        "locked": "Ta sesja jest zablokowana. Menedżer serwera musi ją odblokować.",
+        "notAllowed": "Nie możesz użyć tego polecenia.",
+        "threads": "Polecenia są wyłączone w wątkach na tym serwerze.",
+        "disabled": "**{{command}}** jest wyłączone na tym serwerze.",
+        "commandChannel": "Polecenia są ograniczone do <#{{channel}}>.",
+        "voiceChannel": "Aby używać poleceń, musisz być na <#{{channel}}>.",
+        "noSendMessages": "Nie mam uprawnienia **`SendMessages`** na `{{guild}}`\nkanał: <#{{channel}}>",
+        "noEmbedLinks": "Nie mam uprawnienia **`EmbedLinks`**.",
+        "clientPermissions": "Nie mam wystarczających uprawnień, aby wykonać to polecenie.",
+        "userPermissions": "Nie masz wystarczających uprawnień, aby użyć tego polecenia.",
+        "voiceRequired": "Aby użyć polecenia `{{command}}`, musisz być połączony z kanałem głosowym.",
+        "noConnect": "Nie mam uprawnienia `CONNECT`, aby wykonać polecenie `{{command}}`.",
+        "noSpeak": "Nie mam uprawnienia `SPEAK`, aby wykonać polecenie `{{command}}`.",
+        "noRequestToSpeak": "Nie mam uprawnienia `REQUEST TO SPEAK`, aby wykonać polecenie `{{command}}`.",
+        "wrongVoice": "Nie jesteś połączony z <#{{channel}}>, aby użyć polecenia `{{command}}`.",
+        "nothingPlaying": "Nic teraz nie jest odtwarzane.",
+        "djRoleMissing": "Rola DJ nie jest ustawiona.",
+        "djRoleRequired": "Musisz mieć rolę DJ, aby użyć tego polecenia.",
+        "missingTitle": "Brakujące argumenty",
+        "missingDescription": "Podaj wymagane argumenty polecenia `{{command}}`.\n\nPrzykłady:\n{{examples}}",
+        "missingFooter": "Składnia: [] = opcjonalne, <> = wymagane",
+        "cooldown": "Odczekaj jeszcze {{seconds}} sekund(y) przed ponownym użyciem polecenia `{{command}}`.",
+        "everyone": "Nie możesz wspominać @everyone ani @here."
+    },
+    "noPlayer": "Na tym serwerze nie jest odtwarzana żadna muzyka.",
+    "noNode": "Żaden węzeł Lavalink nie jest teraz dostępny. Spróbuj ponownie za chwilę.",
+    "searchFailed": "Wystąpił błąd podczas wyszukiwania. Spróbuj ponownie.",
+    "loadFailed": "Wystąpił błąd podczas wyszukiwania.",
+    "noResults": "Nie znaleziono żadnych wyników.",
+    "playlistTooLong": "Playlista jest zbyt długa. Maksymalna długość to {{max}} utworów.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

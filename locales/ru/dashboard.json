@@ -1,0 +1,63 @@
+{
+    "language": {
+        "label": "Язык",
+        "description": "Язык бота на этом сервере. Если он не выбран, используется English (United States)."
+    },
+    "player": {
+        "title": "Плеер",
+        "nothingPlaying": "Ничего не играет",
+        "idle": "бездействует",
+        "queued": "В очереди: {{count}}",
+        "resume": "Продолжить",
+        "pause": "Пауза",
+        "disconnect": "Отключить",
+        "listen": "Слушать",
+        "mute": "Выключить звук",
+        "unmute": "Включить звук",
+        "connecting": "Подключение",
+        "listenTitle": "Воспроизводить этот звук браузера через бота",
+        "muteTitle": "Выключить звук только в этом браузере",
+        "unmuteTitle": "Включить звук только в этом браузере",
+        "listenDenied": "Твои роли не разрешают прослушивание",
+        "playing": "играет",
+        "paused": "на паузе",
+        "autoplay": "автовоспроизведение"
+    },
+    "queue": {
+        "title": "Очередь",
+        "empty": "Очередь пуста.",
+        "addPlaceholder": "Название песни или URL",
+        "add": "Добавить песню",
+        "skipTo": "Перейти к {{title}}",
+        "remove": "Удалить этот трек"
+    },
+    "filters": {
+        "title": "Фильтры"
+    },
+    "settings": {
+        "title": "Настройки",
+        "cancel": "Отмена",
+        "save": "Сохранить настройки",
+        "autoplayReset": "Сбросить переопределение автовоспроизведения",
+        "other": "Другое"
+    },
+    "status": {
+        "connected": "Подключено",
+        "readOnly": "Только чтение",
+        "error": "Ошибка",
+        "noGuilds": "Нет серверов"
+    },
+    "app": {
+        "install": "Установить приложение"
+    },
+    "stats": {
+        "title": "Статистика",
+        "personalTitle": "Моя статистика"
+    },
+    "playlists": {
+        "title": "Плейлисты"
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

@@ -1,0 +1,647 @@
+{
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    },
+    "language": {
+        "description": "查看或更改本服务器的语言",
+        "language_option": "要使用的语言",
+        "reset_option": "重置为默认语言"
+    },
+    "core": {
+        "noQueue": "队列中没有歌曲。",
+        "nothingPlaying": "当前没有正在播放的内容",
+        "alreadyPaused": "歌曲已处于暂停状态",
+        "paused": "已暂停歌曲",
+        "resumed": "已恢复播放",
+        "notPaused": "播放器当前未暂停。",
+        "cleared": "已清空队列",
+        "shuffled": "已随机打乱队列",
+        "stopped": "已停止播放并清空队列",
+        "invalidNumber": "这不是有效的数字。",
+        "validNumber": "请提供有效的数字。",
+        "skipped": "已跳过 [{{title}}]({{uri}})",
+        "skippedTo": "已跳至第 {{target}} 首歌曲",
+        "removed": "已从队列中移除第 {{position}} 首歌曲",
+        "seeked": "已跳转至 {{time}}",
+        "invalidTime": "时间格式无效。",
+        "volumeInvalid": "请提供有效的数字。",
+        "volumeLow": "音量不能低于 {{min}}。",
+        "volumeHigh": "音量不能高于 {{max}}。",
+        "volumeSet": "已将音量设为 {{volume}}",
+        "notConnected": "我不在语音频道中",
+        "join": "已加入语音频道",
+        "dmSent": "**我已给你发送私信。**",
+        "dmFailed": "**我无法给你发送私信。**",
+        "addedTrack": "已将 [{{title}}]({{uri}}) {{destination}}。",
+        "addedPlaylist": "已将 {{count}} 首歌曲{{destination}}。",
+        "destinationNext": "设为下一首播放",
+        "destinationQueue": "添加到队列",
+        "alreadyConnected": "我已连接到 {{channel}}",
+        "joined": "已加入 {{channel}}",
+        "left": "已离开 {{channel}}",
+        "leftGeneric": "已离开语音频道",
+        "voiceChannel": "语音频道",
+        "grabCard": "**时长：** {{duration}}\n**请求者：** {{requester}}\n**链接：** [点击此处]({{uri}})",
+        "loopSong": "**正在循环播放当前歌曲**",
+        "loopQueue": "**正在循环播放队列**",
+        "loopOff": "**循环播放已关闭**",
+        "autoplayDisabled": "已关闭自动播放，并移除队列中由机器人挑选的曲目。",
+        "autoplayNoNode": "当前没有可用的 Lavalink 节点，请稍后重试。",
+        "autoplayNoSeed": "未能找到与 **{{label}}** 相关的内容，自动播放设置未更改。",
+        "autoplaySeeded": "已启用自动播放 — 以 **{{label}}** 为种子，从 {{author}} 的 **{{title}}** 开始播放。",
+        "autoplayStarted": "已启用自动播放 — 从 {{author}} 的 **{{title}}** 开始播放。",
+        "autoplayWaiting": "已启用自动播放 — 队列播放完后我会自动挑选曲目。",
+        "nowPlayingLine": "[{{title}}]({{uri}}) · 请求者：{{requester}}\n\n`{{bar}}` {{timing}}",
+        "queueLine": "{{index}}. [{{title}}]({{uri}}) - 请求者：{{requester}} - 时长：{{duration}}",
+        "queueNowPlaying": "正在播放：[{{title}}]({{uri}}) - 请求者：{{requester}} - 时长：{{duration}}",
+        "queuedTracks": "已排队曲目",
+        "queueLength": "队列长度",
+        "autoplay": "自动播放",
+        "loop": "循环播放",
+        "on": "开启",
+        "off": "关闭",
+        "queueAuthor": "队列",
+        "queuePage": "第 {{page}} 页，共 {{total}} 页"
+    },
+    "metadata": {
+        "247": {
+            "description": "让机器人保持在语音频道中"
+        },
+        "8d": {
+            "description": "开启/关闭 8D 音效"
+        },
+        "bassboost": {
+            "description": "开启/关闭低音增强"
+        },
+        "distorsion": {
+            "description": "开启/关闭失真音效"
+        },
+        "filter": {
+            "description": "应用或清除音频滤镜",
+            "options": {
+                "8d": "应用 8D 音效",
+                "bassboost": "应用低音增强",
+                "distortion": "应用失真",
+                "karaoke": "应用卡拉 OK",
+                "nightcore": "应用 Nightcore",
+                "reset": "重置滤镜",
+                "rotation": "应用旋转音效",
+                "tremolo": "应用震音",
+                "vibrato": "应用颤音",
+                "lowpass": "应用低通滤波",
+                "pitch": "应用音调并指定数值",
+                "rate": "应用速率并指定数值",
+                "speed": "应用速度并指定数值"
+            }
+        },
+        "filters": {
+            "description": "显示当前启用的音频滤镜"
+        },
+        "karaoke": {
+            "description": "开启/关闭卡拉 OK 滤镜"
+        },
+        "nightcore": {
+            "description": "开启/关闭 Nightcore 滤镜"
+        },
+        "pitch": {
+            "description": "开启/关闭音调滤镜",
+            "options": {
+                "number": "要设置的音调数值"
+            }
+        },
+        "rate": {
+            "description": "更改播放速率（速度与音调）",
+            "options": {
+                "rate": "速率倍数，范围 0.5 至 5"
+            }
+        },
+        "reset": {
+            "description": "重置当前启用的滤镜"
+        },
+        "rotation": {
+            "description": "开启/关闭旋转音效"
+        },
+        "speed": {
+            "description": "设置歌曲播放速度",
+            "options": {
+                "speed": "要设置的速度"
+            }
+        },
+        "tremolo": {
+            "description": "开启/关闭震音滤镜"
+        },
+        "vibrato": {
+            "description": "开启/关闭颤音滤镜"
+        },
+        "lowpass": {
+            "description": "开启/关闭低通滤镜"
+        },
+        "add": {
+            "description": "向播放列表添加歌曲",
+            "options": {
+                "playlist": "要添加到的播放列表",
+                "song": "要添加的歌曲"
+            }
+        },
+        "alias": {
+            "description": "创建、列出或删除自定义命令别名",
+            "options": {
+                "action": "添加、删除、列出或清空别名",
+                "alias": "别名名称",
+                "command": "添加时对应的目标命令",
+                "scope": "全服务器生效或仅对自己生效"
+            }
+        },
+        "autoplayconfig": {
+            "description": "配置自动播放的冷启动来源",
+            "options": {
+                "source": "冷启动种子来源",
+                "seeds": "精选种子，以逗号分隔（会将来源设为精选）",
+                "reset": "移除本服务器覆盖设置并使用环境默认值"
+            }
+        },
+        "playlist": {
+            "description": "管理已保存的播放列表",
+            "options": {
+                "action": "集合操作",
+                "name": "集合名称",
+                "query": "添加时使用的曲目或播放列表 URL",
+                "target": "重命名/复制/合并的目标名称",
+                "index": "要移除的曲目位置（从 1 开始）",
+                "code": "分享代码"
+            }
+        },
+        "create": {
+            "description": "创建播放列表",
+            "options": {
+                "name": "播放列表名称"
+            }
+        },
+        "delete": {
+            "description": "删除播放列表",
+            "options": {
+                "playlist": "要删除的播放列表"
+            }
+        },
+        "dj": {
+            "description": "管理 DJ 模式及相关角色",
+            "options": {
+                "add": "要添加的 DJ 角色",
+                "remove": "要移除的 DJ 角色",
+                "clear": "清空所有 DJ 角色",
+                "toggle": "切换 DJ 角色"
+            }
+        },
+        "language": {
+            "description": "查看或更改本服务器的语言",
+            "options": {
+                "language": "要使用的语言",
+                "reset": "重置为默认语言"
+            }
+        },
+        "list": {
+            "description": "列出播放列表",
+            "options": {
+                "user": "要显示谁创建的播放列表"
+            }
+        },
+        "listen": {
+            "description": "控制语音指令（Earl the Ear）与个人收听退出设置",
+            "options": {
+                "action": "要执行的操作"
+            }
+        },
+        "load": {
+            "description": "加载播放列表",
+            "options": {
+                "playlist": "要加载的播放列表"
+            }
+        },
+        "mappings": {
+            "description": "创建自定义前缀快捷展开",
+            "options": {
+                "action": "添加、删除、列出或清空映射",
+                "trigger": "前缀后输入的词",
+                "expansion": "要执行的命令与参数",
+                "scope": "全服务器生效或仅对自己生效"
+            }
+        },
+        "permissions": {
+            "description": "管理各命令的允许/拒绝规则",
+            "options": {
+                "action": "列出、允许、拒绝或重置规则",
+                "command": "命令名称；重置时省略可清除全部规则",
+                "target": "受规则影响的用户或角色"
+            }
+        },
+        "prefix": {
+            "description": "显示机器人前缀",
+            "options": {
+                "set": "设置前缀",
+                "reset": "将前缀重置为默认值"
+            }
+        },
+        "removesong": {
+            "description": "从播放列表中移除歌曲",
+            "options": {
+                "playlist": "要编辑的播放列表",
+                "song": "要移除的歌曲"
+            }
+        },
+        "save": {
+            "description": "将当前队列保存为播放列表",
+            "options": {
+                "name": "播放列表名称"
+            }
+        },
+        "selfprefix": {
+            "description": "为本服务器设置个人前缀"
+        },
+        "settings": {
+            "description": "查看或更改本服务器的机器人设置",
+            "options": {
+                "key": "设置项名称；省略则列出全部",
+                "value": "新值；省略则查看当前设置",
+                "reset": "重置本服务器的所有设置"
+            }
+        },
+        "setup": {
+            "description": "初始化机器人",
+            "options": {
+                "create": "创建点歌频道",
+                "delete": "删除点歌频道",
+                "info": "显示点歌频道"
+            }
+        },
+        "album": {
+            "description": "查询专辑，或将其首个结果加入队列",
+            "options": {
+                "name": "专辑名称"
+            }
+        },
+        "artist": {
+            "description": "查询艺术家，或将其最佳结果加入队列",
+            "options": {
+                "name": "艺术家名称"
+            }
+        },
+        "autoplay": {
+            "description": "切换自动播放",
+            "options": {
+                "seed": "第一位艺术家或歌曲",
+                "seed2": "第二位艺术家或歌曲（可选）",
+                "seed3": "第三位艺术家或歌曲（可选）"
+            }
+        },
+        "backward": {
+            "description": "将当前曲目后退",
+            "options": {
+                "time": "后退时长（30s、1m、01:30）"
+            }
+        },
+        "clearqueue": {
+            "description": "清空队列"
+        },
+        "endtime": {
+            "description": "在指定时间停止当前曲目",
+            "options": {
+                "time": "停止位置（30s、1m、02:30）"
+            }
+        },
+        "fairplay": {
+            "description": "按点歌者轮换排列队列"
+        },
+        "forward": {
+            "description": "将当前曲目前进",
+            "options": {
+                "time": "前进时长（30s、1m、01:30）"
+            }
+        },
+        "grab": {
+            "description": "获取当前正在播放的歌曲"
+        },
+        "join": {
+            "description": "加入语音频道"
+        },
+        "leave": {
+            "description": "离开语音频道"
+        },
+        "loop": {
+            "description": "循环播放当前歌曲或队列"
+        },
+        "lyrics": {
+            "description": "显示当前或所查询歌曲的歌词",
+            "options": {
+                "song": "要查询的歌曲；默认为当前曲目"
+            }
+        },
+        "massmove": {
+            "description": "移动队列中的一段曲目",
+            "options": {
+                "from": "该段起始位置（从 1 开始）",
+                "to": "该段结束位置（从 1 开始）",
+                "destination": "在结果队列中的插入位置（从 1 开始）"
+            }
+        },
+        "massremove": {
+            "description": "移除队列中的一段曲目",
+            "options": {
+                "from": "要移除的起始位置（从 1 开始）",
+                "to": "要移除的结束位置（从 1 开始）"
+            }
+        },
+        "move": {
+            "description": "将队列中的曲目移到其他位置",
+            "options": {
+                "from": "当前队列位置（从 1 开始）",
+                "to": "新的队列位置（从 1 开始）"
+            }
+        },
+        "nowplaying": {
+            "description": "显示当前正在播放的歌曲"
+        },
+        "pause": {
+            "description": "暂停当前歌曲"
+        },
+        "play": {
+            "description": "播放来自 YouTube 或 Spotify 的歌曲",
+            "options": {
+                "song": "要播放的歌曲"
+            }
+        },
+        "playleave": {
+            "description": "播放点播内容，并在队列结束后离开语音频道",
+            "options": {
+                "query": "曲目、搜索词或播放列表 URL"
+            }
+        },
+        "playlocal": {
+            "description": "播放上传到 Discord 的音频或视频文件",
+            "options": {
+                "file": "要播放的音频或视频文件"
+            }
+        },
+        "playnext": {
+            "description": "将歌曲添加为队列中的下一首",
+            "options": {
+                "song": "要播放的歌曲"
+            }
+        },
+        "playrecent": {
+            "description": "将最近播放过的曲目加入队列",
+            "options": {
+                "count": "要加入队列的最近曲目数量（1-20）"
+            }
+        },
+        "playselect": {
+            "description": "浏览播放列表或搜索结果并选择曲目",
+            "options": {
+                "url": "播放列表 URL 或搜索词"
+            }
+        },
+        "playlistsearch": {
+            "description": "显示匹配播放列表中的曲目",
+            "options": {
+                "query": "播放列表名称或 URL"
+            }
+        },
+        "previous": {
+            "description": "再次播放上一首曲目"
+        },
+        "queue": {
+            "description": "显示当前队列"
+        },
+        "radio": {
+            "description": "按名称播放网络电台",
+            "options": {
+                "station": "电台名称或类型"
+            }
+        },
+        "recentlyplayed": {
+            "description": "显示最近播放的曲目"
+        },
+        "remove": {
+            "description": "从队列中移除歌曲",
+            "options": {
+                "song": "歌曲编号"
+            }
+        },
+        "removeabsent": {
+            "description": "移除不在语音频道中的用户所点的曲目"
+        },
+        "removeduplicates": {
+            "description": "移除队列中的重复曲目"
+        },
+        "removekeyword": {
+            "description": "移除队列中匹配关键词的曲目",
+            "options": {
+                "keyword": "用于匹配标题或作者的文本"
+            }
+        },
+        "removelast": {
+            "description": "移除队列中的最后一首曲目"
+        },
+        "removeuser": {
+            "description": "移除某位用户所点的曲目",
+            "options": {
+                "user": "要移除其曲目的用户"
+            }
+        },
+        "replay": {
+            "description": "从头重新播放当前曲目"
+        },
+        "requested": {
+            "description": "显示某位用户点播的队列曲目",
+            "options": {
+                "user": "要显示谁的点播（默认为你自己）"
+            }
+        },
+        "resume": {
+            "description": "继续播放当前歌曲"
+        },
+        "reverse": {
+            "description": "反转队列曲目顺序"
+        },
+        "seek": {
+            "description": "跳转到歌曲中的指定时间",
+            "options": {
+                "time": "要跳转到的时间"
+            }
+        },
+        "selectrandom": {
+            "description": "将队列中随机一首曲目移到最前面"
+        },
+        "sessionstats": {
+            "description": "显示当前播放会话的统计信息"
+        },
+        "shuffle": {
+            "description": "随机打乱队列"
+        },
+        "shufflerepeat": {
+            "description": "随机打乱队列并启用队列循环"
+        },
+        "skip": {
+            "description": "跳过当前歌曲"
+        },
+        "skipto": {
+            "description": "跳转到队列中的指定歌曲",
+            "options": {
+                "number": "要跳转到的歌曲编号"
+            }
+        },
+        "song": {
+            "description": "显示当前或所查询歌曲的信息",
+            "options": {
+                "query": "要查询的歌曲；默认为当前曲目"
+            }
+        },
+        "sort": {
+            "description": "对队列曲目排序",
+            "options": {
+                "by": "排序字段",
+                "order": "排序方向"
+            }
+        },
+        "stop": {
+            "description": "停止播放并清空队列"
+        },
+        "swap": {
+            "description": "交换队列中的两首曲目",
+            "options": {
+                "first": "第一个队列位置（从 1 开始）",
+                "second": "第二个队列位置（从 1 开始）"
+            }
+        },
+        "top": {
+            "description": "显示查询的最佳搜索结果",
+            "options": {
+                "query": "搜索关键词；默认为热门结果"
+            }
+        },
+        "volume": {
+            "description": "设置播放器音量",
+            "options": {
+                "number": "要设置的音量"
+            }
+        },
+        "voteskip": {
+            "description": "发起或参与跳过当前曲目的投票"
+        },
+        "eval": {
+            "description": "执行代码"
+        },
+        "guild": {
+            "description": "查看机器人所在的服务器",
+            "options": {
+                "guild": "服务器名称或 ID（支持自动补全）"
+            }
+        },
+        "guildleave": {
+            "description": "离开服务器"
+        },
+        "guildlist": {
+            "description": "列出机器人所在的全部服务器"
+        },
+        "reload": {
+            "description": "无需重启即可重载命令模块（仅限所有者）"
+        },
+        "restart": {
+            "description": "重启机器人进程（仅限所有者）"
+        },
+        "shutdown": {
+            "description": "停止机器人进程（仅限所有者）"
+        },
+        "categories": {
+            "description": "列出全部命令分类"
+        },
+        "faq": {
+            "description": "BootstrapDJ 常见使用问题"
+        },
+        "guess": {
+            "description": "为当前曲目开始猜歌游戏"
+        },
+        "help": {
+            "description": "显示帮助菜单",
+            "options": {
+                "command": "要查询信息的命令"
+            }
+        },
+        "info": {
+            "description": "机器人相关信息"
+        },
+        "invite": {
+            "description": "发送机器人的邀请链接"
+        },
+        "lavalink": {
+            "description": "显示当前 Lavalink 统计信息"
+        },
+        "leaderboard": {
+            "description": "显示本次会话中点歌最活跃的用户"
+        },
+        "ping": {
+            "description": "显示机器人延迟"
+        },
+        "premium": {
+            "description": "说明免费功能政策"
+        },
+        "profile": {
+            "description": "查看或自定义 BootstrapDJ 个人资料",
+            "options": {
+                "action": "查看、设置或清除资料字段",
+                "key": "要更改的字段：color、bio、privacy、visible",
+                "value": "新值",
+                "user": "要查看的资料"
+            }
+        },
+        "shards": {
+            "description": "显示分片状态"
+        },
+        "stats": {
+            "description": "显示机器人的实时统计信息"
+        },
+        "support": {
+            "description": "如何获取 BootstrapDJ 帮助"
+        },
+        "tip": {
+            "description": "显示一条随机的 BootstrapDJ 提示"
+        },
+        "utility": {
+            "description": "机器人信息与实用页面",
+            "options": {
+                "overview": "显示概览",
+                "stats": "显示统计",
+                "shards": "显示分片",
+                "categories": "显示分类",
+                "faq": "显示常见问题",
+                "tip": "显示提示",
+                "premium": "显示免费政策",
+                "support": "显示支持信息",
+                "leaderboard": "显示排行榜",
+                "commands": "显示命令",
+                "dashboard": "显示仪表板"
+            }
+        }
+    },
+    "profile": {
+        "private": "该资料为私密状态。",
+        "noBio": "未设置简介。",
+        "visibility": "可见性",
+        "hidden": "隐藏",
+        "visible": "可见",
+        "privacy": "隐私",
+        "serverVisible": "服务器内可见",
+        "no": "否",
+        "yes": "是",
+        "avatarShape": "头像形状",
+        "reset": "资料已重置。",
+        "chooseField": "请选择 color、bio、privacy 或 visible。",
+        "hex": "请使用十六进制颜色，例如 `#ff8800`。",
+        "bioLimit": "简介最多 200 个字符。",
+        "privacyValue": "隐私设置必须为 `public` 或 `private`。",
+        "backgroundLimit": "背景最多 200 个字符。",
+        "avatarShapeValue": "头像形状必须为 `circle`、`square` 或 `rounded`。",
+        "borderLimit": "头像边框最多 50 个字符。",
+        "unknown": "未知的资料字段。",
+        "updated": "已更新资料 **{{key}}**。"
+    }
+}

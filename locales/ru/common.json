@@ -1,0 +1,13 @@
+{
+    "language": {
+        "name": "Русский",
+        "current": "Текущий язык: **{{language}}**.",
+        "set": "Язык изменён на **{{language}}**.",
+        "reset": "Язык сброшен на **{{language}}**.",
+        "invalid": "Этот язык недоступен. Выбери один из: {{languages}}.",
+        "list": "Доступные языки: {{languages}}."
+    },
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}

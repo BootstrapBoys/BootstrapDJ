@@ -1,6 +1,7 @@
 import { ApplicationCommandOptionType } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { tr } from '../../lib/i18nContext.js';
 
 const HEX = /^#?[0-9a-f]{6}$/i;
 
@@ -104,7 +105,7 @@ export default class Profile extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('That profile is private.'),
+                            .setDescription(tr(ctx, 'commands:profile.private')),
                     ],
                 });
             }
@@ -114,20 +115,34 @@ export default class Profile extends Command {
                 .embed()
                 .setColor(color ? `#${color}` : client.color.main)
                 .setAuthor({ name: target.username, iconURL: target.displayAvatarURL() })
-                .setDescription(profile?.bio || 'No bio set.')
+                .setDescription(profile?.bio || tr(ctx, 'commands:profile.noBio'))
                 .addFields(
                     {
-                        name: 'Visibility',
-                        value: profile?.visible === false ? 'hidden' : 'visible',
+                        name: tr(ctx, 'commands:profile.visibility'),
+                        value:
+                            profile?.visible === false
+                                ? tr(ctx, 'commands:profile.hidden')
+                                : tr(ctx, 'commands:profile.visible'),
                         inline: true,
                     },
-                    { name: 'Privacy', value: profile?.privacy ?? 'public', inline: true },
                     {
-                        name: 'Server visible',
-                        value: profile?.serverVisible === false ? 'no' : 'yes',
+                        name: tr(ctx, 'commands:profile.privacy'),
+                        value: profile?.privacy ?? 'public',
                         inline: true,
                     },
-                    { name: 'Avatar shape', value: profile?.avatarShape ?? 'circle', inline: true }
+                    {
+                        name: tr(ctx, 'commands:profile.serverVisible'),
+                        value:
+                            profile?.serverVisible === false
+                                ? tr(ctx, 'commands:profile.no')
+                                : tr(ctx, 'commands:profile.yes'),
+                        inline: true,
+                    },
+                    {
+                        name: tr(ctx, 'commands:profile.avatarShape'),
+                        value: profile?.avatarShape ?? 'circle',
+                        inline: true,
+                    }
                 );
             return await ctx.sendMessage({ embeds: [embed] });
         }
@@ -145,7 +160,10 @@ export default class Profile extends Command {
             });
             return await ctx.sendMessage({
                 embeds: [
-                    client.embed().setColor(client.color.green).setDescription('Profile reset.'),
+                    client
+                        .embed()
+                        .setColor(client.color.green)
+                        .setDescription(tr(ctx, 'commands:profile.reset')),
                 ],
             });
         }
@@ -156,7 +174,7 @@ export default class Profile extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Choose color, bio, privacy, or visible.'),
+                        .setDescription(tr(ctx, 'commands:profile.chooseField')),
                 ],
             });
         }
@@ -167,7 +185,7 @@ export default class Profile extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('Use a hex color such as `#ff8800`.'),
+                            .setDescription(tr(ctx, 'commands:profile.hex')),
                     ],
                 });
             }
@@ -181,7 +199,7 @@ export default class Profile extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('Bios are limited to 200 characters.'),
+                            .setDescription(tr(ctx, 'commands:profile.bioLimit')),
                     ],
                 });
             }
@@ -193,7 +211,7 @@ export default class Profile extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('Privacy must be `public` or `private`.'),
+                            .setDescription(tr(ctx, 'commands:profile.privacyValue')),
                     ],
                 });
             }
@@ -211,7 +229,7 @@ export default class Profile extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('Backgrounds are limited to 200 characters.'),
+                            .setDescription(tr(ctx, 'commands:profile.backgroundLimit')),
                     ],
                 });
             }
@@ -223,9 +241,7 @@ export default class Profile extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription(
-                                'Avatar shape must be `circle`, `square`, or `rounded`.'
-                            ),
+                            .setDescription(tr(ctx, 'commands:profile.avatarShapeValue')),
                     ],
                 });
             }
@@ -237,7 +253,7 @@ export default class Profile extends Command {
                         client
                             .embed()
                             .setColor(client.color.red)
-                            .setDescription('Avatar borders are limited to 50 characters.'),
+                            .setDescription(tr(ctx, 'commands:profile.borderLimit')),
                     ],
                 });
             }
@@ -248,7 +264,7 @@ export default class Profile extends Command {
                     client
                         .embed()
                         .setColor(client.color.red)
-                        .setDescription('Unknown profile field.'),
+                        .setDescription(tr(ctx, 'commands:profile.unknown')),
                 ],
             });
         }
@@ -257,7 +273,7 @@ export default class Profile extends Command {
                 client
                     .embed()
                     .setColor(client.color.green)
-                    .setDescription(`Updated profile **${key}**.`),
+                    .setDescription(tr(ctx, 'commands:profile.updated', { key })),
             ],
         });
     }

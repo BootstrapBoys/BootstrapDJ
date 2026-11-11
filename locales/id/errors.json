@@ -1,0 +1,38 @@
+{
+    "generic": "Terjadi kesalahan.",
+    "gate": {
+        "preferredBot": "Perintah suara dialihkan ke **{{name}}** untuk server ini. Gunakan bot tersebut.",
+        "locked": "Sesi ini terkunci. Manajer server harus membukanya.",
+        "notAllowed": "Anda tidak diizinkan menggunakan perintah ini.",
+        "threads": "Perintah dinonaktifkan di thread untuk server ini.",
+        "disabled": "**{{command}}** dinonaktifkan di server ini.",
+        "commandChannel": "Perintah dibatasi hanya di <#{{channel}}>.",
+        "voiceChannel": "Anda harus berada di <#{{channel}}> untuk menggunakan perintah.",
+        "noSendMessages": "Saya tidak memiliki izin **`SendMessages`** di `{{guild}}`\nkanal: <#{{channel}}>",
+        "noEmbedLinks": "Saya tidak memiliki izin **`EmbedLinks`**.",
+        "clientPermissions": "Saya tidak memiliki izin yang cukup untuk menjalankan perintah ini.",
+        "userPermissions": "Anda tidak memiliki izin yang cukup untuk menggunakan perintah ini.",
+        "voiceRequired": "Anda harus terhubung ke kanal suara untuk menggunakan perintah `{{command}}` ini.",
+        "noConnect": "Saya tidak memiliki izin `CONNECT` untuk menjalankan perintah `{{command}}` ini.",
+        "noSpeak": "Saya tidak memiliki izin `SPEAK` untuk menjalankan perintah `{{command}}` ini.",
+        "noRequestToSpeak": "Saya tidak memiliki izin `REQUEST TO SPEAK` untuk menjalankan perintah `{{command}}` ini.",
+        "wrongVoice": "Anda tidak terhubung ke <#{{channel}}> untuk menggunakan perintah `{{command}}` ini.",
+        "nothingPlaying": "Tidak ada yang sedang diputar saat ini.",
+        "djRoleMissing": "Peran DJ belum diatur.",
+        "djRoleRequired": "Anda harus memiliki peran DJ untuk menggunakan perintah ini.",
+        "missingTitle": "Argumen Tidak Lengkap",
+        "missingDescription": "Harap berikan argumen yang diperlukan untuk perintah `{{command}}`.\n\nContoh:\n{{examples}}",
+        "missingFooter": "Sintaks: [] = opsional, <> = wajib",
+        "cooldown": "Harap tunggu {{seconds}} detik lagi sebelum menggunakan kembali perintah `{{command}}`.",
+        "everyone": "Anda tidak dapat menyebut everyone atau here."
+    },
+    "noPlayer": "Tidak ada musik yang diputar di server ini.",
+    "noNode": "Tidak ada node Lavalink yang tersedia saat ini. Silakan coba lagi sebentar lagi.",
+    "searchFailed": "Terjadi kesalahan saat mencari. Silakan coba lagi.",
+    "loadFailed": "Terjadi kesalahan saat mencari.",
+    "noResults": "Tidak ada hasil yang ditemukan.",
+    "playlistTooLong": "Playlist terlalu panjang. Panjang maksimum adalah {{max}} lagu.",
+    "_meta": {
+        "note": "**AI Translated, awaiting native translation**"
+    }
+}
