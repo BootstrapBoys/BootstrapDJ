@@ -26,6 +26,7 @@ import { relayAudioTap } from './audioTap.js';
 import type { DashboardHost } from './host.js';
 import { renderDashboard, renderLoginPage } from './page.js';
 import { PWA_ICONS, PWA_MANIFEST, PWA_SERVICE_WORKER } from './pwa.js';
+import { incrementCounter } from '../lib/PerformanceCounters.js';
 import { type GuildAccess, NO_ACCESS } from './shardApi.js';
 import { initialState, SettingValidationError } from './state.js';
 
@@ -401,6 +402,7 @@ export async function route(
             guildDenied(res);
             return;
         }
+        incrementCounter('dashboardPlayerRequests');
         sendJson(res, 200, { player: data.player });
         return;
     }

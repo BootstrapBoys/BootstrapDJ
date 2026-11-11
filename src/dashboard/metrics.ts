@@ -1,6 +1,7 @@
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 
 import type { BootstrapClient } from '../core/index.js';
+import { performanceSnapshot } from '../lib/PerformanceCounters.js';
 
 /**
  * Event-loop lag is cumulative between samples. The dashboard resets it after
@@ -48,6 +49,7 @@ export function collectMetrics(client: BootstrapClient): Record<string, unknown>
             max: eventLoop.max / 1e6,
         },
         resources: resourceCounts(),
+        performance: performanceSnapshot(),
         wsPing: client.ws.ping,
     };
 

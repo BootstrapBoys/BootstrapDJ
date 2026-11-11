@@ -1,5 +1,6 @@
 import { LoadType, type Node, type Track } from 'shoukaku';
 
+import { incrementCounter } from '../../lib/PerformanceCounters.js';
 import type { Song } from '../Dispatcher.js';
 import { trackKey } from './TrackIdentity.js';
 
@@ -18,10 +19,15 @@ export interface MixHost {
 export async function relatedTracks(seed: Song, host: MixHost): Promise<Track[]> {
     const key = trackKey(seed);
     const cached = key ? relatedTracksCache.get(key) : undefined;
-    if (cached && Date.now() - cached.at < AUTOPLAY_MIX_TTL_MS) return cached.tracks;
+    if (cached && Date.now() - cached.at < AUTOPLAY_MIX_TTL_MS) {
+        incrementCounter('autoplayCacheHits');
+        return cached.tracks;
+    }
+    if (key) incrementCounter('autoplayCacheMisses');
 
     const id = await host.youtubeIdFor(seed);
     if (!id) return [];
+    incrementCounter('autoplaySearches');
     const resolve = await host.node?.rest
         .resolve(`https://www.youtube.com/watch?v=${id}&list=RD${id}`)
         .catch(() => null);

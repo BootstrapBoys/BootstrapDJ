@@ -1,3 +1,4 @@
+import { incrementCounter } from '../../lib/PerformanceCounters.js';
 import type { Song } from '../Dispatcher.js';
 import { toSaved } from './TrackCodec.js';
 
@@ -35,7 +36,7 @@ export async function persistSession(db: SessionWriter, snapshot: SessionSnapsho
         await db.deleteSession(snapshot.guildId);
         return;
     }
-    await db.saveSession({
+    const payload = {
         guildId: snapshot.guildId,
         textId: snapshot.textId,
         voiceId: snapshot.voiceId,
@@ -47,5 +48,7 @@ export async function persistSession(db: SessionWriter, snapshot: SessionSnapsho
         autoplay: snapshot.autoplay,
         volume: snapshot.volume,
         paused: snapshot.paused,
-    });
+    };
+    incrementCounter('sessionWrites');
+    await db.saveSession(payload);
 }

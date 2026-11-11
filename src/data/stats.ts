@@ -1,5 +1,6 @@
 import config from '../config.js';
 import type { GameScore, PrismaClient } from '../generated/prisma/client.js';
+import { incrementCounter } from '../lib/PerformanceCounters.js';
 
 export interface StatsPruneResult {
     daily: number;
@@ -237,23 +238,30 @@ export class StatsStore {
         rows: Array<{ userId: string; seconds: number; deafSeconds: number }>
     ): Promise<void> {
         if (!rows.length) return;
-        await this.prisma.$transaction(
-            rows.map(row =>
-                this.prisma.statsListener.upsert({
-                    where: { guildId_userId: { guildId, userId: row.userId } },
-                    create: {
-                        guildId,
-                        userId: row.userId,
-                        seconds: row.seconds,
-                        deafSeconds: row.deafSeconds,
-                    },
-                    update: {
-                        seconds: { increment: row.seconds },
-                        deafSeconds: { increment: row.deafSeconds },
-                    },
-                })
-            )
-        );
+        try {
+            await this.prisma.$transaction(
+                rows.map(row =>
+                    this.prisma.statsListener.upsert({
+                        where: { guildId_userId: { guildId, userId: row.userId } },
+                        create: {
+                            guildId,
+                            userId: row.userId,
+                            seconds: row.seconds,
+                            deafSeconds: row.deafSeconds,
+                        },
+                        update: {
+                            seconds: { increment: row.seconds },
+                            deafSeconds: { increment: row.deafSeconds },
+                        },
+                    })
+                )
+            );
+            incrementCounter('statsBatches');
+            incrementCounter('statsRows', rows.length);
+        } catch (error) {
+            incrementCounter('statsErrors');
+            throw error;
+        }
     }
 
     public async recordCommand(guildId: string, command: string): Promise<void> {
