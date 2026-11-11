@@ -17,8 +17,8 @@ credential finding and a required post-fix re-soak remain open.
 | `npm run format` | PASS | Prettier check completed |
 | `npm run lint` | PASS | Oxlint exit 0 |
 | `npm run build` | PASS | `tsc --project tsconfig.json` exit 0 |
-| `npm test` | PASS | **425/425** |
-| Coverage | PASS (target 75% lines) | **76.04% lines**, 80.40% functions, 70.35% branches |
+| `npm test` | PASS | **428/428** |
+| Coverage | PASS (target 75% lines) | **76.11% lines**, 80.50% functions, 70.41% branches |
 | `npm audit --omit=dev` | PASS | 0 production vulnerabilities (276 dependencies) |
 | `git diff --check` | PASS | no whitespace errors |
 | Tracked `.env`/DB check | PASS | no `.env`, SQLite DB, token or secret file tracked |
@@ -73,13 +73,13 @@ The local ignored `.env` is not tracked, but was group-readable. Permissions wer
 2. **Listener stats loss on DB error** — pending rows were cleared before the batch write and
    dropped when the transaction failed. Failed rows are now requeued; added a regression test.
    Commit `35de1d9e`.
+3. **Long-lived stream revocation** — `/api/events` and `/api/audio` now revalidate guild access on
+   a 60-second lease. Membership loss closes the SSE response or destroys the audio response;
+   transient access-check failures keep the stream alive. Tests cover explicit revocation and
+   transient errors. Commit `05cee3a0`.
 
 ### Remaining minor / decision items
 
-- **SSE permission revocation:** `/api/events` checks guild membership at connect, but does not
-  periodically re-check access after a member is removed. Session expiry and logout are covered.
-  Decide whether to add a 60-second access revalidation before release (small security improvement,
-  extra control reads) or accept the session-lifetime window.
 - Audio-cap rejection text still says “Only one audio stream per dashboard user” even when the
   test-only limit is greater than one. Cosmetic; fix when touching that route.
 - `PlaybackTimers` still carries unused `persist`/`stats` fields after scheduling moved to the
@@ -116,8 +116,8 @@ merge. The earlier soak predates `0f4ef3f5` and `35de1d9e`; unit tests alone do 
 **Do not merge/deploy yet.** Complete these gates in order:
 
 1. ~~Rotate/revoke the historical Spotify credential~~ — resolved; app deleted and token revoked.
-2. Re-run the **10-player, 30-minute soak** on `35de1d9e` (deferred by user).
-3. Decide whether SSE permission revalidation is required before release.
+2. Re-run the **10-player, 30-minute soak** on `05cee3a0` (deferred by user).
+3. ~~Decide whether SSE permission revalidation is required~~ — implemented for SSE and audio.
 4. Remove the temporary Discord OAuth redirect (done).
 5. Create the integration branch, merge `main`, run the full gate and CI, then follow the production
    rollout procedure in `docs/PRE_RELEASE_AUDIT_PLAN.md`.
