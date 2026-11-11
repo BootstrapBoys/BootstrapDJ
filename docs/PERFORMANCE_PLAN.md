@@ -294,9 +294,8 @@ therefore requires `prisma db push` and a production DB backup before it is depl
 - The sidecar/language decision remains deferred until telemetry shows the sidecar is a bottleneck.
   No active-node cache was added: the resolver is an in-memory connected-node sort, and caching it
   would introduce a stale-node failure mode without a measured hot path.
-- The P2 SSE transport option is not implemented; the low-risk polling option was selected. The
-  sidecar's uncached fan-out and the multi-viewer polling count are now measured (below); SSE
-  fan-out and hidden-tab behavior remain unmeasured.
+- The P2 SSE endpoint is implemented and measured below. The sidecar cache and SSE fan-out are
+  active; hidden-tab behavior and the browser OAuth `EventSource` handshake remain unmeasured.
 
 ### 10-client polling test (2026-11-11)
 
@@ -327,9 +326,36 @@ checkout, with the bot control API on `8798` and the dashboard on `8796`. The bo
 - Bot control reads: **1 → 151**, exactly **+150**
 - The sidecar currently performs **one control read per browser poll**, confirming a 1:1 fan-out
 
-The next dashboard optimization should be a short sidecar cache or SSE fan-out. A cache should
-collapse many viewers' reads into one control call per interval; SSE should send changed snapshots
-without polling. Neither is implemented yet.
+The cache and SSE fan-out are now implemented; together they collapse many viewers' reads into one
+control call per interval and stop per-client polling. The next step is browser/OAuth acceptance and
+connection-failure testing.
+
+### Player cache result (2026-11-11)
+
+The same 10-client, 30-second run was repeated after `PlayerStateCache` was added:
+
+- **150/150 successful dashboard requests, 0 failures**
+- Bot control reads: **15** in 30 seconds
+- Previous uncached result: **150** control reads
+- Reduction: **90%**, with p95 **26 ms** and max **33 ms**
+
+The cache reads one snapshot per guild and shares the refresh across all viewers.
+
+### SSE result (2026-11-11)
+
+Ten authenticated fetch streams subscribed to `/api/events` for 30 seconds:
+
+- **10/10 streams stayed connected**
+- **60 data events total**, 6 per client (the track's position payload updates about every 5 seconds)
+- Bot control reads: **15** for the whole 30-second run
+- **0 stream failures**
+- No per-client polling requests
+
+The browser uses `EventSource` only in OAuth mode because `EventSource` cannot send the token-mode
+header; token mode retains the polling fallback. This test used a token-authenticated fetch stream,
+so it validates the server hub and fan-out, not the final browser `EventSource` handshake.
+
+Neither feature changes the audio tap or Discord playback.
 
 ## 6. Execution order and gates
 
