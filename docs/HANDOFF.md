@@ -7,12 +7,13 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 ## Current state
 
 - Working tree: clean on `dev`.
-- `dev` and `main`: both at **`7b87bfa5`** (`docs: update readme for i18n release`).
+- `dev` and `main`: clean; `git log -1` is the current handoff commit. The
+  last release before this handoff was **`6385fa53`**.
 - Last code release: **`c41be815`** (`feat: localize node audit notices`).
-- Latest CI: green for `7b87bfa5` on `main`; `dev` matched.
-- Production `/root/Bot`: HEAD **`7b87bfa5`**, runtime code **`c41be815`** in
-  `.boot-state`. The difference is docs and README only; no restart after the
-  docs commits.
+- Latest CI: green for the current handoff commit on `main`; `dev` matched.
+- Production `/root/Bot`: current handoff docs commit; runtime code
+  **`c41be815`** in `.boot-state`. The difference is docs and README only; no
+  restart after the docs commits.
 - Production services: `DJBoot`, `dashboard`, `Lavalink`, `Lavalink-Backup`,
   `earl-listener`, `whisper-tiny`, `whisper-base` online.
 - Dashboard: `0.0.0.0:8795`, control `127.0.0.1:8797`; control
