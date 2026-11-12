@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 07:02 UTC**
+Updated: **2026-11-12 07:08 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -18,9 +18,9 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 - CI: green on `dev` for the feature commit and the handoff commits (runs
   `43170550563`, `43171114410`, `43171295788`); `dd93b937` green on `main`.
 - Pending maintenance: phases 1–3 of `docs/MAINTENANCE_PLAN.md` (option
-  localization, help UX, CI guardrails); phase 4 is partial after the docs
-  cleanup below. Ops hardening is deployed; the health/export feature is
-  implemented on `dev` but not deployed.
+  localization, help UX, CI guardrails); phase 4 is mostly complete, with only
+  the `HANDOFF.md` count refresh left. Ops hardening is deployed; the
+  health/export feature is implemented on `dev` but not deployed.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
@@ -104,14 +104,21 @@ Helper: `src/lib/PlaylistExport.ts`; tests:
 
 ## Docs cleanup
 
-- Removed nine completed rewrite/staging plans from `docs/`:
+- Removed nine completed rewrite/staging plans in the first pass:
   `BUG_HUNT_FINDINGS`, `FULL_REWRITE_PLAN`, `OPTIMIZATION_AND_BUG_HUNT_PLAN`,
   `OPTIMIZATION_BASELINE`, `PLAYLIST_ORDER_PLAN`, `REWRITE_AUDIT`,
   `REWRITE_PLAN`, `STAGING_TEST_PLAN`, `STAGING_TEST_RESULTS`.
+- Removed the eleven remaining release/parity/feature plans in the second pass:
+  `JOCKIE_PARITY`, `PARITY_WORKFLOW`, `PRE_RELEASE_AUDIT`,
+  `PRE_RELEASE_AUDIT_PLAN`, `I18N_AND_PLAYLOCAL_PLAN`,
+  `LONGTAIL_I18N_WORKFLOW`, `UPSTREAM_4.2-4.7_REVIEW`,
+  `UPSTREAM_PARITY_AUDIT`, `AUDIO_TAP_PLAN`, `AUTOMATED_TESTING_PLAN`,
+  `PERFORMANCE_PLAN`.
 - Inbound links were updated; the 10-stage staging matrix was preserved in the
-  maintenance skill's `references/staging-and-failover.md`.
-- `docs/MAINTENANCE_PLAN.md` phase 4 is now partial; the remaining doc-truth
-  work is the `JOCKIE_PARITY.md`/`HANDOFF.md` count refresh.
+  maintenance skill's `references/staging-and-failover.md`, and the performance
+  evidence was carried into this handoff.
+- `docs/MAINTENANCE_PLAN.md` phase 4 is now limited to the `HANDOFF.md` count
+  refresh; `docs/` contains current references only.
 
 ## Verification
 
@@ -129,6 +136,16 @@ No live Discord slash/button pass and no live browser/dashboard visual pass were
 run for this release. The new `/health` and `/playlist export` paths are
 unit-tested but have not run on a live bot; they are not deployed.
 
+### Performance evidence
+
+- 10-player / 30-minute BotTest soak **PASS** on `1252b093`: 120 samples, 10
+  players present in every sample, 30/30 workload commands, 0 crashes, 0
+  workload failures, RSS growth -1.11%, heap growth 9.45%, event-loop p99
+  22.41 ms, max 32.95 ms, max queue depth 6. Artifact:
+  `/root/BotBunTest/artifacts/soak/2026-11-11T09-47-32-981Z`.
+- 10 dashboard audio streams across three players (4 + 4 + 2), 10 active tap
+  listeners, no `429`s.
+
 ## Open items
 
 - Merge `dev` to `main` and deploy only when the user asks. After deploying
@@ -144,8 +161,8 @@ unit-tested but have not run on a live bot; they are not deployed.
 
 ## Next-chat runbook
 
-1. Read `README.md`, `docs/I18N.md`, `docs/LONGTAIL_I18N_WORKFLOW.md`, and
-   `docs/PARITY_WORKFLOW.md`.
+1. Read `README.md`, `docs/I18N.md`, `docs/PLAYBACK_ARCHITECTURE.md`, and
+   `docs/MAINTENANCE_PLAN.md`.
 2. Check `git branch --show-current`, `git status`, and the latest CI before
    editing. `dev` carries the undeployed feature commit; use `dev` for changes
    and merge to `main` only when asked.
@@ -188,8 +205,9 @@ unit-tested but have not run on a live bot; they are not deployed.
 
 - `README.md` — user-facing feature, command and language documentation
 - `docs/I18N.md` — catalogs, validator, community translation policy
-- `docs/LONGTAIL_I18N_WORKFLOW.md` — domain batch history and final gate
-- `docs/PARITY_WORKFLOW.md` — release and production deployment record
+- `docs/PLAYBACK_ARCHITECTURE.md` — playback core module map and teardown order
+- `docs/STORAGE.md` — SQLite WAL, retention and backup policy
+- `docs/DASHBOARD_OAUTH.md` — dashboard login and authorization model
 - `docs/MAINTENANCE_PLAN.md` — pending i18n metadata, help UX, CI and doc-truth plan
 - `src/lib/i18n.ts` — i18next initialization and supported locales
 - `src/lib/i18nContext.ts` — `tr(ctx, key, vars)` command helper

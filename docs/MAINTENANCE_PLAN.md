@@ -25,7 +25,7 @@ and the daily DB backup timer are on `main`/production; `GET /health` and
 | 1 | Localize slash-command option descriptions | Not started |
 | 2 | Help UX: localization, field trimming, autocomplete | Not started |
 | 3 | CI: Dependabot, dependency audit, coverage floors | Not started |
-| 4 | Doc truth: remove completed plans; fix current counts | Partial — nine plans deleted; counts pending |
+| 4 | Doc truth: remove completed plans; fix current counts | Mostly done — 20 historical docs deleted; HANDOFF counts pending |
 | 5 | Final gate and verification | Not started |
 
 ## Phase 0 — Baseline
@@ -148,8 +148,8 @@ parses.
 
 ## Phase 4 — Doc truth
 
-**Files:** `docs/JOCKIE_PARITY.md` and `docs/HANDOFF.md`; the nine completed
-rewrite/staging plans were removed on 2026-11-12.
+**Files:** `docs/HANDOFF.md`; all 20 completed/historical plans were removed on
+2026-11-12.
 
 - [x] Remove the nine completed plan docs (`BUG_HUNT_FINDINGS`,
       `FULL_REWRITE_PLAN`, `OPTIMIZATION_AND_BUG_HUNT_PLAN`,
@@ -157,22 +157,23 @@ rewrite/staging plans were removed on 2026-11-12.
       `REWRITE_PLAN`, `STAGING_TEST_PLAN`, `STAGING_TEST_RESULTS`). Their
       content remains in git history; the staging gate matrix was preserved in
       the maintenance skill's `references/staging-and-failover.md`.
-
-- [ ] Update `docs/JOCKIE_PARITY.md`:
-      - `eslint .` → `npm run lint`
-      - `136 tests` → the final Phase 5 count
-      - `71 top-level commands` → `74`
+- [x] Remove the eleven remaining release/parity/feature plans
+      (`JOCKIE_PARITY`, `PARITY_WORKFLOW`, `PRE_RELEASE_AUDIT`,
+      `PRE_RELEASE_AUDIT_PLAN`, `I18N_AND_PLAYLOCAL_PLAN`,
+      `LONGTAIL_I18N_WORKFLOW`, `UPSTREAM_4.2-4.7_REVIEW`,
+      `UPSTREAM_PARITY_AUDIT`, `AUDIO_TAP_PLAN`, `AUTOMATED_TESTING_PLAN`,
+      `PERFORMANCE_PLAN`). Current runbook content is in `README.md`,
+      `I18N.md`, `PLAYBACK_ARCHITECTURE.md`, and the maintenance skill;
+      performance evidence was carried into `HANDOFF.md`.
 - [ ] Re-check `docs/HANDOFF.md` for stale current-state claims; it was
       refreshed at `4977a635`, but verify again after the code commits.
-- [ ] Keep the remaining historical docs in place; update links rather than
-      creating a `docs/history/` tree. The nine deleted plans are already gone,
-      and the skill links the surviving paths.
+- [x] No historical plan docs remain in `docs/`; deleted content is in git
+      history. Keep the surviving current references in place.
 - [ ] Verify with
-      `grep -rn 'experimental/rewrite\|209/209\|71 top-level\|136 tests' docs`;
-      remaining hits must be inside historical banners or explicitly
-      historical narrative, not current-state claims.
+      `grep -rnE 'experimental/rewrite|209/209|71 top-level|136 tests' docs --exclude=MAINTENANCE_PLAN.md`;
+      it should return no hits after the cleanup.
 
-**Commit:** `docs: mark completed rewrite plans historical`
+**Commit:** `docs: remove completed plans and refresh counts`
 
 ## Phase 5 — Final gate and verification
 
@@ -185,7 +186,7 @@ rewrite/staging plans were removed on 2026-11-12.
 - [ ] `git diff --check`
 - [ ] CI green on `dev`
 - [ ] Record the final test count and coverage numbers in this plan and in
-      `docs/JOCKIE_PARITY.md`.
+      `docs/HANDOFF.md`.
 
 ### Optional BotTest verification
 
@@ -218,5 +219,5 @@ feature; treat it as separate work, not part of this plan.
 - [ ] `/filter` and `/setup` options show localized descriptions in Discord.
 - [ ] `/help` is localized, user-focused, and autocompletes command names.
 - [ ] CI checks dependency audit and coverage floors.
-- [ ] Completed rewrite/staging plans are removed; retained historical docs are accurate.
+- [ ] Completed plans are removed; `docs/` holds only current references and its counts are accurate.
 - [ ] Full gate and CI green; no production change without approval.
