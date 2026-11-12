@@ -8,12 +8,16 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 
 - Working tree: clean on `dev`.
 - `dev` and `main`: clean; `git log -1` is the current handoff commit. The
-  last release before this handoff was **`6385fa53`**.
+  previous handoff commit was **`6385fa53`**.
 - Last code release: **`c41be815`** (`feat: localize node audit notices`).
 - Latest CI: green for the current handoff commit on `main`; `dev` matched.
 - Production `/root/Bot`: current handoff docs commit; runtime code
-  **`c41be815`** in `.boot-state`. The difference is docs and README only; no
-  restart after the docs commits.
+  **`c41be815`** in `.boot-state`. The difference is docs, `.gitignore`, and
+  `scripts/backup-db.py`; no restart after these commits.
+- Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
+  (persistent, randomized); integrity-checked copies under
+  `/root/BotDBBackups/auto-*`, 14 kept. Env backups moved to
+  `/root/BotEnvBackups` (mode 600).
 - Production services: `DJBoot`, `dashboard`, `Lavalink`, `Lavalink-Backup`,
   `earl-listener`, `whisper-tiny`, `whisper-base` online.
 - Dashboard: `0.0.0.0:8795`, control `127.0.0.1:8797`; control
@@ -52,6 +56,17 @@ AI-translated catalogs retain the exact top-level note:
 Native corrections are community work on GitHub via
 `.github/ISSUE_TEMPLATE/translation.yml` or locale-only PRs. Do not block a
 release on an internal native-review pass.
+
+## Ops hardening
+
+- `.gitignore` now covers `.env.*` (except `.env.example`), `DJBoot.sh*`, and
+  `prisma/*.db*`, so env backups, launcher backups, and SQLite WAL/SHM files
+  cannot be staged by a bulk add.
+- `scripts/backup-db.py` uses SQLite's online backup API, checks integrity
+  before publishing, writes mode-600 copies, and prunes only its own `auto-*`
+  directories. `docs/STORAGE.md` documents the timer and the restore test.
+- The service was exercised on production; the backup copy matched the live
+  database across all 30 application tables and passed `foreign_key_check`.
 
 ## Verification
 
