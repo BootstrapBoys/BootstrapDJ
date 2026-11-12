@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Accès gestionnaire requis",
             "enabled": "{{filter}} activé",
-            "disabled": "{{filter}} désactivé"
+            "disabled": "{{filter}} désactivé",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Image stéréo rotative"
+                },
+                "bassboost": {
+                    "label": "Amplification des basses",
+                    "description": "Renforcement des basses fréquences"
+                },
+                "distortion": {
+                    "label": "Distorsion",
+                    "description": "Effet de distorsion douce"
+                },
+                "karaoke": {
+                    "label": "Karaoké",
+                    "description": "Supprime les voix centrales"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "Lecture plus rapide et plus aiguë"
+                },
+                "rotation": {
+                    "label": "Rotation",
+                    "description": "Effet de rotation des canaux"
+                },
+                "tremolo": {
+                    "label": "Trémolo",
+                    "description": "Modulation d'amplitude"
+                },
+                "vibrato": {
+                    "label": "Vibrato",
+                    "description": "Modulation de la hauteur"
+                },
+                "lowpass": {
+                    "label": "Passe-bas",
+                    "description": "Adoucit les hautes fréquences"
+                },
+                "pitch": {
+                    "label": "Hauteur",
+                    "description": "Définit le multiplicateur de hauteur"
+                },
+                "rate": {
+                    "label": "Taux",
+                    "description": "Définit le taux de lecture"
+                },
+                "speed": {
+                    "label": "Vitesse",
+                    "description": "Définit la vitesse de lecture"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}}h {{minutes}}m",
@@ -376,7 +426,8 @@
             "loopQueue": "Boucle sur la file d'attente",
             "loopRepeat": "Boucle",
             "loopOff": "Boucle désactivée",
-            "loopFooter": "{{mode}} par {{user}}"
+            "loopFooter": "{{mode}} par {{user}}",
+            "nowPlaying": "Lecture en cours"
         },
         "setup": {
             "nowPlayingAuthor": "Lecture en cours",
@@ -397,6 +448,27 @@
             "noPermission": "Je n'ai pas les permissions nécessaires pour me connecter ou parler dans {{channel}}",
             "wrongVoice": "Vous n'êtes pas connecté à {{channel}} pour ajouter des morceaux à la file d'attente",
             "noNode": "Aucun nœud Lavalink n'est disponible pour le moment. Veuillez réessayer dans un instant."
+        },
+        "guildNotice": {
+            "unknownGuild": "Serveur inconnu",
+            "addedDescription": "**{{name}}** a été ajouté à mes serveurs !",
+            "removedDescription": "**{{name}}** a été retiré de mes serveurs !",
+            "owner": "Propriétaire",
+            "members": "Membres",
+            "createdAt": "Créé le",
+            "joinedAt": "Rejoint le",
+            "removedAt": "Retiré le",
+            "id": "ID",
+            "unknown": "Inconnu"
+        },
+        "nodes": {
+            "ready": "Le nœud Lavalink « {{node}} » est prêt !",
+            "recovered": "Le nœud Lavalink « {{node}} » s'est rétabli après {{duration}}.",
+            "disconnect": "Connexion perdue au nœud Lavalink « {{node}} » (tentative {{count}}) — nouvelle tentative en arrière-plan.",
+            "noDetails": "aucun détail n'a été fourni par le serveur — vérifiez `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — vérifiez `pm2 logs Lavalink`",
+            "reminder": "Le nœud Lavalink « {{node}} » est toujours injoignable après {{duration}} : {{reason}}.",
+            "unreachable": "Le nœud Lavalink « {{node}} » est injoignable : {{reason}}. Nouvelle tentative en arrière-plan."
         }
     },
     "filters": {

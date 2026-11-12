@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "サーバー管理権限が必要です",
             "enabled": "{{filter}} を有効にしました",
-            "disabled": "{{filter}} を無効にしました"
+            "disabled": "{{filter}} を無効にしました",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "ステレオ音像を回転させます"
+                },
+                "bassboost": {
+                    "label": "バスブースト",
+                    "description": "低域イコライザーを持ち上げます"
+                },
+                "distortion": {
+                    "label": "ディストーション",
+                    "description": "ソフトな歪み効果"
+                },
+                "karaoke": {
+                    "label": "カラオケ",
+                    "description": "センターのボーカルを除去します"
+                },
+                "nightcore": {
+                    "label": "ナイトコア",
+                    "description": "より速く、より高い音程で再生します"
+                },
+                "rotation": {
+                    "label": "ローテーション",
+                    "description": "チャンネルを回転させる効果"
+                },
+                "tremolo": {
+                    "label": "トレモロ",
+                    "description": "振幅変調"
+                },
+                "vibrato": {
+                    "label": "ビブラート",
+                    "description": "ピッチ変調"
+                },
+                "lowpass": {
+                    "label": "ローパス",
+                    "description": "高域を滑らかにします"
+                },
+                "pitch": {
+                    "label": "ピッチ",
+                    "description": "ピッチ倍率を設定します"
+                },
+                "rate": {
+                    "label": "レート",
+                    "description": "再生レートを設定します"
+                },
+                "speed": {
+                    "label": "速度",
+                    "description": "再生速度を設定します"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}}時間 {{minutes}}分",
@@ -376,7 +426,8 @@
             "loopQueue": "キューをリピート",
             "loopRepeat": "リピート中",
             "loopOff": "リピートオフ",
-            "loopFooter": "{{user}} が{{mode}}に設定しました"
+            "loopFooter": "{{user}} が{{mode}}に設定しました",
+            "nowPlaying": "再生中"
         },
         "setup": {
             "nowPlayingAuthor": "再生中",
@@ -397,6 +448,27 @@
             "noPermission": "{{channel}} に接続または発言するための権限が不足しています",
             "wrongVoice": "曲をキューに追加するには {{channel}} に接続している必要があります",
             "noNode": "現在利用可能な Lavalink ノードがありません。しばらくしてからもう一度お試しください。"
+        },
+        "guildNotice": {
+            "unknownGuild": "不明なサーバー",
+            "addedDescription": "**{{name}}** がサーバーに追加されました！",
+            "removedDescription": "**{{name}}** がサーバーから削除されました！",
+            "owner": "オーナー",
+            "members": "メンバー数",
+            "createdAt": "作成日時",
+            "joinedAt": "参加日時",
+            "removedAt": "削除日時",
+            "id": "ID",
+            "unknown": "不明"
+        },
+        "nodes": {
+            "ready": "Lavalink ノード \"{{node}}\" の準備ができました！",
+            "recovered": "Lavalink ノード \"{{node}}\" が {{duration}} 後に復旧しました。",
+            "disconnect": "Lavalink ノード \"{{node}}\" との接続が切れました（試行 {{count}} 回）— バックグラウンドで再試行しています。",
+            "noDetails": "サーバーから詳細は提供されませんでした — `pm2 logs Lavalink` を確認してください",
+            "withDetails": "{{detail}} — `pm2 logs Lavalink` を確認してください",
+            "reminder": "Lavalink ノード \"{{node}}\" は {{duration}} 経過しても到達できません: {{reason}}。",
+            "unreachable": "Lavalink ノード \"{{node}}\" に到達できません: {{reason}}。バックグラウンドで再試行しています。"
         }
     },
     "filters": {

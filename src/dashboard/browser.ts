@@ -474,12 +474,22 @@ export const BROWSER_SCRIPT = String.raw`
             const row = element('div', 'filter');
             const label = element('label');
             const checkbox = element('input');
+            const filterLabel = copy(
+                'filters.filter.' + filter.id + '.label',
+                filter.label
+            );
+            const filterDescription = copy(
+                'filters.filter.' + filter.id + '.description',
+                filter.description || ''
+            );
             checkbox.type = 'checkbox';
             checkbox.checked = filter.active;
+            checkbox.setAttribute('aria-label', filterLabel);
             checkbox.onchange = () => toggleFilter(filter.id, checkbox.checked, row);
             label.appendChild(checkbox);
-            label.appendChild(element('span', '', filter.label));
+            label.appendChild(element('span', '', filterLabel));
             row.appendChild(label);
+            if (filterDescription) row.title = filterDescription;
 
             if (filter.value) {
                 const field = element('input', 'value');

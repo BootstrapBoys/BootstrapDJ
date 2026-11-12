@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Yönetici erişimi gerekli",
             "enabled": "{{filter}} etkinleştirildi",
-            "disabled": "{{filter}} devre dışı bırakıldı"
+            "disabled": "{{filter}} devre dışı bırakıldı",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Dönen stereo ses alanı"
+                },
+                "bassboost": {
+                    "label": "Bas güçlendirme",
+                    "description": "Alçak bant ekolayzer yükseltmesi"
+                },
+                "distortion": {
+                    "label": "Bozulma",
+                    "description": "Yumuşak bozulma efekti"
+                },
+                "karaoke": {
+                    "label": "Karaoke",
+                    "description": "Merkez vokalleri kaldırır"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "Daha hızlı, daha tiz oynatma"
+                },
+                "rotation": {
+                    "label": "Rotasyon",
+                    "description": "Dönen kanal efekti"
+                },
+                "tremolo": {
+                    "label": "Tremolo",
+                    "description": "Genlik modülasyonu"
+                },
+                "vibrato": {
+                    "label": "Vibrato",
+                    "description": "Perde modülasyonu"
+                },
+                "lowpass": {
+                    "label": "Alçak geçiren",
+                    "description": "Yüksek frekansları yumuşatır"
+                },
+                "pitch": {
+                    "label": "Perde",
+                    "description": "Perde çarpanını ayarla"
+                },
+                "rate": {
+                    "label": "Oran",
+                    "description": "Oynatma oranını ayarla"
+                },
+                "speed": {
+                    "label": "Hız",
+                    "description": "Oynatma hızını ayarla"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}} sa {{minutes}} dk",
@@ -376,7 +426,8 @@
             "loopQueue": "Sıra döngüde",
             "loopRepeat": "Döngüde",
             "loopOff": "Döngü kapalı",
-            "loopFooter": "{{user}} tarafından: {{mode}}"
+            "loopFooter": "{{user}} tarafından: {{mode}}",
+            "nowPlaying": "Şu Anda Çalıyor"
         },
         "setup": {
             "nowPlayingAuthor": "Şu Anda Çalıyor",
@@ -397,6 +448,27 @@
             "noPermission": "{{channel}} kanalına bağlanma/konuşma iznim yok",
             "wrongVoice": "Şarkı sıraya eklemek için {{channel}} kanalına bağlı değilsiniz",
             "noNode": "Şu anda kullanılabilir bir Lavalink düğümü yok. Lütfen birazdan tekrar deneyin."
+        },
+        "guildNotice": {
+            "unknownGuild": "Bilinmeyen Sunucu",
+            "addedDescription": "**{{name}}** sunucularıma eklendi!",
+            "removedDescription": "**{{name}}** sunucularımdan kaldırıldı!",
+            "owner": "Sahip",
+            "members": "Üyeler",
+            "createdAt": "Oluşturulma Tarihi",
+            "joinedAt": "Katılma Tarihi",
+            "removedAt": "Ayrılma Tarihi",
+            "id": "Kimlik",
+            "unknown": "Bilinmeyen"
+        },
+        "nodes": {
+            "ready": "Lavalink düğümü \"{{node}}\" hazır!",
+            "recovered": "Lavalink düğümü \"{{node}}\" {{duration}} sonra yeniden bağlandı.",
+            "disconnect": "Lavalink düğümü \"{{node}}\" ile bağlantı kayboldu (deneme {{count}}) — arka planda yeniden deneniyor.",
+            "noDetails": "sunucu tarafından ayrıntı verilmedi — `pm2 logs Lavalink` komutunu kontrol edin",
+            "withDetails": "{{detail}} — `pm2 logs Lavalink` komutunu kontrol edin",
+            "reminder": "Lavalink düğümü \"{{node}}\" {{duration}} sonra hâlâ ulaşılamıyor: {{reason}}.",
+            "unreachable": "Lavalink düğümü \"{{node}}\" ulaşılamıyor: {{reason}}. Arka planda yeniden deneniyor."
         }
     },
     "filters": {

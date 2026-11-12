@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Wymagany dostęp zarządzającego",
             "enabled": "Włączono {{filter}}",
-            "disabled": "Wyłączono {{filter}}"
+            "disabled": "Wyłączono {{filter}}",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Obracający się obraz stereo"
+                },
+                "bassboost": {
+                    "label": "Wzmocnienie basów",
+                    "description": "Podbicie niskiego pasma w korektorze"
+                },
+                "distortion": {
+                    "label": "Zniekształcenie",
+                    "description": "Łagodny efekt zniekształcenia"
+                },
+                "karaoke": {
+                    "label": "Karaoke",
+                    "description": "Usuwa wokal ze środka"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "Szybsze odtwarzanie z wyższą tonacją"
+                },
+                "rotation": {
+                    "label": "Rotacja",
+                    "description": "Efekt obracania kanałów"
+                },
+                "tremolo": {
+                    "label": "Tremolo",
+                    "description": "Modulacja amplitudy"
+                },
+                "vibrato": {
+                    "label": "Vibrato",
+                    "description": "Modulacja wysokości dźwięku"
+                },
+                "lowpass": {
+                    "label": "Filtr dolnoprzepustowy",
+                    "description": "Wygładza wysokie częstotliwości"
+                },
+                "pitch": {
+                    "label": "Wysokość dźwięku",
+                    "description": "Ustaw mnożnik wysokości dźwięku"
+                },
+                "rate": {
+                    "label": "Tempo",
+                    "description": "Ustaw tempo odtwarzania"
+                },
+                "speed": {
+                    "label": "Prędkość",
+                    "description": "Ustaw prędkość odtwarzania"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}} godz. {{minutes}} min",
@@ -376,7 +426,8 @@
             "loopQueue": "Zapętlanie kolejki",
             "loopRepeat": "Zapętlanie",
             "loopOff": "Zapętlanie wyłączone",
-            "loopFooter": "{{mode}} — ustawione przez {{user}}"
+            "loopFooter": "{{mode}} — ustawione przez {{user}}",
+            "nowPlaying": "Teraz odtwarzane"
         },
         "setup": {
             "nowPlayingAuthor": "Teraz odtwarzane",
@@ -397,6 +448,27 @@
             "noPermission": "Nie mam wystarczających uprawnień, aby połączyć się z kanałem {{channel}} lub na nim mówić",
             "wrongVoice": "Nie jesteś połączony z kanałem {{channel}}, więc nie możesz dodawać utworów do kolejki",
             "noNode": "Obecnie żaden węzeł Lavalink nie jest dostępny. Spróbuj ponownie za chwilę."
+        },
+        "guildNotice": {
+            "unknownGuild": "Nieznany serwer",
+            "addedDescription": "Dodano **{{name}}** do moich serwerów!",
+            "removedDescription": "Usunięto **{{name}}** z moich serwerów!",
+            "owner": "Właściciel",
+            "members": "Członkowie",
+            "createdAt": "Utworzono",
+            "joinedAt": "Dołączono",
+            "removedAt": "Usunięto",
+            "id": "ID",
+            "unknown": "Nieznane"
+        },
+        "nodes": {
+            "ready": "Węzeł Lavalink „{{node}}” jest gotowy!",
+            "recovered": "Węzeł Lavalink „{{node}}” został przywrócony po {{duration}}.",
+            "disconnect": "Utracono połączenie z węzłem Lavalink „{{node}}” (próba {{count}}) — ponawianie w tle.",
+            "noDetails": "serwer nie podał szczegółów — sprawdź `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — sprawdź `pm2 logs Lavalink`",
+            "reminder": "Węzeł Lavalink „{{node}}” nadal jest nieosiągalny po {{duration}}: {{reason}}.",
+            "unreachable": "Węzeł Lavalink „{{node}}” jest nieosiągalny: {{reason}}. Ponawianie w tle."
         }
     },
     "filters": {

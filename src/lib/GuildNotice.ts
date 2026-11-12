@@ -1,6 +1,7 @@
 import { EmbedBuilder, Guild, TextChannel } from 'discord.js';
 
 import { BootstrapClient } from '../core/index.js';
+import { DEFAULT_LANGUAGE, translate } from './i18n.js';
 
 /**
  * Post a join/leave notice to the configured log channel.
@@ -17,30 +18,39 @@ export async function postGuildNotice(
     const owner = await guild.fetchOwner().catch(() => null);
     const joined = kind === 'joined';
     const timestamp = joined ? guild.joinedTimestamp : Date.now();
+    const language = client.config.defaultLanguage ?? DEFAULT_LANGUAGE;
+    const copy = (key: string, variables: Record<string, string | number> = {}): string =>
+        translate(`longtail:events.guildNotice.${key}`, language, variables);
     const embed = new EmbedBuilder()
         .setColor(joined ? client.config.color.green : client.config.color.red)
         .setAuthor({
-            name: guild.name || 'Unknown Guild',
+            name: guild.name || copy('unknownGuild'),
             iconURL: guild.iconURL({ extension: 'jpeg' }) ?? undefined,
         })
         .setDescription(
-            `**${guild.name}** has been ${joined ? 'added to' : 'removed from'} my guilds!`
+            copy(joined ? 'addedDescription' : 'removedDescription', {
+                name: guild.name || copy('unknownGuild'),
+            })
         )
         .setThumbnail(guild.iconURL({ extension: 'jpeg' }))
         .addFields(
-            { name: 'Owner', value: owner?.user.tag ?? 'Unknown', inline: true },
-            { name: 'Members', value: guild.memberCount?.toString() ?? 'Unknown', inline: true },
+            { name: copy('owner'), value: owner?.user.tag ?? copy('unknown'), inline: true },
             {
-                name: 'Created At',
+                name: copy('members'),
+                value: guild.memberCount?.toString() ?? copy('unknown'),
+                inline: true,
+            },
+            {
+                name: copy('createdAt'),
                 value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:F>`,
                 inline: true,
             },
             {
-                name: joined ? 'Joined At' : 'Removed At',
+                name: copy(joined ? 'joinedAt' : 'removedAt'),
                 value: `<t:${Math.floor(timestamp / 1000)}:F>`,
                 inline: true,
             },
-            { name: 'ID', value: guild.id, inline: true }
+            { name: copy('id'), value: guild.id, inline: true }
         )
         .setTimestamp();
 

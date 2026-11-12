@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Manager access required",
             "enabled": "Enabled {{filter}}",
-            "disabled": "Disabled {{filter}}"
+            "disabled": "Disabled {{filter}}",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Rotating stereo image"
+                },
+                "bassboost": {
+                    "label": "Bass boost",
+                    "description": "Low-band equaliser lift"
+                },
+                "distortion": {
+                    "label": "Distortion",
+                    "description": "Soft distortion effect"
+                },
+                "karaoke": {
+                    "label": "Karaoke",
+                    "description": "Remove centre vocals"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "Faster, higher-pitched playback"
+                },
+                "rotation": {
+                    "label": "Rotation",
+                    "description": "Rotating channel effect"
+                },
+                "tremolo": {
+                    "label": "Tremolo",
+                    "description": "Amplitude modulation"
+                },
+                "vibrato": {
+                    "label": "Vibrato",
+                    "description": "Pitch modulation"
+                },
+                "lowpass": {
+                    "label": "Low pass",
+                    "description": "Smooth high frequencies"
+                },
+                "pitch": {
+                    "label": "Pitch",
+                    "description": "Set pitch multiplier"
+                },
+                "rate": {
+                    "label": "Rate",
+                    "description": "Set playback rate"
+                },
+                "speed": {
+                    "label": "Speed",
+                    "description": "Set playback speed"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}}h {{minutes}}m",
@@ -376,7 +426,8 @@
             "loopQueue": "Looping Queue",
             "loopRepeat": "Looping",
             "loopOff": "Looping Off",
-            "loopFooter": "{{mode}} by {{user}}"
+            "loopFooter": "{{mode}} by {{user}}",
+            "nowPlaying": "Now Playing"
         },
         "setup": {
             "nowPlayingAuthor": "Now Playing",
@@ -397,6 +448,27 @@
             "noPermission": "I don't have enough permission to connect/speak in {{channel}}",
             "wrongVoice": "You are not connected to {{channel}} to queue songs",
             "noNode": "No Lavalink node is available right now. Please try again in a moment."
+        },
+        "guildNotice": {
+            "unknownGuild": "Unknown Guild",
+            "addedDescription": "**{{name}}** has been added to my guilds!",
+            "removedDescription": "**{{name}}** has been removed from my guilds!",
+            "owner": "Owner",
+            "members": "Members",
+            "createdAt": "Created At",
+            "joinedAt": "Joined At",
+            "removedAt": "Removed At",
+            "id": "ID",
+            "unknown": "Unknown"
+        },
+        "nodes": {
+            "ready": "Lavalink node \"{{node}}\" is ready!",
+            "recovered": "Lavalink node \"{{node}}\" recovered after {{duration}}.",
+            "disconnect": "Lost connection to Lavalink node \"{{node}}\" (attempt {{count}}) — retrying in the background.",
+            "noDetails": "no details were provided by the server — check `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — check `pm2 logs Lavalink`",
+            "reminder": "Lavalink node \"{{node}}\" is still unreachable after {{duration}}: {{reason}}.",
+            "unreachable": "Lavalink node \"{{node}}\" is unreachable: {{reason}}. Retrying in the background."
         }
     },
     "filters": {

@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Diperlukan akses manajer",
             "enabled": "{{filter}} diaktifkan",
-            "disabled": "{{filter}} dinonaktifkan"
+            "disabled": "{{filter}} dinonaktifkan",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Memutar citra stereo"
+                },
+                "bassboost": {
+                    "label": "Penguat bass",
+                    "description": "Menaikkan pita frekuensi rendah pada ekualizer"
+                },
+                "distortion": {
+                    "label": "Distorsi",
+                    "description": "Efek distorsi lembut"
+                },
+                "karaoke": {
+                    "label": "Karaoke",
+                    "description": "Menghapus vokal tengah"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "Pemutaran lebih cepat dan bernada lebih tinggi"
+                },
+                "rotation": {
+                    "label": "Rotasi",
+                    "description": "Efek rotasi kanal"
+                },
+                "tremolo": {
+                    "label": "Tremolo",
+                    "description": "Modulasi amplitudo"
+                },
+                "vibrato": {
+                    "label": "Vibrato",
+                    "description": "Modulasi nada"
+                },
+                "lowpass": {
+                    "label": "Low pass",
+                    "description": "Menghaluskan frekuensi tinggi"
+                },
+                "pitch": {
+                    "label": "Nada",
+                    "description": "Atur pengali nada"
+                },
+                "rate": {
+                    "label": "Laju",
+                    "description": "Atur laju pemutaran"
+                },
+                "speed": {
+                    "label": "Kecepatan",
+                    "description": "Atur kecepatan pemutaran"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}}j {{minutes}}m",
@@ -376,7 +426,8 @@
             "loopQueue": "Mengulang Antrean",
             "loopRepeat": "Mengulang",
             "loopOff": "Pengulangan Mati",
-            "loopFooter": "{{mode}} oleh {{user}}"
+            "loopFooter": "{{mode}} oleh {{user}}",
+            "nowPlaying": "Sedang Diputar"
         },
         "setup": {
             "nowPlayingAuthor": "Sedang Diputar",
@@ -397,6 +448,27 @@
             "noPermission": "Saya tidak memiliki izin yang cukup untuk bergabung/berbicara di {{channel}}",
             "wrongVoice": "Anda tidak terhubung ke {{channel}} untuk mengantrekan lagu",
             "noNode": "Tidak ada node Lavalink yang tersedia saat ini. Silakan coba lagi sebentar lagi."
+        },
+        "guildNotice": {
+            "unknownGuild": "Server tidak dikenal",
+            "addedDescription": "**{{name}}** telah ditambahkan ke daftar server saya!",
+            "removedDescription": "**{{name}}** telah dihapus dari daftar server saya!",
+            "owner": "Pemilik",
+            "members": "Anggota",
+            "createdAt": "Dibuat pada",
+            "joinedAt": "Bergabung pada",
+            "removedAt": "Dihapus pada",
+            "id": "ID",
+            "unknown": "Tidak diketahui"
+        },
+        "nodes": {
+            "ready": "Node Lavalink \"{{node}}\" siap!",
+            "recovered": "Node Lavalink \"{{node}}\" pulih setelah {{duration}}.",
+            "disconnect": "Koneksi ke node Lavalink \"{{node}}\" terputus (percobaan {{count}}) — mencoba lagi di latar belakang.",
+            "noDetails": "server tidak memberikan detail — periksa `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — periksa `pm2 logs Lavalink`",
+            "reminder": "Node Lavalink \"{{node}}\" masih tidak terjangkau setelah {{duration}}: {{reason}}.",
+            "unreachable": "Node Lavalink \"{{node}}\" tidak terjangkau: {{reason}}. Mencoba lagi di latar belakang."
         }
     },
     "filters": {

@@ -1,5 +1,6 @@
 import type { BootstrapClient } from '../../core/index.js';
 import { Event } from '../../core/index.js';
+import { DEFAULT_LANGUAGE, translate } from '../../lib/i18n.js';
 import BotLog from '../../lib/BotLog.js';
 import { isPrimaryNode } from '../../lib/NodeConfig.js';
 import {
@@ -15,11 +16,19 @@ export default class NodeError extends Event {
         super(client, file, { name: 'nodeError' });
     }
 
+    private copy(key: string, variables: Record<string, string | number> = {}): string {
+        return translate(
+            `longtail:events.nodes.${key}`,
+            this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+            variables
+        );
+    }
+
     private reason(error: unknown): string {
         const detail = formatNodeError(error);
         return detail === 'no details from the server'
-            ? 'no details were provided by the server — check `pm2 logs Lavalink`'
-            : `${detail} — check \`pm2 logs Lavalink\``;
+            ? this.copy('noDetails')
+            : this.copy('withDetails', { detail });
     }
 
     public async run(node: string, error: unknown): Promise<void> {
@@ -41,9 +50,11 @@ export default class NodeError extends Event {
         const incident = beginIncident(node);
         if (!incident.started) {
             if (takeReminder(node, this.client.config.nodeAlertReminderMinutes * 60_000)) {
-                const reminder = `Lavalink node "${node}" is still unreachable after ${formatDuration(
-                    incident.durationMs
-                )}: ${this.reason(error)}.`;
+                const reminder = this.copy('reminder', {
+                    node,
+                    duration: formatDuration(incident.durationMs),
+                    reason: this.reason(error),
+                });
                 this.client.logger.warn(reminder);
                 BotLog.send(this.client, reminder, 'warn');
             } else {
@@ -54,9 +65,10 @@ export default class NodeError extends Event {
             return;
         }
 
-        const message = `Lavalink node "${node}" is unreachable: ${this.reason(
-            error
-        )}. Retrying in the background.`;
+        const message = this.copy('unreachable', {
+            node,
+            reason: this.reason(error),
+        });
         this.client.logger.error(message);
         BotLog.send(this.client, message, 'error');
     }

@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "需要管理员权限",
             "enabled": "已启用 {{filter}}",
-            "disabled": "已禁用 {{filter}}"
+            "disabled": "已禁用 {{filter}}",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "旋转立体声像"
+                },
+                "bassboost": {
+                    "label": "低音增强",
+                    "description": "低频均衡器提升"
+                },
+                "distortion": {
+                    "label": "失真",
+                    "description": "柔和失真效果"
+                },
+                "karaoke": {
+                    "label": "卡拉OK",
+                    "description": "消除中置人声"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "更快、更高音调的播放"
+                },
+                "rotation": {
+                    "label": "旋转",
+                    "description": "旋转声道效果"
+                },
+                "tremolo": {
+                    "label": "震音",
+                    "description": "振幅调制"
+                },
+                "vibrato": {
+                    "label": "颤音",
+                    "description": "音高调制"
+                },
+                "lowpass": {
+                    "label": "低通",
+                    "description": "柔化高频"
+                },
+                "pitch": {
+                    "label": "音调",
+                    "description": "设置音调倍数"
+                },
+                "rate": {
+                    "label": "速率",
+                    "description": "设置播放速率"
+                },
+                "speed": {
+                    "label": "速度",
+                    "description": "设置播放速度"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}} 小时 {{minutes}} 分钟",
@@ -376,7 +426,8 @@
             "loopQueue": "队列循环",
             "loopRepeat": "单曲循环",
             "loopOff": "关闭循环",
-            "loopFooter": "{{mode}}（由 {{user}}）"
+            "loopFooter": "{{mode}}（由 {{user}}）",
+            "nowPlaying": "正在播放"
         },
         "setup": {
             "nowPlayingAuthor": "正在播放",
@@ -397,6 +448,27 @@
             "noPermission": "我没有足够的权限在 {{channel}} 中连接或发言",
             "wrongVoice": "你未连接到 {{channel}}，无法点歌",
             "noNode": "当前没有可用的 Lavalink 节点，请稍后再试。"
+        },
+        "guildNotice": {
+            "unknownGuild": "未知服务器",
+            "addedDescription": "**{{name}}** 已加入我的服务器！",
+            "removedDescription": "**{{name}}** 已被移出我的服务器！",
+            "owner": "所有者",
+            "members": "成员",
+            "createdAt": "创建时间",
+            "joinedAt": "加入时间",
+            "removedAt": "移除时间",
+            "id": "ID",
+            "unknown": "未知"
+        },
+        "nodes": {
+            "ready": "Lavalink 节点“{{node}}”已就绪！",
+            "recovered": "Lavalink 节点“{{node}}”已在 {{duration}} 后恢复。",
+            "disconnect": "与 Lavalink 节点“{{node}}”的连接已断开（第 {{count}} 次尝试）—— 正在后台重试。",
+            "noDetails": "服务器未提供详细信息 —— 请检查 `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} —— 请检查 `pm2 logs Lavalink`",
+            "reminder": "Lavalink 节点“{{node}}”在 {{duration}} 后仍无法访问：{{reason}}。",
+            "unreachable": "Lavalink 节点“{{node}}”无法访问：{{reason}}。正在后台重试。"
         }
     },
     "filters": {

@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Требуется доступ менеджера",
             "enabled": "Фильтр {{filter}} включён",
-            "disabled": "Фильтр {{filter}} выключен"
+            "disabled": "Фильтр {{filter}} выключен",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Вращающаяся стереопанорама"
+                },
+                "bassboost": {
+                    "label": "Усиление басов",
+                    "description": "Подъём низких частот эквалайзером"
+                },
+                "distortion": {
+                    "label": "Искажение",
+                    "description": "Мягкий эффект искажения"
+                },
+                "karaoke": {
+                    "label": "Караоке",
+                    "description": "Убирает вокал из центра"
+                },
+                "nightcore": {
+                    "label": "Найткор",
+                    "description": "Ускоренное воспроизведение с более высоким тоном"
+                },
+                "rotation": {
+                    "label": "Вращение",
+                    "description": "Эффект вращения каналов"
+                },
+                "tremolo": {
+                    "label": "Тремоло",
+                    "description": "Амплитудная модуляция"
+                },
+                "vibrato": {
+                    "label": "Вибрато",
+                    "description": "Модуляция высоты тона"
+                },
+                "lowpass": {
+                    "label": "Фильтр низких частот",
+                    "description": "Сглаживает высокие частоты"
+                },
+                "pitch": {
+                    "label": "Тон",
+                    "description": "Задать множитель высоты тона"
+                },
+                "rate": {
+                    "label": "Частота",
+                    "description": "Задать множитель частоты воспроизведения"
+                },
+                "speed": {
+                    "label": "Скорость",
+                    "description": "Задать скорость воспроизведения"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}} ч {{minutes}} мин",
@@ -376,7 +426,8 @@
             "loopQueue": "Повтор очереди",
             "loopRepeat": "Повтор трека",
             "loopOff": "Повтор выключен",
-            "loopFooter": "{{mode}} — {{user}}"
+            "loopFooter": "{{mode}} — {{user}}",
+            "nowPlaying": "Сейчас играет"
         },
         "setup": {
             "nowPlayingAuthor": "Сейчас играет",
@@ -397,6 +448,27 @@
             "noPermission": "У меня недостаточно прав, чтобы подключаться или говорить в {{channel}}",
             "wrongVoice": "Чтобы добавлять треки в очередь, зайди в {{channel}}",
             "noNode": "Сейчас нет доступного узла Lavalink. Попробуй ещё раз через мгновение."
+        },
+        "guildNotice": {
+            "unknownGuild": "Неизвестный сервер",
+            "addedDescription": "**{{name}}** добавлен в список моих серверов!",
+            "removedDescription": "**{{name}}** удалён из списка моих серверов!",
+            "owner": "Владелец",
+            "members": "Участники",
+            "createdAt": "Создан",
+            "joinedAt": "Присоединился",
+            "removedAt": "Удалён",
+            "id": "ID",
+            "unknown": "Неизвестно"
+        },
+        "nodes": {
+            "ready": "Узел Lavalink «{{node}}» готов!",
+            "recovered": "Узел Lavalink «{{node}}» восстановился за {{duration}}.",
+            "disconnect": "Потеряна связь с узлом Lavalink «{{node}}» (попытка {{count}}) — повторяю в фоне.",
+            "noDetails": "сервер не предоставил подробностей — проверь `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — проверь `pm2 logs Lavalink`",
+            "reminder": "Узел Lavalink «{{node}}» всё ещё недоступен после {{duration}}: {{reason}}.",
+            "unreachable": "Узел Lavalink «{{node}}» недоступен: {{reason}}. Повторяю в фоне."
         }
     },
     "filters": {

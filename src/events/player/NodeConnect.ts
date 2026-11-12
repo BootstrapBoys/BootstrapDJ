@@ -1,5 +1,6 @@
 import type { BootstrapClient } from '../../core/index.js';
 import { Event } from '../../core/index.js';
+import { DEFAULT_LANGUAGE, translate } from '../../lib/i18n.js';
 import BotLog from '../../lib/BotLog.js';
 import { isPrimaryNode } from '../../lib/NodeConfig.js';
 import { endIncident, formatDuration } from '../../lib/NodeStatus.js';
@@ -28,11 +29,20 @@ export default class NodeConnect extends Event {
             );
             return;
         }
+        const copy = (key: string, variables: Record<string, string | number> = {}): string =>
+            translate(
+                `longtail:events.nodes.${key}`,
+                this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+                variables
+            );
         const recoveredMs = endIncident(node);
         const message =
             recoveredMs === null
-                ? `Lavalink node "${node}" is ready!`
-                : `Lavalink node "${node}" recovered after ${formatDuration(recoveredMs)}.`;
+                ? copy('ready', { node })
+                : copy('recovered', {
+                      node,
+                      duration: formatDuration(recoveredMs),
+                  });
         this.client.logger.success(message);
         BotLog.send(this.client, message, 'success');
     }

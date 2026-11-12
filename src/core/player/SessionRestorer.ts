@@ -5,6 +5,7 @@ import Dispatcher, { fromSaved, type SavedTrack, Song } from '../Dispatcher.js';
 import type { BootstrapClient } from '../index.js';
 import type { Session } from '../../generated/prisma/client.js';
 import { resolveDashboardVoiceChannelId } from '../../lib/DashboardVoice.js';
+import { SUPPORTED_LANGUAGES, translate } from '../../lib/i18n.js';
 
 /** True when at least one human is connected; bots do not count as listeners. */
 export function hasListeners(
@@ -158,12 +159,19 @@ export async function clearStaleNowPlaying(
     if (!botId) return;
     const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
     if (!messages) return;
+    const nowPlayingNames = new Set(
+        SUPPORTED_LANGUAGES.map(language =>
+            translate('longtail:events.trackStart.nowPlaying', language)
+        )
+    );
     const stale = messages.filter(
         (message: Message) =>
             message.author.id === botId &&
             message.id !== setupMessageId &&
             message.components.length > 0 &&
-            message.embeds.some(embed => embed.author?.name === 'Now Playing')
+            message.embeds.some(
+                embed => embed.author?.name && nowPlayingNames.has(embed.author.name)
+            )
     );
     await Promise.all(stale.map(message => message.delete().catch(() => {})));
 }

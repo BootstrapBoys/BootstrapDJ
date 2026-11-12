@@ -4,7 +4,7 @@
 setup and dashboard surfaces; keep all translations in the existing `longtail`
 namespace; ship the same 16 locales with the AI-translation note.
 
-**Status:** complete on `dev`; CI green at `24632030`.
+**Status:** complete on `dev`; awaiting CI on the phase 9 commit.
 
 ## Completion criteria
 
@@ -32,6 +32,7 @@ namespace; ship the same 16 locales with the AI-translation note.
 | 6 | Dashboard stats/playlist | `src/dashboard/browser.ts`, `src/dashboard/page.ts` | `dashboard.*` | Complete |
 | 7 | Playback limits | `src/lib/PlayLimits.ts` | `limits.*` | Complete |
 | 8 | Dashboard remainder | `src/dashboard/browser.ts`, `src/dashboard/page.ts` | `dashboard.*` | Complete |
+| 9 | Final English surfaces | `src/dashboard/filters.ts`, `src/lib/GuildNotice.ts`, node events, `SessionRestorer` | `dashboard.filters.*`, `events.*` | Complete |
 
 ## Batch contract
 
@@ -80,3 +81,13 @@ Final phase 8 result: 141 dashboard keys, all 15 non-en-US locales translated, *
 ## Community follow-up
 
 Native corrections are crowd-sourced on GitHub. Use the translation issue template or a locale-only PR; do not block this workflow on an internal native-review pass.
+
+## Phase 9 plan: final English surfaces
+
+1. Localize dashboard filter labels and descriptions; keep filter IDs, DSP behavior and active names unchanged.
+2. Localize guild join/leave notices with the default language; these events have no reliable per-guild setting.
+3. Localize Lavalink node ready/recovered/disconnect/error notices with the default language; these are admin audit messages.
+4. Replace the TrackStart `"Now Playing"` sentinel with a translated-author lookup across supported languages so stale-panel cleanup survives localization.
+5. Merge the phase 9 English fragment, translate all new keys across 15 non-en-US locales, run the full gate, and commit on `dev` only.
+
+Final phase 9 result: 42 keys, all 15 non-en-US locales translated, **447/447 tests**, **75.94% lines / 80.54% functions / 70.78% branches**, validator/format/lint/build clean. Command, event, operational-notice and dashboard copy is catalog-backed; no known hardcoded English user-facing surface remains.

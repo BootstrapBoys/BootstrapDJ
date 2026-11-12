@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Beheerdersrechten vereist",
             "enabled": "{{filter}} ingeschakeld",
-            "disabled": "{{filter}} uitgeschakeld"
+            "disabled": "{{filter}} uitgeschakeld",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Roterend stereobeeld"
+                },
+                "bassboost": {
+                    "label": "Basversterking",
+                    "description": "Versterking van de lage frequenties"
+                },
+                "distortion": {
+                    "label": "Vervorming",
+                    "description": "Zacht vervormingseffect"
+                },
+                "karaoke": {
+                    "label": "Karaoke",
+                    "description": "Verwijdert de zang uit het midden"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "Snellere weergave met hogere toonhoogte"
+                },
+                "rotation": {
+                    "label": "Rotatie",
+                    "description": "Roterend kanaaleffect"
+                },
+                "tremolo": {
+                    "label": "Tremolo",
+                    "description": "Amplitudemodulatie"
+                },
+                "vibrato": {
+                    "label": "Vibrato",
+                    "description": "Toonhoogtemodulatie"
+                },
+                "lowpass": {
+                    "label": "Laagdoorlaat",
+                    "description": "Verzacht hoge frequenties"
+                },
+                "pitch": {
+                    "label": "Toonhoogte",
+                    "description": "Toonhoogtefactor instellen"
+                },
+                "rate": {
+                    "label": "Rate",
+                    "description": "Afspeelsnelheid instellen"
+                },
+                "speed": {
+                    "label": "Snelheid",
+                    "description": "Weergavesnelheid instellen"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}}u {{minutes}}m",
@@ -376,7 +426,8 @@
             "loopQueue": "Wachtrij herhalen",
             "loopRepeat": "Herhalen",
             "loopOff": "Herhalen uit",
-            "loopFooter": "{{mode}} door {{user}}"
+            "loopFooter": "{{mode}} door {{user}}",
+            "nowPlaying": "Nu aan het spelen"
         },
         "setup": {
             "nowPlayingAuthor": "Nu aan het spelen",
@@ -397,6 +448,27 @@
             "noPermission": "Ik heb niet genoeg rechten om verbinding te maken met {{channel}} of daar te spreken",
             "wrongVoice": "Je bent niet verbonden met {{channel}} om nummers in de wachtrij te zetten",
             "noNode": "Er is momenteel geen Lavalink-node beschikbaar. Probeer het zo weer."
+        },
+        "guildNotice": {
+            "unknownGuild": "Onbekende server",
+            "addedDescription": "**{{name}}** is toegevoegd aan mijn servers!",
+            "removedDescription": "**{{name}}** is verwijderd uit mijn servers!",
+            "owner": "Eigenaar",
+            "members": "Leden",
+            "createdAt": "Aangemaakt op",
+            "joinedAt": "Toegetreden op",
+            "removedAt": "Verwijderd op",
+            "id": "ID",
+            "unknown": "Onbekend"
+        },
+        "nodes": {
+            "ready": "Lavalink-node \"{{node}}\" is gereed!",
+            "recovered": "Lavalink-node \"{{node}}\" is hersteld na {{duration}}.",
+            "disconnect": "Verbinding met Lavalink-node \"{{node}}\" verloren (poging {{count}}) — nieuwe poging op de achtergrond.",
+            "noDetails": "de server heeft geen details verstrekt — controleer `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — controleer `pm2 logs Lavalink`",
+            "reminder": "Lavalink-node \"{{node}}\" is na {{duration}} nog steeds niet bereikbaar: {{reason}}.",
+            "unreachable": "Lavalink-node \"{{node}}\" is niet bereikbaar: {{reason}}. Nieuwe poging op de achtergrond."
         }
     },
     "filters": {

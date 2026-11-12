@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "需要伺服器管理權限",
             "enabled": "已啟用 {{filter}}",
-            "disabled": "已停用 {{filter}}"
+            "disabled": "已停用 {{filter}}",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "旋轉立體聲音場"
+                },
+                "bassboost": {
+                    "label": "重低音強化",
+                    "description": "提升低頻等化器"
+                },
+                "distortion": {
+                    "label": "失真",
+                    "description": "柔和失真效果"
+                },
+                "karaoke": {
+                    "label": "卡拉 OK",
+                    "description": "移除中央人聲"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "更快、更高音調的播放"
+                },
+                "rotation": {
+                    "label": "旋轉",
+                    "description": "聲道旋轉效果"
+                },
+                "tremolo": {
+                    "label": "震音",
+                    "description": "振幅調變"
+                },
+                "vibrato": {
+                    "label": "顫音",
+                    "description": "音高調變"
+                },
+                "lowpass": {
+                    "label": "低通",
+                    "description": "柔化高頻"
+                },
+                "pitch": {
+                    "label": "音高",
+                    "description": "設定音高倍率"
+                },
+                "rate": {
+                    "label": "速率",
+                    "description": "設定播放速率"
+                },
+                "speed": {
+                    "label": "速度",
+                    "description": "設定播放速度"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}}小時 {{minutes}}分",
@@ -376,7 +426,8 @@
             "loopQueue": "循環佇列",
             "loopRepeat": "循環單曲",
             "loopOff": "關閉循環",
-            "loopFooter": "{{mode}} · 由 {{user}}"
+            "loopFooter": "{{mode}} · 由 {{user}}",
+            "nowPlaying": "正在播放"
         },
         "setup": {
             "nowPlayingAuthor": "正在播放",
@@ -397,6 +448,27 @@
             "noPermission": "我沒有足夠的權限在 {{channel}} 連線或說話",
             "wrongVoice": "你未連線至 {{channel}}，無法將歌曲加入佇列",
             "noNode": "目前沒有可用的 Lavalink 節點，請稍後再試。"
+        },
+        "guildNotice": {
+            "unknownGuild": "未知的伺服器",
+            "addedDescription": "**{{name}}** 已加入我的伺服器！",
+            "removedDescription": "**{{name}}** 已從我的伺服器移除！",
+            "owner": "擁有者",
+            "members": "成員",
+            "createdAt": "建立時間",
+            "joinedAt": "加入時間",
+            "removedAt": "移除時間",
+            "id": "ID",
+            "unknown": "未知"
+        },
+        "nodes": {
+            "ready": "Lavalink 節點「{{node}}」已就緒！",
+            "recovered": "Lavalink 節點「{{node}}」已在 {{duration}} 後恢復。",
+            "disconnect": "與 Lavalink 節點「{{node}}」的連線中斷（第 {{count}} 次嘗試）— 正在背景重試。",
+            "noDetails": "伺服器未提供詳細資訊 — 請檢查 `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — 請檢查 `pm2 logs Lavalink`",
+            "reminder": "Lavalink 節點「{{node}}」在 {{duration}} 後仍無法連線：{{reason}}。",
+            "unreachable": "Lavalink 節點「{{node}}」無法連線：{{reason}}。正在背景重試。"
         }
     },
     "filters": {

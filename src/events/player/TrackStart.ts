@@ -57,7 +57,7 @@ function nowPlayingEmbed(client: BootstrapClient, track: Song, language: string)
     return client
         .embed()
         .setAuthor({
-            name: 'Now Playing',
+            name: copy(language, 'nowPlaying'),
             iconURL:
                 client.config.icons[track.info.sourceName] ??
                 client.user?.displayAvatarURL({ extension: 'png' }),

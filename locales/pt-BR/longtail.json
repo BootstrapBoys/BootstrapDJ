@@ -348,7 +348,57 @@
         "filters": {
             "managerRequired": "Acesso de gerente necessário",
             "enabled": "{{filter}} ativado",
-            "disabled": "{{filter}} desativado"
+            "disabled": "{{filter}} desativado",
+            "filter": {
+                "8d": {
+                    "label": "8D",
+                    "description": "Imagem estéreo rotativa"
+                },
+                "bassboost": {
+                    "label": "Reforço de graves",
+                    "description": "Elevação das frequências graves no equalizador"
+                },
+                "distortion": {
+                    "label": "Distorção",
+                    "description": "Efeito de distorção suave"
+                },
+                "karaoke": {
+                    "label": "Karaokê",
+                    "description": "Remove os vocais centrais"
+                },
+                "nightcore": {
+                    "label": "Nightcore",
+                    "description": "Reprodução mais rápida e aguda"
+                },
+                "rotation": {
+                    "label": "Rotação",
+                    "description": "Efeito de rotação de canais"
+                },
+                "tremolo": {
+                    "label": "Tremolo",
+                    "description": "Modulação de amplitude"
+                },
+                "vibrato": {
+                    "label": "Vibrato",
+                    "description": "Modulação de tom"
+                },
+                "lowpass": {
+                    "label": "Passa-baixa",
+                    "description": "Suaviza as frequências agudas"
+                },
+                "pitch": {
+                    "label": "Tom",
+                    "description": "Define o multiplicador de tom"
+                },
+                "rate": {
+                    "label": "Taxa",
+                    "description": "Define a taxa de reprodução"
+                },
+                "speed": {
+                    "label": "Velocidade",
+                    "description": "Define a velocidade de reprodução"
+                }
+            }
         },
         "duration": {
             "hoursMinutes": "{{hours}}h {{minutes}}m",
@@ -376,7 +426,8 @@
             "loopQueue": "Repetindo a fila",
             "loopRepeat": "Repetindo",
             "loopOff": "Repetição desativada",
-            "loopFooter": "{{mode}} por {{user}}"
+            "loopFooter": "{{mode}} por {{user}}",
+            "nowPlaying": "Tocando agora"
         },
         "setup": {
             "nowPlayingAuthor": "Tocando agora",
@@ -397,6 +448,27 @@
             "noPermission": "Não tenho permissão suficiente para entrar/falar em {{channel}}",
             "wrongVoice": "Você não está em {{channel}} para adicionar músicas à fila",
             "noNode": "Nenhum nó do Lavalink está disponível no momento. Tente novamente em instantes."
+        },
+        "guildNotice": {
+            "unknownGuild": "Servidor desconhecido",
+            "addedDescription": "**{{name}}** foi adicionado aos meus servidores!",
+            "removedDescription": "**{{name}}** foi removido dos meus servidores!",
+            "owner": "Proprietário",
+            "members": "Membros",
+            "createdAt": "Criado em",
+            "joinedAt": "Entrou em",
+            "removedAt": "Removido em",
+            "id": "ID",
+            "unknown": "Desconhecido"
+        },
+        "nodes": {
+            "ready": "O nó do Lavalink \"{{node}}\" está pronto!",
+            "recovered": "O nó do Lavalink \"{{node}}\" se recuperou após {{duration}}.",
+            "disconnect": "Conexão perdida com o nó do Lavalink \"{{node}}\" (tentativa {{count}}) — tentando novamente em segundo plano.",
+            "noDetails": "nenhum detalhe foi fornecido pelo servidor — verifique `pm2 logs Lavalink`",
+            "withDetails": "{{detail}} — verifique `pm2 logs Lavalink`",
+            "reminder": "O nó do Lavalink \"{{node}}\" continua inacessível após {{duration}}: {{reason}}.",
+            "unreachable": "O nó do Lavalink \"{{node}}\" está inacessível: {{reason}}. Tentando novamente em segundo plano."
         }
     },
     "filters": {
