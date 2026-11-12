@@ -4,7 +4,7 @@
 setup and dashboard surfaces; keep all translations in the existing `longtail`
 namespace; ship the same 16 locales with the AI-translation note.
 
-**Status:** complete on `dev`; awaiting CI on the phase 8 commit.
+**Status:** complete on `dev`; CI green at `24632030`.
 
 ## Completion criteria
 
@@ -17,6 +17,7 @@ namespace; ship the same 16 locales with the AI-translation note.
 - `npm run format`, `npm run lint`, `npm run build`, `npm test` and
   `npm run test:coverage` are green; CI is green.
 - Production is not touched by this workflow.
+- AI translations ship as community drafts; native review happens through GitHub, not as a local release gate.
 
 ## Batches
 
@@ -75,3 +76,7 @@ namespace; ship the same 16 locales with the AI-translation note.
 6. Gate with locale validation, format, lint, build, 447 tests, coverage and CI; commit on `dev` only.
 
 Final phase 8 result: 141 dashboard keys, all 15 non-en-US locales translated, **447/447 tests**, **75.91% lines / 80.51% functions / 70.77% branches**, validator/format/lint/build clean.
+
+## Community follow-up
+
+Native corrections are crowd-sourced on GitHub. Use the translation issue template or a locale-only PR; do not block this workflow on an internal native-review pass.

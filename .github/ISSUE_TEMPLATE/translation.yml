@@ -1,0 +1,59 @@
+name: Translation correction
+description: Suggest a native correction for a BootstrapDJ locale
+title: '[i18n] '
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Thanks for helping with BootstrapDJ translations. Please include the exact key and current text so the change can be verified.
+    - type: dropdown
+      id: language
+      attributes:
+          label: Language
+          options:
+              - de
+              - en-GB
+              - es-ES
+              - fr
+              - id
+              - it
+              - ja
+              - ko
+              - nl
+              - pl
+              - pt-BR
+              - ru
+              - tr
+              - zh-CN
+              - zh-TW
+      validations:
+          required: true
+    - type: input
+      id: key
+      attributes:
+          label: Catalog key
+          description: For example longtail:settings.guildTitle or commands:play.description
+          placeholder: longtail:settings.guildTitle
+      validations:
+          required: true
+    - type: textarea
+      id: current
+      attributes:
+          label: Current text
+          description: Copy the current value from locales/<language>/.
+      validations:
+          required: true
+    - type: textarea
+      id: suggested
+      attributes:
+          label: Suggested native text
+          description: Keep {{placeholders}}, markdown and backticks intact.
+      validations:
+          required: true
+    - type: checkboxes
+      id: native
+      attributes:
+          label: Review
+          options:
+              - label: I am a native or fluent speaker of this language and reviewed the suggested text.
+                required: true
