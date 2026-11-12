@@ -80,7 +80,10 @@
         "emptyCollection": "該集合是空的。",
         "loaded": "已載入 **{{name}}**，共 {{count}} 首曲目{{skipped}}",
         "unknownAction": "未知的集合操作。",
-        "provideName": "請提供集合名稱。"
+        "provideName": "請提供集合名稱。",
+        "exported": "已從 **{{name}}** 匯出 **{{count}}** 首曲目。",
+        "exportedSkipped": "已從 **{{name}}** 匯出 **{{count}}** 首曲目（略過 {{skipped}} 個無法讀取的項目）。",
+        "exportTooLarge": "該播放清單太大，無法匯出為單一檔案。"
     },
     "settings": {
         "guildTitle": "伺服器設定",

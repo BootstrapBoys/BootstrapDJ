@@ -80,7 +80,10 @@
         "emptyCollection": "Esa colección está vacía.",
         "loaded": "Cargada **{{name}}** con {{count}} pistas{{skipped}}.",
         "unknownAction": "Acción de colección desconocida.",
-        "provideName": "Indica el nombre de una colección."
+        "provideName": "Indica el nombre de una colección.",
+        "exported": "Se exportaron **{{count}}** pistas de **{{name}}**.",
+        "exportedSkipped": "Se exportaron **{{count}}** pistas de **{{name}}** ({{skipped}} entradas ilegibles omitidas).",
+        "exportTooLarge": "Esta lista es demasiado grande para exportarla como un solo archivo."
     },
     "settings": {
         "guildTitle": "Ajustes del servidor",

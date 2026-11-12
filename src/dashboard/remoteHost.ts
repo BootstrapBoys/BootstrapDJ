@@ -15,7 +15,12 @@ import type {
     QueueAddResult,
 } from './host.js';
 import { SettingValidationError } from './state.js';
-import { type DashboardHost, DashboardRemoteError, type DashboardUserIdentity } from './host.js';
+import {
+    type DashboardHealth,
+    type DashboardHost,
+    DashboardRemoteError,
+    type DashboardUserIdentity,
+} from './host.js';
 import type { AudioTapTarget } from './audioTap.js';
 
 type JsonRecord = Record<string, unknown>;
@@ -189,6 +194,10 @@ export class RemoteDashboardHost implements DashboardHost {
             guildId,
         });
         return result.removed;
+    }
+
+    public async health(): Promise<DashboardHealth> {
+        return await this.request<DashboardHealth>('GET', '/internal/health');
     }
 
     public async metrics(): Promise<Record<string, unknown>> {

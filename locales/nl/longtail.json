@@ -80,7 +80,10 @@
         "emptyCollection": "Die collectie is leeg.",
         "loaded": "**{{name}}** geladen met {{count}} nummers{{skipped}}.",
         "unknownAction": "Onbekende collectieactie.",
-        "provideName": "Geef een collectienaam op."
+        "provideName": "Geef een collectienaam op.",
+        "exported": "**{{count}}** nummers geëxporteerd uit **{{name}}**.",
+        "exportedSkipped": "**{{count}}** nummers geëxporteerd uit **{{name}}** ({{skipped}} onleesbare items overgeslagen).",
+        "exportTooLarge": "Deze afspeellijst is te groot om als één bestand te exporteren."
     },
     "settings": {
         "guildTitle": "Serverinstellingen",

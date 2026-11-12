@@ -310,6 +310,20 @@ export async function route(
         return;
     }
 
+    // Public liveness/readiness probe. It reports counts only, never guild or
+    // user identifiers, and must keep working while the dashboard session is
+    // unavailable so an external monitor can distinguish "process down" from
+    // "gateway or Lavalink degraded".
+    if (method === 'GET' && path === '/health') {
+        try {
+            const health = await host.health();
+            sendJson(res, health.ok ? 200 : 503, health);
+        } catch {
+            sendJson(res, 503, { ok: false, status: 'degraded', error: 'control unavailable' });
+        }
+        return;
+    }
+
     if (method === 'GET' && path === '/auth/discord' && oauthEnabled()) {
         const state = randomBytes(24).toString('hex');
         setOAuthState(res, state);

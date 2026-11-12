@@ -136,7 +136,7 @@ test('slash replies default to ephemeral; queue and nowplaying stay public', asy
     }
 });
 
-test('collection exposes the legacy playlist actions without exceeding Discord choice limits', async () => {
+test('collection exposes the playlist actions without exceeding Discord choice limits', async () => {
     const CollectionClass = (await import('../dist/commands/manage/Collection.js')).default;
     const command = new CollectionClass(fakeClient);
     const action = command.options[0];
@@ -144,6 +144,7 @@ test('collection exposes the legacy playlist actions without exceeding Discord c
 
     assert.ok(choices.includes('save'), 'collection must cover saving the current queue');
     assert.ok(choices.includes('removesong'), 'collection must cover removing a song by search');
+    assert.ok(choices.includes('export'), 'collection must expose JSON export');
     assert.ok(choices.length <= 25, 'Discord caps one option at 25 choices');
 });
 

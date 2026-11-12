@@ -80,7 +80,10 @@
         "emptyCollection": "そのコレクションは空です。",
         "loaded": "**{{name}}** を {{count}} 曲で読み込みました{{skipped}}。",
         "unknownAction": "不明なコレクション操作です。",
-        "provideName": "コレクション名を指定してください。"
+        "provideName": "コレクション名を指定してください。",
+        "exported": "**{{name}}** から **{{count}}** 曲をエクスポートしました。",
+        "exportedSkipped": "**{{name}}** から **{{count}}** 曲をエクスポートしました（読み取れない項目を {{skipped}} 件スキップ）。",
+        "exportTooLarge": "このプレイリストは大きすぎて 1 つのファイルにエクスポートできません。"
     },
     "settings": {
         "guildTitle": "サーバー設定",

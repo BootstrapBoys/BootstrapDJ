@@ -59,6 +59,16 @@ export default class ServerData extends PermissionStore {
         this.voice = new VoiceStore(this.prisma);
     }
 
+    /** Cheap liveness probe used by the dashboard `/health` endpoint. */
+    public async ping(): Promise<boolean> {
+        try {
+            await this.prisma.$queryRawUnsafe('SELECT 1');
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     /**
      * Enable SQLite's concurrent-reader mode. WAL lives in the database file, so
      * setting it once is enough; busy_timeout and synchronous are per-connection

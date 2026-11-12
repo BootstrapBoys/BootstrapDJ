@@ -1,9 +1,15 @@
-import { ApplicationCommandOptionType, ChannelType, ColorResolvable } from 'discord.js';
+import {
+    ApplicationCommandOptionType,
+    AttachmentBuilder,
+    ChannelType,
+    ColorResolvable,
+} from 'discord.js';
 import { randomBytes } from 'node:crypto';
 import { LoadType, Track } from 'shoukaku';
 
 import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
 import { tr } from '../../lib/i18nContext.js';
+import { buildPlaylistExport, playlistExportFilename } from '../../lib/PlaylistExport.js';
 import { getPlayLimits, queueHasRoom } from '../../lib/PlayLimits.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
@@ -11,6 +17,8 @@ const NAME_LIMIT = 50;
 const LIST_LIMIT = 25;
 const VIEW_LIMIT = 20;
 const IMPORT_LIMIT = 20;
+/** Discord's default upload ceiling is 25 MB; leave headroom for the embed. */
+const EXPORT_LIMIT_BYTES = 24 * 1024 * 1024;
 
 type StoredRow = Awaited<ReturnType<BootstrapClient['db']['getSong']>>[number];
 
@@ -74,6 +82,7 @@ export default class Collection extends Command {
                         { name: 'create', value: 'create' },
                         { name: 'delete', value: 'delete' },
                         { name: 'view', value: 'view' },
+                        { name: 'export', value: 'export' },
                         { name: 'add', value: 'add' },
                         { name: 'remove', value: 'remove' },
                         { name: 'removesong', value: 'removesong' },
@@ -411,6 +420,40 @@ export default class Collection extends Command {
         });
     }
 
+    private async exportPlaylist(
+        client: BootstrapClient,
+        ctx: Context,
+        request: Request
+    ): Promise<unknown> {
+        const rows = await client.db.getSong(request.authorId, request.name);
+        const exported = buildPlaylistExport(request.name, rows);
+        if (exported.count === 0) {
+            return await this.fail(client, ctx, this.copy(ctx, 'empty', { name: request.name }));
+        }
+
+        const buffer = Buffer.from(exported.text, 'utf8');
+        if (buffer.byteLength > EXPORT_LIMIT_BYTES) {
+            return await this.fail(client, ctx, this.copy(ctx, 'exportTooLarge'));
+        }
+
+        const description = this.copy(ctx, exported.skipped > 0 ? 'exportedSkipped' : 'exported', {
+            count: exported.count,
+            name: request.name,
+            skipped: exported.skipped,
+        });
+        return await ctx.sendMessage(
+            {
+                embeds: [client.embed().setColor(client.color.main).setDescription(description)],
+                files: [
+                    new AttachmentBuilder(buffer, {
+                        name: playlistExportFilename(request.name),
+                    }),
+                ],
+            },
+            0
+        );
+    }
+
     private async clear(client: BootstrapClient, ctx: Context, request: Request): Promise<unknown> {
         await client.db.clearPlaylist(request.authorId, request.name);
         return await this.note(
@@ -633,6 +676,8 @@ export default class Collection extends Command {
                 return await this.share(client, ctx, request);
             case 'view':
                 return await this.view(client, ctx, request);
+            case 'export':
+                return await this.exportPlaylist(client, ctx, request);
             case 'clear':
                 return await this.clear(client, ctx, request);
             case 'removesong':

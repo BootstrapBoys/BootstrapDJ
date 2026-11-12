@@ -80,7 +80,10 @@
         "emptyCollection": "That collection is empty.",
         "loaded": "Loaded **{{name}}** with {{count}} tracks{{skipped}}.",
         "unknownAction": "Unknown collection action.",
-        "provideName": "Provide a collection name."
+        "provideName": "Provide a collection name.",
+        "exported": "Exported **{{count}}** tracks from **{{name}}**.",
+        "exportedSkipped": "Exported **{{count}}** tracks from **{{name}}** ({{skipped}} unreadable entries skipped).",
+        "exportTooLarge": "That playlist is too large to export as one file."
     },
     "settings": {
         "guildTitle": "Guild settings",

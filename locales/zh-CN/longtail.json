@@ -80,7 +80,10 @@
         "emptyCollection": "该播放列表为空。",
         "loaded": "已加载 **{{name}}**，共 {{count}} 首曲目{{skipped}}。",
         "unknownAction": "未知的播放列表操作。",
-        "provideName": "请提供播放列表名称。"
+        "provideName": "请提供播放列表名称。",
+        "exported": "已从 **{{name}}** 导出 **{{count}}** 首曲目。",
+        "exportedSkipped": "已从 **{{name}}** 导出 **{{count}}** 首曲目（跳过 {{skipped}} 个无法读取的条目）。",
+        "exportTooLarge": "该播放列表太大，无法导出为单个文件。"
     },
     "settings": {
         "guildTitle": "服务器设置",

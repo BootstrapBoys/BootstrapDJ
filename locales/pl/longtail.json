@@ -80,7 +80,10 @@
         "emptyCollection": "Ta kolekcja jest pusta.",
         "loaded": "Wczytano **{{name}}** z {{count}} utworami{{skipped}}.",
         "unknownAction": "Nieznana akcja kolekcji.",
-        "provideName": "Podaj nazwę kolekcji."
+        "provideName": "Podaj nazwę kolekcji.",
+        "exported": "Wyeksportowano **{{count}}** utworów z **{{name}}**.",
+        "exportedSkipped": "Wyeksportowano **{{count}}** utworów z **{{name}}** (pominięto {{skipped}} nieczytelnych wpisów).",
+        "exportTooLarge": "Ta playlista jest zbyt duża, aby wyeksportować ją jako jeden plik."
     },
     "settings": {
         "guildTitle": "Ustawienia serwera",

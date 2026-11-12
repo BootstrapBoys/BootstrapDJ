@@ -80,7 +80,10 @@
         "emptyCollection": "Essa playlist está vazia.",
         "loaded": "Carregou **{{name}}** com {{count}} faixas{{skipped}}.",
         "unknownAction": "Ação de playlist desconhecida.",
-        "provideName": "Informe o nome da playlist."
+        "provideName": "Informe o nome da playlist.",
+        "exported": "**{{count}}** faixas exportadas de **{{name}}**.",
+        "exportedSkipped": "**{{count}}** faixas exportadas de **{{name}}** ({{skipped}} entradas ilegíveis ignoradas).",
+        "exportTooLarge": "Esta playlist é grande demais para ser exportada como um único arquivo."
     },
     "settings": {
         "guildTitle": "Configurações do servidor",

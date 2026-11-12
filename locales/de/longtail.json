@@ -80,7 +80,10 @@
         "emptyCollection": "Diese Sammlung ist leer.",
         "loaded": "**{{name}}** mit {{count}} Songs geladen{{skipped}}.",
         "unknownAction": "Unbekannte Sammlungsaktion.",
-        "provideName": "Gib einen Sammlungsnamen an."
+        "provideName": "Gib einen Sammlungsnamen an.",
+        "exported": "**{{count}}** Tracks aus **{{name}}** exportiert.",
+        "exportedSkipped": "**{{count}}** Tracks aus **{{name}}** exportiert ({{skipped}} unlesbare Einträge übersprungen).",
+        "exportTooLarge": "Diese Sammlung ist zu groß für einen Export."
     },
     "settings": {
         "guildTitle": "Servereinstellungen",

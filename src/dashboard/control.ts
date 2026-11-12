@@ -11,6 +11,7 @@ import {
     remotePlayer,
     remotePlayerAction,
 } from './cluster.js';
+import { collectHealth } from './health.js';
 import { collectMetrics } from './metrics.js';
 import { addDashboardSong } from './playback.js';
 import { audioTapTargetFor } from './audioTap.js';
@@ -251,6 +252,11 @@ async function handleControl(
         const guildId = url.searchParams.get('guildId') ?? '';
         const userId = url.searchParams.get('userId') ?? '';
         json(res, 200, await client.db.getUserStats(guildId, userId));
+        return;
+    }
+
+    if (method === 'GET' && path === '/internal/health') {
+        json(res, 200, await collectHealth(client));
         return;
     }
 

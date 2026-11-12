@@ -80,7 +80,10 @@
         "emptyCollection": "Koleksi tersebut kosong.",
         "loaded": "Memuat **{{name}}** dengan {{count}} trek{{skipped}}.",
         "unknownAction": "Aksi koleksi tidak dikenal.",
-        "provideName": "Berikan nama koleksi."
+        "provideName": "Berikan nama koleksi.",
+        "exported": "**{{count}}** trek diekspor dari **{{name}}**.",
+        "exportedSkipped": "**{{count}}** trek diekspor dari **{{name}}** ({{skipped}} entri tidak terbaca dilewati).",
+        "exportTooLarge": "Playlist ini terlalu besar untuk diekspor sebagai satu berkas."
     },
     "settings": {
         "guildTitle": "Pengaturan server",

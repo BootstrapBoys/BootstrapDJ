@@ -37,9 +37,10 @@ commands, and every feature is available without a premium tier.
 - **Autoplay** — Deezer chart seeds, curated fallback seeds, and weighted
   related-track discovery.
 - **Playlists** — create, load, share, import, merge, rename, copy, and clear
-  playlists through `/playlist`; the legacy `/collection` command remains a
-  prefix alias. The dashboard can also create, rename, delete, edit, and queue
-  your playlists.
+  playlists through `/playlist`; any playlist can be exported as a versioned
+  JSON attachment for backup or migration. The legacy `/collection` command
+  remains a prefix alias. The dashboard can also create, rename, delete, edit,
+  and queue your playlists.
 - **Song-request channel** — ordinary messages become song requests; known
   prefix commands still work there.
 - **Saved sessions** — queues survive a restart when session restore is enabled.
@@ -173,7 +174,7 @@ commands for the current guild.
 | Queue editing | `/clearqueue`, `/remove`, `/move`, `/massmove`, `/massremove`, `/removeduplicates`, `/removekeyword`, `/removeuser`, `/removeabsent`, `/removelast`, `/reverse`, `/sort`, `/swap`, `/selectrandom`, `/recentlyplayed`, `/requested` |
 | Discovery     | `/artist`, `/album`, `/song`, `/top`, `/playlistsearch`, `/lyrics`, `/grab`, `/guess`                                                                                                                                               |
 | Filters       | `/filter` and `/filters`; individual filter names are prefix-only                                                                                                                                                                   |
-| Playlists     | `/playlist` with list, create, delete, view, add, remove, removesong, load, save, rename, copy, clone, merge, clear, share, import, unshare, and shares actions                                                                     |
+| Playlists     | `/playlist` with list, create, delete, view, export, add, remove, removesong, load, save, rename, copy, clone, merge, clear, share, import, unshare, and shares actions                                                             |
 | Settings      | `/settings`, `/language`, `/setup`, `/247`, `/prefix`, `/alias`, `/mappings`, `/permissions`, `/dj`, `/listen`; `selfprefix` is prefix-only                                                                                         |
 | Information   | `/help`, `/invite`, `/ping`, `/profile`, `/lavalink`, `/utility`; `/utility` includes overview, stats, shards, categories, faq, tip, premium, support, leaderboard, commands, and dashboard                                         |
 | Owner         | `/guild` (owner/dev only); other owner commands are prefix-only                                                                                                                                                                     |
@@ -209,6 +210,12 @@ DASHBOARD_PUBLIC_URL="https://dj.example.com/"
 ```
 
 Open `http://127.0.0.1:8795/` locally, or put it behind an HTTPS reverse proxy.
+
+`GET /health` is public (no session or token) and returns `200` when the bot is
+logged in, at least one Lavalink node is connected and SQLite answers;
+otherwise it returns `503` with the same JSON shape. It reports uptime,
+guild/player counts and node counts only — no guild ids, user ids, node names or
+credentials — so it is safe to use as an external readiness probe.
 
 ### Dashboard sidecar
 

@@ -80,7 +80,10 @@
         "emptyCollection": "Bu koleksiyon boş.",
         "loaded": "**{{name}}** {{count}} parçayla yüklendi{{skipped}}.",
         "unknownAction": "Bilinmeyen koleksiyon işlemi.",
-        "provideName": "Bir koleksiyon adı girin."
+        "provideName": "Bir koleksiyon adı girin.",
+        "exported": "**{{name}}** listesinden **{{count}}** parça dışa aktarıldı.",
+        "exportedSkipped": "**{{name}}** listesinden **{{count}}** parça dışa aktarıldı ({{skipped}} okunamayan giriş atlandı).",
+        "exportTooLarge": "Bu çalma listesi tek dosya olarak dışa aktarılamayacak kadar büyük."
     },
     "settings": {
         "guildTitle": "Sunucu ayarları",

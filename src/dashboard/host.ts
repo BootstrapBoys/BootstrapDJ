@@ -32,6 +32,19 @@ export type PlaylistMutationResult = {
     status?: number;
 };
 
+/** Cheap readiness snapshot for the public `/health` endpoint. */
+export type DashboardHealth = {
+    ok: boolean;
+    status: 'ok' | 'degraded';
+    botReady: boolean;
+    database: boolean;
+    uptimeSec: number;
+    guilds: number;
+    players: number;
+    nodes: { connected: number; total: number };
+    checkedAt: string;
+};
+
 export type PlaylistAddResult = PlaylistMutationResult & {
     added?: number;
     skipped?: number;
@@ -78,6 +91,7 @@ export interface DashboardHost {
     userStats(guildId: string, userId: string): Promise<unknown>;
     stats(guildId: string, days: number): Promise<Record<string, unknown>>;
     clearStats(guildId: string): Promise<number>;
+    health(): Promise<DashboardHealth>;
     metrics(): Promise<Record<string, unknown>>;
     user(userId: string): Promise<DashboardUserIdentity | null>;
     playlists(userId: string): Promise<PlaylistSummary[]>;

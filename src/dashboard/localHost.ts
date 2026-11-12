@@ -7,6 +7,7 @@ import {
     remotePlayer,
     remotePlayerAction,
 } from './cluster.js';
+import { collectHealth } from './health.js';
 import { collectMetrics } from './metrics.js';
 import { audioTapTargetFor } from './audioTap.js';
 import { applyDashboardListenerCount } from './cleanup.js';
@@ -66,6 +67,7 @@ export function createLocalDashboardHost(client: BootstrapClient): DashboardHost
         userStats: (guildId, userId) => client.db.getUserStats(guildId, userId),
         stats: (guildId, days) => client.db.getStats(guildId, days),
         clearStats: guildId => client.db.clearStats(guildId),
+        health: async () => await collectHealth(client),
         metrics: async () => collectMetrics(client),
         user,
         playlists: userId => listPlaylists(client, userId),

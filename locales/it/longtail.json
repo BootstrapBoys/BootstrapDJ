@@ -80,7 +80,10 @@
         "emptyCollection": "Questa raccolta è vuota.",
         "loaded": "Caricata **{{name}}** con {{count}} brani{{skipped}}.",
         "unknownAction": "Azione della raccolta non riconosciuta.",
-        "provideName": "Fornisci il nome di una raccolta."
+        "provideName": "Fornisci il nome di una raccolta.",
+        "exported": "Esportate **{{count}}** tracce da **{{name}}**.",
+        "exportedSkipped": "Esportate **{{count}}** tracce da **{{name}}** ({{skipped}} voci illeggibili saltate).",
+        "exportTooLarge": "Questa playlist è troppo grande per essere esportata in un unico file."
     },
     "settings": {
         "guildTitle": "Impostazioni del server",

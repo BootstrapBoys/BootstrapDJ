@@ -80,7 +80,10 @@
         "emptyCollection": "Cette collection est vide.",
         "loaded": "**{{name}}** chargée avec {{count}} morceaux{{skipped}}.",
         "unknownAction": "Action de collection inconnue.",
-        "provideName": "Indiquez un nom de collection."
+        "provideName": "Indiquez un nom de collection.",
+        "exported": "**{{count}}** pistes exportées depuis **{{name}}**.",
+        "exportedSkipped": "**{{count}}** pistes exportées depuis **{{name}}** ({{skipped}} entrées illisibles ignorées).",
+        "exportTooLarge": "Cette playlist est trop volumineuse pour être exportée en un seul fichier."
     },
     "settings": {
         "guildTitle": "Paramètres du serveur",
