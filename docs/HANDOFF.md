@@ -1,19 +1,22 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 UTC**  
-Workspace: `/home/hermes/projects/Discord/Music Bot`  
+Updated: **2026-11-12 06:50 UTC**
+
+Workspace: `/home/hermes/projects/Discord/Music Bot`
+
 Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 
 ## Current state
 
-- Working tree: clean on `dev`.
-- `dev` and `main`: clean; `git log -1` is the current handoff commit. The
-  previous handoff commit was **`6385fa53`**.
-- Last code release: **`c41be815`** (`feat: localize node audit notices`).
-- Latest CI: green for the current handoff commit on `main`; `dev` matched.
-- Production `/root/Bot`: current handoff docs commit; runtime code
-  **`c41be815`** in `.boot-state`. The difference is docs, `.gitignore`, and
-  `scripts/backup-db.py`; no restart after these commits.
+- Working tree: clean on `dev` at **`eb4953f9`** (`feat: add dashboard health
+  and playlist export`).
+- `dev` is one commit ahead of `main`; `main`/`origin/main` are at
+  **`dd93b937`** (`docs: record backup and ignore hardening`).
+- Last production code release: **`c41be815`** (`feat: localize node audit
+  notices`). The health/export commit is **not deployed**.
+- Latest CI: green for `eb4953f9` on `dev`; `dd93b937` green on `main`.
+- Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
+  **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
   (persistent, randomized); integrity-checked copies under
   `/root/BotDBBackups/auto-*`, 14 kept. Env backups moved to
@@ -22,13 +25,13 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   `earl-listener`, `whisper-tiny`, `whisper-base` online.
 - Dashboard: `0.0.0.0:8795`, control `127.0.0.1:8797`; control
   `/internal/metrics` **200**, public `/` and `/api/state` **401** without a
-  session.
+  session. `/health` is added on `dev` but is not in production yet.
 - Discord global command registration: **74** commands, including `language`
   and `playlocal`.
 - Production DB backup from this deploy:
   `/root/BotDBBackups/20261112T030746Z` (DB, WAL, SHM).
 
-## What shipped
+## What shipped to production
 
 The long-tail i18n release is complete:
 
@@ -57,6 +60,27 @@ Native corrections are community work on GitHub via
 `.github/ISSUE_TEMPLATE/translation.yml` or locale-only PRs. Do not block a
 release on an internal native-review pass.
 
+## Pending release on `dev` (not deployed)
+
+`eb4953f9` adds two user-facing features; they are built, tested and pushed to
+`dev`, but are not on `main` or in production:
+
+- **`GET /health`** — public readiness probe. Returns `200` only when the
+  gateway is ready, at least one Lavalink node reports state 1 and SQLite
+  answers `SELECT 1`; otherwise `503`. The payload is counts/booleans only
+  (uptime, guilds, players, connected/total nodes, database) with no guild ids,
+  user ids, node names or credentials. Works in embedded and sidecar mode; the
+  sidecar uses the authenticated `/internal/health` control route.
+- **`/playlist export`** — new `export` action on `/playlist` (prefix aliases
+  included). Produces a versioned `application/json` attachment
+  (`format: bootstrapdj-playlist`, `version: 1`) with the stored track payloads,
+  order preserved and legacy array rows handled. Unreadable entries are skipped
+  and counted; the file is capped at 24 MB. Responses are translated in all 16
+  locales.
+
+Helper: `src/lib/PlaylistExport.ts`; tests:
+`tests/playlist-export.test.mjs`, `tests/dashboard-health.test.mjs`.
+
 ## Ops hardening
 
 - `.gitignore` now covers `.env.*` (except `.env.example`), `DJBoot.sh*`, and
@@ -70,20 +94,25 @@ release on an internal native-review pass.
 
 ## Verification
 
-Last full local gate (code commit `c41be815`, before docs-only commits):
+Latest full local gate (`eb4953f9`, 2026-11-12):
 
 - `npm run i18n:validate`: 16 locales valid
-- `npm test`: **447/447**
-- Coverage: **75.93% lines / 80.52% functions / 70.78% branches**
+- `npm test`: **454/454**
+- Coverage: **76.05% lines / 80.71% functions / 70.92% branches**
 - `npm run format`, `npm run lint`, `npm run build`: clean
-- CI: green on `main` for `7b87bfa5` (docs-only change after the code release)
-- Production API/registration checks passed.
+- CI: green on `dev` for `eb4953f9` (run `43170550563`); `main` green for
+  `dd93b937`
+- Production API/registration checks passed at `c41be815`.
 
 No live Discord slash/button pass and no live browser/dashboard visual pass were
-run for this release.
+run for this release. The new `/health` and `/playlist export` paths are
+unit-tested but have not run on a live bot; they are not deployed.
 
 ## Open items
 
+- Merge `dev` to `main` and deploy only when the user asks. After deploying
+  `eb4953f9`, smoke `GET /health` (200; 503 with a node stopped) and
+  `/playlist export` (download and parse the attachment; empty playlist case).
 - Optional live acceptance: language switching, localized command replies,
   dashboard locale switch, and a real playback smoke test.
 - Native translation review is crowd-sourced on GitHub; not tracked as a local
@@ -97,7 +126,8 @@ run for this release.
 1. Read `README.md`, `docs/I18N.md`, `docs/LONGTAIL_I18N_WORKFLOW.md`, and
    `docs/PARITY_WORKFLOW.md`.
 2. Check `git branch --show-current`, `git status`, and the latest CI before
-   editing. Use `dev` for changes; merge to `main` only when asked.
+   editing. `dev` is currently one commit ahead of `main`; use `dev` for
+   changes and merge to `main` only when asked.
 3. Standard gate:
 
    ```bash
@@ -122,8 +152,9 @@ run for this release.
    keys and preserve `_meta.note`.
 
 5. Production deploy is explicit-request only. Standing rule: do not update the
-   active bot unless testing or the user asks to deploy. Deploy procedure is in
-   the `discord-music-bot-maintenance` skill at
+   active bot unless testing or the user asks to deploy. The pending health/export
+   work is on `dev`; merge `dev` into `main` first when deploying it. Deploy
+   procedure is in the `discord-music-bot-maintenance` skill at
    `references/deploy-host.md`: stop `DJBoot`/`dashboard`, back up
    `prisma/*.db*`, `git pull --ff-only origin main`, run
    `PLAN_ONLY=1 bash scripts/boot.sh`, start/restart, then verify readiness,
@@ -141,6 +172,12 @@ run for this release.
 - `src/lib/i18n.ts` — i18next initialization and supported locales
 - `src/lib/i18nContext.ts` — `tr(ctx, key, vars)` command helper
 - `src/dashboard/browser.ts` / `src/dashboard/page.ts` — localized dashboard
+- `src/dashboard/health.ts` / `src/dashboard/server.ts` — public `/health`
+  readiness probe (embedded and sidecar)
+- `src/lib/PlaylistExport.ts` / `src/commands/manage/Collection.ts` — playlist
+  JSON export
+- `tests/dashboard-health.test.mjs`, `tests/playlist-export.test.mjs` — new
+  feature gates
 - `src/lib/GuildNotice.ts`, `src/events/player/Node*.ts` — localized notices
 - `src/core/player/SessionRestorer.ts` — translated now-playing cleanup
 - `locales/` — 16 locale directories; `longtail.json` is the migration lane
