@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 16:29 UTC**
+Updated: **2026-11-12 21:55 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -10,16 +10,14 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 
 - Working tree: clean on `dev`; `docs/MAINTENANCE_PLAN.md` records the
   completed maintenance plan (phases 0–5).
-- `dev` last code commit: **`ddf195b4`** (`ci: add dependency audit and
-  coverage floors`). It also carries the undeployed feature commit
-  **`eb4953f9`** (`feat: add dashboard health and playlist export`).
-  `main`/`origin/main` are at **`dd93b937`** (`docs: record backup and ignore
-  hardening`).
-- Last production code release: **`c41be815`** (`feat: localize node audit
-  notices`). Nothing from `dev` is deployed.
-- CI: green on `dev` through `ddf195b4` — `b02e889b` run `43176967788`,
-  `bd43d0b7` run `43177802354`, `ddf195b4` run `43178687504`; `dd93b937`
-  green on `main`.
+- `dev`, `main` and `origin/main` are in sync at **`30d38609`** (`docs:
+  record live BotTest acceptance results`), a 14-commit fast-forward from
+  `dd93b937` carrying `eb4953f9` (dashboard health + playlist export) and the
+  phase 0-5 maintenance work.
+- Last production code release: **`30d38609`**, deployed 2026-11-12 21:54
+  UTC (previous runtime `c41be815`).
+- CI: green on `30d38609` (run `43314095973`); earlier heads `ddf195b4`
+  (run `43178687504`) and `8011257f` (run `43179434673`) were green too.
 - Maintenance: phases 0–5 are complete on `dev` — option localization
   `b02e889b`, help UX `bd43d0b7`, CI guardrails `ddf195b4`, doc truth
   `6b59f4e4`/`65590d39`/`dd8742a6`, final gate recorded in the plan.
@@ -29,9 +27,11 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   replies/help/autocomplete, a real join/play/queue/skip/leave smoke in French
   and German including now-playing panel cleanup, and the dashboard locale
   following the guild setting (`fr` → `en-US` → `de` → `en-US`). Evidence:
-  kanban task `t_6a2ba550`. No merge and no deploy.
-- Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
-  **`c41be815`** in `.boot-state`. No restart after these commits.
+  kanban task `t_6a2ba550`. That run performed no merge or deploy.
+- Production `/root/Bot`: runtime code **`30d38609`** in `.boot-state`
+  (`booted=2026-11-12T21:54:07+00:00`). The checkout pulls `main`; this
+  release-record commit is docs-only, so HEAD can read one commit ahead of the
+  runtime.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
   (persistent, randomized); integrity-checked copies under
   `/root/BotDBBackups/auto-*`, 14 kept. Env backups moved to
@@ -40,11 +40,12 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   `earl-listener`, `whisper-tiny`, `whisper-base` online.
 - Dashboard: `0.0.0.0:8795`, control `127.0.0.1:8797`; control
   `/internal/metrics` **200**, public `/` and `/api/state` **401** without a
-  session. `/health` is added on `dev` but is not in production yet.
+  session. `/health` is live and returns **200** (`botReady`/`database` true,
+  2/2 Lavalink nodes).
 - Discord global command registration: **74** commands, including `language`
   and `playlocal`.
 - Production DB backup from this deploy:
-  `/root/BotDBBackups/20261112T030746Z` (DB, WAL, SHM).
+  `/root/BotDBBackups/20261112T215356Z` (DB, WAL, SHM).
 
 ## What shipped to production
 
@@ -75,10 +76,10 @@ Native corrections are community work on GitHub via
 `.github/ISSUE_TEMPLATE/translation.yml` or locale-only PRs. Do not block a
 release on an internal native-review pass.
 
-## Pending release on `dev` (not deployed)
+## Shipped in `30d38609` (deployed 2026-11-12)
 
-`eb4953f9` adds two user-facing features; they are built, tested and pushed to
-`dev`, but are not on `main` or in production:
+`eb4953f9` adds two user-facing features; they were built and tested on `dev`,
+merged to `main` and are now live:
 
 - **`GET /health`** — public readiness probe. Returns `200` only when the
   gateway is ready, at least one Lavalink node reports state 1 and SQLite
@@ -100,10 +101,9 @@ documents are refused before the Discord upload.
 Helper: `src/lib/PlaylistExport.ts`; tests:
 `tests/playlist-export.test.mjs`, `tests/dashboard-health.test.mjs`.
 
-The maintenance work on `dev` is undeployed as well: `b02e889b` (localized
+The maintenance work shipped in the same deploy: `b02e889b` (localized
 option descriptions), `bd43d0b7` (`/help` UX and autocomplete) and `ddf195b4`
-(CI guardrails, which only affects CI). None of it is on `main` or in
-production.
+(CI guardrails, which only affects CI).
 
 ## Ops hardening
 
@@ -150,8 +150,31 @@ Latest full local gate (2026-11-12, `dev` at **`ddf195b4`**, clean tree, Node
 - `git diff --check`: clean
 - CI: green on `dev` for `ddf195b4` (run `43178687504`) with the new
   `npm audit --omit=dev --audit-level=high` step reporting 0 vulnerabilities
-  and the coverage floors active; `main` green for `dd93b937`
-- Production API/registration checks last passed at `c41be815`.
+  and the coverage floors active; `main` green for `30d38609` (run
+  `43314095973`)
+- Production API/registration checks passed at `30d38609` after the deploy.
+
+### Production deploy record (2026-11-12 21:54 UTC)
+
+- Deployed `30d38609` on `main` (fast-forward from `dd93b937`); rollback
+  target `dd93b937` (runtime `c41be815`).
+- `PLAN_ONLY=1 bash scripts/boot.sh` planned a clean build only: no `npm ci`
+  (lockfile unchanged) and no `prisma generate`/`db push` (schema unchanged).
+- DB backed up before the pull to `/root/BotDBBackups/20261112T215356Z`
+  (`bootstrapdj.db`, `-wal`, `-shm`).
+- New process anchored to `.boot-state` `commit=30d38609` /
+  `booted=2026-11-12T21:54:07+00:00`; boot log shows `Shard 0 connected to
+  Discord's Gateway.` (21:54:09), `Bootstrap DJ#8001 is ready!` (21:54:09),
+  `Lavalink node "Bootstrap Node" is ready!` (21:54:10), `standby node
+  "local-backup" is ready` (21:54:10) and `Successfully loaded slash commands`
+  (21:54:11).
+- `GET /health` returned **200** with `botReady:true`, `database:true`,
+  `nodes:{connected:2,total:2}`; `/` and `/api/state` returned **401**;
+  control `/internal/metrics` returned **200**.
+- Discord global commands: **74** (`language`, `playlocal`, `playlist`, `help`
+  present); no `GUILD_ID`, so registration is global.
+- Services online after `pm2 save`: `DJBoot`, `dashboard`, `Lavalink`,
+  `Lavalink-Backup`, `earl-listener`, `whisper-tiny`, `whisper-base`.
 
 Coverage is measured with `--test-coverage-exclude='**/*.test.mjs'`, so the
 percentage covers `src/` only. The earlier **76.06 / 80.70 / 70.92** figure
@@ -177,8 +200,9 @@ French and German, and the now-playing panel was removed on skip/leave in both
 locales, which exercises the translated author lookup that replaced the old
 `"Now Playing"` sentinel. The dashboard chrome, settings and statistics pages
 followed `fr`, `en-US` and `de` on the same instance. The `/health` and
-`/playlist export` paths are unit-tested but have not run on a live bot;
-nothing from `dev` is deployed.
+`/playlist export` paths were unit-tested only at that time; `/health` has
+since been verified live on production (200, 2/2 nodes), while `/playlist
+export` still has no live run.
 
 ### Performance evidence
 
@@ -192,9 +216,10 @@ nothing from `dev` is deployed.
 
 ## Open items
 
-- Merge `dev` to `main` and deploy only when the user asks. After deploying,
-  smoke `GET /health` (200; 503 with a node stopped) and `/playlist export`
-  (download and parse the attachment; empty playlist case).
+- Deployed on 2026-11-12. Remaining live smoke: `/playlist export` (download
+  and parse the attachment; empty playlist case) needs a Discord user session,
+  and the `/health` 503 path was not exercised on production because it
+  requires stopping both Lavalink nodes.
 - Live acceptance for the maintenance work is **done on BotTest** at `8011257f`
   (see *Verification evidence* above and kanban task `t_6a2ba550`): localized
   option descriptions on `/filter`/`/setup`, `/help` and `/help play` in `de`,
@@ -214,8 +239,8 @@ nothing from `dev` is deployed.
 1. Read `README.md`, `docs/I18N.md`, `docs/PLAYBACK_ARCHITECTURE.md`, and
    `docs/MAINTENANCE_PLAN.md`.
 2. Check `git branch --show-current`, `git status`, and the latest CI before
-   editing. `dev` carries the undeployed feature commit; use `dev` for changes
-   and merge to `main` only when asked.
+   editing. `dev` and `main` are in sync at `30d38609` (deployed); use `dev`
+   for changes and merge to `main` only when asked.
 3. Standard gate:
 
    ```bash
@@ -249,8 +274,9 @@ nothing from `dev` is deployed.
    `PLAN_ONLY=1 bash scripts/boot.sh`, start/restart, then verify readiness,
    Lavalink nodes, dashboard HTTP auth, and Discord command count. Never print
    tokens or control secrets.
-6. Rollback target for the pre-i18n runtime was `4a70708d`; restore the DB backup
-   only if a migration/data change caused the failure.
+6. Rollback target for this deploy is `dd93b937` (runtime `c41be815`); the
+   pre-i18n runtime was `4a70708d`. Restore the DB backup only if a
+   migration/data change caused the failure.
 
 ## Key files
 
