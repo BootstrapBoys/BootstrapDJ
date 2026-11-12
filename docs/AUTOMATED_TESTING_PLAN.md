@@ -8,7 +8,7 @@ Current baseline:
 - `node --test tests/*.test.mjs`: **353 tests**
 - CI: format, lint, build, tests
 - BotTest: isolated Discord app, SQLite DB, dashboard `8796`, bridge `8792`
-- 10-stage staging matrix already exists (`docs/STAGING_TEST_PLAN.md`)
+- 10-stage staging matrix is in the maintenance skill's `references/staging-and-failover.md`
 - Missing: scheduled integration/E2E runs, chaos automation, soak metrics,
   long-run thresholds, and artifact retention
 

@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 06:53 UTC**
+Updated: **2026-11-12 07:02 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -17,9 +17,10 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   notices`). The health/export commit is **not deployed**.
 - CI: green on `dev` for the feature commit and the handoff commits (runs
   `43170550563`, `43171114410`, `43171295788`); `dd93b937` green on `main`.
-- Pending maintenance: phases 1–4 of `docs/MAINTENANCE_PLAN.md` (option
-  localization, help UX, CI guardrails, doc truth). Ops hardening is deployed;
-  the health/export feature is implemented on `dev` but not deployed.
+- Pending maintenance: phases 1–3 of `docs/MAINTENANCE_PLAN.md` (option
+  localization, help UX, CI guardrails); phase 4 is partial after the docs
+  cleanup below. Ops hardening is deployed; the health/export feature is
+  implemented on `dev` but not deployed.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
@@ -100,6 +101,17 @@ Helper: `src/lib/PlaylistExport.ts`; tests:
   directories. `docs/STORAGE.md` documents the timer and the restore test.
 - The service was exercised on production; the backup copy matched the live
   database across all 30 application tables and passed `foreign_key_check`.
+
+## Docs cleanup
+
+- Removed nine completed rewrite/staging plans from `docs/`:
+  `BUG_HUNT_FINDINGS`, `FULL_REWRITE_PLAN`, `OPTIMIZATION_AND_BUG_HUNT_PLAN`,
+  `OPTIMIZATION_BASELINE`, `PLAYLIST_ORDER_PLAN`, `REWRITE_AUDIT`,
+  `REWRITE_PLAN`, `STAGING_TEST_PLAN`, `STAGING_TEST_RESULTS`.
+- Inbound links were updated; the 10-stage staging matrix was preserved in the
+  maintenance skill's `references/staging-and-failover.md`.
+- `docs/MAINTENANCE_PLAN.md` phase 4 is now partial; the remaining doc-truth
+  work is the `JOCKIE_PARITY.md`/`HANDOFF.md` count refresh.
 
 ## Verification
 

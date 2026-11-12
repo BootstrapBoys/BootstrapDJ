@@ -53,7 +53,8 @@ Capture before changing code:
    - Lavalink search count from autoplay;
    - dashboard `/api/player-state` request count per viewer;
    - p95 command latency for `/play`, `/skip`, `/queue`.
-4. Store the raw JSON and a short summary in `docs/PERFORMANCE_RESULTS.md`.
+4. Store the raw JSON and a short summary in the results section of this file
+   (the planned performance-results document was never created).
 
 ## 4. Workstreams
 

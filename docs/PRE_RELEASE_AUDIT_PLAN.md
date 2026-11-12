@@ -153,7 +153,8 @@ revert point. Do not bundle candidates.
 ### Optimization deliverable
 
 - Before/after table with the exact command, workload, commit, and artifact.
-- A short report in `docs/PERFORMANCE_RESULTS.md` (or the existing results section).
+- A short report in the results section of `docs/PRE_RELEASE_AUDIT.md` (the
+  planned performance-results document was never created).
 - Re-run the 10-player soak if the change touches playback, persistence, timers, schema, or
   dashboard state.
 - Revert any change that fails a gate; do not keep complexity for an unmeasured gain.
@@ -213,7 +214,8 @@ Do not deploy if any of these are true:
 ## 9. Deliverables
 
 1. `docs/PRE_RELEASE_AUDIT.md` — checklist results, findings, evidence, and sign-off.
-2. `docs/PERFORMANCE_RESULTS.md` (or an updated results section) — before/after measurements.
+2. `docs/PRE_RELEASE_AUDIT.md` results section (the planned
+   performance-results document was never created) — before/after measurements.
 3. Green CI run and release SHA.
 4. Production backup path and rollback instructions.
 5. A short user-facing release note.

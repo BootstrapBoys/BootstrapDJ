@@ -25,7 +25,7 @@ and the daily DB backup timer are on `main`/production; `GET /health` and
 | 1 | Localize slash-command option descriptions | Not started |
 | 2 | Help UX: localization, field trimming, autocomplete | Not started |
 | 3 | CI: Dependabot, dependency audit, coverage floors | Not started |
-| 4 | Mark completed rewrite plans historical; fix current counts | Not started |
+| 4 | Doc truth: remove completed plans; fix current counts | Partial — nine plans deleted; counts pending |
 | 5 | Final gate and verification | Not started |
 
 ## Phase 0 — Baseline
@@ -148,25 +148,15 @@ parses.
 
 ## Phase 4 — Doc truth
 
-**Files:** nine completed plan docs, plus `docs/JOCKIE_PARITY.md` and
-`docs/HANDOFF.md`.
+**Files:** `docs/JOCKIE_PARITY.md` and `docs/HANDOFF.md`; the nine completed
+rewrite/staging plans were removed on 2026-11-12.
 
-- [ ] Add this banner to the top of each completed plan:
-
-      > **Historical record.** Completed and merged into `main` at `4588f715`
-      > on 2026-11-09. The `experimental/rewrite` branch is deleted. Current
-      > state lives in `README.md` and `docs/HANDOFF.md`; the numbers below
-      > describe the commit named above.
-
-      - `docs/FULL_REWRITE_PLAN.md`
-      - `docs/REWRITE_PLAN.md`
-      - `docs/REWRITE_AUDIT.md`
-      - `docs/BUG_HUNT_FINDINGS.md`
-      - `docs/OPTIMIZATION_AND_BUG_HUNT_PLAN.md`
-      - `docs/OPTIMIZATION_BASELINE.md`
-      - `docs/STAGING_TEST_PLAN.md`
-      - `docs/STAGING_TEST_RESULTS.md`
-      - `docs/PLAYLIST_ORDER_PLAN.md`
+- [x] Remove the nine completed plan docs (`BUG_HUNT_FINDINGS`,
+      `FULL_REWRITE_PLAN`, `OPTIMIZATION_AND_BUG_HUNT_PLAN`,
+      `OPTIMIZATION_BASELINE`, `PLAYLIST_ORDER_PLAN`, `REWRITE_AUDIT`,
+      `REWRITE_PLAN`, `STAGING_TEST_PLAN`, `STAGING_TEST_RESULTS`). Their
+      content remains in git history; the staging gate matrix was preserved in
+      the maintenance skill's `references/staging-and-failover.md`.
 
 - [ ] Update `docs/JOCKIE_PARITY.md`:
       - `eslint .` → `npm run lint`
@@ -174,8 +164,9 @@ parses.
       - `71 top-level commands` → `74`
 - [ ] Re-check `docs/HANDOFF.md` for stale current-state claims; it was
       refreshed at `4977a635`, but verify again after the code commits.
-- [ ] Prefer banners over moving files: the skill and several docs link these
-      paths, so `git mv` would create link rot for no functional gain.
+- [ ] Keep the remaining historical docs in place; update links rather than
+      creating a `docs/history/` tree. The nine deleted plans are already gone,
+      and the skill links the surviving paths.
 - [ ] Verify with
       `grep -rn 'experimental/rewrite\|209/209\|71 top-level\|136 tests' docs`;
       remaining hits must be inside historical banners or explicitly
@@ -227,5 +218,5 @@ feature; treat it as separate work, not part of this plan.
 - [ ] `/filter` and `/setup` options show localized descriptions in Discord.
 - [ ] `/help` is localized, user-focused, and autocompletes command names.
 - [ ] CI checks dependency audit and coverage floors.
-- [ ] Completed plans are marked historical and current counts are accurate.
+- [ ] Completed rewrite/staging plans are removed; retained historical docs are accurate.
 - [ ] Full gate and CI green; no production change without approval.
