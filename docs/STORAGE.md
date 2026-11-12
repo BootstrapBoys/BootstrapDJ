@@ -20,6 +20,64 @@ copying or backing up the database, either stop the bots first or include those
 files; otherwise run `PRAGMA wal_checkpoint(TRUNCATE);` before copying the main
 file.
 
+## Backups
+
+`scripts/backup-db.py` takes a consistent online backup with SQLite's backup
+API; the bot can stay running. It writes
+`auto-<UTC timestamp>/bootstrapdj.db` under `BOT_DB_BACKUP_DIR` (default
+`/root/BotDBBackups`), runs `PRAGMA integrity_check` before publishing, stores
+the copy as mode 600, and keeps the newest 14 automatic backups. Directories
+without the `auto-` prefix (the manual deploy backups) are never pruned.
+
+```bash
+python3 scripts/backup-db.py                 # defaults: database, destination, keep 14
+python3 scripts/backup-db.py --verify        # re-open the published copy and check it
+python3 scripts/backup-db.py --dest /srv/bot-backups --keep 30
+```
+
+Install the daily timer on the bot host:
+
+```ini
+# /etc/systemd/system/bootstrapdj-db-backup.service
+[Unit]
+Description=BootstrapDJ SQLite backup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/Bot
+ExecStart=/usr/bin/python3 /root/Bot/scripts/backup-db.py --verify
+Nice=10
+IOSchedulingClass=idle
+```
+
+```ini
+# /etc/systemd/system/bootstrapdj-db-backup.timer
+[Unit]
+Description=Daily BootstrapDJ SQLite backup
+
+[Timer]
+OnCalendar=*-*-* 04:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable --now bootstrapdj-db-backup.timer
+systemctl list-timers bootstrapdj-db-backup.timer
+```
+
+Test a restore by opening the newest `auto-*` copy read-only, running
+`PRAGMA integrity_check` and `PRAGMA foreign_key_check`, and comparing the row
+counts of `Guild`, `Playlist`, `Song`, `Setup` and `Stay` against the live
+database. The automatic backup is not a substitute for the deploy-time copy:
+keep taking one before any `prisma db push`.
+
 ## Statistics retention
 
 The priority-0 process runs a retention job once at boot and then every
