@@ -1,8 +1,10 @@
 # BootstrapDJ maintenance plan: i18n metadata, help UX, CI guardrails, doc truth
 
-Status: **planned — phases 1–4 pending**
+Status: **complete — phases 0–5 executed on `dev`**
 Created: 2026-11-12
 Baseline: `dev` after `eb4953f9`; 454/454 tests at `7e9dbfdb`
+Final gate: `dev` at `ddf195b4`; 471/471 tests, 67.02% lines / 73.14% branches /
+57.29% functions (source-only coverage)
 Scope: selected items 3–6 from the 2026-11-12 fresh-eyes review.
 Already completed outside this plan: the `.env`/SQLite `.gitignore` hardening
 and the daily DB backup timer are on `main`/production; `GET /health` and
@@ -21,22 +23,22 @@ and the daily DB backup timer are on `main`/production; `GET /health` and
 
 | Phase | Work | Status |
 | --- | --- | --- |
-| 0 | Baseline and gate | Not started |
-| 1 | Localize slash-command option descriptions | Not started |
-| 2 | Help UX: localization, field trimming, autocomplete | Not started |
-| 3 | CI: Dependabot, dependency audit, coverage floors | Not started |
-| 4 | Doc truth: remove completed plans; fix current counts | Done — 20 historical docs deleted; counts refreshed |
-| 5 | Final gate and verification | Not started |
+| 0 | Baseline and gate | Done — clean `dev`, 454/454 tests at `7e9dbfdb` |
+| 1 | Localize slash-command option descriptions | Done — `b02e889b` |
+| 2 | Help UX: localization, field trimming, autocomplete | Done — `bd43d0b7` |
+| 3 | CI: Dependabot, dependency audit, coverage floors | Done — `ddf195b4` |
+| 4 | Doc truth: remove completed plans; fix current counts | Done — 20 historical docs deleted; counts refreshed (`6b59f4e4`, `65590d39`, `dd8742a6`) |
+| 5 | Final gate and verification | Done — 471/471 tests, 67.02 / 73.14 / 57.29 coverage, CI `43178687504` green |
 
 ## Phase 0 — Baseline
 
-- [ ] Confirm `git branch --show-current` is `dev` and the tree is clean.
-- [ ] Confirm `git log -1` includes the handoff/plan docs above the undeployed
+- [x] Confirm `git branch --show-current` is `dev` and the tree is clean.
+- [x] Confirm `git log -1` includes the handoff/plan docs above the undeployed
       `eb4953f9` feature commit.
-- [ ] Run `npm run format`, `npm run lint`, `npm run build`, and `npm test`;
+- [x] Run `npm run format`, `npm run lint`, `npm run build`, and `npm test`;
       record the current baseline (454/454 at `7e9dbfdb`).
-- [ ] Run `npm run i18n:validate`.
-- [ ] Confirm every `locales/*/commands.json` still has its `metadata` block.
+- [x] Run `npm run i18n:validate`.
+- [x] Confirm every `locales/*/commands.json` still has its `metadata` block.
 
 ## Phase 1 — Slash-command option localization
 
@@ -51,20 +53,20 @@ camelCase `descriptionLocalizations`, while the REST body needs snake_case
 `description_localizations`. Assigning only the camelCase field leaves Discord
 ignoring it; assigning only the snake_case field does not type-check.
 
-- [ ] Make `applyCommandMetadata` recurse through `option.options` for
+- [x] Make `applyCommandMetadata` recurse through `option.options` for
       subcommands.
-- [ ] Set `option.descriptionLocalizations = localizedDescriptions(key)` for
+- [x] Set `option.descriptionLocalizations = localizedDescriptions(key)` for
       every option with a catalog entry.
-- [ ] Replace the raw `command.options as SlashBody['options']` cast in
+- [x] Replace the raw `command.options as SlashBody['options']` cast in
       `CommandManager.register` with a pure `toApiOptions()` mapper that:
       - renames `descriptionLocalizations` → `description_localizations`
       - renames `nameLocalizations` → `name_localizations`
       - maps choice `nameLocalizations` the same way
       - recurses into subcommand options
       - strips camelCase keys from the payload
-- [ ] Export `toApiOptions` for a direct unit test; keep zero `any` and
+- [x] Export `toApiOptions` for a direct unit test; keep zero `any` and
       `@ts-ignore`.
-- [ ] Tests:
+- [x] Tests:
       - `/filter` options get `description_localizations.de/fr/ja`, and the
         values differ from English.
       - `/setup` subcommands (`create`, `delete`, `info`) get localized
@@ -75,6 +77,11 @@ ignoring it; assigning only the snake_case field does not type-check.
 
 **Acceptance:** build, tests, and locale validation green; a BotTest
 registration still reports 74 commands with no Discord 400.
+
+Met locally in `b02e889b` (gate green, `tests/command-metadata.test.mjs`
+pins the payload), with one exception: no BotTest registration was run — the
+plan deploys nothing, so the 74-command/400-free check on a live application
+is still open (see *Optional BotTest verification*).
 
 **Commit:** `fix(i18n): localize slash-command option descriptions`
 
@@ -87,27 +94,27 @@ pick a command instead of typing its exact name.
 `src/events/client/InteractionCreate.ts`, `tests/commands.test.mjs`,
 `tests/autocomplete.test.mjs`, new `tests/help.test.mjs`.
 
-- [ ] Translate the detail description with
+- [x] Translate the detail description with
       `tr(ctx, \`commands:metadata.${command.name}.description\`)`, falling
       back to `command.description.content` when the key is missing.
-- [ ] Trim the detail rows to user-facing facts:
+- [x] Trim the detail rows to user-facing facts:
       - keep description, usage, examples, aliases, cooldown, and required
         user permissions
       - show voice, DJ, and active-player requirements only when true
       - hide bot permissions, category, `args`, `slashCommand`, and
         DJ-permission internals
       - show developer-only fields only to owners via `isOwner`
-- [ ] Resolve aliases in `run`:
+- [x] Resolve aliases in `run`:
       `client.commands.get(query) ?? client.commands.get(client.aliases.get(query))`.
-- [ ] Refuse developer-only commands to non-owners instead of describing them.
-- [ ] Add `autocomplete: true` to the `command` option.
-- [ ] Add a `help`/`command` branch in
+- [x] Refuse developer-only commands to non-owners instead of describing them.
+- [x] Add `autocomplete: true` to the `command` option.
+- [x] Add a `help`/`command` branch in
       `InteractionCreate.autocompleteChoices`:
       - canonical command names only, filtered by the typed query
       - exclude `dev` commands for non-owners
       - prefix matches first, then alphabetical; cap at 25
       - answer `[]` on every failure or empty path
-- [ ] Tests:
+- [x] Tests:
       - the `Help` command option has autocomplete enabled
       - `help`/`command` autocomplete returns `play` for `pl`, is capped, and
         hides owner commands
@@ -118,6 +125,11 @@ pick a command instead of typing its exact name.
 **Acceptance:** `/help` and `/help play` look correct in `en-US` and `de`;
 autocomplete works from Discord; all tests green.
 
+Code and tests landed in `bd43d0b7` (`tests/help.test.mjs`,
+`tests/autocomplete.test.mjs`, `tests/commands.test.mjs`). The in-Discord
+locale/autocomplete pass needs a live bot and was not run by this plan; it is
+tracked as live acceptance in `docs/HANDOFF.md`.
+
 **Commit:** `feat(help): localize details and add command autocomplete`
 
 ## Phase 3 — CI guardrails
@@ -125,24 +137,43 @@ autocomplete works from Discord; all tests green.
 **Files:** `.github/dependabot.yml` (new), `.github/workflows/ci.yml`,
 `package.json`.
 
-- [ ] Add weekly Dependabot updates:
+- [x] Add weekly Dependabot updates:
       - `npm`, grouped minor/patch, open-PR limit 5
       - `github-actions`, weekly
-- [ ] Add a CI step after `npm ci`:
+- [x] Add a CI step after `npm ci`:
       `npm audit --omit=dev --audit-level=high`.
-- [ ] Change `test:coverage` to enforce floors just below current coverage:
+- [x] Change `test:coverage` to enforce floors just below current coverage:
 
       node --test --experimental-test-coverage \
-        --test-coverage-lines=75 \
-        --test-coverage-functions=80 \
-        --test-coverage-branches=70 \
+        --test-coverage-exclude='**/*.test.mjs' \
+        --test-coverage-lines=66 \
+        --test-coverage-functions=56 \
+        --test-coverage-branches=72 \
         tests/*.test.mjs
 
-- [ ] Run `npm run format` so the new YAML passes Prettier.
-- [ ] Verify `npm run test:coverage` still passes with the thresholds.
+- [x] Run `npm run format` so the new YAML passes Prettier.
+- [x] Verify `npm run test:coverage` still passes with the thresholds.
 
 **Acceptance:** CI green; thresholds fail if coverage drops; Dependabot config
 parses.
+
+Real numbers, after the plan's draft floors were corrected:
+
+- The draft `--test-coverage-lines=75 / functions=80 / branches=70` mixed up
+  the report's column order, which is **line / branch / funcs**. The quoted
+  `80.70` was branch coverage and `70.92` was functions; `functions=80` failed
+  against the measured value.
+- CI's Node 24 excludes `tests/*.test.mjs` from the coverage report while this
+  host's Node 22 includes them, so the same command measured differently.
+  `--test-coverage-exclude='**/*.test.mjs'` pins source-only coverage on both.
+- Source-only coverage at the gate: **lines 67.02 / branches 73.14 /
+  functions 57.29**; floors are set ~1pp below at 66 / 56 / 72.
+- Threshold enforcement was proven by raising the line floor to 99: exit 1,
+  `67.02% line coverage does not meet threshold of 99%`.
+- `npm audit --omit=dev --audit-level=high` reports `found 0 vulnerabilities`
+  locally and in CI; the Dependabot YAML parses against the published schema.
+  GitHub-side validation of the Dependabot config has no on-demand trigger, so
+  the first scheduled run is the remaining proof.
 
 **Commit:** `ci: add dependency audit and coverage floors`
 
@@ -173,20 +204,41 @@ parses.
       `grep -rnE 'experimental/rewrite|209/209|71 top-level|136 tests' docs --exclude=MAINTENANCE_PLAN.md`;
       it should return no hits after the cleanup.
 
-**Commits:** `6b59f4e4`, `65590d39`
+**Commits:** `6b59f4e4`, `65590d39`, `dd8742a6`
 
 ## Phase 5 — Final gate and verification
 
-- [ ] `npm run i18n:validate`
-- [ ] `npm run format`
-- [ ] `npm run lint`
-- [ ] `npm run build`
-- [ ] `npm test`
-- [ ] `npm run test:coverage`
-- [ ] `git diff --check`
-- [ ] CI green on `dev`
-- [ ] Record the final test count and coverage numbers in this plan and in
+- [x] `npm run i18n:validate`
+- [x] `npm run format`
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] `npm test`
+- [x] `npm run test:coverage`
+- [x] `git diff --check`
+- [x] CI green on `dev`
+- [x] Record the final test count and coverage numbers in this plan and in
       `docs/HANDOFF.md`.
+
+### Phase 5 gate results
+
+Run on 2026-11-12 against `dev` at `ddf195b4` (clean tree, Node 22.23.4,
+npm 12.2.1):
+
+| Check | Result |
+| --- | --- |
+| `npm run i18n:validate` | 16 locales valid: de, en-GB, en-US, es-ES, fr, id, it, ja, ko, nl, pl, pt-BR, ru, tr, zh-CN, zh-TW |
+| `npm run format` | clean (`All matched files use Prettier code style`) |
+| `npm run lint` | clean (`oxlint --type-aware --type-check --deny-warnings`) |
+| `npm run build` | clean (`tsc --project tsconfig.json`) |
+| `npm test` | **471/471** pass, 0 fail, 0 skipped (15.8 s) |
+| `npm run test:coverage` | **471/471** pass; source-only **67.02% lines / 73.14% branches / 57.29% functions**, floors 66 / 56 / 72 |
+| `git diff --check` | clean |
+| CI on `dev` | run `43178687504` on `ddf195b4`: success (audit, format, locale validation, lint, build, test/coverage) |
+
+The test count rose from the 454 baseline to **471** across phases 1–2 — 17 new
+cases: 5 in the new `tests/command-metadata.test.mjs`, 6 in the new
+`tests/help.test.mjs`, 5 help/autocomplete cases in `tests/autocomplete.test.mjs`,
+and 1 help-option case in `tests/commands.test.mjs`.
 
 ### Optional BotTest verification
 
@@ -201,6 +253,9 @@ feature; treat it as separate work, not part of this plan.
       user session.
 - [ ] Production deployment only after an explicit request, using
       `references/deploy-host.md` in the maintenance skill.
+
+Not run: this plan deploys nothing, and production is explicit-request only.
+The same checks are listed as open items in `docs/HANDOFF.md`.
 
 ## Risks
 
@@ -217,7 +272,10 @@ feature; treat it as separate work, not part of this plan.
 ## Definition of done
 
 - [ ] `/filter` and `/setup` options show localized descriptions in Discord.
+      *(Implemented and unit-pinned; Discord-side confirmation is part of the
+      live acceptance open item in `docs/HANDOFF.md`.)*
 - [ ] `/help` is localized, user-focused, and autocompletes command names.
-- [ ] CI checks dependency audit and coverage floors.
-- [ ] Completed plans are removed; `docs/` holds only current references and its counts are accurate.
-- [ ] Full gate and CI green; no production change without approval.
+      *(Implemented and unit-pinned; same live-acceptance caveat.)*
+- [x] CI checks dependency audit and coverage floors.
+- [x] Completed plans are removed; `docs/` holds only current references and its counts are accurate.
+- [x] Full gate and CI green; no production change without approval.

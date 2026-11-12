@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 07:10 UTC**
+Updated: **2026-11-12 08:00 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -8,20 +8,22 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 
 ## Current state
 
-- Working tree: clean on `dev`; `docs/MAINTENANCE_PLAN.md` tracks the pending
-  i18n/help/CI/docs work.
-- `dev` contains the undeployed feature commit **`eb4953f9`** (`feat: add
-  dashboard health and playlist export`); `main`/`origin/main` are at
-  **`dd93b937`** (`docs: record backup and ignore hardening`).
+- Working tree: clean on `dev`; `docs/MAINTENANCE_PLAN.md` records the
+  completed maintenance plan (phases 0–5).
+- `dev` last code commit: **`ddf195b4`** (`ci: add dependency audit and
+  coverage floors`). It also carries the undeployed feature commit
+  **`eb4953f9`** (`feat: add dashboard health and playlist export`).
+  `main`/`origin/main` are at **`dd93b937`** (`docs: record backup and ignore
+  hardening`).
 - Last production code release: **`c41be815`** (`feat: localize node audit
-  notices`). The health/export commit is **not deployed**.
-- CI: green on `dev` through the docs cleanup (runs `43170550563`,
-  `43171114410`, `43171295788`, `43172472916`, `43173230630`); `dd93b937`
+  notices`). Nothing from `dev` is deployed.
+- CI: green on `dev` through `ddf195b4` — `b02e889b` run `43176967788`,
+  `bd43d0b7` run `43177802354`, `ddf195b4` run `43178687504`; `dd93b937`
   green on `main`.
-- Pending maintenance: phases 1–3 of `docs/MAINTENANCE_PLAN.md` (option
-  localization, help UX, CI guardrails); phase 4 is complete after the docs
-  cleanup and count refresh. Ops hardening is deployed; the health/export
-  feature is implemented on `dev` but not deployed.
+- Maintenance: phases 0–5 are complete on `dev` — option localization
+  `b02e889b`, help UX `bd43d0b7`, CI guardrails `ddf195b4`, doc truth
+  `6b59f4e4`/`65590d39`/`dd8742a6`, final gate recorded in the plan. No plan
+  work is pending; only live Discord and deploy verification remain.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
@@ -92,6 +94,11 @@ documents are refused before the Discord upload.
 Helper: `src/lib/PlaylistExport.ts`; tests:
 `tests/playlist-export.test.mjs`, `tests/dashboard-health.test.mjs`.
 
+The maintenance work on `dev` is undeployed as well: `b02e889b` (localized
+option descriptions), `bd43d0b7` (`/help` UX and autocomplete) and `ddf195b4`
+(CI guardrails, which only affects CI). None of it is on `main` or in
+production.
+
 ## Ops hardening
 
 - `.gitignore` now covers `.env.*` (except `.env.example`), `DJBoot.sh*`, and
@@ -118,24 +125,46 @@ Helper: `src/lib/PlaylistExport.ts`; tests:
 - Inbound links were updated; the 10-stage staging matrix was preserved in the
   maintenance skill's `references/staging-and-failover.md`, and the performance
   evidence was carried into this handoff.
-- `docs/MAINTENANCE_PLAN.md` phase 4 is complete after the count refresh;
-  `docs/` contains current references only.
+- `docs/MAINTENANCE_PLAN.md` phases 0–5 are complete, including the phase 5
+  gate record; `docs/` contains current references only.
 
 ## Verification
 
-Latest full local gate (`eb4953f9` code, re-run at `7e9dbfdb`, 2026-11-12):
+Latest full local gate (2026-11-12, `dev` at **`ddf195b4`**, clean tree, Node
+22.23.4, npm 12.2.1):
 
-- `npm run i18n:validate`: 16 locales valid
-- `npm test`: **454/454**
-- Coverage: **76.06% lines / 80.70% functions / 70.92% branches**
+- `npm run i18n:validate`: 16 locales valid (`de`, `en-GB`, `en-US`, `es-ES`,
+  `fr`, `id`, `it`, `ja`, `ko`, `nl`, `pl`, `pt-BR`, `ru`, `tr`, `zh-CN`,
+  `zh-TW`)
 - `npm run format`, `npm run lint`, `npm run build`: clean
-- CI: green on `dev` for `eb4953f9` (run `43170550563`); `main` green for
-  `dd93b937`
-- Production API/registration checks passed at `c41be815`.
+- `npm test`: **471/471** pass, 0 fail, 0 skipped
+- `npm run test:coverage`: **471/471** pass with source-only coverage
+  **67.02% lines / 73.14% branches / 57.29% functions**, against enforced
+  floors of 66 / 56 / 72
+- `git diff --check`: clean
+- CI: green on `dev` for `ddf195b4` (run `43178687504`) with the new
+  `npm audit --omit=dev --audit-level=high` step reporting 0 vulnerabilities
+  and the coverage floors active; `main` green for `dd93b937`
+- Production API/registration checks last passed at `c41be815`.
+
+Coverage is measured with `--test-coverage-exclude='**/*.test.mjs'`, so the
+percentage covers `src/` only. The earlier **76.06 / 80.70 / 70.92** figure
+included test files and had its columns labelled in the wrong order — in
+line / branch / funcs order it reads 76.06 lines, 80.70 branches, 70.92
+functions — so it is not comparable to this number. Floors sit ~1pp below the
+measured values; raising the line floor to 99 exits 1, so the gate does fail on
+a drop.
+
+Test count moved from the 454 baseline to 471 with phases 1–2: new
+`tests/command-metadata.test.mjs` (5) and `tests/help.test.mjs` (6), plus five
+help/autocomplete cases in `tests/autocomplete.test.mjs` and one help-option
+case in `tests/commands.test.mjs`.
 
 No live Discord slash/button pass and no live browser/dashboard visual pass were
-run for this release. The new `/health` and `/playlist export` paths are
-unit-tested but have not run on a live bot; they are not deployed.
+run for this work. The localized option payload, `/help` in a non-English
+locale, and the help autocomplete are unit-pinned but not yet exercised in
+Discord. The `/health` and `/playlist export` paths are unit-tested but have not
+run on a live bot; nothing from `dev` is deployed.
 
 ### Performance evidence
 
@@ -149,11 +178,19 @@ unit-tested but have not run on a live bot; they are not deployed.
 
 ## Open items
 
-- Merge `dev` to `main` and deploy only when the user asks. After deploying
-  `eb4953f9`, smoke `GET /health` (200; 503 with a node stopped) and
-  `/playlist export` (download and parse the attachment; empty playlist case).
-- Optional live acceptance: language switching, localized command replies,
-  dashboard locale switch, and a real playback smoke test.
+- Merge `dev` to `main` and deploy only when the user asks. After deploying,
+  smoke `GET /health` (200; 503 with a node stopped) and `/playlist export`
+  (download and parse the attachment; empty playlist case).
+- Live acceptance for the maintenance work, on BotTest or after a deploy:
+  `/filter` and `/setup` option descriptions arrive localized, `/help` and
+  `/help play` read correctly in `en-US` and `de`, help autocomplete answers
+  from Discord, and 74 commands register with no Discord 400. The REST payload
+  is pinned by `tests/command-metadata.test.mjs`; only live registration and
+  rendering remain unproven.
+- `.github/dependabot.yml` has no on-demand validation trigger; the first
+  scheduled weekly run is the remaining proof that GitHub accepts it.
+- Optional live acceptance (pre-existing): language switching, localized
+  command replies, dashboard locale switch, and a real playback smoke test.
 - Native translation review is crowd-sourced on GitHub; not tracked as a local
   task.
 - Internal-only diagnostics and brand/technical tokens still do not need
@@ -191,8 +228,9 @@ unit-tested but have not run on a live bot; they are not deployed.
    keys and preserve `_meta.note`.
 
 5. Production deploy is explicit-request only. Standing rule: do not update the
-   active bot unless testing or the user asks to deploy. The pending health/export
-   work is on `dev`; merge `dev` into `main` first when deploying it. Deploy
+   active bot unless testing or the user asks to deploy. The pending
+   health/export and maintenance work is on `dev`; merge `dev` into `main` first
+   when deploying it. Deploy
    procedure is in the `discord-music-bot-maintenance` skill at
    `references/deploy-host.md`: stop `DJBoot`/`dashboard`, back up
    `prisma/*.db*`, `git pull --ff-only origin main`, run
@@ -209,7 +247,8 @@ unit-tested but have not run on a live bot; they are not deployed.
 - `docs/PLAYBACK_ARCHITECTURE.md` — playback core module map and teardown order
 - `docs/STORAGE.md` — SQLite WAL, retention and backup policy
 - `docs/DASHBOARD_OAUTH.md` — dashboard login and authorization model
-- `docs/MAINTENANCE_PLAN.md` — pending i18n metadata, help UX, CI and doc-truth plan
+- `docs/MAINTENANCE_PLAN.md` — completed maintenance plan with the phase 0–5
+  gate record
 - `src/lib/i18n.ts` — i18next initialization and supported locales
 - `src/lib/i18nContext.ts` — `tr(ctx, key, vars)` command helper
 - `src/dashboard/browser.ts` / `src/dashboard/page.ts` — localized dashboard
@@ -219,6 +258,12 @@ unit-tested but have not run on a live bot; they are not deployed.
   JSON export
 - `tests/dashboard-health.test.mjs`, `tests/playlist-export.test.mjs` — new
   feature gates
+- `tests/command-metadata.test.mjs` — slash-command localization payload
+  (snake_case keys, subcommand recursion, choices)
+- `tests/help.test.mjs` — localized help details, alias resolution,
+  developer-command refusal
+- `.github/workflows/ci.yml`, `.github/dependabot.yml` — dependency audit,
+  coverage floors, weekly dependency updates
 - `src/lib/GuildNotice.ts`, `src/events/player/Node*.ts` — localized notices
 - `src/core/player/SessionRestorer.ts` — translated now-playing cleanup
 - `locales/` — 16 locale directories; `longtail.json` is the migration lane
