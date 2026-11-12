@@ -4,7 +4,7 @@
 setup and dashboard surfaces; keep all translations in the existing `longtail`
 namespace; ship the same 16 locales with the AI-translation note.
 
-**Status:** complete on `dev`; awaiting CI on the final commit.
+**Status:** complete on `dev`; awaiting CI on the phase 8 commit.
 
 ## Completion criteria
 
@@ -30,6 +30,7 @@ namespace; ship the same 16 locales with the AI-translation note.
 | 5 | Events/setup | `src/events/player/TrackStart.ts`, `src/lib/SetupSystem.ts` and remaining event copy | `events.*` | Complete |
 | 6 | Dashboard stats/playlist | `src/dashboard/browser.ts`, `src/dashboard/page.ts` | `dashboard.*` | Complete |
 | 7 | Playback limits | `src/lib/PlayLimits.ts` | `limits.*` | Complete |
+| 8 | Dashboard remainder | `src/dashboard/browser.ts`, `src/dashboard/page.ts` | `dashboard.*` | Complete |
 
 ## Batch contract
 
@@ -63,3 +64,14 @@ namespace; ship the same 16 locales with the AI-translation note.
 - Tests passed after the event setup mock was updated for `getGuildSettings` and `defaultLanguage`.
 - All 15 non-en-US locales now include the 625 migrated keys plus the six `limits` keys.
 - Final gate: **447/447 tests**, **75.77% lines / 80.49% functions / 70.75% branches**, locale validation, format, lint and build clean.
+
+## Phase 8 plan: remaining dashboard UI
+
+1. Move settings group titles, field labels and help descriptions into `longtail:dashboard.settings.*`.
+2. Move player, queue and filter control titles/aria labels, state labels, toasts and empty states into `dashboard.player.*`, `dashboard.queue.*`, `dashboard.filters.*`.
+3. Move header/footer/login/PWA chrome and legal labels into `dashboard.chrome.*` / `dashboard.login.*` in `page.ts`.
+4. Localize duration unit suffixes used by the dashboard.
+5. Extend `LONGTAIL_DASHBOARD_COPY_KEYS`, merge the English fragment, translate only the new keys across 15 non-en-US locales, and keep `_meta.note`.
+6. Gate with locale validation, format, lint, build, 447 tests, coverage and CI; commit on `dev` only.
+
+Final phase 8 result: 141 dashboard keys, all 15 non-en-US locales translated, **447/447 tests**, **75.91% lines / 80.51% functions / 70.77% branches**, validator/format/lint/build clean.

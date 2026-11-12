@@ -64,7 +64,7 @@ export const BROWSER_SCRIPT = String.raw`
                 window.location.href = '/auth/discord';
                 throw new Error('Login required');
             }
-            const supplied = window.prompt('Dashboard token');
+            const supplied = window.prompt(copy('chrome.tokenPrompt', 'Dashboard token'));
             if (supplied) {
                 localStorage.setItem(TOKEN_KEY, supplied);
                 return request(path, options);
@@ -118,7 +118,16 @@ export const BROWSER_SCRIPT = String.raw`
         const total = Math.max(0, Math.round(seconds / 60));
         const hours = Math.floor(total / 60);
         const minutes = total % 60;
-        return hours ? hours + 'h ' + minutes + 'm' : minutes + 'm';
+        return hours
+            ? copy('duration.hoursMinutes', '{{hours}}h {{minutes}}m', { hours, minutes })
+            : copy('duration.minutes', '{{minutes}}m', { minutes });
+    }
+
+    function loopLabel(value) {
+        if (value === 'off') return copy('player.loopOff', 'off');
+        if (value === 'repeat') return copy('player.loopRepeat', 'repeat');
+        if (value === 'queue') return copy('player.loopQueue', 'queue');
+        return value;
     }
 
     function escapeHtml(value) {
@@ -172,8 +181,9 @@ export const BROWSER_SCRIPT = String.raw`
     }
 
     const GROUPS = [
-        { title: 'Language', keys: ['language'] },
+        { id: 'language', title: 'Language', keys: ['language'] },
         {
+            id: 'playback',
             title: 'Playback',
             keys: [
                 'defaultvolume',
@@ -191,12 +201,14 @@ export const BROWSER_SCRIPT = String.raw`
             ],
         },
         {
+            id: 'browserMode',
             title: 'Browser mode',
             keys: ['dashboardvoicechannel', 'dashboardvoicepriority', 'audiotapallowall', 'audiotaproles'],
         },
-        { title: 'Autoplay', keys: ['autoplaysource', 'autoplayseeds'] },
-        { title: 'Responses', keys: ['ephemeral', 'announce', 'announcechannel', 'deleteafter'] },
+        { id: 'autoplay', title: 'Autoplay', keys: ['autoplaysource', 'autoplayseeds'] },
+        { id: 'responses', title: 'Responses', keys: ['ephemeral', 'announce', 'announcechannel', 'deleteafter'] },
         {
+            id: 'limits',
             title: 'Limits',
             keys: [
                 'maxtracklength',
@@ -212,6 +224,7 @@ export const BROWSER_SCRIPT = String.raw`
             ],
         },
         {
+            id: 'access',
             title: 'Access and channels',
             keys: ['locked', 'allowthreads', 'commandchannel', 'voicechannel', 'disabledcommands'],
         },
@@ -361,11 +374,11 @@ export const BROWSER_SCRIPT = String.raw`
         const label =
             key === 'language'
                 ? copy('language.label', LABELS[key] || key)
-                : LABELS[key] || key;
+                : copy('settings.label.' + key, LABELS[key] || key);
         const description =
             key === 'language'
                 ? copy('language.description', DESCRIPTIONS[key] || '')
-                : DESCRIPTIONS[key];
+                : copy('settings.description.' + key, DESCRIPTIONS[key] || '');
         heading.appendChild(element('span', '', label));
         if (description) {
             const help = element('span', 'help', '?');
@@ -409,7 +422,7 @@ export const BROWSER_SCRIPT = String.raw`
 
         for (const group of GROUPS) {
             const section = element('section', 'settings-group');
-            section.appendChild(element('h3', '', group.title));
+            section.appendChild(element('h3', '', copy('settings.group.' + group.id, group.title)));
             const grid = element('div', 'settings-grid');
             for (const key of group.keys) {
                 if (!(key in settings)) continue;
@@ -417,8 +430,12 @@ export const BROWSER_SCRIPT = String.raw`
                 grid.appendChild(buildSettingField(key, settings[key]));
             }
             section.appendChild(grid);
-            if (group.title === 'Autoplay') {
-                const reset = element('button', 'autoplay-reset', 'Reset autoplay override');
+            if (group.id === 'autoplay') {
+                const reset = element(
+                    'button',
+                    'autoplay-reset',
+                    copy('settings.autoplayReset', 'Reset autoplay override')
+                );
                 reset.onclick = async () => {
                     try {
                         await postJson('/api/settings', {
@@ -427,7 +444,7 @@ export const BROWSER_SCRIPT = String.raw`
                             value: 'true',
                         });
                         await loadState();
-                        notify('Autoplay override reset');
+                        notify(copy('settings.autoplayResetDone', 'Autoplay override reset'));
                     } catch (error) {
                         notify(error.message, true);
                     }
@@ -440,7 +457,7 @@ export const BROWSER_SCRIPT = String.raw`
         const leftovers = Object.keys(settings).filter(key => !rendered.has(key));
         if (leftovers.length) {
             const section = element('section', 'settings-group');
-            section.appendChild(element('h3', '', 'Other'));
+            section.appendChild(element('h3', '', copy('settings.other', 'Other')));
             const grid = element('div', 'settings-grid');
             for (const key of leftovers) grid.appendChild(buildSettingField(key, settings[key]));
             section.appendChild(grid);
@@ -482,7 +499,7 @@ export const BROWSER_SCRIPT = String.raw`
 
     async function toggleFilter(id, enabled, row, value) {
         if (!state.access.settings) {
-            notify('Manager access required', true);
+            notify(copy('filters.managerRequired', 'Manager access required'), true);
             return;
         }
         try {
@@ -493,7 +510,11 @@ export const BROWSER_SCRIPT = String.raw`
                 value: value === undefined ? undefined : Number(value),
             });
             await loadState();
-            notify((enabled ? 'Enabled ' : 'Disabled ') + id);
+            notify(
+                enabled
+                    ? copy('filters.enabled', 'Enabled {{filter}}', { filter: id })
+                    : copy('filters.disabled', 'Disabled {{filter}}', { filter: id })
+            );
         } catch (error) {
             notify(error.message, true);
             if (row) row.classList.add('error');
@@ -563,7 +584,10 @@ export const BROWSER_SCRIPT = String.raw`
         const position = projectedPosition();
         const percent = progress.duration > 0 ? Math.max(0, Math.min(100, (position / progress.duration) * 100)) : 0;
         find('#progress-bar').style.transform = 'scaleX(' + percent / 100 + ')';
-        const clock = formatClock(position) + ' / ' + (progress.duration ? formatClock(progress.duration) : 'LIVE');
+        const clock =
+            formatClock(position) +
+            ' / ' +
+            (progress.duration ? formatClock(progress.duration) : copy('player.live', 'LIVE'));
         find('#now-time').textContent = clock;
 
         const seekable = progress.duration > 0 && state.access.controls;
@@ -602,6 +626,7 @@ export const BROWSER_SCRIPT = String.raw`
             '#stats-close': { 'aria-label': 'stats.close' },
             '#personal-close': { 'aria-label': 'stats.personalClose' },
             '#playlists-close': { 'aria-label': 'playlists.close' },
+            '#settings-close': { 'aria-label': 'settings.close' },
             '#playlist-name': {
                 placeholder: 'playlists.namePlaceholder',
                 'aria-label': 'playlists.nameAria',
@@ -624,6 +649,10 @@ export const BROWSER_SCRIPT = String.raw`
         if (queueInput) queueInput.placeholder = copy('queue.addPlaceholder', queueInput.placeholder);
         const queueButton = find('#queue-add-btn');
         if (queueButton) queueButton.textContent = copy('queue.add', queueButton.textContent);
+        const volumeField = find('#volume');
+        if (volumeField) volumeField.setAttribute('aria-label', copy('player.volume', 'Volume'));
+        const seek = find('#progress-wrap');
+        if (seek) seek.setAttribute('aria-label', copy('player.seekAria', 'Seek through track'));
     }
 
     function resetPlayerPanel() {
@@ -641,7 +670,7 @@ export const BROWSER_SCRIPT = String.raw`
         progressWrap.tabIndex = -1;
         hideProgressTip();
         renderVolume(100);
-        find('#loop-label').textContent = 'off';
+        find('#loop-label').textContent = copy('player.loopOff', 'off');
         find('#loop-btn').classList.remove('on');
         const toggle = find('#toggle-btn');
         toggle.classList.add('paused');
@@ -731,15 +760,20 @@ export const BROWSER_SCRIPT = String.raw`
             playerState + (player.autoplay ? ' · ' + copy('player.autoplay', 'autoplay') : '');
         renderVolume(player.volume === null || player.volume === undefined ? 100 : player.volume);
 
-        find('#loop-label').textContent = player.loop;
+        find('#loop-label').textContent = loopLabel(player.loop);
         find('#loop-btn').classList.toggle('on', player.loop !== 'off');
 
         const toggle = find('#toggle-btn');
         toggle.classList.toggle('paused', Boolean(player.paused));
-        toggle.title = player.paused ? 'Resume' : 'Pause';
-        toggle.setAttribute('aria-label', player.paused ? 'Resume' : 'Pause');
+        const toggleLabel = player.paused
+            ? copy('player.resume', 'Resume')
+            : copy('player.pause', 'Pause');
+        toggle.title = toggleLabel;
+        toggle.setAttribute('aria-label', toggleLabel);
 
-        find('#queue-count').textContent = player.queueLength + ' queued';
+        find('#queue-count').textContent = copy('player.queued', '{{count}} queued', {
+            count: player.queueLength,
+        });
         renderQueue(player);
     }
 
@@ -891,7 +925,7 @@ export const BROWSER_SCRIPT = String.raw`
 
     async function playerAction(action, value) {
         if (!state.access.controls) {
-            notify('Read-only dashboard access', true);
+            notify(copy('player.readOnly', 'Read-only dashboard access'), true);
             return;
         }
         try {
@@ -904,7 +938,7 @@ export const BROWSER_SCRIPT = String.raw`
 
     async function addSong() {
         if (!state.access.controls) {
-            notify('Read-only dashboard access', true);
+            notify(copy('player.readOnly', 'Read-only dashboard access'), true);
             return;
         }
         const input = find('#queue-query');
@@ -916,12 +950,13 @@ export const BROWSER_SCRIPT = String.raw`
             const result = await postJson('/api/play', { guildId: state.guildId, query });
             const count = result.added || 1;
             notify(
-                'Added ' +
-                    count +
-                    ' track' +
-                    (count === 1 ? '' : 's') +
-                    (result.title ? ': ' + result.title : '') +
-                    (result.skipped ? ' (' + result.skipped + ' skipped)' : '')
+                (count === 1
+                    ? copy('queue.addedOne', 'Added {{count}} track', { count })
+                    : copy('queue.addedMany', 'Added {{count}} tracks', { count })) +
+                    (result.title ? copy('queue.addedTitle', ': {{title}}', { title: result.title }) : '') +
+                    (result.skipped
+                        ? copy('queue.skipped', ' ({{count}} skipped)', { count: result.skipped })
+                        : '')
             );
             input.value = '';
             await loadState();
@@ -1176,7 +1211,13 @@ export const BROWSER_SCRIPT = String.raw`
     }
     function audioDecoderError(error) {
         audio.lastError = error && error.message ? error.message : String(error);
-        notify('Audio decode failed: ' + (error && error.message ? error.message : 'unknown error'), true);
+        notify(
+            copy('player.audioDecodeFailed', 'Audio decode failed: {{message}}', {
+                message:
+                    error && error.message ? error.message : copy('player.unknownError', 'unknown error'),
+            }),
+            true
+        );
         stopAudio();
     }
 
@@ -1277,7 +1318,7 @@ export const BROWSER_SCRIPT = String.raw`
             !state.data.audio.available ||
             !state.data.audio.canListen
         ) {
-            throw new Error('The audio tap is not available for this guild');
+            throw new Error(copy('player.audioUnavailableGuild', 'The audio tap is not available for this guild'));
         }
         closeDecoder();
         stopScheduledSources();
@@ -1305,31 +1346,40 @@ export const BROWSER_SCRIPT = String.raw`
         if (generation !== audio.generation) return;
         if (response.status === 404) {
             stopAudio();
-            notify('The bot has no active player in this server.', true);
+            notify(copy('player.noActivePlayer', 'The bot has no active player in this server.'), true);
             return;
         }
         if (response.status === 401 || response.status === 403) {
             stopAudio();
-            notify('This dashboard session cannot listen to audio.', true);
+            notify(
+                copy('player.listenForbidden', 'This dashboard session cannot listen to audio.'),
+                true
+            );
             return;
         }
         if (response.status === 501 || response.status === 503) {
             response.body?.cancel?.();
             stopAudio();
-            notify('Audio is not available on this node.', true);
+            notify(copy('player.audioUnavailableNode', 'Audio is not available on this node.'), true);
             return;
         }
         if (response.status === 429) {
             response.body?.cancel?.();
             stopAudio();
-            notify('Audio is rate-limited; try again shortly.', true);
+            notify(copy('player.audioRateLimited', 'Audio is rate-limited; try again shortly.'), true);
             return;
         }
         if (!response.ok) {
             response.body?.cancel?.();
-            throw new Error('Audio tap HTTP ' + response.status);
+            throw new Error(
+                copy('player.audioHttpError', 'Audio tap HTTP {{status}}', {
+                    status: response.status,
+                })
+            );
         }
-        if (!response.body) throw new Error('Audio tap returned no body');
+        if (!response.body) {
+            throw new Error(copy('player.audioNoBody', 'Audio tap returned no body'));
+        }
         audio.status = 'on';
         if (audio.gain) audio.gain.gain.value = audio.muted ? 0 : 1;
         setListenUi();
@@ -1343,7 +1393,13 @@ export const BROWSER_SCRIPT = String.raw`
 
     async function startAudio() {
         if (!audioSupported()) {
-            notify('Audio playback needs Chrome or Edge (WebCodecs is unavailable).', true);
+            notify(
+                copy(
+                    'player.audioWebCodecs',
+                    'Audio playback needs Chrome or Edge (WebCodecs is unavailable).'
+                ),
+                true
+            );
             return;
         }
         if (
@@ -1352,7 +1408,10 @@ export const BROWSER_SCRIPT = String.raw`
             !state.data.audio.available ||
             !state.data.audio.canListen
         ) {
-            notify('The audio tap is not available on this dashboard.', true);
+            notify(
+                copy('player.audioUnavailableDashboard', 'The audio tap is not available on this dashboard.'),
+                true
+            );
             return;
         }
         audio.status = 'starting';
@@ -1372,7 +1431,12 @@ export const BROWSER_SCRIPT = String.raw`
         } catch (error) {
             audio.status = 'off';
             setListenUi();
-            notify(error && error.message ? error.message : 'Could not start dashboard audio', true);
+            notify(
+                error && error.message
+                    ? error.message
+                    : copy('player.audioStartFailed', 'Could not start dashboard audio'),
+                true
+            );
         }
     }
 
@@ -2098,7 +2162,7 @@ export const BROWSER_SCRIPT = String.raw`
             await postJson('/api/settings', { guildId: state.guildId, settings: values });
             await loadState();
             closeSettings();
-            notify('Settings saved');
+            notify(copy('settings.saved', 'Settings saved'));
         } catch (error) {
             notify(error.message, true);
         }
@@ -2127,7 +2191,7 @@ export const BROWSER_SCRIPT = String.raw`
     window.addEventListener('appinstalled', () => {
         installPrompt = null;
         if (installButton) installButton.style.display = 'none';
-        notify('BootstrapDJ installed');
+        notify(copy('pwa.installed', 'BootstrapDJ installed'));
     });
     if (installButton) {
         installButton.addEventListener('click', async () => {
@@ -2178,7 +2242,7 @@ export const BROWSER_SCRIPT = String.raw`
     }
 
     boot().catch(error => {
-        find('#status').textContent = 'Error';
+        find('#status').textContent = copy('status.error', 'Error');
         notify(error.message, true);
     });
     document.addEventListener('visibilitychange', () => {

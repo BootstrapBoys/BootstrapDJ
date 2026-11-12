@@ -2,6 +2,20 @@ import { BROWSER_SCRIPT } from './browser.js';
 import { SUPPORTED_LANGUAGES, translate } from '../lib/i18n.js';
 
 /**
+ * Server-rendered dashboard chrome uses the default language catalog. The
+ * browser swaps the interactive copy once the guild locale is known, so this
+ * only needs to keep the first paint and the login page readable.
+ */
+function chrome(key: string, variables: Record<string, string | number> = {}): string {
+    return translate(`longtail:dashboard.${key}`, undefined, variables);
+}
+
+/** Copy that still lives in the older `dashboard` namespace. */
+function legacy(key: string): string {
+    return translate(`dashboard:${key}`);
+}
+
+/**
  * Stylesheet for the dashboard. Written as ordinary CSS (not minified) because
  * it ships once per page load and is easier to review this way.
  */
@@ -650,16 +664,16 @@ a.primary:hover { background: #4752c4; }
 .legal a:hover { color: #7c9cff; text-decoration: underline; }
 `;
 
-const LEGAL_LINKS = String.raw`<a href="https://zebz213.github.io/bootstrapdj-legal/terms.html" target="_blank" rel="noopener noreferrer">Terms</a><span>·</span><a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a><span>·</span><a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">Legal</a>`;
+const LEGAL_LINKS = `<a href="https://zebz213.github.io/bootstrapdj-legal/terms.html" target="_blank" rel="noopener noreferrer">${chrome('chrome.terms')}</a><span>·</span><a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">${chrome('chrome.privacy')}</a><span>·</span><a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">${chrome('chrome.legal')}</a>`;
 
 const PWA_HEAD = String.raw`<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#111318"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="BootstrapDJ"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/icon-180.png">`;
 
-const PLAYER_ICONS = String.raw`<button class="ctrl" data-player="previous" title="Previous" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zM18 6v12l-9-6z"/></svg></button>
-<button class="ctrl" id="toggle-btn" data-player="toggle" title="Pause or resume" aria-label="Pause or resume"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="play-icon" d="M8 5v14l11-7z"/><path class="pause-icon" d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
-<button class="ctrl" data-player="next" title="Skip" aria-label="Skip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 6v12l9-6z"/></svg></button>
-<button class="ctrl" data-player="stop" title="Stop" aria-label="Stop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg></button>
-<button class="ctrl" data-player="shuffle" title="Shuffle queue" aria-label="Shuffle queue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
-<button class="ctrl" id="loop-btn" data-player="loop" title="Cycle loop" aria-label="Cycle loop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm0 10h10v-3l4 4-4 4v-3H5v-6h2v4z"/></svg><span id="loop-label">off</span></button>`;
+const PLAYER_ICONS = `<button class="ctrl" data-player="previous" title="${chrome('player.previous')}" aria-label="${chrome('player.previous')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zM18 6v12l-9-6z"/></svg></button>
+<button class="ctrl" id="toggle-btn" data-player="toggle" title="${chrome('player.pauseOrResume')}" aria-label="${chrome('player.pauseOrResume')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="play-icon" d="M8 5v14l11-7z"/><path class="pause-icon" d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+<button class="ctrl" data-player="next" title="${chrome('player.skip')}" aria-label="${chrome('player.skip')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 6v12l9-6z"/></svg></button>
+<button class="ctrl" data-player="stop" title="${chrome('player.stop')}" aria-label="${chrome('player.stop')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg></button>
+<button class="ctrl" data-player="shuffle" title="${chrome('player.shuffle')}" aria-label="${chrome('player.shuffle')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+<button class="ctrl" id="loop-btn" data-player="loop" title="${chrome('player.cycleLoop')}" aria-label="${chrome('player.cycleLoop')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm0 10h10v-3l4 4-4 4v-3H5v-6h2v4z"/></svg><span id="loop-label">${chrome('player.loopOff')}</span></button>`;
 
 const DASHBOARD_COPY_KEYS = [
     'player.title',
@@ -790,6 +804,147 @@ const LONGTAIL_DASHBOARD_COPY_KEYS = [
     'playlists.nameAria',
     'playlists.open',
     'playlists.close',
+    'chrome.copyright',
+    'chrome.dashboardTitle',
+    'chrome.legal',
+    'chrome.loading',
+    'chrome.privacy',
+    'chrome.privacyPolicy',
+    'chrome.signOut',
+    'chrome.terms',
+    'chrome.termsOfService',
+    'chrome.tokenPrompt',
+    'duration.hoursMinutes',
+    'duration.minutes',
+    'filters.disabled',
+    'filters.enabled',
+    'filters.managerRequired',
+    'login.continue',
+    'login.description',
+    'login.heading',
+    'login.members',
+    'login.title',
+    'player.audioDecodeFailed',
+    'player.audioHttpError',
+    'player.audioNoBody',
+    'player.audioRateLimited',
+    'player.audioStartFailed',
+    'player.audioUnavailableDashboard',
+    'player.audioUnavailableGuild',
+    'player.audioUnavailableNode',
+    'player.audioWebCodecs',
+    'player.cycleLoop',
+    'player.disconnectTitle',
+    'player.listenButtonAria',
+    'player.listenButtonTitle',
+    'player.listenForbidden',
+    'player.live',
+    'player.loopOff',
+    'player.loopQueue',
+    'player.loopRepeat',
+    'player.noActivePlayer',
+    'player.pauseOrResume',
+    'player.previous',
+    'player.readOnly',
+    'player.seekAria',
+    'player.shuffle',
+    'player.skip',
+    'player.stop',
+    'player.unknownError',
+    'player.volume',
+    'pwa.install',
+    'pwa.installTitle',
+    'pwa.installed',
+    'queue.addedMany',
+    'queue.addedOne',
+    'queue.addedTitle',
+    'queue.inputAria',
+    'queue.skipped',
+    'settings.autoplayResetDone',
+    'settings.close',
+    'settings.description.allowthreads',
+    'settings.description.announce',
+    'settings.description.announcechannel',
+    'settings.description.audiotapallowall',
+    'settings.description.audiotaproles',
+    'settings.description.autocorrect',
+    'settings.description.autoplayseeds',
+    'settings.description.autoplaysource',
+    'settings.description.commandchannel',
+    'settings.description.dashboardvoicechannel',
+    'settings.description.dashboardvoicepriority',
+    'settings.description.defaultautoplay',
+    'settings.description.defaultrepeat',
+    'settings.description.defaultshuffle',
+    'settings.description.defaultvolume',
+    'settings.description.deleteafter',
+    'settings.description.disabledcommands',
+    'settings.description.ephemeral',
+    'settings.description.locked',
+    'settings.description.loudnesstarget',
+    'settings.description.maxplaylistlength',
+    'settings.description.maxplaylisttracks',
+    'settings.description.maxqueue',
+    'settings.description.maxtracklength',
+    'settings.description.maxuserqueue',
+    'settings.description.maxusertracks',
+    'settings.description.maxusertrackslength',
+    'settings.description.mintracklength',
+    'settings.description.searchtype',
+    'settings.description.timeoutconfirmation',
+    'settings.description.timeoutlisteners',
+    'settings.description.timeoutpause',
+    'settings.description.timeoutplaying',
+    'settings.description.voicechannel',
+    'settings.description.volumeautomatic',
+    'settings.description.voteskip',
+    'settings.description.voteskippercent',
+    'settings.group.access',
+    'settings.group.autoplay',
+    'settings.group.browserMode',
+    'settings.group.language',
+    'settings.group.limits',
+    'settings.group.playback',
+    'settings.group.responses',
+    'settings.label.allowthreads',
+    'settings.label.announce',
+    'settings.label.announcechannel',
+    'settings.label.audiotapallowall',
+    'settings.label.audiotaproles',
+    'settings.label.autocorrect',
+    'settings.label.autoplayseeds',
+    'settings.label.autoplaysource',
+    'settings.label.commandchannel',
+    'settings.label.dashboardvoicechannel',
+    'settings.label.dashboardvoicepriority',
+    'settings.label.defaultautoplay',
+    'settings.label.defaultrepeat',
+    'settings.label.defaultshuffle',
+    'settings.label.defaultvolume',
+    'settings.label.deleteafter',
+    'settings.label.disabledcommands',
+    'settings.label.ephemeral',
+    'settings.label.locked',
+    'settings.label.loudnesstarget',
+    'settings.label.maxplaylistlength',
+    'settings.label.maxplaylisttracks',
+    'settings.label.maxqueue',
+    'settings.label.maxtracklength',
+    'settings.label.maxuserqueue',
+    'settings.label.maxusertracks',
+    'settings.label.maxusertrackslength',
+    'settings.label.mintracklength',
+    'settings.label.searchtype',
+    'settings.label.timeoutconfirmation',
+    'settings.label.timeoutlisteners',
+    'settings.label.timeoutpause',
+    'settings.label.timeoutplaying',
+    'settings.label.voicechannel',
+    'settings.label.volumeautomatic',
+    'settings.label.voteskip',
+    'settings.label.voteskippercent',
+    'settings.open',
+    'settings.saved',
 ] as const;
 
 function dashboardCopy(): Record<string, Record<string, string>> {
@@ -808,7 +963,7 @@ function dashboardCopy(): Record<string, Record<string, string>> {
     return copy;
 }
 
-const VOLUME_CONTROL = String.raw`<label class="volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input id="volume" type="range" min="0" max="200" step="5" value="100"><span id="volume-label">100%</span></label>`;
+const VOLUME_CONTROL = `<label class="volume"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input id="volume" type="range" min="0" max="200" step="5" value="100" aria-label="${chrome('player.volume')}"><span id="volume-label">100%</span></label>`;
 
 /** Full dashboard document. `oauth` switches the client into login-gated mode. */
 export function renderDashboard(oauth: boolean): string {
@@ -819,79 +974,79 @@ export function renderDashboard(oauth: boolean): string {
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 ${PWA_HEAD}
-<title>BootstrapDJ dashboard</title>
+<title>${chrome('chrome.dashboardTitle')}</title>
 <style>${STYLES}</style>
 </head>
 <body${bodyAttributes}>
 <header>
-  <h1>BootstrapDJ dashboard</h1>
+  <h1>${chrome('chrome.dashboardTitle')}</h1>
   <div style="display:flex;gap:8px;align-items:center">
-    <span id="status" class="small">loading…</span>
+    <span id="status" class="small">${chrome('chrome.loading')}</span>
     <select id="guild"></select>
-    <button id="personal-btn" class="gear" title="My stats" aria-label="Open my stats" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></button>
-    <button id="stats-btn" class="gear" title="Statistics" aria-label="Open statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button>
-    <button id="playlists-btn" class="gear" title="Playlists" aria-label="Open playlists"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12v2H4zm0 5h12v2H4zm0 5h12v2H4zm15-8v7.2a2.8 2.8 0 1 1-2-2.6V7l4-1v2z"/></svg></button>
-    <button id="settings-btn" class="gear" title="Settings" aria-label="Open settings" style="display:none">⚙</button>
-    <button id="logout-btn" class="gear" title="Sign out" aria-label="Sign out" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
+    <button id="personal-btn" class="gear" title="${legacy('stats.personalTitle')}" aria-label="${chrome('stats.personalOpen')}" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg></button>
+    <button id="stats-btn" class="gear" title="${legacy('stats.title')}" aria-label="${chrome('stats.open')}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg></button>
+    <button id="playlists-btn" class="gear" title="${legacy('playlists.title')}" aria-label="${chrome('playlists.open')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12v2H4zm0 5h12v2H4zm0 5h12v2H4zm15-8v7.2a2.8 2.8 0 1 1-2-2.6V7l4-1v2z"/></svg></button>
+    <button id="settings-btn" class="gear" title="${legacy('settings.title')}" aria-label="${chrome('settings.open')}" style="display:none">⚙</button>
+    <button id="logout-btn" class="gear" title="${chrome('chrome.signOut')}" aria-label="${chrome('chrome.signOut')}" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
   </div>
 </header>
 <main>
 <section class="panel">
-  <div class="player-top"><h2>Player</h2><span id="player-state" class="small"></span><button class="ctrl listen-btn" id="listen-btn" type="button" title="Play this browser's audio from the bot" aria-label="Listen to the bot audio" aria-pressed="false" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/><path class="mute-line" d="M4 4l16 16"/></svg><span id="listen-label">Listen</span></button><button class="ctrl disconnect-btn" id="disconnect-btn" type="button" title="Disconnect dashboard audio" aria-label="Disconnect dashboard audio" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Disconnect</span></button></div>
-  <div id="now-title" class="now">Nothing playing</div>
+  <div class="player-top"><h2>${legacy('player.title')}</h2><span id="player-state" class="small"></span><button class="ctrl listen-btn" id="listen-btn" type="button" title="${chrome('player.listenButtonTitle')}" aria-label="${chrome('player.listenButtonAria')}" aria-pressed="false" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/><path class="mute-line" d="M4 4l16 16"/></svg><span id="listen-label">${legacy('player.listen')}</span></button><button class="ctrl disconnect-btn" id="disconnect-btn" type="button" title="${chrome('player.disconnectTitle')}" aria-label="${chrome('player.disconnectTitle')}" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>${legacy('player.disconnect')}</span></button></div>
+  <div id="now-title" class="now">${legacy('player.nothingPlaying')}</div>
   <div id="now-meta" class="now-meta"></div>
   <div id="now-time" class="now-time">0:00 / 0:00</div>
-  <div class="progress-wrap disabled" id="progress-wrap" role="slider" tabindex="-1" aria-label="Seek through track" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><div class="progress" id="progress"><div id="progress-bar"></div></div><span class="progress-tooltip" id="progress-tooltip"></span></div>
+  <div class="progress-wrap disabled" id="progress-wrap" role="slider" tabindex="-1" aria-label="${chrome('player.seekAria')}" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><div class="progress" id="progress"><div id="progress-bar"></div></div><span class="progress-tooltip" id="progress-tooltip"></span></div>
   <div class="controls" id="player-controls" style="display:none">
 ${PLAYER_ICONS}
 ${VOLUME_CONTROL}
   </div>
   <div class="queue-add" id="queue-add" style="display:none">
-    <input id="queue-query" type="text" autocomplete="off" placeholder="Song name or URL" aria-label="Add a song to the queue">
-    <button id="queue-add-btn" class="primary" type="button">Add song</button>
+    <input id="queue-query" type="text" autocomplete="off" placeholder="${legacy('queue.addPlaceholder')}" aria-label="${chrome('queue.inputAria')}">
+    <button id="queue-add-btn" class="primary" type="button">${legacy('queue.add')}</button>
   </div>
-  <div class="queue-block"><div class="queue-head"><h3>Queue</h3><span id="queue-count" class="small"></span></div><div id="queue-list" class="queue-list"><div class="small">Nothing queued.</div></div></div>
+  <div class="queue-block"><div class="queue-head"><h3>${legacy('queue.title')}</h3><span id="queue-count" class="small"></span></div><div id="queue-list" class="queue-list"><div class="small">${legacy('queue.empty')}</div></div></div>
 </section>
-<section class="panel" id="filters-panel" style="display:none"><h2>Filters</h2><div id="filters" class="filters"></div></section>
+<section class="panel" id="filters-panel" style="display:none"><h2>${legacy('filters.title')}</h2><div id="filters" class="filters"></div></section>
 </main>
 <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
   <div class="modal-card">
-    <div class="modal-head"><h2 id="settings-title">Settings</h2><button class="icon-btn" id="settings-close" aria-label="Close settings">✕</button></div>
+    <div class="modal-head"><h2 id="settings-title">${legacy('settings.title')}</h2><button class="icon-btn" id="settings-close" aria-label="${chrome('settings.close')}">✕</button></div>
     <div id="settings" class="settings"></div>
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end"><button class="icon-btn" id="settings-cancel">Cancel</button><button class="primary" id="save">Save settings</button></div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end"><button class="icon-btn" id="settings-cancel">${legacy('settings.cancel')}</button><button class="primary" id="save">${legacy('settings.save')}</button></div>
   </div>
 </div>
 <div id="stats-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="stats-title">
   <div class="modal-card stats-card">
-    <div class="modal-head"><h2 id="stats-title">Statistics</h2><div class="stats-toolbar"><select id="stats-range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select><button class="icon-btn" id="stats-clear" title="Clear statistics" style="display:none">Clear stats</button><button class="icon-btn" id="stats-close" aria-label="Close statistics">✕</button></div></div>
+    <div class="modal-head"><h2 id="stats-title">${legacy('stats.title')}</h2><div class="stats-toolbar"><select id="stats-range"><option value="7">${chrome('stats.range7')}</option><option value="30">${chrome('stats.range30')}</option><option value="90">${chrome('stats.range90')}</option></select><button class="icon-btn" id="stats-clear" title="${chrome('stats.clearTitle')}" style="display:none">${chrome('stats.clear')}</button><button class="icon-btn" id="stats-close" aria-label="${chrome('stats.close')}">✕</button></div></div>
     <div id="stats-content"></div>
   </div>
 </div>
 <div id="personal-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="personal-title">
   <div class="modal-card stats-card">
-    <div class="modal-head"><h2 id="personal-title">My stats</h2><button class="icon-btn" id="personal-close" aria-label="Close my stats">✕</button></div>
+    <div class="modal-head"><h2 id="personal-title">${legacy('stats.personalTitle')}</h2><button class="icon-btn" id="personal-close" aria-label="${chrome('stats.personalClose')}">✕</button></div>
     <div id="personal-content"></div>
   </div>
 </div>
 <div id="playlists-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="playlists-title">
   <div class="modal-card playlist-card">
-    <div class="modal-head"><h2 id="playlists-title">Playlists</h2><button class="icon-btn" id="playlists-close" aria-label="Close playlists">✕</button></div>
+    <div class="modal-head"><h2 id="playlists-title">${legacy('playlists.title')}</h2><button class="icon-btn" id="playlists-close" aria-label="${chrome('playlists.close')}">✕</button></div>
     <div class="playlist-create">
-      <input id="playlist-name" maxlength="50" placeholder="New playlist name" aria-label="New playlist name">
-      <button id="playlist-create" class="primary">Create playlist</button>
+      <input id="playlist-name" maxlength="50" placeholder="${chrome('playlists.namePlaceholder')}" aria-label="${chrome('playlists.nameAria')}">
+      <button id="playlist-create" class="primary">${chrome('playlists.create')}</button>
     </div>
     <div class="playlist-layout">
-      <div id="playlist-list" class="playlist-list"><div class="small">Loading playlists…</div></div>
-      <div id="playlist-detail" class="playlist-detail"><div class="small">Select a playlist to edit or load it.</div></div>
+      <div id="playlist-list" class="playlist-list"><div class="small">${chrome('playlists.loading')}</div></div>
+      <div id="playlist-detail" class="playlist-detail"><div class="small">${chrome('playlists.select')}</div></div>
     </div>
   </div>
 </div>
 <div id="toast"></div>
 <footer>
-  <span>© 2026 BootstrapBoys</span><span class="sep">·</span>
-  <a href="https://zebz213.github.io/bootstrapdj-legal/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a><span class="sep">·</span>
-  <a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a><span class="sep">·</span>
-  <a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">Legal</a><button id="install-btn" class="footer-install" type="button" title="Install BootstrapDJ" aria-label="Install BootstrapDJ" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9h3l-4 4-4-4h3z"/><path d="M5 19h14v2H5z"/></svg>Install app</button>
+  <span>${chrome('chrome.copyright')}</span><span class="sep">·</span>
+  <a href="https://zebz213.github.io/bootstrapdj-legal/terms.html" target="_blank" rel="noopener noreferrer">${chrome('chrome.termsOfService')}</a><span class="sep">·</span>
+  <a href="https://zebz213.github.io/bootstrapdj-legal/privacy.html" target="_blank" rel="noopener noreferrer">${chrome('chrome.privacyPolicy')}</a><span class="sep">·</span>
+  <a href="https://zebz213.github.io/bootstrapdj-legal/" target="_blank" rel="noopener noreferrer">${chrome('chrome.legal')}</a><button id="install-btn" class="footer-install" type="button" title="${chrome('pwa.installTitle')}" aria-label="${chrome('pwa.installTitle')}" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9h3l-4 4-4-4h3z"/><path d="M5 19h14v2H5z"/></svg>${chrome('pwa.install')}</button>
 </footer>
 <script>window.__DASHBOARD_COPY__ = ${copyJson};</script>
 <script>${BROWSER_SCRIPT}</script>
@@ -906,15 +1061,15 @@ export function renderLoginPage(): string {
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 ${PWA_HEAD}
-<title>BootstrapDJ — Login</title>
+<title>${chrome('login.title')}</title>
 <style>${LOGIN_STYLES}</style>
 </head>
 <body>
 <div class="box">
-  <h1>BootstrapDJ Dashboard</h1>
-  <p>Sign in with Discord. Dashboard access is limited to members of servers with this bot.</p>
-  <a class="primary" href="/auth/discord">Continue with Discord</a>
-  <div class="small">Members of servers with BootstrapDJ</div>
+  <h1>${chrome('login.heading')}</h1>
+  <p>${chrome('login.description')}</p>
+  <a class="primary" href="/auth/discord">${chrome('login.continue')}</a>
+  <div class="small">${chrome('login.members')}</div>
   <div class="legal">${LEGAL_LINKS}</div>
 </div>
 </body>
