@@ -78,10 +78,10 @@ ignoring it; assigning only the snake_case field does not type-check.
 **Acceptance:** build, tests, and locale validation green; a BotTest
 registration still reports 74 commands with no Discord 400.
 
-Met locally in `b02e889b` (gate green, `tests/command-metadata.test.mjs`
-pins the payload), with one exception: no BotTest registration was run — the
-plan deploys nothing, so the 74-command/400-free check on a live application
-is still open (see *Optional BotTest verification*).
+Met in `b02e889b` (gate green, `tests/command-metadata.test.mjs` pins the
+payload) and on the disposable BotTest application at `8011257f` on 2026-11-12:
+74 commands registered, no Discord 400, and 16-locale `description_localizations`
+on every command and option (see *Optional BotTest verification*).
 
 **Commit:** `fix(i18n): localize slash-command option descriptions`
 
@@ -126,9 +126,10 @@ pick a command instead of typing its exact name.
 autocomplete works from Discord; all tests green.
 
 Code and tests landed in `bd43d0b7` (`tests/help.test.mjs`,
-`tests/autocomplete.test.mjs`, `tests/commands.test.mjs`). The in-Discord
-locale/autocomplete pass needs a live bot and was not run by this plan; it is
-tracked as live acceptance in `docs/HANDOFF.md`.
+`tests/autocomplete.test.mjs`, `tests/commands.test.mjs`). The in-Discord pass
+was run on BotTest at `8011257f` on 2026-11-12: `/help` and `/help play` render
+in German and the `/help` command autocomplete answers from Discord (see
+*Optional BotTest verification*).
 
 **Commit:** `feat(help): localize details and add command autocomplete`
 
@@ -245,17 +246,22 @@ and 1 help-option case in `tests/commands.test.mjs`.
 The `dev` baseline already contains the undeployed `eb4953f9` health/export
 feature; treat it as separate work, not part of this plan.
 
-- [ ] Deploy the branch to the disposable staging checkout and restart.
-- [ ] Confirm 74 commands register.
-- [ ] Inspect the REST payload for `/filter` and `/setup` option
+- [x] Deploy the branch to the disposable staging checkout and restart.
+- [x] Confirm 74 commands register.
+- [x] Inspect the REST payload for `/filter` and `/setup` option
       `description_localizations`.
-- [ ] Exercise `/help`, `/help play`, and the autocomplete from a real Discord
+- [x] Exercise `/help`, `/help play`, and the autocomplete from a real Discord
       user session.
 - [ ] Production deployment only after an explicit request, using
       `references/deploy-host.md` in the maintenance skill.
 
-Not run: this plan deploys nothing, and production is explicit-request only.
-The same checks are listed as open items in `docs/HANDOFF.md`.
+Run on the disposable BotTest checkout at `8011257f` on 2026-11-12 (kanban task
+`t_6a2ba550`). The same pass also covered guild language switching with
+`/language` and `/settings language` (`de`, `fr`, back to `en-US`), a real
+join/play/queue/skip/leave smoke in French and German with now-playing panel
+cleanup, and the dashboard chrome/settings/statistics following the guild
+locale. Production was not touched and nothing from `dev` is deployed; the
+production-deployment box stays open until the user asks.
 
 ## Risks
 

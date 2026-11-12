@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 08:00 UTC**
+Updated: **2026-11-12 16:29 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -22,8 +22,14 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   green on `main`.
 - Maintenance: phases 0–5 are complete on `dev` — option localization
   `b02e889b`, help UX `bd43d0b7`, CI guardrails `ddf195b4`, doc truth
-  `6b59f4e4`/`65590d39`/`dd8742a6`, final gate recorded in the plan. No plan
-  work is pending; only live Discord and deploy verification remain.
+  `6b59f4e4`/`65590d39`/`dd8742a6`, final gate recorded in the plan.
+- Live acceptance ran on the disposable BotTest staging checkout (not
+  production) at `8011257f` on 2026-11-12: guild language switching via
+  `/language` and `/settings language` (`de`, `fr`, back to `en-US`), localized
+  replies/help/autocomplete, a real join/play/queue/skip/leave smoke in French
+  and German including now-playing panel cleanup, and the dashboard locale
+  following the guild setting (`fr` → `en-US` → `de` → `en-US`). Evidence:
+  kanban task `t_6a2ba550`. No merge and no deploy.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
@@ -160,11 +166,19 @@ Test count moved from the 454 baseline to 471 with phases 1–2: new
 help/autocomplete cases in `tests/autocomplete.test.mjs` and one help-option
 case in `tests/commands.test.mjs`.
 
-No live Discord slash/button pass and no live browser/dashboard visual pass were
-run for this work. The localized option payload, `/help` in a non-English
-locale, and the help autocomplete are unit-pinned but not yet exercised in
-Discord. The `/health` and `/playlist export` paths are unit-tested but have not
-run on a live bot; nothing from `dev` is deployed.
+Live Discord acceptance ran on the disposable BotTest staging checkout at
+`8011257f` (2026-11-12): `/language` and `/settings language` switched the guild
+to `de`, `fr` and back to `en-US`; replies, the localized `/help` menu, `/help
+play` and its autocomplete render correctly in German; the REST payload exposes
+16 locale descriptions on `/filter`, `/setup`, `/language` and `/help` options
+(74/74 commands have `description_localizations` when requested with
+`?with_localizations=true`). A real join/play/queue/skip/leave smoke ran in
+French and German, and the now-playing panel was removed on skip/leave in both
+locales, which exercises the translated author lookup that replaced the old
+`"Now Playing"` sentinel. The dashboard chrome, settings and statistics pages
+followed `fr`, `en-US` and `de` on the same instance. The `/health` and
+`/playlist export` paths are unit-tested but have not run on a live bot;
+nothing from `dev` is deployed.
 
 ### Performance evidence
 
@@ -181,16 +195,14 @@ run on a live bot; nothing from `dev` is deployed.
 - Merge `dev` to `main` and deploy only when the user asks. After deploying,
   smoke `GET /health` (200; 503 with a node stopped) and `/playlist export`
   (download and parse the attachment; empty playlist case).
-- Live acceptance for the maintenance work, on BotTest or after a deploy:
-  `/filter` and `/setup` option descriptions arrive localized, `/help` and
-  `/help play` read correctly in `en-US` and `de`, help autocomplete answers
-  from Discord, and 74 commands register with no Discord 400. The REST payload
-  is pinned by `tests/command-metadata.test.mjs`; only live registration and
-  rendering remain unproven.
+- Live acceptance for the maintenance work is **done on BotTest** at `8011257f`
+  (see *Verification evidence* above and kanban task `t_6a2ba550`): localized
+  option descriptions on `/filter`/`/setup`, `/help` and `/help play` in `de`,
+  help autocomplete from Discord, 74 commands registered with no Discord 400,
+  guild language switching, dashboard locale switching and a real playback
+  smoke in non-English locales. Re-run it only after new locale-visible code.
 - `.github/dependabot.yml` has no on-demand validation trigger; the first
   scheduled weekly run is the remaining proof that GitHub accepts it.
-- Optional live acceptance (pre-existing): language switching, localized
-  command replies, dashboard locale switch, and a real playback smoke test.
 - Native translation review is crowd-sourced on GitHub; not tracked as a local
   task.
 - Internal-only diagnostics and brand/technical tokens still do not need
