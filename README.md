@@ -20,6 +20,11 @@ commands, and every feature is available without a premium tier.
 ## Features
 
 - **Slash and prefix commands** — one command set through two entry points.
+- **16 languages** — per-guild `/language` selection with localized command
+  responses and dashboard UI. Catalogs ship as AI drafts with native corrections
+  accepted through GitHub.
+- **Local file playback** — `/playlocal` accepts a Discord audio or video
+  attachment up to 25 MB and resolves it through the configured Lavalink node.
 - **Lavalink playback** — queueing, seeking, skipping, looping, shuffling, radio,
   fair play, and saved recent history.
 - **Search** — YouTube, SoundCloud, Deezer, and other Lavalink sources. Prefix
@@ -40,8 +45,9 @@ commands, and every feature is available without a premium tier.
 - **Saved sessions** — queues survive a restart when session restore is enabled.
 - **Multi-bot handoff** — optional local multi-process setup with atomic session
   leases and automatic takeover.
-- **Dashboard** — Discord OAuth login, player controls, live queue, filters,
-  every guild setting, listening statistics, and a per-member personal stats view.
+- **Dashboard** — Discord OAuth login, localized player controls, live queue,
+  filters, every guild setting, listening statistics, and a per-member personal
+  stats view.
 - **Per-guild settings** — permissions, DJ mode, channels, timeouts, limits,
   prefix behavior, ephemeral replies, aliases, and command mappings.
 - **Opt-out voice listener integration** — optional local listener bridge; audio
@@ -132,6 +138,7 @@ groups are:
 | Lavalink  | `LAVALINK_URL`, `LAVALINK_AUTH`, `LAVALINK_SECURE`, `LAVALINK_NAME`, `LAVALINK_FALLBACKS`, `AUTO_NODE`, `NODE_FALLBACK`                                                | `LAVALINK_FALLBACKS` is a JSON array of standby nodes; a second local Lavalink is the reliable failover.                                                    |
 | Sessions  | `SESSION_RESTORE_AGE`, `SESSION_EMPTY_WAIT`                                                                                                                            | Restore a saved queue for up to six hours by default.                                                                                                       |
 | Messages  | `COMMAND_DELETE_AFTER`, `SETUP_CLEANUP_INTERVAL`                                                                                                                       | Set either to `0` to disable that timer.                                                                                                                    |
+| Language  | `DEFAULT_LANGUAGE`                                                                                                                                                     | Fallback locale for guilds that have not chosen one; defaults to `en-US`.                                                                                   |
 | Storage   | `DATABASE_URL`, `STATS_RETENTION_DAYS`, `STATS_INACTIVE_DAYS`, `STATS_PRUNE_INTERVAL_HOURS`                                                                            | SQLite defaults to `prisma/bootstrapdj.db`; WAL mode is enabled at startup.                                                                                 |
 | Dashboard | `DASHBOARD_PORT`, `DASHBOARD_HOST`, `DASHBOARD_PUBLIC_URL`, `DASHBOARD_OAUTH_*`, `DASHBOARD_SESSION_SECRET`, `DASHBOARD_ALLOW_ANONYMOUS`, `DASHBOARD_VOICE_CHANNEL_ID` | `DASHBOARD_PORT=0` disables the dashboard; anonymous mode is loopback-only. Dashboard audio uses the active Lavalink node’s `LAVALINK_URL`/`LAVALINK_AUTH`. |
 | Voice     | `EARL_CONTROL_URL`, `EARL_BRIDGE_SECRET`, `VOICE_BRIDGE_PORT`, `EARL_LIVE_BADGE_URL`                                                                                   | Optional Earl the Ear listener bridge; keep the control API on localhost.                                                                                   |
@@ -155,19 +162,19 @@ messages. `deleteafter` still controls auto-deletion when a reply is public.
 
 ## Commands
 
-BootstrapDJ exposes **72 top-level slash commands**. Many commands also work with
+BootstrapDJ exposes **74 top-level slash commands**. Many commands also work with
 the prefix, and some helper commands are prefix-only. Run `/utility commands`
 or `!utility commands` to see the live command status, prefix, and disabled
 commands for the current guild.
 
 | Category      | Slash commands                                                                                                                                                                                                                      |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Playback      | `/play`, `/playnext`, `/queue`, `/nowplaying`, `/pause`, `/resume`, `/skip`, `/previous`, `/seek`, `/stop`, `/volume`, `/loop`, `/shuffle`, `/join`, `/leave`, `/autoplay`                                                          |
+| Playback      | `/play`, `/playnext`, `/playlocal`, `/queue`, `/nowplaying`, `/pause`, `/resume`, `/skip`, `/previous`, `/seek`, `/stop`, `/volume`, `/loop`, `/shuffle`, `/join`, `/leave`, `/autoplay`                                            |
 | Queue editing | `/clearqueue`, `/remove`, `/move`, `/massmove`, `/massremove`, `/removeduplicates`, `/removekeyword`, `/removeuser`, `/removeabsent`, `/removelast`, `/reverse`, `/sort`, `/swap`, `/selectrandom`, `/recentlyplayed`, `/requested` |
 | Discovery     | `/artist`, `/album`, `/song`, `/top`, `/playlistsearch`, `/lyrics`, `/grab`, `/guess`                                                                                                                                               |
 | Filters       | `/filter` and `/filters`; individual filter names are prefix-only                                                                                                                                                                   |
 | Playlists     | `/playlist` with list, create, delete, view, add, remove, removesong, load, save, rename, copy, clone, merge, clear, share, import, unshare, and shares actions                                                                     |
-| Settings      | `/settings`, `/setup`, `/247`, `/prefix`, `/alias`, `/mappings`, `/permissions`, `/dj`, `/listen`; `selfprefix` is prefix-only                                                                                                      |
+| Settings      | `/settings`, `/language`, `/setup`, `/247`, `/prefix`, `/alias`, `/mappings`, `/permissions`, `/dj`, `/listen`; `selfprefix` is prefix-only                                                                                         |
 | Information   | `/help`, `/invite`, `/ping`, `/profile`, `/lavalink`, `/utility`; `/utility` includes overview, stats, shards, categories, faq, tip, premium, support, leaderboard, commands, and dashboard                                         |
 | Owner         | `/guild` (owner/dev only); other owner commands are prefix-only                                                                                                                                                                     |
 
@@ -175,6 +182,21 @@ Prefix-only helpers include `!info`, `!stats`, `!leaderboard`, `!categories`,
 `!faq`, `!tip`, `!support`, `!shards`, the legacy playlist-management
 commands, and the individual filter toggles. `/utility premium` is an
 informational page: no feature in this project is gated behind a paid tier.
+
+## Languages
+
+BootstrapDJ ships with 16 locales: `en-US`, `en-GB`, `de`, `es-ES`, `fr`, `id`,
+`it`, `ja`, `ko`, `nl`, `pl`, `pt-BR`, `ru`, `tr`, `zh-CN`, and `zh-TW`.
+
+- Set a server language with `/language language:<locale>` or
+  `/settings language <locale>`; `/language reset` restores the default.
+- `DEFAULT_LANGUAGE` sets the fallback for guilds that have not chosen one.
+- Slash-command names stay canonical English; descriptions, responses, buttons,
+  playback notices, and the dashboard UI follow the guild language.
+- AI-translated catalogs carry a `**AI Translated, awaiting native translation**`
+  note. Native corrections are welcome through the
+  [translation issue template](https://github.com/BootstrapBoys/BootstrapDJ/issues/new?template=translation.yml)
+  or a locale-only pull request; see [docs/I18N.md](docs/I18N.md).
 
 ## Dashboard
 
