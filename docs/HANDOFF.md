@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 06:50 UTC**
+Updated: **2026-11-12 06:53 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -8,13 +8,14 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 
 ## Current state
 
-- Working tree: clean on `dev` at **`eb4953f9`** (`feat: add dashboard health
-  and playlist export`).
-- `dev` is one commit ahead of `main`; `main`/`origin/main` are at
+- Working tree: clean on `dev`; `git log -1` is the current handoff commit.
+- `dev` contains the undeployed feature commit **`eb4953f9`** (`feat: add
+  dashboard health and playlist export`); `main`/`origin/main` are at
   **`dd93b937`** (`docs: record backup and ignore hardening`).
 - Last production code release: **`c41be815`** (`feat: localize node audit
   notices`). The health/export commit is **not deployed**.
-- Latest CI: green for `eb4953f9` on `dev`; `dd93b937` green on `main`.
+- Latest CI: green for `eb4953f9` and handoff commit `7e9dbfdb` on `dev`
+  (runs `43170550563`, `43171114410`); `dd93b937` green on `main`.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
@@ -78,6 +79,10 @@ release on an internal native-review pass.
   and counted; the file is capped at 24 MB. Responses are translated in all 16
   locales.
 
+The `/health` route sits behind the existing read rate limiter and sends
+`cache-control: no-store`; export attachment names are sanitized and oversized
+documents are refused before the Discord upload.
+
 Helper: `src/lib/PlaylistExport.ts`; tests:
 `tests/playlist-export.test.mjs`, `tests/dashboard-health.test.mjs`.
 
@@ -94,11 +99,11 @@ Helper: `src/lib/PlaylistExport.ts`; tests:
 
 ## Verification
 
-Latest full local gate (`eb4953f9`, 2026-11-12):
+Latest full local gate (`eb4953f9` code, re-run at `7e9dbfdb`, 2026-11-12):
 
 - `npm run i18n:validate`: 16 locales valid
 - `npm test`: **454/454**
-- Coverage: **76.05% lines / 80.71% functions / 70.92% branches**
+- Coverage: **76.06% lines / 80.70% functions / 70.92% branches**
 - `npm run format`, `npm run lint`, `npm run build`: clean
 - CI: green on `dev` for `eb4953f9` (run `43170550563`); `main` green for
   `dd93b937`
@@ -126,8 +131,8 @@ unit-tested but have not run on a live bot; they are not deployed.
 1. Read `README.md`, `docs/I18N.md`, `docs/LONGTAIL_I18N_WORKFLOW.md`, and
    `docs/PARITY_WORKFLOW.md`.
 2. Check `git branch --show-current`, `git status`, and the latest CI before
-   editing. `dev` is currently one commit ahead of `main`; use `dev` for
-   changes and merge to `main` only when asked.
+   editing. `dev` carries the undeployed feature commit; use `dev` for changes
+   and merge to `main` only when asked.
 3. Standard gate:
 
    ```bash
