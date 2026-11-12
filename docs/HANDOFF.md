@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 07:08 UTC**
+Updated: **2026-11-12 07:10 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -15,12 +15,13 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   **`dd93b937`** (`docs: record backup and ignore hardening`).
 - Last production code release: **`c41be815`** (`feat: localize node audit
   notices`). The health/export commit is **not deployed**.
-- CI: green on `dev` for the feature commit and the handoff commits (runs
-  `43170550563`, `43171114410`, `43171295788`); `dd93b937` green on `main`.
+- CI: green on `dev` through the docs cleanup (runs `43170550563`,
+  `43171114410`, `43171295788`, `43172472916`, `43173230630`); `dd93b937`
+  green on `main`.
 - Pending maintenance: phases 1–3 of `docs/MAINTENANCE_PLAN.md` (option
-  localization, help UX, CI guardrails); phase 4 is mostly complete, with only
-  the `HANDOFF.md` count refresh left. Ops hardening is deployed; the
-  health/export feature is implemented on `dev` but not deployed.
+  localization, help UX, CI guardrails); phase 4 is complete after the docs
+  cleanup and count refresh. Ops hardening is deployed; the health/export
+  feature is implemented on `dev` but not deployed.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
@@ -117,8 +118,8 @@ Helper: `src/lib/PlaylistExport.ts`; tests:
 - Inbound links were updated; the 10-stage staging matrix was preserved in the
   maintenance skill's `references/staging-and-failover.md`, and the performance
   evidence was carried into this handoff.
-- `docs/MAINTENANCE_PLAN.md` phase 4 is now limited to the `HANDOFF.md` count
-  refresh; `docs/` contains current references only.
+- `docs/MAINTENANCE_PLAN.md` phase 4 is complete after the count refresh;
+  `docs/` contains current references only.
 
 ## Verification
 

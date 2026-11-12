@@ -25,7 +25,7 @@ and the daily DB backup timer are on `main`/production; `GET /health` and
 | 1 | Localize slash-command option descriptions | Not started |
 | 2 | Help UX: localization, field trimming, autocomplete | Not started |
 | 3 | CI: Dependabot, dependency audit, coverage floors | Not started |
-| 4 | Doc truth: remove completed plans; fix current counts | Mostly done — 20 historical docs deleted; HANDOFF counts pending |
+| 4 | Doc truth: remove completed plans; fix current counts | Done — 20 historical docs deleted; counts refreshed |
 | 5 | Final gate and verification | Not started |
 
 ## Phase 0 — Baseline
@@ -165,15 +165,15 @@ parses.
       `PERFORMANCE_PLAN`). Current runbook content is in `README.md`,
       `I18N.md`, `PLAYBACK_ARCHITECTURE.md`, and the maintenance skill;
       performance evidence was carried into `HANDOFF.md`.
-- [ ] Re-check `docs/HANDOFF.md` for stale current-state claims; it was
-      refreshed at `4977a635`, but verify again after the code commits.
+- [x] Re-check `docs/HANDOFF.md` for stale current-state claims; it was
+      refreshed at `4977a635` and again after the docs cleanup.
 - [x] No historical plan docs remain in `docs/`; deleted content is in git
       history. Keep the surviving current references in place.
-- [ ] Verify with
+- [x] Verify with
       `grep -rnE 'experimental/rewrite|209/209|71 top-level|136 tests' docs --exclude=MAINTENANCE_PLAN.md`;
       it should return no hits after the cleanup.
 
-**Commit:** `docs: remove completed plans and refresh counts`
+**Commits:** `6b59f4e4`, `65590d39`
 
 ## Phase 5 — Final gate and verification
 
