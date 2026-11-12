@@ -1,14 +1,18 @@
 import { ApplicationCommandOptionType, EmbedBuilder } from 'discord.js';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
+import { isOwner } from '../../lib/CommandGate.js';
+import { hasTranslation } from '../../lib/i18n.js';
 import { tr } from '../../lib/i18nContext.js';
 
 function quoted(values: readonly string[], none: string): string {
     return values.length ? values.map(value => `\`${value}\``).join(', ') : none;
 }
 
-function yesNo(value: boolean, yes: string, no: string): string {
-    return value ? yes : no;
+/** Localized command description, falling back to the constructor copy. */
+function descriptionOf(ctx: Context, command: Command): string {
+    const key = `commands:metadata.${command.name}.description`;
+    return hasTranslation(key, ctx.locale) ? tr(ctx, key) : command.description.content;
 }
 
 export default class Help extends Command {
@@ -33,6 +37,7 @@ export default class Help extends Command {
                     description: 'The command you want to get info on',
                     type: ApplicationCommandOptionType.String,
                     required: false,
+                    autocomplete: true,
                 },
             ],
         });
@@ -77,40 +82,42 @@ export default class Help extends Command {
     ): EmbedBuilder {
         const none = tr(ctx, 'longtail:tools.helpNone');
         const yes = tr(ctx, 'longtail:tools.helpYes');
-        const no = tr(ctx, 'longtail:tools.helpNo');
-        const flag = (value: boolean): string => yesNo(value, yes, no);
         const rows: Array<[string, string]> = [
-            [tr(ctx, 'longtail:tools.helpLabelDescription'), command.description.content],
+            [tr(ctx, 'longtail:tools.helpLabelDescription'), descriptionOf(ctx, command)],
             [tr(ctx, 'longtail:tools.helpLabelUsage'), `${prefix}${command.description.usage}`],
-            [
+        ];
+
+        const examples = command.description.examples.filter(example => example.length > 0);
+        if (examples.length) {
+            rows.push([
                 tr(ctx, 'longtail:tools.helpLabelExamples'),
-                command.description.examples.map(example => `${prefix}${example}`).join(', '),
-            ],
-            [
+                examples.map(example => `${prefix}${example}`).join(', '),
+            ]);
+        }
+        if (command.aliases.length) {
+            rows.push([
                 tr(ctx, 'longtail:tools.helpLabelAliases'),
                 command.aliases.map(alias => `\`${alias}\``).join(', '),
-            ],
-            [tr(ctx, 'longtail:tools.helpLabelCategory'), String(command.category)],
-            [
-                tr(ctx, 'longtail:tools.helpLabelCooldown'),
-                tr(ctx, 'longtail:tools.helpCooldownValue', { seconds: command.cooldown }),
-            ],
-            [
-                tr(ctx, 'longtail:tools.helpLabelPermissions'),
-                quoted(command.permissions.user, none),
-            ],
-            [
-                tr(ctx, 'longtail:tools.helpLabelBotPermissions'),
-                quoted(command.permissions.client, none),
-            ],
-            [tr(ctx, 'longtail:tools.helpLabelDeveloperOnly'), flag(command.permissions.dev)],
-            [tr(ctx, 'longtail:tools.helpLabelSlashCommand'), flag(command.slashCommand)],
-            [tr(ctx, 'longtail:tools.helpLabelArgs'), flag(command.args)],
-            [tr(ctx, 'longtail:tools.helpLabelPlayer'), flag(command.player.active)],
-            [tr(ctx, 'longtail:tools.helpLabelDj'), flag(command.player.dj)],
-            [tr(ctx, 'longtail:tools.helpLabelDjPermissions'), command.player.djPerm ?? none],
-            [tr(ctx, 'longtail:tools.helpLabelVoice'), flag(command.player.voice)],
-        ];
+            ]);
+        }
+
+        rows.push([
+            tr(ctx, 'longtail:tools.helpLabelCooldown'),
+            tr(ctx, 'longtail:tools.helpCooldownValue', { seconds: command.cooldown }),
+        ]);
+        rows.push([
+            tr(ctx, 'longtail:tools.helpLabelPermissions'),
+            quoted(command.permissions.user, none),
+        ]);
+
+        // Requirements are only worth a row when the command actually has them.
+        if (command.player.voice) rows.push([tr(ctx, 'longtail:tools.helpLabelVoice'), yes]);
+        if (command.player.dj) rows.push([tr(ctx, 'longtail:tools.helpLabelDj'), yes]);
+        if (command.player.active) rows.push([tr(ctx, 'longtail:tools.helpLabelPlayer'), yes]);
+
+        if (command.permissions.dev && isOwner(ctx.author?.id ?? '', client.config.owners)) {
+            rows.push([tr(ctx, 'longtail:tools.helpLabelDeveloperOnly'), yes]);
+        }
 
         return client
             .embed()
@@ -129,14 +136,21 @@ export default class Help extends Command {
 
         const record = await client.db.get(guild.id);
         const prefix = record?.prefix ?? client.config.prefix;
-        const query = args[0];
+        const query = args[0]?.toLowerCase();
 
         if (!query) {
             return await ctx.sendMessage({ embeds: [this.overview(client, ctx, prefix)] });
         }
 
-        const command = client.commands.get(query.toLowerCase());
-        if (!command) {
+        const canonical = client.aliases.get(query);
+        const command =
+            client.commands.get(query) ?? (canonical ? client.commands.get(canonical) : undefined);
+
+        // Developer commands are not described to anyone outside the owner list.
+        if (
+            !command ||
+            (command.permissions.dev && !isOwner(ctx.author?.id ?? '', client.config.owners))
+        ) {
             return await ctx.sendMessage({
                 embeds: [
                     client

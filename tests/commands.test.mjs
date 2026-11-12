@@ -172,6 +172,15 @@ test('guild inspector is owner-only and slash-visible', async () => {
     assert.equal(command.options[0].autocomplete, true);
 });
 
+test('help offers command autocomplete', async () => {
+    const HelpClass = (await import('../dist/commands/tools/Help.js')).default;
+    const command = new HelpClass(fakeClient);
+    const option = command.options.find(entry => entry.name === 'command');
+
+    assert.ok(option, 'help must expose a command option');
+    assert.equal(option.autocomplete, true);
+});
+
 test('setup requires both ManageGuild and ManageRoles', async () => {
     const SetupClass = (await import('../dist/commands/manage/Setup.js')).default;
     const command = new SetupClass(fakeClient);

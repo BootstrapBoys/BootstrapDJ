@@ -235,6 +235,23 @@ export default class InteractionCreate extends Event {
             );
         }
 
+        if (interaction.commandName === 'help' && focused.name === 'command') {
+            const owner = isOwner(interaction.user.id, this.client.config.owners);
+            const names = [...this.client.commands.values()]
+                .filter(
+                    command => owner || (command.category !== 'dev' && !command.permissions.dev)
+                )
+                .map(command => command.name)
+                .filter(name => name.includes(query));
+            const prefixMatches = names.filter(name => name.startsWith(query)).sort();
+            const rest = names.filter(name => !name.startsWith(query)).sort();
+            // Prefix matches read as the better guesses; 25 is Discord's cap.
+            return await this.respond(
+                interaction,
+                [...prefixMatches, ...rest].slice(0, 25).map(name => ({ name, value: name }))
+            );
+        }
+
         if (interaction.commandName === 'playlist' && focused.name === 'query') {
             const term = String(raw).trim();
             return await this.respond(interaction, term ? await this.tracks(term) : []);
