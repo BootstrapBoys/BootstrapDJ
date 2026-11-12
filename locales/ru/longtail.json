@@ -468,7 +468,12 @@
             "noDetails": "сервер не предоставил подробностей — проверь `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — проверь `pm2 logs Lavalink`",
             "reminder": "Узел Lavalink «{{node}}» всё ещё недоступен после {{duration}}: {{reason}}.",
-            "unreachable": "Узел Lavalink «{{node}}» недоступен: {{reason}}. Повторяю в фоне."
+            "unreachable": "Узел Lavalink «{{node}}» недоступен: {{reason}}. Повторяю в фоне.",
+            "down": "Узел Lavalink «{{node}}» не отвечает: {{summary}} (код {{code}}){{detail}}. Повторяю в фоне.",
+            "reconnected": "Узел Lavalink «{{node}}» переподключился.",
+            "fallbackRemoved": "Настроенный узел Lavalink снова в сети — публичный резерв «{{name}}» удалён.",
+            "standby": "Основной узел недоступен — резервный узел «{{active}}» обрабатывает воспроизведение.",
+            "fallbackActive": "Основной узел всё ещё недоступен после {{duration}} — используется публичный резерв «{{name}}» ({{latency}} мс, {{players}} плееров)."
         }
     },
     "filters": {

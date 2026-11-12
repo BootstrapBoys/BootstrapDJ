@@ -1,5 +1,6 @@
 import type { BootstrapClient } from '../../core/index.js';
 import { Event } from '../../core/index.js';
+import { DEFAULT_LANGUAGE, translate } from '../../lib/i18n.js';
 import BotLog from '../../lib/BotLog.js';
 import { isPrimaryNode } from '../../lib/NodeConfig.js';
 import { beginIncident, describeCloseCode, formatDuration } from '../../lib/NodeStatus.js';
@@ -68,7 +69,11 @@ export default class NodeDestroy extends Event {
             return;
         }
 
-        const message = `Lavalink node "${node}" is down: ${info.summary} (code ${code})${detail}. Retrying in the background.`;
+        const message = translate(
+            'longtail:events.nodes.down',
+            this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+            { node, summary: info.summary, code, detail }
+        );
         if (info.expected) this.client.logger.warn(message);
         else this.client.logger.error(message);
         BotLog.send(this.client, message, info.expected ? 'warn' : 'error');

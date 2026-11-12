@@ -468,7 +468,12 @@
             "noDetails": "サーバーから詳細は提供されませんでした — `pm2 logs Lavalink` を確認してください",
             "withDetails": "{{detail}} — `pm2 logs Lavalink` を確認してください",
             "reminder": "Lavalink ノード \"{{node}}\" は {{duration}} 経過しても到達できません: {{reason}}。",
-            "unreachable": "Lavalink ノード \"{{node}}\" に到達できません: {{reason}}。バックグラウンドで再試行しています。"
+            "unreachable": "Lavalink ノード \"{{node}}\" に到達できません: {{reason}}。バックグラウンドで再試行しています。",
+            "down": "Lavalink ノード \"{{node}}\" がダウンしました: {{summary}}（コード {{code}}）{{detail}}。バックグラウンドで再試行しています。",
+            "reconnected": "Lavalink ノード \"{{node}}\" が再接続しました。",
+            "fallbackRemoved": "設定済みの Lavalink ノードが復旧しました — 公開フォールバック \"{{name}}\" を削除しました。",
+            "standby": "プライマリノードがダウンしました — 待機系ノード \"{{active}}\" が再生を処理しています。",
+            "fallbackActive": "プライマリノードが {{duration}} 経過してもダウンしています — 公開フォールバック \"{{name}}\" を使用中（{{latency}}ms、{{players}} プレイヤー）。"
         }
     },
     "filters": {

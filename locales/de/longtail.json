@@ -468,7 +468,12 @@
             "noDetails": "der Server hat keine Details geliefert — prüfe `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — prüfe `pm2 logs Lavalink`",
             "reminder": "Lavalink-Node \"{{node}}\" ist nach {{duration}} weiterhin nicht erreichbar: {{reason}}.",
-            "unreachable": "Lavalink-Node \"{{node}}\" ist nicht erreichbar: {{reason}}. Neuer Versuch im Hintergrund."
+            "unreachable": "Lavalink-Node \"{{node}}\" ist nicht erreichbar: {{reason}}. Neuer Versuch im Hintergrund.",
+            "down": "Lavalink-Node \"{{node}}\" ist ausgefallen: {{summary}} (Code {{code}}){{detail}}. Neuer Versuch im Hintergrund.",
+            "reconnected": "Lavalink-Node \"{{node}}\" ist wieder verbunden.",
+            "fallbackRemoved": "Ein konfigurierter Lavalink-Node ist wieder da — öffentlicher Fallback \"{{name}}\" entfernt.",
+            "standby": "Primärer Node ist ausgefallen — Standby-Node \"{{active}}\" übernimmt die Wiedergabe.",
+            "fallbackActive": "Primärer Node ist nach {{duration}} weiterhin ausgefallen — öffentlicher Fallback \"{{name}}\" wird verwendet ({{latency}} ms, {{players}} Spieler)."
         }
     },
     "filters": {

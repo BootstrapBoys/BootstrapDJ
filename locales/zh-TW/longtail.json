@@ -468,7 +468,12 @@
             "noDetails": "伺服器未提供詳細資訊 — 請檢查 `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — 請檢查 `pm2 logs Lavalink`",
             "reminder": "Lavalink 節點「{{node}}」在 {{duration}} 後仍無法連線：{{reason}}。",
-            "unreachable": "Lavalink 節點「{{node}}」無法連線：{{reason}}。正在背景重試。"
+            "unreachable": "Lavalink 節點「{{node}}」無法連線：{{reason}}。正在背景重試。",
+            "down": "Lavalink 節點「{{node}}」已離線：{{summary}}（代碼 {{code}}）{{detail}}。正在背景重試。",
+            "reconnected": "Lavalink 節點「{{node}}」已重新連線。",
+            "fallbackRemoved": "某個已設定的 Lavalink 節點已恢復 —— 已移除公用備援「{{name}}」。",
+            "standby": "主節點已離線 —— 備援節點「{{active}}」正在處理播放。",
+            "fallbackActive": "主節點在 {{duration}} 後仍處於離線狀態 —— 正在使用公用備援「{{name}}」（{{latency}}ms，{{players}} 位播放器）。"
         }
     },
     "filters": {

@@ -468,7 +468,12 @@
             "noDetails": "el servidor no ha proporcionado detalles; comprueba `pm2 logs Lavalink`",
             "withDetails": "{{detail}}; comprueba `pm2 logs Lavalink`",
             "reminder": "El nodo de Lavalink «{{node}}» sigue sin ser accesible tras {{duration}}: {{reason}}.",
-            "unreachable": "El nodo de Lavalink «{{node}}» no es accesible: {{reason}}. Se reintentará en segundo plano."
+            "unreachable": "El nodo de Lavalink «{{node}}» no es accesible: {{reason}}. Se reintentará en segundo plano.",
+            "down": "El nodo de Lavalink «{{node}}» está caído: {{summary}} (código {{code}}){{detail}}. Se reintentará en segundo plano.",
+            "reconnected": "El nodo de Lavalink «{{node}}» se ha reconectado.",
+            "fallbackRemoved": "Un nodo de Lavalink configurado vuelve a estar disponible — se ha eliminado el fallback público «{{name}}».",
+            "standby": "El nodo principal está caído — el nodo de reserva «{{active}}» está gestionando la reproducción.",
+            "fallbackActive": "El nodo principal sigue caído tras {{duration}} — se usa el fallback público «{{name}}» ({{latency}} ms, {{players}} reproductores)."
         }
     },
     "filters": {

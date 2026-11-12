@@ -2,6 +2,7 @@ import { Constants, type Node } from 'shoukaku';
 
 import type { BootstrapClient, Dispatcher } from '../../core/index.js';
 import BotLog from '../../lib/BotLog.js';
+import { DEFAULT_LANGUAGE, translate } from '../../lib/i18n.js';
 import { formatDuration } from '../../lib/NodeStatus.js';
 import {
     findBestPublicNode,
@@ -165,7 +166,11 @@ export class NodeWatchdog {
             return;
         }
         this.fallbackName = null;
-        const message = `A configured Lavalink node is back — removed public fallback "${name}".`;
+        const message = translate(
+            'longtail:events.nodes.fallbackRemoved',
+            this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+            { name }
+        );
         this.client.logger.success(message);
         BotLog.send(this.client, message, 'success');
     }
@@ -208,7 +213,11 @@ export class NodeWatchdog {
         if (!this.client.queue.hasNode) return false;
         const active = this.client.queue.node?.name;
         if (active && !isFallbackNode(active) && !this.announced) {
-            const message = `Primary node is down — standby node "${active}" is handling playback.`;
+            const message = translate(
+                'longtail:events.nodes.standby',
+                this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+                { active }
+            );
             this.client.logger.warn(message);
             BotLog.send(this.client, message, 'warn');
             this.announced = true;
@@ -243,9 +252,16 @@ export class NodeWatchdog {
             const option = toNodeOption(best.entry);
             this.client.shoukaku.addNode(option);
             this.fallbackName = option.name;
-            const message = `Primary node still down after ${formatDuration(
-                Date.now() - this.downSince
-            )} — using public fallback "${option.name}" (${best.latencyMs}ms, ${best.players} players).`;
+            const message = translate(
+                'longtail:events.nodes.fallbackActive',
+                this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+                {
+                    duration: formatDuration(Date.now() - this.downSince),
+                    name: option.name,
+                    latency: best.latencyMs,
+                    players: best.players,
+                }
+            );
             this.client.logger.warn(message);
             if (!this.announced) {
                 BotLog.send(this.client, message, 'warn');

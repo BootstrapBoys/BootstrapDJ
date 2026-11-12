@@ -468,7 +468,12 @@
             "noDetails": "il server non ha fornito dettagli — controlla `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — controlla `pm2 logs Lavalink`",
             "reminder": "Il nodo Lavalink \"{{node}}\" è ancora irraggiungibile dopo {{duration}}: {{reason}}.",
-            "unreachable": "Il nodo Lavalink \"{{node}}\" è irraggiungibile: {{reason}}. Nuovo tentativo in background."
+            "unreachable": "Il nodo Lavalink \"{{node}}\" è irraggiungibile: {{reason}}. Nuovo tentativo in background.",
+            "down": "Il nodo Lavalink \"{{node}}\" è offline: {{summary}} (codice {{code}}){{detail}}. Nuovo tentativo in background.",
+            "reconnected": "Il nodo Lavalink \"{{node}}\" si è riconnesso.",
+            "fallbackRemoved": "Un nodo Lavalink configurato è tornato disponibile — fallback pubblico \"{{name}}\" rimosso.",
+            "standby": "Il nodo principale è offline — il nodo di riserva \"{{active}}\" sta gestendo la riproduzione.",
+            "fallbackActive": "Il nodo principale è ancora indisponibile dopo {{duration}} — uso del fallback pubblico \"{{name}}\" ({{latency}} ms, {{players}} player)."
         }
     },
     "filters": {

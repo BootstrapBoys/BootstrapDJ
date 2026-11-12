@@ -1,5 +1,6 @@
 import type { BootstrapClient } from '../../core/index.js';
 import { Event } from '../../core/index.js';
+import { DEFAULT_LANGUAGE, translate } from '../../lib/i18n.js';
 import BotLog from '../../lib/BotLog.js';
 import { isPrimaryNode } from '../../lib/NodeConfig.js';
 import { endIncident, formatDuration } from '../../lib/NodeStatus.js';
@@ -30,8 +31,16 @@ export default class NodeReconnect extends Event {
         const recoveredMs = endIncident(node);
         const message =
             recoveredMs === null
-                ? `Lavalink node "${node}" reconnected.`
-                : `Lavalink node "${node}" recovered after ${formatDuration(recoveredMs)}.`;
+                ? translate(
+                      'longtail:events.nodes.reconnected',
+                      this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+                      { node }
+                  )
+                : translate(
+                      'longtail:events.nodes.recovered',
+                      this.client.config.defaultLanguage ?? DEFAULT_LANGUAGE,
+                      { node, duration: formatDuration(recoveredMs) }
+                  );
         this.client.logger.success(message);
         BotLog.send(this.client, message, 'success');
     }

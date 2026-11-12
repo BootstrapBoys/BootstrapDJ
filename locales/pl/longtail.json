@@ -468,7 +468,12 @@
             "noDetails": "serwer nie podał szczegółów — sprawdź `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — sprawdź `pm2 logs Lavalink`",
             "reminder": "Węzeł Lavalink „{{node}}” nadal jest nieosiągalny po {{duration}}: {{reason}}.",
-            "unreachable": "Węzeł Lavalink „{{node}}” jest nieosiągalny: {{reason}}. Ponawianie w tle."
+            "unreachable": "Węzeł Lavalink „{{node}}” jest nieosiągalny: {{reason}}. Ponawianie w tle.",
+            "down": "Węzeł Lavalink „{{node}}” jest niedostępny: {{summary}} (kod {{code}}){{detail}}. Ponawianie w tle.",
+            "reconnected": "Węzeł Lavalink „{{node}}” ponownie nawiązał połączenie.",
+            "fallbackRemoved": "Skonfigurowany węzeł Lavalink znów działa — usunięto publiczny fallback „{{name}}”.",
+            "standby": "Główny węzeł jest niedostępny — węzeł zapasowy „{{active}}” obsługuje odtwarzanie.",
+            "fallbackActive": "Główny węzeł nadal jest niedostępny po {{duration}} — używany jest publiczny fallback „{{name}}” ({{latency}} ms, {{players}} odtwarzaczy)."
         }
     },
     "filters": {

@@ -468,7 +468,12 @@
             "noDetails": "서버에서 세부 정보를 제공하지 않았습니다 — `pm2 logs Lavalink`를 확인하세요",
             "withDetails": "{{detail}} — `pm2 logs Lavalink`를 확인하세요",
             "reminder": "Lavalink 노드 \"{{node}}\"에 {{duration}}이 지나도 연결할 수 없습니다: {{reason}}.",
-            "unreachable": "Lavalink 노드 \"{{node}}\"에 연결할 수 없습니다: {{reason}}. 백그라운드에서 다시 시도합니다."
+            "unreachable": "Lavalink 노드 \"{{node}}\"에 연결할 수 없습니다: {{reason}}. 백그라운드에서 다시 시도합니다.",
+            "down": "Lavalink 노드 \"{{node}}\"이(가) 다운되었습니다: {{summary}} (코드 {{code}}){{detail}}. 백그라운드에서 다시 시도합니다.",
+            "reconnected": "Lavalink 노드 \"{{node}}\"이(가) 다시 연결되었습니다.",
+            "fallbackRemoved": "설정된 Lavalink 노드가 복구되어 공개 폴백 \"{{name}}\"을(를) 제거했습니다.",
+            "standby": "기본 노드가 다운되어 대기 노드 \"{{active}}\"이(가) 재생을 처리하고 있습니다.",
+            "fallbackActive": "기본 노드가 {{duration}} 후에도 다운되어 공개 폴백 \"{{name}}\"을(를) 사용 중입니다 ({{latency}}ms, {{players}}명의 플레이어)."
         }
     },
     "filters": {

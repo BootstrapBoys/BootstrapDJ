@@ -468,7 +468,12 @@
             "noDetails": "de server heeft geen details verstrekt — controleer `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — controleer `pm2 logs Lavalink`",
             "reminder": "Lavalink-node \"{{node}}\" is na {{duration}} nog steeds niet bereikbaar: {{reason}}.",
-            "unreachable": "Lavalink-node \"{{node}}\" is niet bereikbaar: {{reason}}. Nieuwe poging op de achtergrond."
+            "unreachable": "Lavalink-node \"{{node}}\" is niet bereikbaar: {{reason}}. Nieuwe poging op de achtergrond.",
+            "down": "Lavalink-node \"{{node}}\" is offline: {{summary}} (code {{code}}){{detail}}. Nieuwe poging op de achtergrond.",
+            "reconnected": "Lavalink-node \"{{node}}\" is opnieuw verbonden.",
+            "fallbackRemoved": "Een geconfigureerde Lavalink-node is weer online — openbare fallback \"{{name}}\" verwijderd.",
+            "standby": "Primaire node is offline — reservenode \"{{active}}\" verzorgt de weergave.",
+            "fallbackActive": "Primaire node is na {{duration}} nog steeds offline — openbare fallback \"{{name}}\" wordt gebruikt ({{latency}} ms, {{players}} spelers)."
         }
     },
     "filters": {

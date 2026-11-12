@@ -4,7 +4,7 @@
 setup and dashboard surfaces; keep all translations in the existing `longtail`
 namespace; ship the same 16 locales with the AI-translation note.
 
-**Status:** complete on `dev`; awaiting CI on the phase 9 commit.
+**Status:** complete on `dev`; final node-audit follow-up included.
 
 ## Completion criteria
 
@@ -90,4 +90,4 @@ Native corrections are crowd-sourced on GitHub. Use the translation issue templa
 4. Replace the TrackStart `"Now Playing"` sentinel with a translated-author lookup across supported languages so stale-panel cleanup survives localization.
 5. Merge the phase 9 English fragment, translate all new keys across 15 non-en-US locales, run the full gate, and commit on `dev` only.
 
-Final phase 9 result: 42 keys, all 15 non-en-US locales translated, **447/447 tests**, **75.94% lines / 80.54% functions / 70.78% branches**, validator/format/lint/build clean. Command, event, operational-notice and dashboard copy is catalog-backed; no known hardcoded English user-facing surface remains.
+Final phase 9 result: 47 keys (42 core + 5 node-audit follow-ups), all 15 non-en-US locales translated, **447/447 tests**, **75.93% lines / 80.52% functions / 70.78% branches**, validator/format/lint/build clean. Command, event, operational-notice and dashboard copy is catalog-backed; no known hardcoded English user-facing BotLog or embed surface remains.

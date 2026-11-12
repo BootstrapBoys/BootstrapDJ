@@ -468,7 +468,12 @@
             "noDetails": "服务器未提供详细信息 —— 请检查 `pm2 logs Lavalink`",
             "withDetails": "{{detail}} —— 请检查 `pm2 logs Lavalink`",
             "reminder": "Lavalink 节点“{{node}}”在 {{duration}} 后仍无法访问：{{reason}}。",
-            "unreachable": "Lavalink 节点“{{node}}”无法访问：{{reason}}。正在后台重试。"
+            "unreachable": "Lavalink 节点“{{node}}”无法访问：{{reason}}。正在后台重试。",
+            "down": "Lavalink 节点“{{node}}”已离线：{{summary}}（代码 {{code}}）{{detail}}。正在后台重试。",
+            "reconnected": "Lavalink 节点“{{node}}”已重新连接。",
+            "fallbackRemoved": "一个已配置的 Lavalink 节点已恢复 —— 已移除公共回退“{{name}}”。",
+            "standby": "主节点已离线 —— 备用节点“{{active}}”正在处理播放。",
+            "fallbackActive": "主节点在 {{duration}} 后仍处于离线状态 —— 正在使用公共回退“{{name}}”（{{latency}}ms，{{players}} 个播放器）。"
         }
     },
     "filters": {

@@ -468,7 +468,12 @@
             "noDetails": "nenhum detalhe foi fornecido pelo servidor — verifique `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — verifique `pm2 logs Lavalink`",
             "reminder": "O nó do Lavalink \"{{node}}\" continua inacessível após {{duration}}: {{reason}}.",
-            "unreachable": "O nó do Lavalink \"{{node}}\" está inacessível: {{reason}}. Tentando novamente em segundo plano."
+            "unreachable": "O nó do Lavalink \"{{node}}\" está inacessível: {{reason}}. Tentando novamente em segundo plano.",
+            "down": "O nó do Lavalink \"{{node}}\" está fora do ar: {{summary}} (código {{code}}){{detail}}. Tentando novamente em segundo plano.",
+            "reconnected": "O nó do Lavalink \"{{node}}\" se reconectou.",
+            "fallbackRemoved": "Um nó do Lavalink configurado voltou a ficar disponível — fallback público \"{{name}}\" removido.",
+            "standby": "O nó principal está fora do ar — o nó de reserva \"{{active}}\" está cuidando da reprodução.",
+            "fallbackActive": "O nó principal continua fora do ar após {{duration}} — usando o fallback público \"{{name}}\" ({{latency}} ms, {{players}} players)."
         }
     },
     "filters": {

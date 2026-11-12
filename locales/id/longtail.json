@@ -468,7 +468,12 @@
             "noDetails": "server tidak memberikan detail — periksa `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — periksa `pm2 logs Lavalink`",
             "reminder": "Node Lavalink \"{{node}}\" masih tidak terjangkau setelah {{duration}}: {{reason}}.",
-            "unreachable": "Node Lavalink \"{{node}}\" tidak terjangkau: {{reason}}. Mencoba lagi di latar belakang."
+            "unreachable": "Node Lavalink \"{{node}}\" tidak terjangkau: {{reason}}. Mencoba lagi di latar belakang.",
+            "down": "Node Lavalink \"{{node}}\" mati: {{summary}} (kode {{code}}){{detail}}. Mencoba lagi di latar belakang.",
+            "reconnected": "Node Lavalink \"{{node}}\" terhubung kembali.",
+            "fallbackRemoved": "Node Lavalink yang dikonfigurasi sudah aktif kembali — fallback publik \"{{name}}\" dihapus.",
+            "standby": "Node utama mati — node siaga \"{{active}}\" menangani pemutaran.",
+            "fallbackActive": "Node utama masih mati setelah {{duration}} — menggunakan fallback publik \"{{name}}\" ({{latency}} ms, {{players}} pemutar)."
         }
     },
     "filters": {

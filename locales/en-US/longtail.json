@@ -468,7 +468,12 @@
             "noDetails": "no details were provided by the server — check `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — check `pm2 logs Lavalink`",
             "reminder": "Lavalink node \"{{node}}\" is still unreachable after {{duration}}: {{reason}}.",
-            "unreachable": "Lavalink node \"{{node}}\" is unreachable: {{reason}}. Retrying in the background."
+            "unreachable": "Lavalink node \"{{node}}\" is unreachable: {{reason}}. Retrying in the background.",
+            "down": "Lavalink node \"{{node}}\" is down: {{summary}} (code {{code}}){{detail}}. Retrying in the background.",
+            "reconnected": "Lavalink node \"{{node}}\" reconnected.",
+            "fallbackRemoved": "A configured Lavalink node is back — removed public fallback \"{{name}}\".",
+            "standby": "Primary node is down — standby node \"{{active}}\" is handling playback.",
+            "fallbackActive": "Primary node still down after {{duration}} — using public fallback \"{{name}}\" ({{latency}}ms, {{players}} players)."
         }
     },
     "filters": {

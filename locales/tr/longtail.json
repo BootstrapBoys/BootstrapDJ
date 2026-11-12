@@ -468,7 +468,12 @@
             "noDetails": "sunucu tarafından ayrıntı verilmedi — `pm2 logs Lavalink` komutunu kontrol edin",
             "withDetails": "{{detail}} — `pm2 logs Lavalink` komutunu kontrol edin",
             "reminder": "Lavalink düğümü \"{{node}}\" {{duration}} sonra hâlâ ulaşılamıyor: {{reason}}.",
-            "unreachable": "Lavalink düğümü \"{{node}}\" ulaşılamıyor: {{reason}}. Arka planda yeniden deneniyor."
+            "unreachable": "Lavalink düğümü \"{{node}}\" ulaşılamıyor: {{reason}}. Arka planda yeniden deneniyor.",
+            "down": "Lavalink düğümü \"{{node}}\" çevrimdışı: {{summary}} (kod {{code}}){{detail}}. Arka planda yeniden deneniyor.",
+            "reconnected": "Lavalink düğümü \"{{node}}\" yeniden bağlandı.",
+            "fallbackRemoved": "Yapılandırılmış bir Lavalink düğümü geri döndü — genel yedek \"{{name}}\" kaldırıldı.",
+            "standby": "Birincil düğüm çevrimdışı — yedek düğüm \"{{active}}\" oynatmayı yönetiyor.",
+            "fallbackActive": "Birincil düğüm {{duration}} sonra hâlâ çevrimdışı — genel yedek \"{{name}}\" kullanılıyor ({{latency}} ms, {{players}} oyuncu)."
         }
     },
     "filters": {

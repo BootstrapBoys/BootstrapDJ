@@ -468,7 +468,12 @@
             "noDetails": "aucun détail n'a été fourni par le serveur — vérifiez `pm2 logs Lavalink`",
             "withDetails": "{{detail}} — vérifiez `pm2 logs Lavalink`",
             "reminder": "Le nœud Lavalink « {{node}} » est toujours injoignable après {{duration}} : {{reason}}.",
-            "unreachable": "Le nœud Lavalink « {{node}} » est injoignable : {{reason}}. Nouvelle tentative en arrière-plan."
+            "unreachable": "Le nœud Lavalink « {{node}} » est injoignable : {{reason}}. Nouvelle tentative en arrière-plan.",
+            "down": "Le nœud Lavalink « {{node}} » est hors service : {{summary}} (code {{code}}){{detail}}. Nouvelle tentative en arrière-plan.",
+            "reconnected": "Le nœud Lavalink « {{node}} » s’est reconnecté.",
+            "fallbackRemoved": "Un nœud Lavalink configuré est de nouveau disponible — le fallback public « {{name}} » a été supprimé.",
+            "standby": "Le nœud principal est hors service — le nœud de secours « {{active}} » gère la lecture.",
+            "fallbackActive": "Le nœud principal est toujours hors service après {{duration}} — utilisation du fallback public « {{name}} » ({{latency}} ms, {{players}} lecteurs)."
         }
     },
     "filters": {
