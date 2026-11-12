@@ -8,7 +8,8 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 
 ## Current state
 
-- Working tree: clean on `dev`; `git log -1` is the current handoff commit.
+- Working tree: clean on `dev`; `docs/MAINTENANCE_PLAN.md` tracks the pending
+  i18n/help/CI/docs work.
 - `dev` contains the undeployed feature commit **`eb4953f9`** (`feat: add
   dashboard health and playlist export`); `main`/`origin/main` are at
   **`dd93b937`** (`docs: record backup and ignore hardening`).
@@ -16,6 +17,9 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   notices`). The health/export commit is **not deployed**.
 - CI: green on `dev` for the feature commit and the handoff commits (runs
   `43170550563`, `43171114410`, `43171295788`); `dd93b937` green on `main`.
+- Pending maintenance: phases 1–4 of `docs/MAINTENANCE_PLAN.md` (option
+  localization, help UX, CI guardrails, doc truth). Ops hardening is deployed;
+  the health/export feature is implemented on `dev` but not deployed.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
@@ -174,6 +178,7 @@ unit-tested but have not run on a live bot; they are not deployed.
 - `docs/I18N.md` — catalogs, validator, community translation policy
 - `docs/LONGTAIL_I18N_WORKFLOW.md` — domain batch history and final gate
 - `docs/PARITY_WORKFLOW.md` — release and production deployment record
+- `docs/MAINTENANCE_PLAN.md` — pending i18n metadata, help UX, CI and doc-truth plan
 - `src/lib/i18n.ts` — i18next initialization and supported locales
 - `src/lib/i18nContext.ts` — `tr(ctx, key, vars)` command helper
 - `src/dashboard/browser.ts` / `src/dashboard/page.ts` — localized dashboard

@@ -1,19 +1,21 @@
 # BootstrapDJ maintenance plan: i18n metadata, help UX, CI guardrails, doc truth
 
-Status: **planned**
+Status: **planned — phases 1–4 pending**
 Created: 2026-11-12
-Baseline: `dev` at `e318e587`
+Baseline: `dev` after `eb4953f9`; 454/454 tests at `7e9dbfdb`
 Scope: selected items 3–6 from the 2026-11-12 fresh-eyes review.
-Out of scope: the secret-bearing `.env` backups in `/root/Bot` and scheduled
-database backups (review items 1–2); those carry more risk and should be a
-separate plan.
+Already completed outside this plan: the `.env`/SQLite `.gitignore` hardening
+and the daily DB backup timer are on `main`/production; `GET /health` and
+`/playlist export` are implemented on `dev` but not deployed.
 
 ## Assumptions
 
 - Work on `dev`, one commit per phase, with the full gate after each phase.
+- `dev` is currently ahead of `main` and carries the undeployed `eb4953f9`
+  health/export feature; do not merge or deploy it as part of this plan.
 - Merge to `main` and production deploys are explicit-request only.
 - New tests change the final test count; update docs in Phase 5 with the real
-  number, not the current 447.
+  number, not the current 454.
 
 ## Phase summary
 
@@ -29,9 +31,10 @@ separate plan.
 ## Phase 0 — Baseline
 
 - [ ] Confirm `git branch --show-current` is `dev` and the tree is clean.
-- [ ] Confirm `git log -1` is `e318e587`.
+- [ ] Confirm `git log -1` includes the handoff/plan docs above the undeployed
+      `eb4953f9` feature commit.
 - [ ] Run `npm run format`, `npm run lint`, `npm run build`, and `npm test`;
-      record the 447 baseline.
+      record the current baseline (454/454 at `7e9dbfdb`).
 - [ ] Run `npm run i18n:validate`.
 - [ ] Confirm every `locales/*/commands.json` still has its `metadata` block.
 
@@ -169,8 +172,8 @@ parses.
       - `eslint .` → `npm run lint`
       - `136 tests` → the final Phase 5 count
       - `71 top-level commands` → `74`
-- [ ] Fix `docs/HANDOFF.md`: “The last release before this handoff was
-      `6385fa53`” → “The previous handoff commit was `6385fa53`.”
+- [ ] Re-check `docs/HANDOFF.md` for stale current-state claims; it was
+      refreshed at `4977a635`, but verify again after the code commits.
 - [ ] Prefer banners over moving files: the skill and several docs link these
       paths, so `git mv` would create link rot for no functional gain.
 - [ ] Verify with
@@ -194,6 +197,9 @@ parses.
       `docs/JOCKIE_PARITY.md`.
 
 ### Optional BotTest verification
+
+The `dev` baseline already contains the undeployed `eb4953f9` health/export
+feature; treat it as separate work, not part of this plan.
 
 - [ ] Deploy the branch to the disposable staging checkout and restart.
 - [ ] Confirm 74 commands register.
