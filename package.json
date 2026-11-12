@@ -14,7 +14,7 @@
         "build": "tsc --project tsconfig.json",
         "pretest": "npm run build",
         "test": "node --test tests/*.test.mjs",
-        "test:coverage": "npm run build && node --test --experimental-test-coverage tests/*.test.mjs",
+        "test:coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-exclude='**/*.test.mjs' --test-coverage-lines=66 --test-coverage-functions=56 --test-coverage-branches=72 tests/*.test.mjs",
         "dashboard": "node dist/dashboard/sidecar.js",
         "dashboard:dev": "node --watch dist/dashboard/sidecar.js",
         "soak": "node tooling/soak/run.mjs",
