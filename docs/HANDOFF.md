@@ -14,8 +14,8 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
   **`dd93b937`** (`docs: record backup and ignore hardening`).
 - Last production code release: **`c41be815`** (`feat: localize node audit
   notices`). The health/export commit is **not deployed**.
-- Latest CI: green for `eb4953f9` and handoff commit `7e9dbfdb` on `dev`
-  (runs `43170550563`, `43171114410`); `dd93b937` green on `main`.
+- CI: green on `dev` for the feature commit and the handoff commits (runs
+  `43170550563`, `43171114410`, `43171295788`); `dd93b937` green on `main`.
 - Production `/root/Bot`: HEAD **`dd93b937`** (docs/ops only), runtime code
   **`c41be815`** in `.boot-state`. No restart after these commits.
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
