@@ -119,6 +119,21 @@ reviewed and green.<br>
   and `playlocal`.
 - No live Discord acceptance pass was run; the user explicitly waived it.
 
+### i18n long-tail production deployment — 2026-11-12
+
+- Release commit `c41be815`; `main` and `dev` matched, CI green before deploy.
+- Database backup: `/root/BotDBBackups/20261112T030746Z` (DB, WAL and SHM).
+- Boot plan: dependencies and schema unchanged; clean rebuild only.
+- `DJBoot` and `dashboard` online after restart; `Lavalink` and
+  `Lavalink-Backup` remained online and ready.
+- Production checkout contains all 16 locale directories.
+- Dashboard control `/internal/metrics`: **200**; public `/` and `/api/state`:
+  **401** without a session.
+- Discord global command registration: **74** commands, including `language`
+  and `playlocal`.
+- Verification was service/API/registration only; no live Discord or browser
+  acceptance pass was run.
+
 ## Decision log
 
 - `/playlocal` is attachment-only; no arbitrary host filesystem paths.

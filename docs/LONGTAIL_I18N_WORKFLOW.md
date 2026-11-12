@@ -4,7 +4,7 @@
 setup and dashboard surfaces; keep all translations in the existing `longtail`
 namespace; ship the same 16 locales with the AI-translation note.
 
-**Status:** complete on `dev`; final node-audit follow-up included.
+**Status:** complete and deployed to production at `c41be815` on 2026-11-12.
 
 ## Completion criteria
 
