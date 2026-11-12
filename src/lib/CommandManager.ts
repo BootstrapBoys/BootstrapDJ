@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { applyCommandMetadata } from './commandMetadata.js';
+import { applyCommandMetadata, toApiOptions } from './commandMetadata.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../commands');
 export type SlashBody = RESTPostAPIChatInputApplicationCommandsJSONBody;
@@ -24,6 +24,29 @@ function directories(): string[] {
 
 function commandFiles(dir: string): string[] {
     return fs.readdirSync(path.join(ROOT, dir)).filter(file => file.endsWith('.js'));
+}
+
+/**
+ * Serialize one chat-input command for registration. The REST body needs the
+ * snake_case localization keys that `toApiOptions` produces; a raw cast of
+ * discord.js's camelCase option data would silently drop them.
+ */
+export function buildCommandBody(command: Command): SlashBody {
+    const body: SlashBody = {
+        name: command.name,
+        description: command.description.content ?? command.name,
+        type: ApplicationCommandType.ChatInput,
+        ...(command.options.length ? { options: toApiOptions(command.options) } : {}),
+        ...(command.nameLocalizations ? { name_localizations: command.nameLocalizations } : {}),
+        ...(command.descriptionLocalizations
+            ? { description_localizations: command.descriptionLocalizations }
+            : {}),
+    };
+    if (command.permissions.user.length) {
+        const value = PermissionsBitField.resolve(command.permissions.user);
+        body.default_member_permissions = typeof value === 'bigint' ? value.toString() : value;
+    }
+    return body;
 }
 
 async function register(
@@ -40,22 +63,7 @@ async function register(
     client.commands.set(command.name, command);
     for (const alias of command.aliases) client.aliases.set(alias, command.name);
     if (!command.slashCommand) return null;
-
-    const body: SlashBody = {
-        name: command.name,
-        description: command.description.content ?? command.name,
-        type: ApplicationCommandType.ChatInput,
-        ...(command.options.length ? { options: command.options as SlashBody['options'] } : {}),
-        ...(command.nameLocalizations ? { name_localizations: command.nameLocalizations } : {}),
-        ...(command.descriptionLocalizations
-            ? { description_localizations: command.descriptionLocalizations }
-            : {}),
-    };
-    if (command.permissions.user.length) {
-        const value = PermissionsBitField.resolve(command.permissions.user);
-        body.default_member_permissions = typeof value === 'bigint' ? value.toString() : value;
-    }
-    return body;
+    return buildCommandBody(command);
 }
 
 export async function installCommands(

@@ -111,6 +111,15 @@ export function localizedDescriptions(key: string): Record<string, string> {
     return localizations;
 }
 
+/**
+ * Whether the catalog actually has this key. A missing key comes back from
+ * i18next as a namespace-stripped path, so comparing the translated value with
+ * the requested key is not a reliable presence check.
+ */
+export function hasTranslation(key: string, language: string = DEFAULT_LANGUAGE): boolean {
+    return i18next.exists(key, { lng: resolveLanguage(language) });
+}
+
 /** Native names for language pickers; do not translate another language's name. */
 const LANGUAGE_NAMES: Record<string, string> = {
     de: 'Deutsch',
