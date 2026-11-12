@@ -53,7 +53,7 @@
     "devDependencies": {
         "@types/node": "~26.6.6",
         "@types/signale": "^1.4.7",
-        "oxlint": "^1.92.0",
+        "oxlint": "^1.93.0",
         "oxlint-tsgolint": "^7.0.2006",
         "prettier": "^3.9.10",
         "prisma": "^7.10.1",
@@ -63,7 +63,7 @@
         "@prisma/adapter-better-sqlite3": "^7.10.1",
         "@prisma/client": "^7.10.1",
         "discord.js": "^14.28.1",
-        "dotenv": "~18.0.9",
+        "dotenv": "~18.0.10",
         "i18next": "^27.1.1",
         "shoukaku": "^4.3.0",
         "signale": "^1.4.0"
