@@ -90,7 +90,11 @@ function nowPlayingEmbed(
         title: track.info.title,
         uri: String(track.info.uri),
         duration: client.utils.formatTime(track.info.length),
-        requester: String(requestedBy),
+        // Autoplay picks are built with the bot as requester; naming the bot
+        // reads as a bug, so label the pick as autoplay instead.
+        requester: track.autoplay
+            ? translate('commands:core.autoplay', language)
+            : String(requestedBy),
         author: author ?? '',
     };
     const artwork =

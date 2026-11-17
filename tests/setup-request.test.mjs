@@ -152,6 +152,21 @@ test('the setup panel omits the artist clause when the track has none', async ()
     assert.match(description, /already playing/);
 });
 
+test('an autoplay pick is attributed to Autoplay, not the bot', async () => {
+    const playing = {
+        autoplay: true,
+        info: { title: 'auto pick', uri: 'https://x/auto', author: 'A', requester: 'bot' },
+    };
+    const harness = makeHarness({
+        response: { loadType: LoadType.TRACK, data: rawTrack('requested') },
+        current: playing,
+    });
+
+    await setupStart(harness.client, 'query', harness.player, harness.message);
+
+    assert.match(harness.edits[0].embeds[0].data.description, /Requested by Autoplay/);
+});
+
 test('the setup panel does not report the first playlist track as current', async () => {
     const playing = { info: { title: 'already playing', uri: 'https://x/current' } };
     const harness = makeHarness({

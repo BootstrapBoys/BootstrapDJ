@@ -130,3 +130,25 @@ test('a setup-panel button refresh omits a blank artist', () => {
 
     assert.doesNotMatch(embed.data.description, /\) by /);
 });
+
+test('an autoplay pick is attributed to Autoplay in the button refresh', () => {
+    const event = new SetupButtons(panelClient(), 'events/client/SetupButtons.ts');
+    const player = {
+        current: {
+            autoplay: true,
+            info: {
+                title: 'Song',
+                uri: 'https://x/song',
+                author: 'The Artist',
+                length: 1000,
+                isStream: false,
+                requester: 'bot',
+            },
+        },
+    };
+
+    const embed = event.nowPlayingEmbed(player, 'en-US');
+
+    assert.match(embed.data.description, /Requested by Autoplay/);
+    assert.match(embed.data.description, /by The Artist/);
+});

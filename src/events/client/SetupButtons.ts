@@ -110,7 +110,9 @@ export default class SetupButtons extends Event {
                         title: current.info.title,
                         uri: current.info.uri ?? '',
                         duration,
-                        requester: String(current.info.requester),
+                        requester: current.autoplay
+                            ? translate('commands:core.autoplay', language)
+                            : String(current.info.requester),
                         author: author ?? '',
                     }
                 )
