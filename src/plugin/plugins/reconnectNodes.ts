@@ -32,6 +32,8 @@ export class NodeWatchdog {
     private migrating = false;
     private announced = false;
     private timer: ReturnType<typeof setInterval> | null = null;
+    /** Nodes with an in-flight session probe, so a slow REST call cannot stack. */
+    private readonly checkingSessions = new Set<string>();
 
     public constructor(client: BootstrapClient) {
         this.client = client;
@@ -53,6 +55,7 @@ export class NodeWatchdog {
     /** One watchdog pass; public so a test can drive it without timers. */
     public tick(): void {
         if (!this.client.isReady()) return;
+        this.checkSessions();
         if (this.isPrimaryUp()) {
             this.downSince = 0;
             this.announced = false;
@@ -65,6 +68,40 @@ export class NodeWatchdog {
         this.migrateStranded();
         if (this.announceStandby()) return;
         this.probePublic();
+    }
+
+    /**
+     * A node can keep `state === CONNECTED` after Lavalink has already dropped
+     * its session — a proxy or firewall tears the socket down without a close
+     * frame, so Shoukaku never runs its close/reconnect path and every REST
+     * call fails with `Session not found`. Probe each live session cheaply and
+     * recycle a stale node so the normal ready/close handling recovers it.
+     */
+    private checkSessions(): void {
+        for (const node of this.client.shoukaku.nodes.values()) {
+            if (Number(node.state) !== Constants.State.CONNECTED) continue;
+            // A node still handshaking has no session to validate yet.
+            if (!node.sessionId || this.checkingSessions.has(node.name)) continue;
+            this.checkingSessions.add(node.name);
+            void node.rest
+                .getPlayers()
+                .catch((error: unknown) => {
+                    const status = (error as { status?: number }).status;
+                    const message = error instanceof Error ? error.message : '';
+                    if (status !== 404 || !/session not found/i.test(message)) return;
+                    this.client.logger.warn(
+                        `[nodes] "${node.name}" session is stale — recycling the node`
+                    );
+                    try {
+                        node.disconnect(1000, 'stale session');
+                    } catch (disconnectError) {
+                        this.client.logger.debug(
+                            `[nodes] could not recycle "${node.name}": ${disconnectError}`
+                        );
+                    }
+                })
+                .finally(() => this.checkingSessions.delete(node.name));
+        }
     }
 
     /** The connected node that owns `config.lavalink[0]`, if any. */
