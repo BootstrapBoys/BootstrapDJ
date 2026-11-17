@@ -93,6 +93,7 @@ export default class SetupButtons extends Event {
         const duration = current.info.isStream
             ? 'LIVE'
             : this.client.utils.formatTime(current.info.length);
+        const author = current.info.author?.trim();
         return this.client
             .embed()
             .setAuthor({
@@ -100,12 +101,19 @@ export default class SetupButtons extends Event {
                 iconURL: icon,
             })
             .setDescription(
-                translate('longtail:setup.nowPlayingLine', language, {
-                    title: current.info.title,
-                    uri: current.info.uri ?? '',
-                    duration,
-                    requester: String(current.info.requester),
-                })
+                translate(
+                    // Same sentence as the setup mock: include the artist only
+                    // when the track has one.
+                    `longtail:events.setup.${author ? 'nowPlayingRequest' : 'nowPlayingMock'}`,
+                    language,
+                    {
+                        title: current.info.title,
+                        uri: current.info.uri ?? '',
+                        duration,
+                        requester: String(current.info.requester),
+                        author: author ?? '',
+                    }
+                )
             )
             .setImage(current.info.artworkUrl ?? null);
     }

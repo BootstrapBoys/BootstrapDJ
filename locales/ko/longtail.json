@@ -26,7 +26,6 @@
         "forwarded": "음악을 앞으로 이동했습니다",
         "seekFooter": "{{user}} · {{state}}",
         "nowPlayingAuthor": "지금 재생 중",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - 요청자: {{requester}}",
         "resumedMusic": "음악을 재개했습니다",
         "pausedMusic": "음악을 일시정지했습니다"
     },

@@ -123,6 +123,35 @@ test('the setup panel shows the actually playing track after a single request', 
     assert.doesNotMatch(harness.edits[0].embeds[0].data.description, /requested/);
 });
 
+test('the setup panel includes the artist when the track has one', async () => {
+    const playing = {
+        info: { title: 'already playing', uri: 'https://x/current', author: 'The Artist' },
+    };
+    const harness = makeHarness({
+        response: { loadType: LoadType.TRACK, data: rawTrack('requested') },
+        current: playing,
+    });
+
+    await setupStart(harness.client, 'query', harness.player, harness.message);
+
+    assert.equal(harness.edits.length, 1);
+    assert.match(harness.edits[0].embeds[0].data.description, /\) by The Artist -/);
+});
+
+test('the setup panel omits the artist clause when the track has none', async () => {
+    const playing = { info: { title: 'already playing', uri: 'https://x/current' } };
+    const harness = makeHarness({
+        response: { loadType: LoadType.TRACK, data: rawTrack('requested') },
+        current: playing,
+    });
+
+    await setupStart(harness.client, 'query', harness.player, harness.message);
+
+    const description = harness.edits[0].embeds[0].data.description;
+    assert.doesNotMatch(description, /\) by /);
+    assert.match(description, /already playing/);
+});
+
 test('the setup panel does not report the first playlist track as current', async () => {
     const playing = { info: { title: 'already playing', uri: 'https://x/current' } };
     const harness = makeHarness({

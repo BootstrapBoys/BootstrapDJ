@@ -26,7 +26,6 @@
         "forwarded": "Przewinięto muzykę do przodu.",
         "seekFooter": "{{state}} przez {{user}}",
         "nowPlayingAuthor": "Teraz odtwarzane",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - Zamówione przez {{requester}}",
         "resumedMusic": "Wznowiono muzykę.",
         "pausedMusic": "Wstrzymano muzykę."
     },

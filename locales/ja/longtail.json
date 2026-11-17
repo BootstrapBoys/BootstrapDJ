@@ -26,7 +26,6 @@
         "forwarded": "音楽を早送りしました。",
         "seekFooter": "{{user}} が{{state}}",
         "nowPlayingAuthor": "再生中",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - リクエスト: {{requester}}",
         "resumedMusic": "音楽を再開しました。",
         "pausedMusic": "音楽を一時停止しました。"
     },

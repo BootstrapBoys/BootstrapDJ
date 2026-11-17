@@ -26,7 +26,6 @@
         "forwarded": "Avance effectuée.",
         "seekFooter": "{{state}} par {{user}}",
         "nowPlayingAuthor": "Lecture en cours",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - Demandé par {{requester}}",
         "resumedMusic": "Lecture reprise.",
         "pausedMusic": "Lecture mise en pause."
     },

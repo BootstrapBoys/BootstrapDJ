@@ -26,7 +26,6 @@
         "forwarded": "Riproduzione avanzata",
         "seekFooter": "{{state}} da {{user}}",
         "nowPlayingAuthor": "In riproduzione",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - Richiesto da {{requester}}",
         "resumedMusic": "Riproduzione ripresa",
         "pausedMusic": "Riproduzione in pausa"
     },

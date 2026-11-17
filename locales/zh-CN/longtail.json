@@ -26,7 +26,6 @@
         "forwarded": "已前进音乐",
         "seekFooter": "{{state}}（由 {{user}}）",
         "nowPlayingAuthor": "正在播放",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - 请求者：{{requester}}",
         "resumedMusic": "已继续播放音乐",
         "pausedMusic": "已暂停音乐"
     },

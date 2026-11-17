@@ -85,12 +85,13 @@ function nowPlayingEmbed(
     language: string
 ): EmbedBuilder {
     const requestedBy = track.info.requester;
+    const author = track.info.author?.trim();
     const variables = {
         title: track.info.title,
         uri: String(track.info.uri),
         duration: client.utils.formatTime(track.info.length),
         requester: String(requestedBy),
-        author: track.info.author,
+        author: author ?? '',
     };
     const artwork =
         track.info.artworkUrl ?? (variant === 'request' ? client.config.links.img : null);
@@ -102,11 +103,9 @@ function nowPlayingEmbed(
         })
         .setColor(client.color.main)
         .setDescription(
-            copy(
-                language,
-                variant === 'request' ? 'nowPlayingRequest' : 'nowPlayingMock',
-                variables
-            )
+            // The two templates are the same sentence with and without the
+            // artist, so use the with-artist one only when there is an artist.
+            copy(language, author ? 'nowPlayingRequest' : 'nowPlayingMock', variables)
         )
         .setImage(artwork);
 }

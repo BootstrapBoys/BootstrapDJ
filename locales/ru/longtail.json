@@ -26,7 +26,6 @@
         "forwarded": "Перемотано вперёд",
         "seekFooter": "{{state}} — {{user}}",
         "nowPlayingAuthor": "Сейчас играет",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - Заказал: {{requester}}",
         "resumedMusic": "Воспроизведение продолжено.",
         "pausedMusic": "Воспроизведение приостановлено."
     },

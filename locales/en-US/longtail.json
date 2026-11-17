@@ -26,7 +26,6 @@
         "forwarded": "Forwarded the music.",
         "seekFooter": "{{state}} by {{user}}",
         "nowPlayingAuthor": "Now Playing",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - Requested by {{requester}}",
         "resumedMusic": "Resumed the music.",
         "pausedMusic": "Paused the music."
     },

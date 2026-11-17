@@ -26,7 +26,6 @@
         "forwarded": "De muziek is vooruitgespoeld.",
         "seekFooter": "{{state}} door {{user}}",
         "nowPlayingAuthor": "Nu aan het spelen",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - Aangevraagd door {{requester}}",
         "resumedMusic": "De muziek is hervat.",
         "pausedMusic": "De muziek is gepauzeerd."
     },

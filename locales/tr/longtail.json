@@ -26,7 +26,6 @@
         "forwarded": "Müzik ileri sarıldı.",
         "seekFooter": "{{user}} tarafından: {{state}}",
         "nowPlayingAuthor": "Şu Anda Çalıyor",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - İsteyen: {{requester}}",
         "resumedMusic": "Müzik devam ettirildi.",
         "pausedMusic": "Müzik duraklatıldı."
     },

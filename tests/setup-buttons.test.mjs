@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { EmbedBuilder } from 'discord.js';
+
 import SetupButtons from '../dist/events/client/SetupButtons.js';
 import { buttonReply } from '../dist/lib/SetupSystem.js';
 
@@ -87,4 +89,44 @@ test('setup buttons never defer twice', async () => {
     assert.deepEqual(calls.deferReply, []);
     assert.equal(calls.editReply, 1);
     assert.equal(calls.followUp, 0);
+});
+
+function panelClient() {
+    return {
+        user: { displayAvatarURL: () => undefined },
+        config: { icons: {} },
+        embed: () => new EmbedBuilder(),
+        utils: { formatTime: ms => `${Math.round(ms / 1000)}s` },
+    };
+}
+
+function panelPlayer(info) {
+    return {
+        current: {
+            info: {
+                title: 'Song',
+                uri: 'https://x/song',
+                length: 1000,
+                isStream: false,
+                requester: 'user#0001',
+                ...info,
+            },
+        },
+    };
+}
+
+test('a setup-panel button refresh keeps the artist', () => {
+    const event = new SetupButtons(panelClient(), 'events/client/SetupButtons.ts');
+
+    const embed = event.nowPlayingEmbed(panelPlayer({ author: 'The Artist' }), 'en-US');
+
+    assert.match(embed.data.description, /\) by The Artist -/);
+});
+
+test('a setup-panel button refresh omits a blank artist', () => {
+    const event = new SetupButtons(panelClient(), 'events/client/SetupButtons.ts');
+
+    const embed = event.nowPlayingEmbed(panelPlayer({ author: '   ' }), 'en-US');
+
+    assert.doesNotMatch(embed.data.description, /\) by /);
 });

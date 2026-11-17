@@ -26,7 +26,6 @@
         "forwarded": "Musik dimajukan.",
         "seekFooter": "{{state}} oleh {{user}}",
         "nowPlayingAuthor": "Sedang Diputar",
-        "nowPlayingLine": "[{{title}}]({{uri}}) - {{duration}} - Diminta oleh {{requester}}",
         "resumedMusic": "Melanjutkan musik.",
         "pausedMusic": "Musik dijeda."
     },
