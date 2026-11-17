@@ -11,6 +11,7 @@ export function makeSong(
         sourceName = 'deezer',
         identifier = title,
         autoplay = false,
+        requester = fakeUser,
     } = {}
 ) {
     return new Song(
@@ -28,7 +29,7 @@ export function makeSong(
                 sourceName,
             },
         },
-        fakeUser,
+        requester,
         autoplay
     );
 }

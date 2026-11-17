@@ -58,7 +58,7 @@ after(async () => {
     fs.rmSync(dbPath, { force: true });
 });
 
-test('toSaved drops the requester and serialises cleanly', () => {
+test('toSaved keeps a plain requester record and serialises cleanly', () => {
     const song = makeSong('Hurt', { uri: 'https://x/1', author: 'NIN', encoded: 'ENC' });
 
     const saved = toSaved(song);
@@ -67,6 +67,7 @@ test('toSaved drops the requester and serialises cleanly', () => {
     assert.equal(saved.info.uri, 'https://x/1');
     assert.equal(saved.info.title, 'Hurt');
     assert.equal(saved.info.requester, undefined);
+    assert.deepEqual(saved.requester, { id: fakeUser.id, tag: fakeUser.tag });
     assert.deepEqual(JSON.parse(JSON.stringify(saved)), saved);
 });
 

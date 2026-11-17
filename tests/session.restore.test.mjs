@@ -34,6 +34,7 @@ function makeRestoreHarness({
     listeners = [],
     text = null,
     live = false,
+    recent = [],
 } = {}) {
     const calls = {
         create: 0,
@@ -51,6 +52,7 @@ function makeRestoreHarness({
     const guild = {
         id: 'guild-1',
         name: 'Guild One',
+        members: { cache: new Collection() },
         channels: {
             cache: new Map([
                 [voice.id, voice],
@@ -78,6 +80,7 @@ function makeRestoreHarness({
     const client = {
         user: botUser,
         shard: null,
+        users: { cache: new Collection(), fetch: async () => null },
         config: {
             botPriority: 0,
             botName: 'Bootstrap',
@@ -99,6 +102,7 @@ function makeRestoreHarness({
             getSetup: async () => null,
             get_247: async () => stay,
             getSessions: async () => [session],
+            getRecentTracks: async () => recent,
             claimSessionLease: async (_guildId, _botId, _botName, ttl) => {
                 calls.claimTtls.push(ttl);
                 return true;
@@ -156,6 +160,73 @@ test('restore rejoins, rebuilds queue, volume, loop, autoplay and position', asy
     assert.equal(dispatcher.current?.info.title, 'Saved');
     assert.equal(dispatcher.history.length, 1);
     assert.equal(dispatcher.restoring, false);
+});
+
+test('restore attributes saved tracks to the original requester', async () => {
+    const requester = {
+        id: 'u42',
+        tag: 'requester#0001',
+        username: 'Requester',
+        avatarURL: () => null,
+    };
+    const current = makeSong('Saved', { uri: 'https://x/saved', encoded: 'ENC1', requester });
+    const queued = makeSong('Queued', { uri: 'https://x/queued', requester });
+    const session = savedSession({
+        current: JSON.stringify({ ...toSaved(current), position: 12_000 }),
+        queue: JSON.stringify([toSaved(queued)]),
+    });
+    const harness = makeRestoreHarness({ session, listeners: [{ user: { bot: false } }] });
+    harness.client.users.cache.set('u42', requester);
+
+    await restoreSession(harness.client, session, botUser);
+
+    assert.equal(harness.dispatcher.current.info.requester.id, 'u42');
+    assert.equal(harness.dispatcher.queue[0].info.requester.id, 'u42');
+});
+
+test('restore falls back to the bot when the saved requester cannot be resolved', async () => {
+    const requester = { id: 'gone', tag: 'gone#0001', username: 'Gone', avatarURL: () => null };
+    const current = makeSong('Saved', { uri: 'https://x/saved', encoded: 'ENC1', requester });
+    const session = savedSession({
+        current: JSON.stringify({ ...toSaved(current), position: 0 }),
+        queue: '[]',
+    });
+    const harness = makeRestoreHarness({ session, listeners: [{ user: { bot: false } }] });
+
+    await restoreSession(harness.client, session, botUser);
+
+    assert.equal(harness.dispatcher.current.info.requester.id, botUser.id);
+});
+
+test('restore recovers a legacy snapshot requester from recent history', async () => {
+    const requester = {
+        id: 'u42',
+        tag: 'requester#0001',
+        username: 'Requester',
+        avatarURL: () => null,
+    };
+    const current = makeSong('Saved', { uri: 'https://x/saved', encoded: 'ENC1', requester });
+    // A snapshot written before `requester` was persisted has no id at all.
+    const legacy = toSaved(current);
+    delete legacy.requester;
+    const session = savedSession({
+        current: JSON.stringify({ ...legacy, position: 0 }),
+        queue: '[]',
+    });
+    const harness = makeRestoreHarness({
+        session,
+        listeners: [{ user: { bot: false } }],
+        recent: [
+            // An earlier restore re-recorded the bot on this URI.
+            { uri: 'https://x/saved', requesterId: 'bot' },
+            { uri: 'https://x/saved', requesterId: 'u42' },
+        ],
+    });
+    harness.client.users.cache.set('u42', requester);
+
+    await restoreSession(harness.client, session, botUser);
+
+    assert.equal(harness.dispatcher.current.info.requester.id, 'u42');
 });
 
 test('restore with queued tracks only starts the queue head', async () => {

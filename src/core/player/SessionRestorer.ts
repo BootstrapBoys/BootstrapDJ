@@ -1,4 +1,4 @@
-import { ChannelType, Message, TextChannel, User } from 'discord.js';
+import { ChannelType, type Guild, Message, TextChannel, User } from 'discord.js';
 import { LoadType } from 'shoukaku';
 
 import Dispatcher, { fromSaved, type SavedTrack, Song } from '../Dispatcher.js';
@@ -60,7 +60,11 @@ export async function waitForNode(
  * Re-resolve a saved track so its encoded payload is fresh for this process.
  * Stored tokens can expire — LavaSrc stamps a per-search token into `encoded`.
  */
-async function resolveSaved(client: BootstrapClient, saved: SavedTrack): Promise<Song | null> {
+async function resolveSaved(
+    client: BootstrapClient,
+    saved: SavedTrack,
+    requester: User
+): Promise<Song | null> {
     const node = client.queue.node;
     const botUser = client.user;
     if (!node || !botUser) return null;
@@ -70,16 +74,66 @@ async function resolveSaved(client: BootstrapClient, saved: SavedTrack): Promise
     if (!res) return null;
     switch (res.loadType) {
         case LoadType.TRACK:
-            return new Song(res.data, botUser, saved.autoplay);
+            return new Song(res.data, requester, saved.autoplay);
         case LoadType.SEARCH:
-            return res.data.length ? new Song(res.data[0], botUser, saved.autoplay) : null;
+            return res.data.length ? new Song(res.data[0], requester, saved.autoplay) : null;
         case LoadType.PLAYLIST:
             return res.data.tracks.length
-                ? new Song(res.data.tracks[0], botUser, saved.autoplay)
+                ? new Song(res.data.tracks[0], requester, saved.autoplay)
                 : null;
         default:
             return null;
     }
+}
+
+/**
+ * Who asked for a saved track. The snapshot stores the requester's id, tag,
+ * username and avatar; resolving the live user keeps `/nowplaying`, the request
+ * panel and the recent-history recorder attributing it correctly. Snapshots
+ * written before the field existed (and requesters that no longer resolve)
+ * fall back to the bot user, which is what the old restore always did.
+ */
+async function restoreRequester(
+    client: BootstrapClient,
+    guild: Guild,
+    saved: SavedTrack,
+    fallback: User,
+    cache: Map<string, User>,
+    legacy: Map<string, string>
+): Promise<User> {
+    const id = saved.requester?.id ?? legacy.get(saved.info.uri ?? '') ?? undefined;
+    if (!id || id === fallback.id) return fallback;
+    const known = cache.get(id);
+    if (known) return known;
+    let user: User | null = guild.members.cache.get(id)?.user ?? client.users.cache.get(id) ?? null;
+    if (!user) user = await client.users.fetch(id).catch(() => null);
+    const resolved = user ?? fallback;
+    cache.set(id, resolved);
+    return resolved;
+}
+
+/**
+ * Snapshots written before the requester was persisted carry no id. The played
+ * track is still in recent history with its requester, so recover it by URI
+ * instead of misattributing every restored track to the bot. New snapshots are
+ * untouched: this map is only consulted for tracks without a stored requester.
+ */
+async function legacyRequesterIds(
+    client: BootstrapClient,
+    guildId: string,
+    tracks: SavedTrack[],
+    botId: string
+): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    if (!tracks.some(track => !track.requester)) return map;
+    const rows = await client.db.getRecentTracks(guildId, 100).catch(() => []);
+    for (const row of rows) {
+        // An earlier restore recorded the bot on this URI; the original
+        // requester is the newest non-bot row for it.
+        if (!row.uri || !row.requesterId || row.requesterId === botId || map.has(row.uri)) continue;
+        map.set(row.uri, row.requesterId);
+    }
+    return map;
 }
 
 /** Poll a channel until a human is present, or the window expires. */
@@ -296,7 +350,24 @@ export async function restoreSession(
             session.loop === 'repeat' || session.loop === 'queue' ? session.loop : 'off';
         dispatcher.autoplay = session.autoplay;
 
-        for (const saved of queued) dispatcher.queue.push(fromSaved(saved, botUser));
+        const requesters = new Map<string, User>();
+        const legacy = await legacyRequesterIds(
+            client,
+            guildId,
+            [...queued, ...(savedCurrent ? [savedCurrent] : [])],
+            botUser.id
+        );
+        for (const saved of queued) {
+            const requester = await restoreRequester(
+                client,
+                guild,
+                saved,
+                botUser,
+                requesters,
+                legacy
+            );
+            dispatcher.queue.push(fromSaved(saved, requester));
+        }
 
         if (!savedCurrent) {
             await dispatcher.play();
@@ -314,8 +385,17 @@ export async function restoreSession(
             return;
         }
 
+        const currentRequester = await restoreRequester(
+            client,
+            guild,
+            savedCurrent,
+            botUser,
+            requesters,
+            legacy
+        );
         const track =
-            (await resolveSaved(client, savedCurrent)) ?? fromSaved(savedCurrent, botUser);
+            (await resolveSaved(client, savedCurrent, currentRequester)) ??
+            fromSaved(savedCurrent, currentRequester);
         dispatcher.current = track;
         dispatcher.history.push(track);
         dispatcher.skipRecentRecording = true;
