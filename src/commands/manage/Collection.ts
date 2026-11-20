@@ -11,6 +11,7 @@ import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
 import { tr } from '../../lib/i18nContext.js';
 import { buildPlaylistExport, playlistExportFilename } from '../../lib/PlaylistExport.js';
 import { getPlayLimits, queueHasRoom } from '../../lib/PlayLimits.js';
+import { rejectBlacklistedRequester } from '../../lib/SongBlacklist.js';
 import { resolveSearchEngine } from '../../lib/SearchEngine.js';
 
 const NAME_LIMIT = 50;
@@ -590,6 +591,7 @@ export default class Collection extends Command {
         const guild = ctx.guild;
         const author = ctx.author;
         if (!guild || !author) return;
+        if (await rejectBlacklistedRequester(client, ctx)) return;
 
         const rows = await client.db.getSong(request.authorId, request.name);
         if (rows.length === 0)

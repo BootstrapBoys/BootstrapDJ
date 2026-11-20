@@ -4,6 +4,7 @@ import type { BootstrapClient } from '../core/index.js';
 
 import { formatDuration } from './NodeStatus.js';
 import { DEFAULT_LANGUAGE, translate } from './i18n.js';
+import { parseSongBlacklist, SONGBLACKLIST_KEY } from './SongBlacklist.js';
 
 export type PlayLimits = {
     maxTrackLength: number;
@@ -14,6 +15,8 @@ export type PlayLimits = {
     maxUserQueue: number;
     maxPlaylistTracks: number;
     maxPlaylistLength: number;
+    /** Users barred from submitting songs; enforced on every enqueue path. */
+    blacklisted: Set<string>;
 };
 
 /** Read per-guild playback limits once per command invocation. */
@@ -37,6 +40,9 @@ export async function getPlayLimits(client: BootstrapClient, guildId: string): P
         maxUserQueue: number(settings.maxuserqueue, 50),
         maxPlaylistTracks: number(settings.maxplaylisttracks, 0),
         maxPlaylistLength: number(settings.maxplaylistlength, 0),
+        blacklisted: new Set(
+            parseSongBlacklist(settings[SONGBLACKLIST_KEY]).map(entry => entry.id)
+        ),
     };
 }
 
@@ -61,6 +67,7 @@ export function checkTrack(
 ): string | null {
     const copy = (key: string, variables: Record<string, string | number> = {}): string =>
         translate(`longtail:limits.${key}`, language, variables);
+    if (limits.blacklisted.has(requesterId)) return copy('blacklisted');
     const lengthSeconds = track.info.isStream ? 0 : Math.round(track.info.length / 1000);
     if (limits.maxTrackLength > 0 && lengthSeconds > limits.maxTrackLength) {
         return copy('maxLength', {

@@ -4,6 +4,7 @@ import { LoadType } from 'shoukaku';
 
 import { checkTrack, getPlayLimits } from './PlayLimits.js';
 import { tr } from './i18nContext.js';
+import { rejectBlacklistedRequester } from './SongBlacklist.js';
 import { resolveSearchEngine } from './SearchEngine.js';
 
 export type PlayMode = 'queue' | 'next';
@@ -23,6 +24,8 @@ export async function runPlayRequest(
     const guild = ctx.guild;
     const author = ctx.author;
     if (!guild || !author) return;
+
+    if (await rejectBlacklistedRequester(client, ctx)) return;
 
     const guildSettings: Record<string, string> = await client.db
         .getGuildSettings(guild.id)

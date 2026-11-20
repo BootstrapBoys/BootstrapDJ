@@ -1063,7 +1063,21 @@
         "utilityDashboardTitle": "BootstrapDJ ダッシュボード",
         "utilityOpenDashboard": "[ダッシュボードを開く]({{url}})",
         "utilityDashboardSignIn": "Discord でサインインしてください。設定を表示または変更できるのはサーバー管理者のみです。",
-        "utilityUnknownPage": "不明なユーティリティページです。"
+        "utilityUnknownPage": "不明なユーティリティページです。",
+        "utilityBlacklistTitle": "Song request blacklist",
+        "utilityBlacklistEmpty": "No one is blacklisted in this server.",
+        "utilityBlacklistOwnerOnly": "Only the server owner can manage the song blacklist.",
+        "utilityBlacklistUnresolved": "Could not resolve {{user}} as a Discord user.",
+        "utilityBlacklistBot": "Bots cannot be blacklisted.",
+        "utilityBlacklistSelf": "The server owner cannot be blacklisted.",
+        "utilityBlacklistFull": "The song blacklist is full ({{count}} users). Remove someone first.",
+        "utilityBlacklistAdded": "Blacklisted {{user}} from submitting songs.",
+        "utilityBlacklistUpdated": "{{user}} was already blacklisted; the reason was updated.",
+        "utilityBlacklistRemoved": "{{user}} can submit songs again.",
+        "utilityBlacklistNotListed": "{{user}} is not on the song blacklist.",
+        "utilityBlacklistPurged": "Removed {{count}} of their queued tracks.",
+        "utilityBlacklistEntry": "{{user}} — {{reason}}",
+        "utilityBlacklistNoReason": "no reason given"
     },
     "limits": {
         "maxLength": "このトラックは、このサーバーの上限（{{limit}}）を超えています。",
@@ -1071,6 +1085,8 @@
         "queueFull": "キューがいっぱいです（{{count}} 曲）。",
         "userQueue": "すでに {{count}} 曲がキューに入っています。",
         "userTracks": "すでに {{count}} 曲がキューに入っています。",
-        "userLength": "すでに {{length}} の音楽がキューに入っています。"
+        "userLength": "すでに {{length}} の音楽がキューに入っています。",
+        "blacklisted": "You are blacklisted from submitting songs to this server.",
+        "blacklistedWithReason": "You are blacklisted from submitting songs to this server. Reason: {{reason}}"
     }
 }

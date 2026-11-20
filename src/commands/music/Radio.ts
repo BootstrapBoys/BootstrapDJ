@@ -3,6 +3,7 @@ import { LoadType } from 'shoukaku';
 
 import { BootstrapClient, Command, Context } from '../../core/index.js';
 import { tr } from '../../lib/i18nContext.js';
+import { rejectBlacklistedRequester } from '../../lib/SongBlacklist.js';
 
 type RadioStation = {
     name?: string;
@@ -49,6 +50,7 @@ export default class Radio extends Command {
         const guild = ctx.guild;
         const author = ctx.author;
         if (!guild || !author) return;
+        if (await rejectBlacklistedRequester(client, ctx)) return;
         const query = args.join(' ').trim();
         if (!query) {
             return await ctx.sendMessage({

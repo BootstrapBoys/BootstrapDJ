@@ -16,6 +16,7 @@ import { LoadType } from 'shoukaku';
 import type { Song } from '../core/Dispatcher.js';
 import { BootstrapClient, Dispatcher } from '../core/index.js';
 import { getButtons } from './Buttons.js';
+import { blacklistText, getSongBlacklistEntry } from './SongBlacklist.js';
 import { checkTrack, getPlayLimits } from './PlayLimits.js';
 import { translate } from './i18n.js';
 
@@ -225,6 +226,16 @@ async function setupStart(
     const mock = await fetchMock(channel, data.messageId);
     if (!mock) return;
     const lang = language ?? (await guildLanguage(client, message.guild.id));
+
+    const blacklisted = await getSongBlacklistEntry(client, message.guild.id, message.author.id);
+    if (blacklisted) {
+        return await sendTransient(
+            client,
+            channel,
+            blacklistText(lang, blacklisted),
+            client.color.red
+        );
+    }
 
     try {
         const limits = await getPlayLimits(client, player.guildId);

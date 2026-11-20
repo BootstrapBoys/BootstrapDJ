@@ -1063,7 +1063,21 @@
         "utilityDashboardTitle": "Panel de BootstrapDJ",
         "utilityOpenDashboard": "[Abrir el panel]({{url}})",
         "utilityDashboardSignIn": "Inicia sesión con Discord. Solo los administradores del servidor pueden ver o cambiar la configuración.",
-        "utilityUnknownPage": "Página de utilidades desconocida."
+        "utilityUnknownPage": "Página de utilidades desconocida.",
+        "utilityBlacklistTitle": "Song request blacklist",
+        "utilityBlacklistEmpty": "No one is blacklisted in this server.",
+        "utilityBlacklistOwnerOnly": "Only the server owner can manage the song blacklist.",
+        "utilityBlacklistUnresolved": "Could not resolve {{user}} as a Discord user.",
+        "utilityBlacklistBot": "Bots cannot be blacklisted.",
+        "utilityBlacklistSelf": "The server owner cannot be blacklisted.",
+        "utilityBlacklistFull": "The song blacklist is full ({{count}} users). Remove someone first.",
+        "utilityBlacklistAdded": "Blacklisted {{user}} from submitting songs.",
+        "utilityBlacklistUpdated": "{{user}} was already blacklisted; the reason was updated.",
+        "utilityBlacklistRemoved": "{{user}} can submit songs again.",
+        "utilityBlacklistNotListed": "{{user}} is not on the song blacklist.",
+        "utilityBlacklistPurged": "Removed {{count}} of their queued tracks.",
+        "utilityBlacklistEntry": "{{user}} — {{reason}}",
+        "utilityBlacklistNoReason": "no reason given"
     },
     "limits": {
         "maxLength": "Esa pista es más larga que el límite de {{limit}} de este servidor.",
@@ -1071,6 +1085,8 @@
         "queueFull": "La cola está llena ({{count}} pistas).",
         "userQueue": "Ya tienes {{count}} pistas en la cola.",
         "userTracks": "Ya tienes {{count}} pistas en la cola.",
-        "userLength": "Ya tienes {{length}} de música en la cola."
+        "userLength": "Ya tienes {{length}} de música en la cola.",
+        "blacklisted": "You are blacklisted from submitting songs to this server.",
+        "blacklistedWithReason": "You are blacklisted from submitting songs to this server. Reason: {{reason}}"
     }
 }

@@ -9,6 +9,7 @@ import { LoadType, type Track } from 'shoukaku';
 import type { BootstrapClient, Dispatcher, Song } from '../core/index.js';
 import { resolveDashboardVoiceChannelId } from '../lib/DashboardVoice.js';
 import { checkTrack, getPlayLimits } from '../lib/PlayLimits.js';
+import { blacklistText, getSongBlacklistEntry } from '../lib/SongBlacklist.js';
 import { scheduleDashboardCleanupFromSettings } from './cleanup.js';
 import type { QueueAddResult } from './host.js';
 
@@ -116,6 +117,15 @@ export async function addDashboardSong(
 ): Promise<DashboardPlayResult> {
     const query = rawQuery.trim();
     if (!query) return { ok: false, status: 400, error: 'A song name or URL is required.' };
+
+    const blacklisted = await getSongBlacklistEntry(client, guildId, userId);
+    if (blacklisted) {
+        return {
+            ok: false,
+            status: 403,
+            error: blacklistText(client.config.defaultLanguage, blacklisted),
+        };
+    }
 
     const ensured = await ensureDashboardPlayer(client, guildId);
     if (!ensured.ok) {

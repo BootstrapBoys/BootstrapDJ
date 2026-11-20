@@ -4,6 +4,7 @@ import { LoadType } from 'shoukaku';
 import type { BootstrapClient, Song } from '../core/index.js';
 import { trackKey } from '../core/player/TrackIdentity.js';
 import { getPlayLimits, queueHasRoom } from '../lib/PlayLimits.js';
+import { blacklistText, getSongBlacklistEntry } from '../lib/SongBlacklist.js';
 import { scheduleDashboardCleanupFromSettings } from './cleanup.js';
 import { ensureDashboardPlayer } from './playback.js';
 import type {
@@ -239,6 +240,14 @@ export async function loadPlaylist(
 ): Promise<PlaylistLoadResult> {
     const name = normalizeName(rawName);
     if (!name) return { ok: false, status: 400, error: 'Playlist name is required.' };
+    const blacklisted = await getSongBlacklistEntry(client, guildId, userId);
+    if (blacklisted) {
+        return {
+            ok: false,
+            status: 403,
+            error: blacklistText(client.config.defaultLanguage, blacklisted),
+        };
+    }
     const rows = await client.db.getSong(userId, name);
     if (!rows.length) {
         return { ok: false, status: 404, error: 'That playlist is empty or does not exist.' };

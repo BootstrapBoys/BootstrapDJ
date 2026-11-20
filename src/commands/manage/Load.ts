@@ -4,6 +4,7 @@ import { Track } from 'shoukaku';
 import { BootstrapClient, Command, Context, Song } from '../../core/index.js';
 import { tr } from '../../lib/i18nContext.js';
 import { getPlayLimits, queueHasRoom } from '../../lib/PlayLimits.js';
+import { rejectBlacklistedRequester } from '../../lib/SongBlacklist.js';
 
 type StoredRow = Awaited<ReturnType<BootstrapClient['db']['getSong']>>[number];
 
@@ -66,6 +67,7 @@ export default class Load extends Command {
         const guild = ctx.guild;
         const author = ctx.author;
         if (!guild || !author) return;
+        if (await rejectBlacklistedRequester(client, ctx)) return;
         const name = args.join(' ').trim();
 
         const playlist = await client.db.getPLaylist(author.id, name);
