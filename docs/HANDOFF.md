@@ -1,6 +1,6 @@
 # BootstrapDJ handoff
 
-Updated: **2026-11-12 21:55 UTC**
+Updated: **2026-11-20 22:50 UTC**
 
 Workspace: `/home/hermes/projects/Discord/Music Bot`
 
@@ -10,42 +10,34 @@ Repository: `BootstrapBoys/BootstrapDJ` (GPL-3.0, fork of `appujet/lavamusic`)
 
 - Working tree: clean on `dev`; `docs/MAINTENANCE_PLAN.md` records the
   completed maintenance plan (phases 0–5).
-- `dev`, `main` and `origin/main` are in sync at **`30d38609`** (`docs:
-  record live BotTest acceptance results`), a 14-commit fast-forward from
-  `dd93b937` carrying `eb4953f9` (dashboard health + playlist export) and the
-  phase 0-5 maintenance work.
-- Last production code release: **`30d38609`**, deployed 2026-11-12 21:54
-  UTC (previous runtime `c41be815`).
-- CI: green on `30d38609` (run `43314095973`); earlier heads `ddf195b4`
-  (run `43178687504`) and `8011257f` (run `43179434673`) were green too.
-- Maintenance: phases 0–5 are complete on `dev` — option localization
-  `b02e889b`, help UX `bd43d0b7`, CI guardrails `ddf195b4`, doc truth
-  `6b59f4e4`/`65590d39`/`dd8742a6`, final gate recorded in the plan.
-- Live acceptance ran on the disposable BotTest staging checkout (not
-  production) at `8011257f` on 2026-11-12: guild language switching via
-  `/language` and `/settings language` (`de`, `fr`, back to `en-US`), localized
-  replies/help/autocomplete, a real join/play/queue/skip/leave smoke in French
-  and German including now-playing panel cleanup, and the dashboard locale
-  following the guild setting (`fr` → `en-US` → `de` → `en-US`). Evidence:
-  kanban task `t_6a2ba550`. That run performed no merge or deploy.
-- Production `/root/Bot`: runtime code **`30d38609`** in `.boot-state`
-  (`booted=2026-11-12T21:54:07+00:00`). The checkout pulls `main`; this
-  release-record commit is docs-only, so HEAD can read one commit ahead of the
-  runtime.
+- `dev` and `main` carry the song-blacklist feature; the release-record commit
+  that follows is docs-only, so production HEAD can read one commit ahead of
+  the runtime.
+- Last production code release: **`6d1be94a`** (`feat(utility): add a
+  server-owner song request blacklist`), deployed 2026-11-20 22:43 UTC
+  (previous runtime `0bfac8df`).
+- CI: not run for this release (GitHub Actions budget exhausted); `tsc
+  --noEmit`, `npm run build`, `npm run lint`, `npm run format`, `npm test`
+  (492 passing) and `npm run i18n:validate` were verified locally.
+- Live acceptance: **not performed** — the slash command and the enforcement
+  paths need the owner's Discord session. The registration itself was verified
+  from Discord: 74 global commands, `/utility` carries `songblacklist`
+  (`user`, `action`, `reason`).
+- Production `/root/Bot`: runtime code **`6d1be94a`** in `.boot-state`
+  (`booted=2026-11-20T22:43:57+00:00`).
 - Automatic DB backups: `bootstrapdj-db-backup.timer` runs daily at 04:15 UTC
   (persistent, randomized); integrity-checked copies under
   `/root/BotDBBackups/auto-*`, 14 kept. Env backups moved to
   `/root/BotEnvBackups` (mode 600).
 - Production services: `DJBoot`, `dashboard`, `Lavalink`, `Lavalink-Backup`,
-  `earl-listener`, `whisper-tiny`, `whisper-base` online.
-- Dashboard: `0.0.0.0:8795`, control `127.0.0.1:8797`; control
-  `/internal/metrics` **200**, public `/` and `/api/state` **401** without a
-  session. `/health` is live and returns **200** (`botReady`/`database` true,
-  2/2 Lavalink nodes).
-- Discord global command registration: **74** commands, including `language`
-  and `playlocal`.
+  `earl-listener`, `whisper-tiny`, `whisper-base` online. The dashboard sidecar
+  was restarted for the new browser-side guards; the bot process was not
+  restarted afterwards.
+- Dashboard: `0.0.0.0:8795`, control `127.0.0.1:8797`; public `/` and `/api/state`
+  return **401** without a session.
+- Discord global command registration: **74** commands.
 - Production DB backup from this deploy:
-  `/root/BotDBBackups/20261112T215356Z` (DB, WAL, SHM).
+  `/root/BotDBBackups/20261120-224355` (DB, WAL, SHM).
 
 ## What shipped to production
 
@@ -104,6 +96,28 @@ Helper: `src/lib/PlaylistExport.ts`; tests:
 The maintenance work shipped in the same deploy: `b02e889b` (localized
 option descriptions), `bd43d0b7` (`/help` UX and autocomplete) and `ddf195b4`
 (CI guardrails, which only affects CI).
+
+## Shipped in `6d1be94a` (deployed 2026-11-20)
+
+- **`/utility songblacklist`** — server-owner only (checked against
+  `guild.ownerId`, not `ManageGuild`). Options: `user`, optional `action`
+  (`add`/`remove`/`list`) and optional `reason`. Prefix forms:
+  `!utility songblacklist @user [reason]`, `!utility songblacklist remove @user`
+  and `!utility songblacklist list`.
+- Blacklisting also purges that user's **queued** tracks
+  (`purgeUserRequests`); a track already playing is left alone. Removing an
+  entry lets the user submit again but does not restore purged tracks.
+- Stored as the `songblacklist` guild setting (JSON array of
+  `{id, reason, by, at}`, capped at 100). It is deliberately not part of
+  `SettingsSchema`, so `/settings` and the dashboard do not render it; a
+  settings reset clears it with every other setting.
+- Enforced in `/play`, `/playnext`, `/playlocal`, the setup request channel,
+  dashboard `/api/play` and playlist load, `/load`, `/collection` and `/radio`,
+  plus a `checkTrack` backstop covering the remaining enqueue paths
+  (`/playrecent`, `/playselect`, `/playleave`, Earl voice requests).
+- Helper: `src/lib/SongBlacklist.ts`; tests: `tests/songblacklist.test.mjs`
+  (parsing, cap, purge, owner gate, add/remove/list). New longtail keys across
+  all 16 locales: `tools.utilityBlacklist*` and `limits.blacklisted*`.
 
 ## Ops hardening
 
